@@ -67,6 +67,7 @@ const App: React.FC = () => {
           let isManager = existingData.isManager;
 
           // One-time migration for older user documents that might not have the isManager field.
+          // Checking for non-boolean handles undefined, null, and any incorrectly stored values.
           if (typeof isManager !== 'boolean') {
             isManager = MANAGER_EMAILS.includes(authUser.email!.toLowerCase());
             // Write the migrated value to Firestore so it persists.
