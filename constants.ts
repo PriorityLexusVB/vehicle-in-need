@@ -18,9 +18,15 @@ export const STATUS_COLORS: Record<OrderStatus, string> = {
 
 export const YEARS = ['2025', '2024', '2023'];
 
-// A list of emails that will be granted manager privileges upon their first login.
+// A list of emails that will be granted manager privileges upon their FIRST LOGIN ONLY.
 // All emails should be lowercase.
-// IMPORTANT: To grant a user manager permissions, add their full email address to this list.
+// 
+// IMPORTANT: This list is used ONLY for initial seeding when a user logs in for the first time.
+// After the first login, the user's manager status is stored in Firestore and can be changed
+// via the Settings page. Subsequent logins will read from Firestore, NOT from this constant.
+// 
+// To grant a NEW user manager permissions: Add their email to this list before their first login.
+// To grant an EXISTING user manager permissions: Use the Settings page or update Firestore directly.
 export const MANAGER_EMAILS = [
     'manager1@priorityautomotive.com',
     'dealership_admin@priorityautomotive.com',
