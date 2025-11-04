@@ -1,0 +1,88 @@
+import React from 'react';
+import { AppUser } from '../types';
+import { LogoutIcon } from './icons/LogoutIcon';
+
+interface HeaderProps {
+  user: AppUser;
+  totalOrders: number;
+  onLogout: () => void;
+  view?: 'dashboard' | 'settings';
+  setView?: (view: 'dashboard' | 'settings') => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, view, setView }) => {
+  return (
+    <header className="bg-white/80 backdrop-blur-lg sticky top-0 z-10 border-b border-slate-200">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          <div className="flex items-center gap-6">
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight">
+                Vehicle Order Tracker
+              </h1>
+              <p className="text-sm text-slate-500 hidden sm:block">
+                  Welcome, {user.displayName || user.email} {user.isManager && '(Manager)'}
+              </p>
+            </div>
+            {user.isManager && setView && (
+              <nav className="hidden lg:flex items-center gap-2 p-1 bg-slate-200/80 rounded-full">
+                <button 
+                  onClick={() => setView('dashboard')} 
+                  className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-colors ${view === 'dashboard' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                >
+                  Dashboard
+                </button>
+                <button 
+                  onClick={() => setView('settings')} 
+                  className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-colors ${view === 'settings' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                >
+                  User Settings
+                </button>
+              </nav>
+            )}
+          </div>
+          <div className="flex items-center gap-2 sm:gap-4">
+            {user.isManager && (
+              <>
+                <div className="text-right">
+                  <span className="text-2xl font-bold text-sky-600">{totalOrders}</span>
+                  <p className="text-xs text-slate-500 font-medium">Active Orders</p>
+                </div>
+                <div className="h-6 w-px bg-slate-200"></div>
+              </>
+            )}
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-2 p-2 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-colors"
+              aria-label="Sign Out"
+            >
+              <LogoutIcon className="w-6 h-6" />
+              <span className="text-sm font-medium hidden sm:block">Sign Out</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      {/* Nav for smaller screens */}
+      {user.isManager && setView && (
+        <div className="lg:hidden container mx-auto px-4 sm:px-6 lg:px-8 pb-3 border-t border-slate-200 mt-px">
+          <nav className="flex items-center gap-2 p-1 bg-slate-200/80 rounded-full w-full mt-2">
+            <button 
+              onClick={() => setView('dashboard')} 
+              className={`w-1/2 text-center px-4 py-2 text-sm font-semibold rounded-full transition-colors ${view === 'dashboard' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'}`}
+            >
+              Dashboard
+            </button>
+            <button 
+              onClick={() => setView('settings')} 
+              className={`w-1/2 text-center px-4 py-2 text-sm font-semibold rounded-full transition-colors ${view === 'settings' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'}`}
+            >
+              User Settings
+            </button>
+          </nav>
+        </div>
+      )}
+    </header>
+  );
+};
+
+export default Header;

@@ -1,0 +1,5 @@
+{
+  "name": "Pre-Order & Dealer Exchange Tracker",
+  "description": "An internal tool for car dealership salespeople to submit and track vehicle locate and dealer exchange requests. It simplifies the process of managing vehicle acquisition from other sources.",
+  "requestFramePermissions": []
+}
