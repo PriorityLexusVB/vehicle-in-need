@@ -46,14 +46,12 @@ const App: React.FC = () => {
       if (authUser && authUser.email?.endsWith('@priorityautomotive.com')) {
         const userDocRef = doc(db, USERS_COLLECTION, authUser.uid);
         const userDoc = await getDoc(userDocRef);
-        
-        // Use the constants list as the single source of truth for the current session.
-        const isManager = MANAGER_EMAILS.includes(authUser.email!.toLowerCase());
 
         let appUser: AppUser;
 
         if (!userDoc.exists()) {
-          // First time login for this user
+          // First-time login: Seed isManager from the constants list.
+          const isManager = MANAGER_EMAILS.includes(authUser.email!.toLowerCase());
           appUser = {
             uid: authUser.uid,
             email: authUser.email,
@@ -62,17 +60,24 @@ const App: React.FC = () => {
           };
           await setDoc(userDocRef, appUser);
         } else {
-          // Existing user, sync their manager status from the source of truth
-          const existingData = userDoc.data() as Omit<AppUser, 'isManager'>;
-          appUser = {
-              ...existingData,
-              uid: authUser.uid, // Ensure uid is fresh from auth object
-              isManager: isManager, // Always use the list's value for the session
-          };
-          // Update the database in the background if it's out of sync
-          if (userDoc.data().isManager !== isManager) {
-              await updateDoc(userDocRef, { isManager: isManager });
+          // Existing user: Firestore is the source of truth for the manager role.
+          const existingData = userDoc.data();
+          let isManager = existingData.isManager;
+
+          // One-time migration for older user documents that might not have the isManager field.
+          if (typeof isManager !== 'boolean') {
+            isManager = MANAGER_EMAILS.includes(authUser.email!.toLowerCase());
+            // Update the document in Firestore to include the new field.
+            await updateDoc(userDocRef, { isManager });
           }
+          
+          appUser = {
+            // It's safer to pull fresh data from authUser where possible
+            uid: authUser.uid,
+            email: authUser.email,
+            displayName: authUser.displayName,
+            isManager: isManager, // Use the value from Firestore (or migrated value).
+          };
         }
         setUser(appUser);
 
