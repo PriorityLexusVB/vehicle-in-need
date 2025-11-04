@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
 import {
   collection,
@@ -24,6 +25,7 @@ import Login from './components/Login';
 import LoadingSpinner from './components/LoadingSpinner';
 import SettingsPage from './components/SettingsPage';
 import DashboardStats from './components/DashboardStats';
+import ProtectedRoute from './components/ProtectedRoute';
 import { PlusIcon } from './components/icons/PlusIcon';
 import { CloseIcon } from './components/icons/CloseIcon';
 import { useRegisterSW } from 'virtual:pwa-register/react';
@@ -33,12 +35,12 @@ declare const __APP_VERSION__: string;
 declare const __BUILD_TIME__: string;
 
 const App: React.FC = () => {
+  const location = useLocation();
   const [orders, setOrders] = useState<Order[]>([]);
   const [user, setUser] = useState<AppUser | null>(null);
   const [allUsers, setAllUsers] = useState<AppUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isOrderFormVisible, setIsOrderFormVisible] = useState(false);
-  const [view, setView] = useState<'dashboard' | 'settings'>('dashboard');
   const [stats, setStats] = useState({
     totalActive: 0,
     awaitingAction: 0,
@@ -64,31 +66,6 @@ const App: React.FC = () => {
     console.log(`App Version: ${__APP_VERSION__}`);
     console.log(`Build Time: ${__BUILD_TIME__}`);
   }, []);
-
-  // Handle hash-based deep linking (with authorization check)
-  useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '');
-      if (hash === 'settings' && user?.isManager) {
-        // Only managers can access settings via hash
-        setView('settings');
-      } else if (hash === 'dashboard' || hash === '' || (hash === 'settings' && !user?.isManager)) {
-        // Non-managers trying to access settings get redirected to dashboard
-        setView('dashboard');
-        if (hash === 'settings' && !user?.isManager) {
-          // Clear invalid hash for non-managers
-          window.location.hash = '';
-        }
-      }
-    };
-
-    // Check hash on mount and when user changes
-    handleHashChange();
-
-    // Listen for hash changes
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [user]);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (authUser) => {
@@ -313,69 +290,70 @@ const App: React.FC = () => {
         user={user}
         totalOrders={stats.totalActive}
         onLogout={handleLogout}
-        view={view}
-        setView={setView}
+        currentPath={location.pathname}
         appVersion={__APP_VERSION__}
         buildTime={__BUILD_TIME__}
       />
       <main className="container mx-auto p-4 sm:p-6 lg:p-8">
-          {user.isManager ? (
-              <>
-                  {view === 'dashboard' && (
-                      <div>
-                          <DashboardStats {...stats} />
-                          <div className="flex items-center justify-between mb-6">
-                              <h2 className="text-2xl font-bold text-slate-800">All Orders</h2>
-                              <button
-                                  onClick={() => setIsOrderFormVisible(prev => !prev)}
-                                  className={`flex items-center gap-2 text-white font-bold py-2 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 ${isOrderFormVisible ? 'bg-slate-600 hover:bg-slate-700' : 'bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700'}`}
-                              >
-                                  {isOrderFormVisible ? (
-                                      <>
-                                          <CloseIcon className="w-5 h-5" />
-                                          <span>Cancel</span>
-                                      </>
-                                  ) : (
-                                      <>
-                                          <PlusIcon className="w-5 h-5" />
-                                          <span>Add New Order</span>
-                                      </>
-                                  )}
-                              </button>
-                          </div>
-                          {isOrderFormVisible && (
-                              <div className="mb-8 animate-fade-in-down">
-                                  <OrderForm onAddOrder={handleAddOrderAndCloseForm} currentUser={user} />
-                              </div>
-                          )}
-                          <OrderList
-                              orders={orders}
-                              onUpdateStatus={handleUpdateOrderStatus}
-                              onDeleteOrder={handleDeleteOrder}
-                          />
-                      </div>
-                  )}
-                  {view === 'settings' && (
-                      <SettingsPage
-                          users={allUsers}
-                          currentUser={user}
-                          onUpdateUserRole={handleUpdateUserRole}
-                      />
-                  )}
-              </>
-          ) : (
+        <Routes>
+          <Route path="/" element={
+            user.isManager ? (
               <div>
-                  <div className="text-center mb-8">
-                      <h2 className="text-2xl font-bold text-slate-800">Submit a New Vehicle Request</h2>
-                      <p className="text-slate-500 mt-1">Fill out the form below to create a new pre-order or dealer exchange request.</p>
+                <DashboardStats {...stats} />
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-slate-800">All Orders</h2>
+                  <button
+                    onClick={() => setIsOrderFormVisible(prev => !prev)}
+                    className={`flex items-center gap-2 text-white font-bold py-2 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 ${isOrderFormVisible ? 'bg-slate-600 hover:bg-slate-700' : 'bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700'}`}
+                  >
+                    {isOrderFormVisible ? (
+                      <>
+                        <CloseIcon className="w-5 h-5" />
+                        <span>Cancel</span>
+                      </>
+                    ) : (
+                      <>
+                        <PlusIcon className="w-5 h-5" />
+                        <span>Add New Order</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+                {isOrderFormVisible && (
+                  <div className="mb-8 animate-fade-in-down">
+                    <OrderForm onAddOrder={handleAddOrderAndCloseForm} currentUser={user} />
                   </div>
-                  <div className="flex justify-center">
-                      <div className="w-full max-w-3xl">
-                          <OrderForm onAddOrder={handleAddOrder} currentUser={user} />
-                      </div>
-                  </div>
+                )}
+                <OrderList
+                  orders={orders}
+                  onUpdateStatus={handleUpdateOrderStatus}
+                  onDeleteOrder={handleDeleteOrder}
+                />
               </div>
-          )}
+            ) : (
+              <div>
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-bold text-slate-800">Submit a New Vehicle Request</h2>
+                  <p className="text-slate-500 mt-1">Fill out the form below to create a new pre-order or dealer exchange request.</p>
+                </div>
+                <div className="flex justify-center">
+                  <div className="w-full max-w-3xl">
+                    <OrderForm onAddOrder={handleAddOrder} currentUser={user} />
+                  </div>
+                </div>
+              </div>
+            )
+          } />
+          <Route path="/admin" element={
+            <ProtectedRoute user={user}>
+              <SettingsPage
+                users={allUsers}
+                currentUser={user!}
+                onUpdateUserRole={handleUpdateUserRole}
+              />
+            </ProtectedRoute>
+          } />
+        </Routes>
       </main>
     </div>
   );
