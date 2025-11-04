@@ -65,24 +65,30 @@ const App: React.FC = () => {
     console.log(`Build Time: ${__BUILD_TIME__}`);
   }, []);
 
-  // Handle hash-based deep linking
+  // Handle hash-based deep linking (with authorization check)
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '');
-      if (hash === 'settings') {
+      if (hash === 'settings' && user?.isManager) {
+        // Only managers can access settings via hash
         setView('settings');
-      } else if (hash === 'dashboard' || hash === '') {
+      } else if (hash === 'dashboard' || hash === '' || (hash === 'settings' && !user?.isManager)) {
+        // Non-managers trying to access settings get redirected to dashboard
         setView('dashboard');
+        if (hash === 'settings' && !user?.isManager) {
+          // Clear invalid hash for non-managers
+          window.location.hash = '';
+        }
       }
     };
 
-    // Check hash on mount
+    // Check hash on mount and when user changes
     handleHashChange();
 
     // Listen for hash changes
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (authUser) => {
