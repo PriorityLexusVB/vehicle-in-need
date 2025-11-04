@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
 import {
@@ -157,7 +156,7 @@ const App: React.FC = () => {
     };
   }, [user]);
 
-  const handleAddOrder = useCallback(async (newOrder: Omit<Order, 'id'>) => {
+  const handleAddOrder = useCallback(async (newOrder: Omit<Order, 'id'>): Promise<boolean> => {
     try {
       const orderPayload = { ...newOrder };
       Object.keys(orderPayload).forEach(key => {
@@ -170,15 +169,20 @@ const App: React.FC = () => {
         ...orderPayload,
         createdAt: serverTimestamp()
       });
+      return true;
     } catch (error) {
       console.error("Error adding order: ", error);
       alert("Failed to add order. Please try again.");
+      return false;
     }
   }, []);
   
-  const handleAddOrderAndCloseForm = useCallback(async (newOrder: Omit<Order, 'id'>) => {
-    await handleAddOrder(newOrder);
-    setIsOrderFormVisible(false);
+  const handleAddOrderAndCloseForm = useCallback(async (newOrder: Omit<Order, 'id'>): Promise<boolean> => {
+    const success = await handleAddOrder(newOrder);
+    if (success) {
+      setIsOrderFormVisible(false);
+    }
+    return success;
   }, [handleAddOrder]);
 
   const handleUpdateOrderStatus = useCallback(async (orderId: string, status: OrderStatus) => {
@@ -264,7 +268,7 @@ const App: React.FC = () => {
                           </div>
                           {isOrderFormVisible && (
                               <div className="mb-8 animate-fade-in-down">
-                                  <OrderForm onAddOrder={handleAddOrderAndCloseForm} />
+                                  <OrderForm onAddOrder={handleAddOrderAndCloseForm} currentUser={user} />
                               </div>
                           )}
                           <OrderList
@@ -283,9 +287,15 @@ const App: React.FC = () => {
                   )}
               </>
           ) : (
-              <div className="flex justify-center">
-                  <div className="w-full max-w-2xl">
-                      <OrderForm onAddOrder={handleAddOrder} />
+              <div>
+                  <div className="text-center mb-8">
+                      <h2 className="text-2xl font-bold text-slate-800">Submit a New Vehicle Request</h2>
+                      <p className="text-slate-500 mt-1">Fill out the form below to create a new pre-order or dealer exchange request.</p>
+                  </div>
+                  <div className="flex justify-center">
+                      <div className="w-full max-w-3xl">
+                          <OrderForm onAddOrder={handleAddOrder} currentUser={user} />
+                      </div>
                   </div>
               </div>
           )}

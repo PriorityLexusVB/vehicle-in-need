@@ -23,6 +23,7 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, view, setV
               </h1>
               <p className="text-sm text-slate-500 hidden sm:block">
                   Welcome, {user.displayName || user.email} {user.isManager && '(Manager)'}
+                  <span className='ml-2 font-mono text-xs text-sky-700'>[isManager: {user.isManager.toString()}]</span>
               </p>
             </div>
             {user.isManager && setView && (

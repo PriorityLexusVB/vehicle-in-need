@@ -1,15 +1,16 @@
-
 import React, { useState } from 'react';
-import { Order, OrderStatus } from '../types';
+import { Order, OrderStatus, AppUser } from '../types';
 import { STATUS_OPTIONS, YEARS } from '../constants';
 import { PlusIcon } from './icons/PlusIcon';
+import { CheckCircleIcon } from './icons/CheckCircleIcon';
 
 interface OrderFormProps {
-  onAddOrder: (order: Omit<Order, 'id'>) => void | Promise<void>;
+  onAddOrder: (order: Omit<Order, 'id'>) => Promise<boolean>;
+  currentUser?: AppUser | null;
 }
 
-const initialFormState = {
-  salesperson: '',
+const getInitialFormState = (currentUser?: AppUser | null) => ({
+  salesperson: currentUser?.displayName || '',
   manager: '',
   date: new Date().toISOString().split('T')[0],
   customerName: '',
@@ -32,7 +33,7 @@ const initialFormState = {
   status: OrderStatus.FactoryOrder,
   options: '',
   notes: '',
-};
+});
 
 const FormField: React.FC<{label: string, id: string, error?: string, children: React.ReactNode}> = ({ label, id, error, children }) => (
     <div>
@@ -42,12 +43,14 @@ const FormField: React.FC<{label: string, id: string, error?: string, children: 
     </div>
 );
 
-const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder }) => {
-  const [formState, setFormState] = useState(initialFormState);
-  const [errors, setErrors] = useState<Partial<Record<keyof typeof initialFormState, string>>>({});
+const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
+  const [formState, setFormState] = useState(() => getInitialFormState(currentUser));
+  const [errors, setErrors] = useState<Partial<Record<keyof typeof formState, string>>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   const validate = () => {
-    const newErrors: Partial<Record<keyof typeof initialFormState, string>> = {};
+    const newErrors: Partial<Record<keyof typeof formState, string>> = {};
     if (!formState.salesperson) newErrors.salesperson = 'Salesperson is required';
     if (!formState.manager) newErrors.manager = 'Manager is required';
     if (!formState.customerName) newErrors.customerName = 'Customer name is required';
@@ -74,18 +77,26 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (validate()) {
-      onAddOrder({
+      setIsSubmitting(true);
+      setSubmitSuccess(false);
+      const success = await onAddOrder({
         ...formState,
         msrp: parseFloat(formState.msrp),
         sellingPrice: formState.sellingPrice ? parseFloat(formState.sellingPrice) : undefined,
         gross: formState.gross ? parseFloat(formState.gross) : undefined,
         depositAmount: parseFloat(formState.depositAmount),
       });
-      setFormState(initialFormState);
-      setErrors({});
+      setIsSubmitting(false);
+
+      if (success) {
+        setSubmitSuccess(true);
+        setFormState(getInitialFormState(currentUser));
+        setErrors({});
+        setTimeout(() => setSubmitSuccess(false), 4000);
+      }
     }
   };
 
@@ -98,12 +109,20 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder }) => {
   };
 
   const activeStatusOptions = STATUS_OPTIONS.filter(s => s !== OrderStatus.Delivered && s !== OrderStatus.Received);
-  const inputClass = (name: keyof typeof initialFormState) => `block w-full p-2.5 border ${errors[name] ? 'border-red-500' : 'border-slate-300'} rounded-lg shadow-sm focus:ring-sky-500 focus:border-sky-500 sm:text-sm transition-colors`;
-  const moneyInputClass = (name: keyof typeof initialFormState) => `pl-8 block w-full p-2.5 border ${errors[name] ? 'border-red-500' : 'border-slate-300'} rounded-lg focus:ring-sky-500 focus:border-sky-500 sm:text-sm transition-colors`;
+  const inputClass = (name: keyof typeof formState) => `block w-full p-2.5 border ${errors[name] ? 'border-red-500' : 'border-slate-300'} rounded-lg shadow-sm focus:ring-sky-500 focus:border-sky-500 sm:text-sm transition-colors`;
+  const moneyInputClass = (name: keyof typeof formState) => `pl-8 block w-full p-2.5 border ${errors[name] ? 'border-red-500' : 'border-slate-300'} rounded-lg focus:ring-sky-500 focus:border-sky-500 sm:text-sm transition-colors`;
 
   return (
     <div className="bg-white p-6 rounded-2xl shadow-lg border border-slate-200">
       <h2 className="text-2xl font-bold text-slate-800 mb-6">Add New Order</h2>
+
+      {submitSuccess && (
+        <div className="flex items-center gap-3 mb-4 p-4 bg-green-100 border border-green-300 text-green-800 rounded-lg animate-fade-in-down">
+            <CheckCircleIcon className="w-6 h-6 text-green-600" />
+            <span className="font-semibold">Order submitted successfully!</span>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-6">
 
         <div className="space-y-4">
@@ -165,10 +184,10 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder }) => {
                 </FormField>
             </div>
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField label="Ext. Option 1 #" id="extOption1" error={errors.extOption1}><input type="text" name="extOption1" value={formState.extOption1} onChange={handleChange} maxLength={4} className={inputClass('extOption1')} /></FormField>
-                <FormField label="Ext. Option 2 #" id="extOption2" error={errors.extOption2}><input type="text" name="extOption2" value={formState.extOption2} onChange={handleChange} maxLength={4} className={inputClass('extOption2')} /></FormField>
-                <FormField label="Int. Option 1 #" id="intOption1" error={errors.intOption1}><input type="text" name="intOption1" value={formState.intOption1} onChange={handleChange} maxLength={4} className={inputClass('intOption1')} /></FormField>
-                <FormField label="Int. Option 2 #" id="intOption2" error={errors.intOption2}><input type="text" name="intOption2" value={formState.intOption2} onChange={handleChange} maxLength={4} className={inputClass('intOption2')} /></FormField>
+                <FormField label="Ext. Option 1 #" id="extOption1" error={errors.extOption1}><input type="text" id="extOption1" name="extOption1" value={formState.extOption1} onChange={handleChange} maxLength={4} className={inputClass('extOption1')} /></FormField>
+                <FormField label="Ext. Option 2 #" id="extOption2" error={errors.extOption2}><input type="text" id="extOption2" name="extOption2" value={formState.extOption2} onChange={handleChange} maxLength={4} className={inputClass('extOption2')} /></FormField>
+                <FormField label="Int. Option 1 #" id="intOption1" error={errors.intOption1}><input type="text" id="intOption1" name="intOption1" value={formState.intOption1} onChange={handleChange} maxLength={4} className={inputClass('intOption1')} /></FormField>
+                <FormField label="Int. Option 2 #" id="intOption2" error={errors.intOption2}><input type="text" id="intOption2" name="intOption2" value={formState.intOption2} onChange={handleChange} maxLength={4} className={inputClass('intOption2')} /></FormField>
             </div>
         </div>
 
@@ -222,9 +241,21 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder }) => {
             </FormField>
         </div>
 
-        <button type="submit" className="w-full flex justify-center items-center gap-2 bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5">
-          <PlusIcon />
-          Add Order
+        <button type="submit" disabled={isSubmitting} className="w-full flex justify-center items-center gap-2 bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 disabled:from-slate-400 disabled:to-slate-500 disabled:shadow-none disabled:transform-none disabled:cursor-wait">
+          {isSubmitting ? (
+            <>
+              <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Submitting...
+            </>
+          ) : (
+            <>
+              <PlusIcon />
+              Add Order
+            </>
+          )}
         </button>
       </form>
     </div>
