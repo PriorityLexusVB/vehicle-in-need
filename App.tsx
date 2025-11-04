@@ -26,6 +26,11 @@ import SettingsPage from './components/SettingsPage';
 import DashboardStats from './components/DashboardStats';
 import { PlusIcon } from './components/icons/PlusIcon';
 import { CloseIcon } from './components/icons/CloseIcon';
+import { useRegisterSW } from 'virtual:pwa-register/react';
+
+// Declare version globals
+declare const __APP_VERSION__: string;
+declare const __BUILD_TIME__: string;
 
 const App: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -40,6 +45,44 @@ const App: React.FC = () => {
     readyForDelivery: 0,
     deliveredLast30Days: 0,
   });
+
+  // Service Worker registration with update notification
+  const {
+    needRefresh: [needRefresh, setNeedRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegistered(r) {
+      console.log('SW Registered: ' + r);
+    },
+    onRegisterError(error) {
+      console.log('SW registration error', error);
+    },
+  });
+
+  // Log version on load
+  useEffect(() => {
+    console.log(`App Version: ${__APP_VERSION__}`);
+    console.log(`Build Time: ${__BUILD_TIME__}`);
+  }, []);
+
+  // Handle hash-based deep linking
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash === 'settings') {
+        setView('settings');
+      } else if (hash === 'dashboard' || hash === '') {
+        setView('dashboard');
+      }
+    };
+
+    // Check hash on mount
+    handleHashChange();
+
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (authUser) => {
@@ -241,12 +284,33 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-100 font-sans">
+      {needRefresh && (
+        <div className="fixed top-0 left-0 right-0 bg-sky-600 text-white py-3 px-4 z-50 flex items-center justify-between shadow-lg">
+          <span className="text-sm font-medium">A new version is available!</span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => updateServiceWorker(true)}
+              className="bg-white text-sky-600 px-4 py-1 rounded-md text-sm font-semibold hover:bg-slate-100 transition-colors"
+            >
+              Reload
+            </button>
+            <button
+              onClick={() => setNeedRefresh(false)}
+              className="text-white px-3 py-1 text-sm hover:bg-sky-700 rounded-md transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
       <Header 
         user={user}
         totalOrders={stats.totalActive}
         onLogout={handleLogout}
         view={view}
         setView={setView}
+        appVersion={__APP_VERSION__}
+        buildTime={__BUILD_TIME__}
       />
       <main className="container mx-auto p-4 sm:p-6 lg:p-8">
           {user.isManager ? (
