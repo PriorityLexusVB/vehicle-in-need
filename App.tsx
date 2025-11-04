@@ -50,7 +50,8 @@ const App: React.FC = () => {
         let appUser: AppUser;
 
         if (!userDoc.exists()) {
-          // First-time login: Seed isManager from the constants list.
+          // NEW USER: First-time login - seed isManager from MANAGER_EMAILS constant.
+          // IMPORTANT: MANAGER_EMAILS is ONLY used for initial seeding, not on subsequent logins.
           const isManager = MANAGER_EMAILS.includes(authUser.email!.toLowerCase());
           appUser = {
             uid: authUser.uid,
@@ -60,30 +61,31 @@ const App: React.FC = () => {
           };
           await setDoc(userDocRef, appUser);
         } else {
-          // Existing user: Firestore is the source of truth for the manager role.
+          // EXISTING USER: Firestore is the single source of truth for the manager role.
+          // Changes made via Settings page will persist because we read from Firestore, not MANAGER_EMAILS.
           const existingData = userDoc.data();
           let isManager = existingData.isManager;
 
           // One-time migration for older user documents that might not have the isManager field.
+          // Checking for non-boolean handles undefined, null, and any incorrectly stored values.
           if (typeof isManager !== 'boolean') {
             isManager = MANAGER_EMAILS.includes(authUser.email!.toLowerCase());
-            // Update the document in Firestore to include the new field.
+            // Write the migrated value to Firestore so it persists.
             await updateDoc(userDocRef, { isManager });
           }
           
           appUser = {
-            // It's safer to pull fresh data from authUser where possible
             uid: authUser.uid,
             email: authUser.email,
             displayName: authUser.displayName,
-            isManager: isManager, // Use the value from Firestore (or migrated value).
+            isManager: isManager, // This value came from Firestore, ensuring Settings changes persist.
           };
         }
         setUser(appUser);
 
       } else {
         if (authUser) {
-            // If user is logged in but not with the correct domain, sign them out.
+            // Domain restriction: Only @priorityautomotive.com emails are allowed.
             await signOut(auth);
             alert("Access denied. Please use a '@priorityautomotive.com' email address.");
         }
