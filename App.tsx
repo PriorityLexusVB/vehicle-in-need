@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
 import {
@@ -46,32 +47,36 @@ const App: React.FC = () => {
       if (authUser && authUser.email?.endsWith('@priorityautomotive.com')) {
         const userDocRef = doc(db, USERS_COLLECTION, authUser.uid);
         const userDoc = await getDoc(userDocRef);
-        const isManagerByList = MANAGER_EMAILS.includes(authUser.email!.toLowerCase());
+        
+        // Use the constants list as the single source of truth for the current session.
+        const isManager = MANAGER_EMAILS.includes(authUser.email!.toLowerCase());
+
+        let appUser: AppUser;
 
         if (!userDoc.exists()) {
           // First time login for this user
-          const newUser: AppUser = {
+          appUser = {
             uid: authUser.uid,
             email: authUser.email,
             displayName: authUser.displayName,
-            isManager: isManagerByList,
+            isManager: isManager,
           };
-          await setDoc(userDocRef, newUser);
-          setUser(newUser);
+          await setDoc(userDocRef, appUser);
         } else {
-          // Existing user
-          const existingUser = userDoc.data() as AppUser;
-          
-          // Sync mechanism: Check if promotion is needed.
-          if (isManagerByList && !existingUser.isManager) {
-            await updateDoc(userDocRef, { isManager: true });
-            // Set state with a new object to guarantee a re-render with promoted status
-            setUser({ ...existingUser, isManager: true }); 
-          } else {
-            // No change needed, set state with existing data from DB
-            setUser(existingUser);
+          // Existing user, sync their manager status from the source of truth
+          const existingData = userDoc.data() as Omit<AppUser, 'isManager'>;
+          appUser = {
+              ...existingData,
+              uid: authUser.uid, // Ensure uid is fresh from auth object
+              isManager: isManager, // Always use the list's value for the session
+          };
+          // Update the database in the background if it's out of sync
+          if (userDoc.data().isManager !== isManager) {
+              await updateDoc(userDocRef, { isManager: isManager });
           }
         }
+        setUser(appUser);
+
       } else {
         if (authUser) {
             // If user is logged in but not with the correct domain, sign them out.
@@ -143,6 +148,7 @@ const App: React.FC = () => {
       // If user is not a manager, ensure orders and user lists are empty
       setOrders([]);
       setAllUsers([]);
+      setStats({ totalActive: 0, awaitingAction: 0, readyForDelivery: 0, deliveredLast30Days: 0 });
     }
 
     return () => {

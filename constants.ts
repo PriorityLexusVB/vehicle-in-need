@@ -1,3 +1,4 @@
+
 import { OrderStatus } from './types';
 
 export const STATUS_OPTIONS = [
@@ -20,6 +21,7 @@ export const YEARS = ['2025', '2024', '2023'];
 
 // A list of emails that will be granted manager privileges upon their first login.
 // All emails should be lowercase.
+// IMPORTANT: To grant a user manager permissions, add their full email address to this list.
 export const MANAGER_EMAILS = [
     'manager1@priorityautomotive.com',
     'dealership_admin@priorityautomotive.com',

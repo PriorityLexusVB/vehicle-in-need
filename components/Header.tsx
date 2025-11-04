@@ -1,6 +1,7 @@
 import React from 'react';
 import { AppUser } from '../types';
 import { LogoutIcon } from './icons/LogoutIcon';
+import { SettingsIcon } from './icons/SettingsIcon';
 
 interface HeaderProps {
   user: AppUser;
@@ -34,9 +35,10 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, view, setV
                 </button>
                 <button 
                   onClick={() => setView('settings')} 
-                  className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-colors ${view === 'settings' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                  className={`flex items-center gap-2 px-4 py-1.5 text-sm font-semibold rounded-full transition-colors ${view === 'settings' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
                 >
-                  User Settings
+                  <SettingsIcon className="w-4 h-4" />
+                  <span>User Management</span>
                 </button>
               </nav>
             )}
@@ -74,9 +76,10 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, view, setV
             </button>
             <button 
               onClick={() => setView('settings')} 
-              className={`w-1/2 text-center px-4 py-2 text-sm font-semibold rounded-full transition-colors ${view === 'settings' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'}`}
+              className={`flex items-center justify-center gap-2 w-1/2 text-center px-4 py-2 text-sm font-semibold rounded-full transition-colors ${view === 'settings' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'}`}
             >
-              User Settings
+              <SettingsIcon className="w-4 h-4" />
+              <span>User Management</span>
             </button>
           </nav>
         </div>
