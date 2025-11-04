@@ -27,7 +27,7 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, view, setV
               </p>
             </div>
             {user.isManager && setView && (
-              <nav className="hidden lg:flex items-center gap-2 p-1 bg-slate-200/80 rounded-full">
+              <nav className="flex items-center gap-2 p-1 bg-slate-200/80 rounded-full flex-wrap">
                 <button 
                   onClick={() => setView('dashboard')} 
                   className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-colors ${view === 'dashboard' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
@@ -65,26 +65,7 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, view, setV
           </div>
         </div>
       </div>
-      {/* Nav for smaller screens */}
-      {user.isManager && setView && (
-        <div className="lg:hidden container mx-auto px-4 sm:px-6 lg:px-8 pb-3 border-t border-slate-200 mt-px">
-          <nav className="flex items-center gap-2 p-1 bg-slate-200/80 rounded-full w-full mt-2">
-            <button 
-              onClick={() => setView('dashboard')} 
-              className={`w-1/2 text-center px-4 py-2 text-sm font-semibold rounded-full transition-colors ${view === 'dashboard' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'}`}
-            >
-              Dashboard
-            </button>
-            <button 
-              onClick={() => setView('settings')} 
-              className={`flex items-center justify-center gap-2 w-1/2 text-center px-4 py-2 text-sm font-semibold rounded-full transition-colors ${view === 'settings' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'}`}
-            >
-              <SettingsIcon className="w-4 h-4" />
-              <span>User Management</span>
-            </button>
-          </nav>
-        </div>
-      )}
+      {/* Removed the separate mobile-only nav to avoid duplication; the nav above is now always visible for managers. */}
     </header>
   );
 };
