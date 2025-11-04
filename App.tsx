@@ -346,6 +346,7 @@ const App: React.FC = () => {
           } />
           <Route path="/admin" element={
             <ProtectedRoute user={user}>
+              {/* user is guaranteed to be non-null here due to ProtectedRoute guard */}
               <SettingsPage
                 users={allUsers}
                 currentUser={user!}
