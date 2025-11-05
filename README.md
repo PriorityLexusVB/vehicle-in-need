@@ -115,23 +115,40 @@ Users designated as managers can:
 
 ### Accessing User Management
 
-1. **Pill navigation**: Click "User Management" in the header nav
-2. **Gear icon**: Click the settings gear icon in the header
-3. **Deep link**: Navigate to `#settings` in the URL
+Managers have multiple ways to access User Management:
+1. **Pill navigation**: Click "User Management" in the left-side pill nav
+2. **Gear icon**: Click the settings gear icon in the header (right side)
+3. **Deep link**: Navigate directly to `/#/admin` in the URL
+
+Non-managers attempting to access `/#/admin` will be automatically redirected to the dashboard.
 
 ## Development Notes
 
-### Hash-Based Routing
+### Routing Structure
 
-The app supports hash-based deep linking:
-- `#dashboard` or `/` - Shows the dashboard view
-- `#settings` - Opens user management (managers only)
+The app uses React Router with HashRouter for client-side routing:
+- `/#/` or `/` - Dashboard view (shows order form for non-managers, order list for managers)
+- `/#/admin` - User Management page (protected, managers only)
+
+**Deep linking works**: Navigating directly to `/#/admin` after authentication will show the Settings page for managers.
 
 ### Version Information
 
-- Version displayed in header: `v[commit-sha]`
-- Hover over version to see build timestamp
-- Console logs version info on app load
+The app displays version information in the header:
+- **Version format**: `v[commit-sha]` (e.g., `v3a2b1c4`)
+- **Build time**: Hover over version to see build timestamp
+- **Console logs**: Version info is logged on app load
+- **Populated via**: Vite config generates `__APP_VERSION__` and `__BUILD_TIME__` from git and build timestamp
+
+### Service Worker Cleanup
+
+On app load, the application automatically:
+1. **Checks for legacy service workers**: Detects any registered service workers
+2. **Unregisters them**: Removes old service workers to prevent stale cache issues
+3. **One-time reload**: If service workers were found, triggers a single page reload
+4. **Session guard**: Uses `sessionStorage` to prevent infinite reload loops
+
+This temporary cleanup ensures all users get the latest bundle after deployment, even if they were stuck behind an old service worker cache.
 
 ### Environment Variables
 
@@ -158,8 +175,17 @@ To reset service worker:
 
 ### Stale Cache After Deploy
 
-If users see old version after deployment:
-1. Ensure `index.html` has short cache duration
-2. Service worker will detect new version on next load
-3. Update banner should appear automatically
-4. Users can manually refresh if needed
+The app includes automatic service worker cleanup:
+1. **On first load after deploy**: Legacy service workers are automatically unregistered
+2. **Automatic reload**: A one-time reload occurs to fetch the fresh bundle
+3. **No user action needed**: The cleanup happens transparently
+4. **Verification**: Check console for "Unregistering X legacy service worker(s)..." message
+
+Additionally:
+- Ensure `index.html` has short cache duration on your hosting platform
+- The service worker update banner will appear for version updates
+- Users can manually hard refresh if needed: `Ctrl+Shift+R` (Windows) or `Cmd+Shift+R` (Mac)
+
+### MutationObserver Errors
+
+The app includes a defensive error handler that suppresses MutationObserver errors from third-party code that might break rendering. Other errors are not suppressed and will display normally.
