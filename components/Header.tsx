@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { AppUser } from '../types';
 import { LogoutIcon } from './icons/LogoutIcon';
 import { SettingsIcon } from './icons/SettingsIcon';
@@ -7,21 +8,12 @@ interface HeaderProps {
   user: AppUser;
   totalOrders: number;
   onLogout: () => void;
-  view?: 'dashboard' | 'settings';
-  setView?: (view: 'dashboard' | 'settings') => void;
+  currentPath?: string;
   appVersion?: string;
   buildTime?: string;
 }
 
-const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, view, setView, appVersion, buildTime }) => {
-  const handleUserManagementClick = () => {
-    if (setView) {
-      setView('settings');
-    } else {
-      // Fallback: set hash if setView is not available
-      window.location.hash = 'settings';
-    }
-  };
+const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPath, appVersion, buildTime }) => {
 
   return (
     <header className="bg-white/80 backdrop-blur-lg sticky top-0 z-10 border-b border-slate-200">
@@ -42,21 +34,21 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, view, setV
                   <span className='ml-2 font-mono text-xs text-sky-700'>[isManager: {user.isManager.toString()}]</span>
               </p>
             </div>
-            {user.isManager && setView && (
+            {user.isManager && (
               <nav className="flex items-center gap-2 p-1 bg-slate-200/80 rounded-full flex-wrap">
-                <button 
-                  onClick={() => setView('dashboard')} 
-                  className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-colors ${view === 'dashboard' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                <Link 
+                  to="/"
+                  className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-colors ${currentPath === '/' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
                 >
                   Dashboard
-                </button>
-                <button 
-                  onClick={() => setView('settings')} 
-                  className={`flex items-center gap-2 px-4 py-1.5 text-sm font-semibold rounded-full transition-colors ${view === 'settings' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                </Link>
+                <Link 
+                  to="/admin"
+                  className={`flex items-center gap-2 px-4 py-1.5 text-sm font-semibold rounded-full transition-colors ${currentPath === '/admin' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
                 >
                   <SettingsIcon className="w-4 h-4" />
                   <span>User Management</span>
-                </button>
+                </Link>
               </nav>
             )}
           </div>
@@ -71,15 +63,15 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, view, setV
               </>
             )}
             {user.isManager && (
-              <button
-                onClick={handleUserManagementClick}
+              <Link
+                to="/admin"
                 className="flex items-center gap-2 px-3 py-2 rounded-full text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-colors"
                 aria-label="User Management"
                 title="User Management"
               >
                 <SettingsIcon className="w-5 h-5" />
                 <span className="text-sm font-medium hidden sm:inline">User Management</span>
-              </button>
+              </Link>
             )}
             <button
               onClick={onLogout}

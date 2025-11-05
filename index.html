@@ -25,6 +25,27 @@
 </head>
   <body class="bg-slate-100 text-slate-800">
     <div id="root"></div>
+    <script>
+      // One-time cleanup of legacy service workers
+      // This runs once to clear any stale service worker registrations
+      // that might be causing cache issues
+      (function() {
+        var SW_CLEANUP_KEY = 'sw_cleanup_v1_done';
+        if ('serviceWorker' in navigator && !localStorage.getItem(SW_CLEANUP_KEY)) {
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            if (registrations.length > 0) {
+              console.log('Performing one-time cleanup of ' + registrations.length + ' service worker(s)');
+              registrations.forEach(function(registration) {
+                registration.unregister().then(function() {
+                  console.log('Unregistered legacy service worker:', registration.scope);
+                });
+              });
+            }
+            localStorage.setItem(SW_CLEANUP_KEY, 'true');
+          });
+        }
+      })();
+    </script>
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>
