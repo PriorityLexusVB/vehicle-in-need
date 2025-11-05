@@ -32,41 +32,59 @@ async function unregisterLegacyServiceWorkers() {
 
 // Add defensive guard against MutationObserver errors from third-party code
 function setupMutationObserverGuard() {
-  const originalError = window.onerror;
-  window.onerror = function(message, source, lineno, colno, error) {
+  window.addEventListener('error', (event) => {
     // Suppress the specific MutationObserver error that breaks rendering
-    if (typeof message === 'string' && message.includes('parameter 1 is not of type Node')) {
+    const message = event.message || '';
+    if (message.includes('parameter 1 is not of type Node') || 
+        message.includes('MutationObserver')) {
       console.warn('Suppressed MutationObserver error:', message);
-      return true; // Prevent default error handling
+      event.preventDefault();
+      return;
     }
-    // Let other errors through
-    if (originalError) {
-      return originalError(message, source, lineno, colno, error);
-    }
-    return false;
-  };
+  });
 }
 
 // Initialize app
-(async () => {
-  setupMutationObserverGuard();
-  
-  const willReload = await unregisterLegacyServiceWorkers();
-  if (willReload) {
-    return; // Don't render if we're reloading
-  }
+async function initializeApp() {
+  try {
+    setupMutationObserverGuard();
+    
+    const willReload = await unregisterLegacyServiceWorkers();
+    if (willReload) {
+      return; // Don't render if we're reloading
+    }
 
-  const rootElement = document.getElementById('root');
-  if (!rootElement) {
-    throw new Error("Could not find root element to mount to");
-  }
+    const rootElement = document.getElementById('root');
+    if (!rootElement) {
+      throw new Error("Could not find root element to mount to");
+    }
 
-  const root = ReactDOM.createRoot(rootElement);
-  root.render(
-    <React.StrictMode>
-      <HashRouter>
-        <App />
-      </HashRouter>
-    </React.StrictMode>
-  );
-})();
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(
+      <React.StrictMode>
+        <HashRouter>
+          <App />
+        </HashRouter>
+      </React.StrictMode>
+    );
+  } catch (error) {
+    console.error('Failed to initialize app:', error);
+    // Display a user-friendly error message
+    const rootElement = document.getElementById('root');
+    if (rootElement) {
+      rootElement.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif;">
+          <div style="text-align: center; padding: 2rem;">
+            <h1 style="color: #ef4444; margin-bottom: 1rem;">Failed to Load Application</h1>
+            <p style="color: #64748b; margin-bottom: 1rem;">Please try refreshing the page.</p>
+            <button onclick="location.reload()" style="background: #0ea5e9; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.5rem; cursor: pointer;">
+              Reload Page
+            </button>
+          </div>
+        </div>
+      `;
+    }
+  }
+}
+
+initializeApp();
