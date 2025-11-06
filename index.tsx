@@ -32,8 +32,23 @@ async function unregisterLegacyServiceWorkers() {
 
 // Add defensive guard against MutationObserver errors from third-party code
 function setupMutationObserverGuard() {
+  // Patch MutationObserver.observe to validate target before observing
+  const originalObserve = MutationObserver.prototype.observe;
+  MutationObserver.prototype.observe = function(target: Node, options?: MutationObserverInit) {
+    // Validate that target is a valid Node before calling original observe
+    if (!target || !(target instanceof Node)) {
+      console.warn('MutationObserver.observe called with invalid target:', target);
+      return; // Silently skip invalid observations
+    }
+    try {
+      return originalObserve.call(this, target, options);
+    } catch (error) {
+      console.warn('MutationObserver.observe error:', error);
+    }
+  };
+
+  // Also catch any unhandled errors
   window.addEventListener('error', (event) => {
-    // Suppress the specific MutationObserver error that breaks rendering
     const message = event.message || '';
     if (message.includes('parameter 1 is not of type Node') || 
         message.includes('MutationObserver')) {

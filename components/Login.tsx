@@ -100,19 +100,29 @@ const Login: React.FC = () => {
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (popupError: any) {
+      // Gracefully handle COOP-related popup issues
+      if (popupError.code === 'auth/popup-closed-by-user') {
+        console.info("Authentication popup closed by user");
+        setIsSigningIn(false);
+        return;
+      }
+      
       console.warn("Popup sign-in failed, falling back to redirect. Reason:", popupError.code);
-      // If popup fails for any reason, try redirect.
+      
+      // If popup fails for any reason (including COOP issues), try redirect.
       // This will navigate away. Errors will be handled by getRedirectResult upon return.
-      await signInWithRedirect(auth, googleProvider).catch((redirectError: any) => {
-          // This catch is only for errors *initiating* the redirect.
-          console.error("Authentication Initiation Error (Redirect):", redirectError);
-          if (redirectError.code === 'auth/unauthorized-domain') {
-              setError({type: 'unauthorized-domain', message: ''});
-          } else {
-            setError({type: 'generic', message: "Failed to start the sign-in process. Please check your connection and try again."});
-          }
-          setIsSigningIn(false);
-      });
+      try {
+        await signInWithRedirect(auth, googleProvider);
+      } catch (redirectError: any) {
+        // This catch is only for errors *initiating* the redirect.
+        console.error("Authentication Initiation Error (Redirect):", redirectError);
+        if (redirectError.code === 'auth/unauthorized-domain') {
+          setError({type: 'unauthorized-domain', message: ''});
+        } else {
+          setError({type: 'generic', message: "Failed to start the sign-in process. Please check your connection and try again."});
+        }
+        setIsSigningIn(false);
+      }
     }
   };
   
