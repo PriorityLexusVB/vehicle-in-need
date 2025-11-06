@@ -58,15 +58,14 @@ The application is split into:
    npm install
    ```
 
-2. For AI features, authenticate with gcloud (recommended):
+2. For AI features, the application uses server-side Vertex AI integration:
    ```bash
    gcloud auth application-default login
    ```
    
-   Alternatively, create a `.env.local` file with a local API key (dev only):
-   ```bash
-   LOCAL_GEMINI_KEY=your-api-key-here
-   ```
+   This authenticates your local development environment using Application Default Credentials (ADC). The server will automatically use these credentials when calling Vertex AI APIs.
+   
+   **Note:** No client-side API keys are required. AI features are accessed through the `/api/generate-email` endpoint which handles authentication server-side. This is more secure than exposing API keys in the client.
 
 3. Run the frontend development server:
    ```bash
@@ -330,11 +329,6 @@ On app load, the application automatically:
 4. **Session guard**: Uses `sessionStorage` to prevent infinite reload loops
 
 This temporary cleanup ensures all users get the latest bundle after deployment, even if they were stuck behind an old service worker cache.
-
-### Environment Variables
-
-- `GEMINI_API_KEY` - Required for AI features
-- Build-time variables are injected via Vite config
 
 ## Troubleshooting
 
