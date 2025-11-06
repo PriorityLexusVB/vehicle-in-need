@@ -287,9 +287,9 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
-      <Navbar user={user} />
+      <Navbar user={user!} />
       <Header 
-        user={user}
+        user={user!}
         totalOrders={stats.totalActive}
         onLogout={handleLogout}
         currentPath={location.pathname}

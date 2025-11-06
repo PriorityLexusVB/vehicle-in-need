@@ -102,7 +102,7 @@ const Login: React.FC = () => {
     } catch (popupError: any) {
       // Gracefully handle COOP-related popup issues
       if (popupError.code === 'auth/popup-closed-by-user') {
-        console.log("User closed the popup");
+        console.info("Authentication popup closed by user");
         setIsSigningIn(false);
         return;
       }
