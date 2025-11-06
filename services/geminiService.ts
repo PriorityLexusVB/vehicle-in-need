@@ -1,8 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
 import { Order, OrderStatus } from "../types";
 
-// Read from Vite env (import.meta.env.VITE_*) with fallback to legacy process.env
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY);
+// Read from Vite env (import.meta.env.VITE_*)
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 // Export flag to indicate if Gemini is available
 export const isGeminiEnabled = !!API_KEY;
