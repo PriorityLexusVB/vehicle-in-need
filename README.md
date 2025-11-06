@@ -333,8 +333,19 @@ This temporary cleanup ensures all users get the latest bundle after deployment,
 
 ### Environment Variables
 
-- `GEMINI_API_KEY` - Required for AI features
-- Build-time variables are injected via Vite config
+All AI functionality (Gemini/Vertex AI) is handled **server-side** via the Express backend. No client-side API keys are required or exposed in the browser.
+
+**Server Configuration (Production):**
+- `GOOGLE_CLOUD_PROJECT` - Auto-detected from environment (optional override)
+- `VERTEX_AI_LOCATION` - Defaults to `us-central1` (optional)
+- `PORT` - Server port, defaults to `8080` (optional)
+- `LOCAL_GEMINI_KEY` - **Local dev only**, fallback API key (not recommended for production)
+
+**Frontend Build Variables:**
+- `VITE_APP_COMMIT_SHA` - Git commit hash (auto-injected during build)
+- `VITE_APP_BUILD_TIME` - Build timestamp (auto-injected during build)
+
+For more details, see the `.env.example` file and the Architecture section above.
 
 ## Troubleshooting
 
