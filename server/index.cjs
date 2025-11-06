@@ -6,7 +6,7 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
-const aiProxyRouter = require('./aiProxy');
+const aiProxyRouter = require('./aiProxy.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 8080;

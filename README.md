@@ -113,12 +113,12 @@ docker build \
   -t vehicle-tracker:latest .
 ```
 
-**Note:** If you encounter an npm "Exit handler never called!" error when building locally, this is a [known npm bug](https://github.com/npm/cli/issues) in certain Docker environments. Workarounds:
-- Use `docker build --network=host` 
-- Update Docker Desktop to the latest version
-- Build in Cloud Build (recommended) where this issue doesn't occur
+**Note:** If you encounter an npm "Exit handler never called!" error when building locally, this is a [known npm bug](https://github.com/npm/cli/issues) in certain Docker environments. **The recommended approach is to build using Google Cloud Build** where this issue doesn't occur. For local testing, you can:
+- Build the frontend with `npm run build` locally
+- Run the server with `npm run server` to test the full stack
+- Skip Docker build for local development
 
-**Run the container locally:**
+**Run the container locally (if Docker build succeeds):**
 
 ```bash
 docker run -p 8080:8080 vehicle-tracker:latest

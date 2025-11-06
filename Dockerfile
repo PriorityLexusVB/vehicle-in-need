@@ -20,7 +20,7 @@ COPY package.json package-lock.json ./
 # Note: There's a known npm bug in some Docker environments that shows
 # "Exit handler never called!" error. This typically doesn't occur in
 # Cloud Build or production CI/CD pipelines. If you encounter this locally,
-# try: docker build --network=host or upgrade Docker Desktop.
+# the workaround is to build in Cloud Build instead of locally.
 RUN npm ci --prefer-offline --no-audit
 
 # Copy source code
@@ -57,4 +57,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 
 # Start the Node.js server
-CMD ["node", "server/index.js"]
+CMD ["node", "server/index.cjs"]

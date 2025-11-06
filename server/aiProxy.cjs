@@ -5,7 +5,7 @@
 
 const express = require('express');
 const { VertexAI } = require('@google-cloud/vertexai');
-const { buildEmailPrompt } = require('./promptBuilder');
+const { buildEmailPrompt } = require('./promptBuilder.cjs');
 
 const router = express.Router();
 
