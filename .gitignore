@@ -18,9 +18,6 @@ dist-ssr
 # Test artifacts
 screenshots
 
-# Test artifacts
-screenshots
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
