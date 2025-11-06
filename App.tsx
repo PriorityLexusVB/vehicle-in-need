@@ -19,6 +19,7 @@ import { db, auth } from './services/firebase';
 import { Order, OrderStatus, AppUser } from './types';
 import { MANAGER_EMAILS, USERS_COLLECTION } from './constants';
 import Header from './components/Header';
+import Navbar from './components/Navbar';
 import OrderForm from './components/OrderForm';
 import OrderList from './components/OrderList';
 import Login from './components/Login';
@@ -286,6 +287,7 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
+      <Navbar user={user} />
       <Header 
         user={user}
         totalOrders={stats.totalActive}
