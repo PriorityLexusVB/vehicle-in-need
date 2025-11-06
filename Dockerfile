@@ -6,6 +6,10 @@ FROM node:20-alpine AS builder
 ARG COMMIT_SHA=unknown
 ARG BUILD_TIME=unknown
 
+# Expose as environment variables for Vite to access during build
+ENV VITE_APP_COMMIT_SHA=$COMMIT_SHA
+ENV VITE_APP_BUILD_TIME=$BUILD_TIME
+
 # Set working directory
 WORKDIR /app
 
