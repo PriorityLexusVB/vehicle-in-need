@@ -1,16 +1,32 @@
 import { GoogleGenAI } from "@google/genai";
 import { Order, OrderStatus } from "../types";
 
-const API_KEY = process.env.API_KEY;
+// Read from Vite env (import.meta.env.VITE_*) with fallback to legacy process.env
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY);
 
-if (!API_KEY) {
-  // This is a fallback for development. In a real environment, the key should be set.
-  console.warn("Gemini API key not found. Please set the API_KEY environment variable.");
+// Export flag to indicate if Gemini is available
+export const isGeminiEnabled = !!API_KEY;
+
+if (!isGeminiEnabled) {
+  console.warn(
+    "Gemini API key not found. AI features are disabled. " +
+    "To enable, set VITE_GEMINI_API_KEY in .env.local for local development, " +
+    "or pass it as a build arg in Docker/Cloud Build for production."
+  );
 }
 
-const ai = new GoogleGenAI({ apiKey: API_KEY });
+// Only instantiate the client if we have an API key
+const ai = isGeminiEnabled ? new GoogleGenAI({ apiKey: API_KEY }) : null;
 
 export const generateFollowUpEmail = async (order: Order): Promise<string> => {
+  // If Gemini is not enabled, return a friendly message
+  if (!isGeminiEnabled) {
+    throw new Error(
+      "AI features are disabled. The Gemini API key is not configured. " +
+      "Please contact your administrator to enable this feature."
+    );
+  }
+
   const extOptions = [order.extOption1, order.extOption2].filter(Boolean).join(', ');
   const intOptions = [order.intOption1, order.intOption2].filter(Boolean).join(', ');
 
@@ -82,6 +98,9 @@ export const generateFollowUpEmail = async (order: Order): Promise<string> => {
   `;
 
   try {
+    if (!ai) {
+      throw new Error("Gemini client not initialized");
+    }
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: prompt,

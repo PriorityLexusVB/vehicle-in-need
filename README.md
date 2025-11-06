@@ -27,7 +27,13 @@ View your app in AI Studio: https://ai.studio/apps/drive/1XrFhCIH0pgEmQ_DSYHkXD3
    npm install
    ```
 
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+2. **(Optional) Enable AI Features:** Create a `.env.local` file and add your Gemini API key:
+   ```bash
+   cp .env.example .env.local
+   # Edit .env.local and set VITE_GEMINI_API_KEY=your_actual_key_here
+   ```
+   
+   **Note:** The AI email generation feature will be disabled if no API key is provided. The app will display a message indicating that AI features are unavailable.
 
 3. Run the development server:
    ```bash
@@ -35,6 +41,60 @@ View your app in AI Studio: https://ai.studio/apps/drive/1XrFhCIH0pgEmQ_DSYHkXD3
    ```
 
 4. Open your browser to `http://localhost:3000`
+
+## Environment Variables
+
+The application uses the following environment variables:
+
+### Local Development
+
+- **VITE_GEMINI_API_KEY**: (Optional) API key for Google Gemini AI. Required for AI email generation features.
+  - Create a `.env.local` file (not committed to git)
+  - Copy from `.env.example` template
+  - Get your key from [Google AI Studio](https://aistudio.google.com/apikey)
+
+### Production (Docker/Cloud Build)
+
+**⚠️ Security Warning**: Using client-side API keys exposes them in the browser bundle. This approach is temporary and not recommended for production.
+
+**Quick Path (Temporary - Client-side key):**
+Pass `VITE_GEMINI_API_KEY` as a build argument to Docker:
+
+```bash
+docker build \
+  --build-arg COMMIT_SHA=$(git rev-parse --short HEAD) \
+  --build-arg BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+  --build-arg VITE_GEMINI_API_KEY=your_key_here \
+  -t vehicle-tracker:latest .
+```
+
+For **Cloud Build**, add to your trigger's build-time environment variables or substitutions:
+```yaml
+# cloudbuild.yaml
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--build-arg'
+      - 'COMMIT_SHA=$SHORT_SHA'
+      - '--build-arg'
+      - 'BUILD_TIME=$_BUILD_TIME'
+      - '--build-arg'
+      - 'VITE_GEMINI_API_KEY=$_VITE_GEMINI_API_KEY'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/vehicle-tracker:$SHORT_SHA'
+      - '.'
+substitutions:
+  _BUILD_TIME: '$(date -u +"%Y-%m-%dT%H:%M:%SZ")'
+  _VITE_GEMINI_API_KEY: 'your_key_from_secret_manager'
+```
+
+**Recommended Path (Future - Server-side proxy):**
+- Implement a backend API endpoint that uses Vertex AI with service account authentication
+- The service account already has Vertex AI roles assigned (see IAM screenshots)
+- Client calls your backend endpoint; backend proxies to Vertex AI using Application Default Credentials (ADC)
+- No API keys exposed in client code
+- **This is the recommended production approach but requires additional backend implementation**
 
 ## Build and Deploy
 
@@ -224,11 +284,6 @@ On app load, the application automatically:
 4. **Session guard**: Uses `sessionStorage` to prevent infinite reload loops
 
 This temporary cleanup ensures all users get the latest bundle after deployment, even if they were stuck behind an old service worker cache.
-
-### Environment Variables
-
-- `GEMINI_API_KEY` - Required for AI features
-- Build-time variables are injected via Vite config
 
 ## Troubleshooting
 

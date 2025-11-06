@@ -77,13 +77,12 @@ export default defineConfig(({ mode }) => {
         })
       ],
       define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         '__APP_VERSION__': JSON.stringify(commitSha),
         '__BUILD_TIME__': JSON.stringify(buildTime),
         // Also expose via import.meta.env for VersionBadge
         'import.meta.env.VITE_APP_COMMIT_SHA': JSON.stringify(commitSha),
         'import.meta.env.VITE_APP_BUILD_TIME': JSON.stringify(buildTime),
+        // Note: VITE_GEMINI_API_KEY is automatically exposed by Vite via import.meta.env
       },
       resolve: {
         alias: {

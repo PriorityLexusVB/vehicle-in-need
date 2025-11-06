@@ -5,10 +5,12 @@ FROM node:20-alpine AS builder
 # Set build arguments for version info
 ARG COMMIT_SHA=unknown
 ARG BUILD_TIME=unknown
+ARG VITE_GEMINI_API_KEY
 
 # Expose as environment variables for Vite to access during build
 ENV VITE_APP_COMMIT_SHA=$COMMIT_SHA
 ENV VITE_APP_BUILD_TIME=$BUILD_TIME
+ENV VITE_GEMINI_API_KEY=$VITE_GEMINI_API_KEY
 
 # Set working directory
 WORKDIR /app
