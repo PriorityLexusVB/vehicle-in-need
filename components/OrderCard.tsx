@@ -44,8 +44,10 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOr
     try {
       const emailContent = await generateFollowUpEmail(order);
       setGeneratedEmail(emailContent);
-    } catch (error) {
-      alert("Failed to generate email. Please check the console for details.");
+    } catch (error: any) {
+      const errorMessage = error.message || "Failed to generate email. Please try again.";
+      alert(`AI Assistant Error: ${errorMessage}`);
+      console.error("Email generation error:", error);
     } finally {
       setIsGenerating(false);
     }
