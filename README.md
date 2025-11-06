@@ -38,7 +38,72 @@ View your app in AI Studio: https://ai.studio/apps/drive/1XrFhCIH0pgEmQ_DSYHkXD3
 
 ## Build and Deploy
 
-### Build for Production
+### Docker Build (Recommended for Production)
+
+The application includes a multi-stage Dockerfile for deterministic, reproducible builds:
+
+**Build the Docker image:**
+
+```bash
+docker build \
+  --build-arg COMMIT_SHA=$(git rev-parse --short HEAD) \
+  --build-arg BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+  -t vehicle-tracker:latest .
+```
+
+**Note:** If you encounter an npm "Exit handler never called!" error when building locally, this is a [known npm bug](https://github.com/npm/cli/issues) in certain Docker environments. Workarounds:
+- Use `docker build --network=host` 
+- Update Docker Desktop to the latest version
+- Build in Cloud Build (recommended) where this issue doesn't occur
+
+**Run the container locally:**
+
+```bash
+docker run -p 8080:80 vehicle-tracker:latest
+```
+
+Then open http://localhost:8080 in your browser.
+
+**Benefits of Docker build:**
+- ✅ Deterministic builds with consistent Node 20 environment
+- ✅ Proper cache control headers (no-cache for index.html, immutable for hashed assets)
+- ✅ Version visibility via VersionBadge component in header
+- ✅ Minimal production image size (nginx-alpine runtime)
+- ✅ Built-in health check endpoint at `/health`
+- ✅ No legacy service worker files in final image
+
+**Cloud Build Configuration:**
+
+For Google Cloud Build, configure build substitutions in your `cloudbuild.yaml`:
+
+```yaml
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--build-arg'
+      - 'COMMIT_SHA=$SHORT_SHA'
+      - '--build-arg'
+      - 'BUILD_TIME=$_BUILD_TIME'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/vehicle-tracker:$SHORT_SHA'
+      - '.'
+substitutions:
+  _BUILD_TIME: '$(date -u +"%Y-%m-%dT%H:%M:%SZ")'
+```
+
+**Rollback Instructions:**
+
+To rollback to a previous version:
+
+1. Find the previous image tag (commit SHA) in your container registry
+2. Deploy the previous image:
+   ```bash
+   gcloud run deploy vehicle-tracker \
+     --image gcr.io/PROJECT_ID/vehicle-tracker:PREVIOUS_SHA
+   ```
+
+### Build for Production (npm)
 
 ```bash
 npm run build
@@ -68,14 +133,17 @@ dist/
 
 The app can be deployed to any static hosting service:
 
+- **Docker Container** (recommended): Use the provided Dockerfile for Cloud Run, Kubernetes, or any container platform
 - **Firebase Hosting**: `firebase deploy`
 - **Netlify**: Drag and drop the `dist/` folder or connect your repo
 - **Vercel**: Connect your GitHub repo with build command `npm run build`
 - **GitHub Pages**: Use a deployment action to publish the `dist/` folder
 
-**Important:** Ensure your hosting is configured to:
+**Important:** When not using Docker, ensure your hosting is configured to:
 - Set `Cache-Control: no-cache` for `index.html` to allow service worker updates
 - Allow longer caching for hashed assets (`assets/index-*.js`, `assets/index-*.css`)
+
+**With Docker**, these cache headers are automatically configured in `nginx.conf`.
 
 ### Service Worker Updates
 

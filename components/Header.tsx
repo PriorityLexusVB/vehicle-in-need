@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { AppUser } from '../types';
 import { LogoutIcon } from './icons/LogoutIcon';
 import { SettingsIcon } from './icons/SettingsIcon';
+import VersionBadge from './VersionBadge';
 
 interface HeaderProps {
   user: AppUser;
@@ -23,11 +24,7 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight">
                 Vehicle Order Tracker
-                {appVersion && (
-                  <span className="ml-2 text-xs font-mono text-slate-400" title={buildTime}>
-                    v{appVersion}
-                  </span>
-                )}
+                <VersionBadge version={appVersion} buildTime={buildTime} />
               </h1>
               <p className="text-sm text-slate-500 hidden sm:block">
                   Welcome, {user.displayName || user.email} {user.isManager && '(Manager)'}
