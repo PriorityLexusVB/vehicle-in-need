@@ -54,7 +54,7 @@ function buildEmailPrompt(order) {
       reassurance = ''; // No need for this reassurance when the car has arrived.
       break;
     case OrderStatus.Delivered:
-      coreInstruction = "Your task is to write a friendly and professional 'Thank You' email to a customer who has just taken delivery of their new vehicle."
+      coreInstruction = "Your task is to write a friendly and professional 'Thank You' email to a customer who has just taken delivery of their new vehicle.";
       acknowledgement = '';
       statusInstructions = `1. Thank the customer for their business.
       2. Express hope that they are enjoying their new ${order.model}.
