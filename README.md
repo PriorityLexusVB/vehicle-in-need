@@ -251,6 +251,8 @@ The app can be deployed to any container platform or static hosting service:
 
 **Note:** If deploying to static hosting (Firebase/Netlify/Vercel), you'll need to separately deploy the backend API or use their serverless function capabilities.
 
+**With Docker**, these cache headers are automatically configured in `nginx.conf`.
+
 ### Service Worker Updates
 
 The app includes automatic update detection:
