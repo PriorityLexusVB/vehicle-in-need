@@ -4,7 +4,7 @@
 
 # Pre-Order & Dealer Exchange Tracker
 
-A vehicle order tracking application for Priority Automotive with manager controls and user management.
+A vehicle order tracking application for Priority Automotive with manager controls, user management, and AI-powered email generation.
 
 View your app in AI Studio: https://ai.studio/apps/drive/1XrFhCIH0pgEmQ_DSYHkXD3TovOfqWFJu
 
@@ -13,34 +13,96 @@ View your app in AI Studio: https://ai.studio/apps/drive/1XrFhCIH0pgEmQ_DSYHkXD3
 - 🚗 Track vehicle pre-orders and dealer exchanges
 - 👥 User management with role-based access control
 - 📊 Dashboard with real-time statistics
+- 🤖 **AI-powered email generation** via secure server-side Vertex AI integration
 - 🔔 Service worker with automatic update notifications
 - 🎨 Optimized Tailwind CSS (no CDN in production)
 - 📱 Responsive design for mobile and desktop
 - 🔗 Deep linking support (e.g., `#settings` for direct access)
+- 🔒 **Secure architecture** with no client-side API keys
+
+## Architecture
+
+### AI Email Generation Flow
+
+```
+Browser → /api/generate-email → Express Server → Vertex AI (Gemini 2.0 Flash)
+                                      ↓
+                            Service Account IAM
+                         (Vertex AI User role)
+```
+
+**Security improvements:**
+- ✅ No API keys exposed in client bundle
+- ✅ Uses Google Cloud Application Default Credentials (ADC)
+- ✅ Service account with proper IAM roles (Vertex AI User)
+- ✅ Server-side validation and error handling
+
+The application is split into:
+1. **Frontend (React + Vite)**: Static files served by Express
+2. **Backend (Express + Node.js)**: Serves static files + API endpoints
+
+### API Endpoints
+
+- `GET /health` - Health check endpoint (returns "healthy")
+- `GET /api/status` - Returns AI service status and version info
+- `POST /api/generate-email` - Generate follow-up emails for customer orders
 
 ## Run Locally
 
-**Prerequisites:** Node.js (v18 or higher recommended)
+**Prerequisites:** Node.js (v20 or higher recommended)
+
+### Option 1: Development Mode (Frontend Only)
 
 1. Install dependencies:
    ```bash
    npm install
    ```
 
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+2. For AI features, authenticate with gcloud (recommended):
+   ```bash
+   gcloud auth application-default login
+   ```
+   
+   Alternatively, create a `.env.local` file with a local API key (dev only):
+   ```bash
+   LOCAL_GEMINI_KEY=your-api-key-here
+   ```
 
-3. Run the development server:
+3. Run the frontend development server:
    ```bash
    npm run dev
    ```
 
 4. Open your browser to `http://localhost:3000`
 
+**Note:** In dev mode, API calls will fail unless you also run the backend server separately.
+
+### Option 2: Full Stack (Frontend + Backend)
+
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+2. Build the frontend:
+   ```bash
+   npm run build
+   ```
+
+3. Run the server:
+   ```bash
+   npm run server
+   ```
+
+4. Open your browser to `http://localhost:8080`
+
+This mode runs the full application with the Express server serving both static files and API endpoints.
+
 ## Build and Deploy
 
 ### Docker Build (Recommended for Production)
 
-The application includes a multi-stage Dockerfile for deterministic, reproducible builds:
+The application uses a multi-stage Dockerfile that builds the frontend and packages it with a Node.js server:
 
 **Build the Docker image:**
 
@@ -59,7 +121,7 @@ docker build \
 **Run the container locally:**
 
 ```bash
-docker run -p 8080:80 vehicle-tracker:latest
+docker run -p 8080:8080 vehicle-tracker:latest
 ```
 
 Then open http://localhost:8080 in your browser.
@@ -68,9 +130,84 @@ Then open http://localhost:8080 in your browser.
 - ✅ Deterministic builds with consistent Node 20 environment
 - ✅ Proper cache control headers (no-cache for index.html, immutable for hashed assets)
 - ✅ Version visibility via VersionBadge component in header
-- ✅ Minimal production image size (nginx-alpine runtime)
+- ✅ Minimal production image size (Node 20 Alpine runtime)
 - ✅ Built-in health check endpoint at `/health`
-- ✅ No legacy service worker files in final image
+- ✅ Integrated Express server for static files + API
+
+### Cloud Run Deployment
+
+When deploying to Google Cloud Run:
+
+1. **Ensure your service account has required roles:**
+   - `Vertex AI User` - for calling Gemini models
+   - `Service Account Token Creator` (if needed for service-to-service calls)
+
+2. **Deploy with Cloud Build:**
+   ```bash
+   gcloud builds submit --config cloudbuild.yaml
+   ```
+
+3. **The container automatically:**
+   - Uses the attached service account credentials (no API keys needed)
+   - Serves both static files and API endpoints on port 8080
+   - Provides health check at `/health` for Cloud Run
+
+**Important:** No environment variables for API keys are needed. The application uses Application Default Credentials (ADC) which are automatically provided by the Cloud Run environment.
+
+### Environment Variables (Optional)
+
+See [.env.example](.env.example) for configuration options:
+
+- `GOOGLE_CLOUD_PROJECT` - Auto-detected from environment (optional override)
+- `VERTEX_AI_LOCATION` - Defaults to `us-central1` (optional)
+- `PORT` - Server port, defaults to `8080` (optional)
+- `LOCAL_GEMINI_KEY` - **Local dev only**, fallback API key (not recommended for production)
+
+### Security: Removing Old API Keys
+
+After verifying the server-side proxy works correctly:
+
+1. **Navigate to Google Cloud Console** → APIs & Services → Credentials
+2. **Locate the API keys** previously used for client-side Gemini access
+3. **Delete unused API keys** to prevent potential exposure
+4. **Keep only service account IAM roles** for production access
+
+**What to delete:**
+- ❌ Any API keys labeled for "Gemini API" or "Browser access"
+- ❌ The `VITE_GEMINI_API_KEY` from GitHub Secrets (if present)
+
+**What to keep:**
+- ✅ Service account with "Vertex AI User" role attached to Cloud Run
+- ✅ No API keys should be present in the final deployment
+
+### Build for Production (npm)
+
+```bash
+npm run build
+```
+
+This creates an optimized production build in the `dist/` directory with:
+- Compiled and minified JavaScript
+- Optimized CSS (Tailwind utilities tree-shaken)
+- Service worker for offline support and caching
+- Web app manifest for PWA support
+- Version information (git commit SHA + build time)
+- **No client-side API keys** (removed from bundle)
+
+### Build Output
+
+```
+dist/
+├── index.html                    # Entry point (not cached long-term)
+├── manifest.webmanifest          # PWA manifest
+├── sw.js                         # Service worker
+├── workbox-*.js                  # Workbox runtime
+└── assets/
+    ├── index-[hash].css          # Optimized CSS
+    └── index-[hash].js           # Bundled JavaScript
+```
+
+**Bundle size improvement:** The removal of `@google/genai` from the client reduced the JavaScript bundle from ~469 KB to ~268 KB (43% reduction).
 
 **Cloud Build Configuration:**
 
@@ -103,47 +240,16 @@ To rollback to a previous version:
      --image gcr.io/PROJECT_ID/vehicle-tracker:PREVIOUS_SHA
    ```
 
-### Build for Production (npm)
-
-```bash
-npm run build
-```
-
-This creates an optimized production build in the `dist/` directory with:
-- Compiled and minified JavaScript
-- Optimized CSS (Tailwind utilities tree-shaken)
-- Service worker for offline support and caching
-- Web app manifest for PWA support
-- Version information (git commit SHA + build time)
-
-### Build Output
-
-```
-dist/
-├── index.html                    # Entry point (not cached long-term)
-├── manifest.webmanifest          # PWA manifest
-├── sw.js                         # Service worker
-├── workbox-*.js                  # Workbox runtime
-└── assets/
-    ├── index-[hash].css          # Optimized CSS
-    └── index-[hash].js           # Bundled JavaScript
-```
-
 ### Deploy
 
-The app can be deployed to any static hosting service:
+The app can be deployed to any container platform or static hosting service:
 
 - **Docker Container** (recommended): Use the provided Dockerfile for Cloud Run, Kubernetes, or any container platform
-- **Firebase Hosting**: `firebase deploy`
-- **Netlify**: Drag and drop the `dist/` folder or connect your repo
-- **Vercel**: Connect your GitHub repo with build command `npm run build`
-- **GitHub Pages**: Use a deployment action to publish the `dist/` folder
+- **Firebase Hosting**: `firebase deploy` (requires separate backend deployment for API)
+- **Netlify**: Connect your repo with build command `npm run build` (requires serverless functions for API)
+- **Vercel**: Connect your GitHub repo with build command `npm run build` (requires serverless functions for API)
 
-**Important:** When not using Docker, ensure your hosting is configured to:
-- Set `Cache-Control: no-cache` for `index.html` to allow service worker updates
-- Allow longer caching for hashed assets (`assets/index-*.js`, `assets/index-*.css`)
-
-**With Docker**, these cache headers are automatically configured in `nginx.conf`.
+**Note:** If deploying to static hosting (Firebase/Netlify/Vercel), you'll need to separately deploy the backend API or use their serverless function capabilities.
 
 ### Service Worker Updates
 
