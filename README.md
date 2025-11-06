@@ -58,15 +58,14 @@ The application is split into:
    npm install
    ```
 
-2. For AI features, authenticate with gcloud (recommended):
+2. For AI features, the application uses server-side Vertex AI integration:
    ```bash
    gcloud auth application-default login
    ```
    
-   Alternatively, create a `.env.local` file with a local API key (dev only):
-   ```bash
-   LOCAL_GEMINI_KEY=your-api-key-here
-   ```
+   This authenticates your local development environment using Application Default Credentials (ADC). The server will automatically use these credentials when calling Vertex AI APIs.
+   
+   **Note:** No client-side API keys are required. AI features are accessed through the `/api/generate-email` endpoint which handles authentication server-side. This is more secure than exposing API keys in the client.
 
 3. Run the frontend development server:
    ```bash
@@ -251,6 +250,8 @@ The app can be deployed to any container platform or static hosting service:
 
 **Note:** If deploying to static hosting (Firebase/Netlify/Vercel), you'll need to separately deploy the backend API or use their serverless function capabilities.
 
+**With Docker**, these cache headers are automatically configured in `nginx.conf`.
+
 ### Service Worker Updates
 
 The app includes automatic update detection:
@@ -330,22 +331,6 @@ On app load, the application automatically:
 4. **Session guard**: Uses `sessionStorage` to prevent infinite reload loops
 
 This temporary cleanup ensures all users get the latest bundle after deployment, even if they were stuck behind an old service worker cache.
-
-### Environment Variables
-
-All AI functionality (Gemini/Vertex AI) is handled **server-side** via the Express backend. No client-side API keys are required or exposed in the browser.
-
-**Server Configuration (Production):**
-- `GOOGLE_CLOUD_PROJECT` - Auto-detected from environment (optional override)
-- `VERTEX_AI_LOCATION` - Defaults to `us-central1` (optional)
-- `PORT` - Server port, defaults to `8080` (optional)
-- `LOCAL_GEMINI_KEY` - **Local dev only**, fallback API key (not recommended for production)
-
-**Frontend Build Variables:**
-- `VITE_APP_COMMIT_SHA` - Git commit hash (auto-injected during build)
-- `VITE_APP_BUILD_TIME` - Build timestamp (auto-injected during build)
-
-For more details, see the `.env.example` file and the Architecture section above.
 
 ## Troubleshooting
 
