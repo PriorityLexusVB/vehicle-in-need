@@ -10,11 +10,9 @@ interface HeaderProps {
   totalOrders: number;
   onLogout: () => void;
   currentPath?: string;
-  appVersion?: string;
-  buildTime?: string;
 }
 
-const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPath, appVersion, buildTime }) => {
+const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPath }) => {
 
   return (
     <header className="bg-white/80 backdrop-blur-lg sticky top-0 z-10 border-b border-slate-200">
@@ -24,7 +22,7 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight">
                 Vehicle Order Tracker
-                <VersionBadge version={appVersion} buildTime={buildTime} />
+                <VersionBadge />
               </h1>
               <p className="text-sm text-slate-500 hidden sm:block">
                   Welcome, {user.displayName || user.email} {user.isManager && '(Manager)'}

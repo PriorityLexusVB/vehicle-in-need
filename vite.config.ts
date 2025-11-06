@@ -19,8 +19,10 @@ const getBuildTime = () => {
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
-    const commitSha = getGitCommitSha();
-    const buildTime = getBuildTime();
+    
+    // Use VITE_APP_* env vars if available (set by Docker), otherwise fall back to git
+    const commitSha = env.VITE_APP_COMMIT_SHA || getGitCommitSha();
+    const buildTime = env.VITE_APP_BUILD_TIME || getBuildTime();
     
     return {
       server: {
@@ -78,7 +80,10 @@ export default defineConfig(({ mode }) => {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         '__APP_VERSION__': JSON.stringify(commitSha),
-        '__BUILD_TIME__': JSON.stringify(buildTime)
+        '__BUILD_TIME__': JSON.stringify(buildTime),
+        // Also expose via import.meta.env for VersionBadge
+        'import.meta.env.VITE_APP_COMMIT_SHA': JSON.stringify(commitSha),
+        'import.meta.env.VITE_APP_BUILD_TIME': JSON.stringify(buildTime),
       },
       resolve: {
         alias: {

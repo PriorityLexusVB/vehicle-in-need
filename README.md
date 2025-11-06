@@ -206,7 +206,14 @@ The app displays version information in the header:
 - **Version format**: `v[commit-sha]` (e.g., `v3a2b1c4`)
 - **Build time**: Hover over version to see build timestamp
 - **Console logs**: Version info is logged on app load
-- **Populated via**: Vite config generates `__APP_VERSION__` and `__BUILD_TIME__` from git and build timestamp
+- **Implementation**: VersionBadge component reads from `import.meta.env.VITE_APP_COMMIT_SHA` and `import.meta.env.VITE_APP_BUILD_TIME`
+- **Build-time injection**: Vite config uses `VITE_APP_*` environment variables if set (Docker build), otherwise falls back to git commands
+
+**Docker Build:**
+The Dockerfile passes `COMMIT_SHA` and `BUILD_TIME` build args as `VITE_APP_*` environment variables, which Vite embeds into the browser bundle at build time.
+
+**Local Development:**
+During local builds, Vite automatically uses `git rev-parse --short HEAD` for the commit SHA and the current timestamp for build time.
 
 ### Service Worker Cleanup
 

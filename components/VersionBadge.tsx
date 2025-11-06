@@ -1,11 +1,10 @@
 import React from 'react';
 
-interface VersionBadgeProps {
-  version?: string;
-  buildTime?: string;
-}
-
-const VersionBadge: React.FC<VersionBadgeProps> = ({ version, buildTime }) => {
+const VersionBadge: React.FC = () => {
+  // Read from Vite-exposed environment variables
+  const version = import.meta.env.VITE_APP_COMMIT_SHA;
+  const buildTime = import.meta.env.VITE_APP_BUILD_TIME;
+  
   if (!version || version === 'dev') {
     return null;
   }
