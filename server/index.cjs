@@ -45,6 +45,10 @@ const distPath = path.join(__dirname, '..', 'dist');
 app.use(express.static(distPath, {
   maxAge: '1h',
   setHeaders: (res, filepath) => {
+    // Ensure correct MIME type for JavaScript modules
+    if (filepath.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    }
     // No-cache for index.html to ensure users get latest version
     if (filepath.endsWith('index.html')) {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -62,8 +66,13 @@ app.use(express.static(distPath, {
   }
 }));
 
-// SPA fallback - serve index.html for all other routes
+// SPA fallback - serve index.html for all other routes (except assets)
 app.get('*', (req, res) => {
+  // Don't serve index.html for asset requests - let them 404
+  if (req.path.startsWith('/assets/') || 
+      req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json|webmanifest)$/)) {
+    return res.status(404).send('Not found');
+  }
   res.sendFile(path.join(distPath, 'index.html'));
 });
 

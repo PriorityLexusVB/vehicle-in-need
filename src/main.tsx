@@ -2,8 +2,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';
-import './src/index.css';
-import App from './App';
+import './index.css';
+import App from '../App.tsx';
 
 // Unregister legacy service workers and reload once to bust stale caches
 async function unregisterLegacyServiceWorkers() {
@@ -30,40 +30,11 @@ async function unregisterLegacyServiceWorkers() {
   return false; // No reload needed
 }
 
-// Add defensive guard against MutationObserver errors from third-party code
-function setupMutationObserverGuard() {
-  // Patch MutationObserver.observe to validate target before observing
-  const originalObserve = MutationObserver.prototype.observe;
-  MutationObserver.prototype.observe = function(target: Node, options?: MutationObserverInit) {
-    // Validate that target is a valid Node before calling original observe
-    if (!target || !(target instanceof Node)) {
-      console.warn('MutationObserver.observe called with invalid target:', target);
-      return; // Silently skip invalid observations
-    }
-    try {
-      return originalObserve.call(this, target, options);
-    } catch (error) {
-      console.warn('MutationObserver.observe error:', error);
-    }
-  };
 
-  // Also catch any unhandled errors
-  window.addEventListener('error', (event) => {
-    const message = event.message || '';
-    if (message.includes('parameter 1 is not of type Node') || 
-        message.includes('MutationObserver')) {
-      console.warn('Suppressed MutationObserver error:', message);
-      event.preventDefault();
-      return;
-    }
-  });
-}
 
 // Initialize app
 async function initializeApp() {
   try {
-    setupMutationObserverGuard();
-    
     const willReload = await unregisterLegacyServiceWorkers();
     if (willReload) {
       return; // Don't render if we're reloading

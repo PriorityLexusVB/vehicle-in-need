@@ -64,7 +64,15 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOr
 
   return (
     <div className={`rounded-xl shadow-sm transition-all duration-300 ${isDelivered ? 'bg-slate-100/70 border-slate-200' : 'bg-white border-slate-200 hover:shadow-md hover:border-slate-300'} border`}>
-      <div className="p-4 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
+      <div 
+        className="p-4 cursor-pointer" 
+        onClick={() => setIsExpanded(!isExpanded)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsExpanded(!isExpanded); }}}
+        role="button"
+        tabIndex={0}
+        aria-expanded={isExpanded}
+        aria-label={`Toggle order details for ${order.customerName}`}
+      >
         <div className="flex justify-between items-start">
             <div>
             <h3 className={`text-lg font-bold ${isDelivered ? 'line-through text-slate-500' : 'text-slate-800'}`}>
@@ -182,8 +190,8 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOr
                     </button>
                     {generatedEmail && (
                         <div className="mt-4 p-4 bg-sky-50 border border-sky-200 rounded-lg">
-                            <label className="block text-sm font-bold text-slate-700 mb-2">Generated Email Draft:</label>
-                            <textarea readOnly value={generatedEmail} rows={10} className="w-full p-2.5 border border-slate-300 rounded-md shadow-sm bg-white text-sm focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition"></textarea>
+                            <label htmlFor={`email-draft-${order.id}`} className="block text-sm font-bold text-slate-700 mb-2">Generated Email Draft:</label>
+                            <textarea id={`email-draft-${order.id}`} readOnly value={generatedEmail} rows={10} className="w-full p-2.5 border border-slate-300 rounded-md shadow-sm bg-white text-sm focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition"></textarea>
                             <button onClick={handleCopyToClipboard} className={`mt-2 flex items-center gap-2 text-sm font-semibold py-1.5 px-3 rounded-md transition-all duration-200 ${copySuccess ? 'bg-green-200 text-green-800' : 'bg-slate-200 hover:bg-slate-300 text-slate-800'}`}>
                                 <ClipboardIcon />
                                 {copySuccess ? 'Copied!' : 'Copy to Clipboard'}

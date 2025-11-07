@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import {
   collection,
   query,
@@ -14,7 +14,7 @@ import {
   updateDoc,
   deleteDoc,
   Timestamp
-} from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+} from "firebase/firestore";
 import { db, auth } from './services/firebase';
 import { Order, OrderStatus, AppUser } from './types';
 import { MANAGER_EMAILS, USERS_COLLECTION } from './constants';
