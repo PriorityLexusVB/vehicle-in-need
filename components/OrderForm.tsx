@@ -223,16 +223,16 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
 
         <div className="space-y-4">
              <h3 className="text-base font-semibold text-slate-600 border-b pb-2">Status & Notes</h3>
-              <fieldset>
-                <legend className="block text-sm font-medium text-slate-700 mb-2">Status*</legend>
-                <div className="flex flex-wrap gap-2" role="group" aria-label="Order status selection">
+              <div>
+                <label className="block text-sm font-medium text-slate-700">Status*</label>
+                <div className="mt-2 flex flex-wrap gap-2">
                     {activeStatusOptions.map(status => (
-                    <button key={status} type="button" onClick={() => setFormState(s => ({...s, status}))} aria-pressed={formState.status === status} className={`px-4 py-2 text-sm rounded-full border-2 transition-colors ${formState.status === status ? 'bg-sky-600 border-sky-600 text-white font-semibold' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-100 hover:border-slate-400'}`}>
+                    <button key={status} type="button" onClick={() => setFormState(s => ({...s, status}))} className={`px-4 py-2 text-sm rounded-full border-2 transition-colors ${formState.status === status ? 'bg-sky-600 border-sky-600 text-white font-semibold' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-100 hover:border-slate-400'}`}>
                         {status}
                     </button>
                     ))}
                 </div>
-            </fieldset>
+            </div>
             <FormField label="Options*" id="options" error={errors.options}>
                 <textarea id="options" name="options" rows={3} value={formState.options} onChange={handleChange} className={inputClass('options')}></textarea>
             </FormField>

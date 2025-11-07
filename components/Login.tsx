@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { signInWithRedirect, getRedirectResult, signInWithPopup } from "firebase/auth";
+import { signInWithRedirect, getRedirectResult, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
 import { auth, googleProvider, firebaseConfig } from '../services/firebase';
 import { GoogleIcon } from './icons/GoogleIcon';
 
@@ -21,11 +21,10 @@ const UnauthorizedDomainError: React.FC = () => {
             
             <div className="space-y-4 mt-4">
                 <div>
-                    <label htmlFor="domain-copy" className="font-semibold text-slate-700 block mb-1">1. Copy this exact domain:</label>
+                    <label className="font-semibold text-slate-700 block mb-1">1. Copy this exact domain:</label>
                     <div className="flex items-center gap-2">
                         <input
                             type="text"
-                            id="domain-copy"
                             readOnly
                             value={window.location.origin}
                             className="w-full p-2 border border-slate-300 rounded bg-slate-100 text-xs font-mono"
@@ -98,56 +97,22 @@ const Login: React.FC = () => {
   const handleLogin = async () => {
     setError(null);
     setIsSigningIn(true);
-    
-    // Prefer redirect flow when cross-origin isolated (COOP/COEP headers present)
-    // or when popup might be blocked. The crossOriginIsolated property may not exist
-    // in older browsers (Safari < 15.2, Firefox < 92), so we default to redirect
-    // for maximum compatibility and to avoid COOP-related popup blocking issues.
-    const shouldUseRedirect = window.crossOriginIsolated || 
-                              typeof window.crossOriginIsolated === 'undefined';
-    
-    if (shouldUseRedirect) {
-      // Use redirect flow directly for COOP-safe authentication
-      try {
-        await signInWithRedirect(auth, googleProvider);
-        // Navigation happens here; errors will be handled by getRedirectResult upon return
-      } catch (redirectError: any) {
-        console.error("Authentication Initiation Error (Redirect):", redirectError);
-        if (redirectError.code === 'auth/unauthorized-domain') {
-          setError({type: 'unauthorized-domain', message: ''});
-        } else {
-          setError({type: 'generic', message: "Failed to start the sign-in process. Please check your connection and try again."});
-        }
-        setIsSigningIn(false);
-      }
-      return;
-    }
-    
-    // Try popup first only when safe (no COOP restrictions)
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (popupError: any) {
-      // Gracefully handle popup issues
-      if (popupError.code === 'auth/popup-closed-by-user') {
-        console.info("Authentication popup closed by user");
-        setIsSigningIn(false);
-        return;
-      }
-      
       console.warn("Popup sign-in failed, falling back to redirect. Reason:", popupError.code);
-      
-      // Fallback to redirect if popup fails
-      try {
-        await signInWithRedirect(auth, googleProvider);
-      } catch (redirectError: any) {
-        console.error("Authentication Initiation Error (Redirect):", redirectError);
-        if (redirectError.code === 'auth/unauthorized-domain') {
-          setError({type: 'unauthorized-domain', message: ''});
-        } else {
-          setError({type: 'generic', message: "Failed to start the sign-in process. Please check your connection and try again."});
-        }
-        setIsSigningIn(false);
-      }
+      // If popup fails for any reason, try redirect.
+      // This will navigate away. Errors will be handled by getRedirectResult upon return.
+      await signInWithRedirect(auth, googleProvider).catch((redirectError: any) => {
+          // This catch is only for errors *initiating* the redirect.
+          console.error("Authentication Initiation Error (Redirect):", redirectError);
+          if (redirectError.code === 'auth/unauthorized-domain') {
+              setError({type: 'unauthorized-domain', message: ''});
+          } else {
+            setError({type: 'generic', message: "Failed to start the sign-in process. Please check your connection and try again."});
+          }
+          setIsSigningIn(false);
+      });
     }
   };
   

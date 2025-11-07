@@ -250,8 +250,6 @@ The app can be deployed to any container platform or static hosting service:
 
 **Note:** If deploying to static hosting (Firebase/Netlify/Vercel), you'll need to separately deploy the backend API or use their serverless function capabilities.
 
-**With Docker**, these cache headers are automatically configured in `nginx.conf`.
-
 ### Service Worker Updates
 
 The app includes automatic update detection:
@@ -284,47 +282,18 @@ The app uses Tailwind CSS via PostCSS (no CDN):
 
 Users designated as managers can:
 - View all orders from all users
-- Access the Settings page to manage user roles
+- Access the "User Management" settings page
 - Toggle manager permissions for other users
 - Cannot change their own role (security safeguard)
 
-### Accessing Settings (Admin)
+### Accessing User Management
 
-Managers have multiple ways to access Settings:
-1. **Pill navigation** (Header): Click "Settings" in the left-side pill nav (visible after login as manager)
-2. **Gear icon** (Header): Click the settings gear icon in the header (right side, labeled "Settings")
-3. **Admin button** (Navbar): Click the "Admin" button in the top navigation bar
-4. **Deep link**: Navigate directly to `/#/admin` in the URL
-
-All three UI controls (pill navigation, gear icon, and Admin button) have `data-testid` attributes for automated testing:
-- `data-testid="pill-admin-link"` - Pill navigation link
-- `data-testid="header-admin-gear"` - Gear icon button
-- `data-testid="navbar-admin-link"` - Admin button in navbar
+Managers have multiple ways to access User Management:
+1. **Pill navigation**: Click "User Management" in the left-side pill nav
+2. **Gear icon**: Click the settings gear icon in the header (right side)
+3. **Deep link**: Navigate directly to `/#/admin` in the URL
 
 Non-managers attempting to access `/#/admin` will be automatically redirected to the dashboard.
-
-### Granting Manager Role
-
-To grant manager permissions to a user:
-
-1. **Via Settings Page** (recommended):
-   - Log in as an existing manager
-   - Navigate to Settings using any of the methods above
-   - Find the user in the list
-   - Toggle the "Manager" switch to enable manager permissions
-
-2. **Via Firestore Console** (for initial setup):
-   - Open Firebase Console > Firestore Database
-   - Navigate to the `users` collection
-   - Find or create the user document
-   - Set `isManager: true` in the document
-
-3. **First-time Bootstrap** (optional):
-   - Set environment variable `ENABLE_FIRST_USER_ADMIN=true` (Cloud Run or Docker)
-   - The first user with a `@priorityautomotive.com` email will automatically become a manager
-   - After the first manager is created, disable this flag to prevent auto-promotion
-
-**Note:** Users are initially seeded as managers based on the `MANAGER_EMAILS` constant in `constants.ts`, but subsequent role changes are managed exclusively through Firestore to ensure persistence.
 
 ## Development Notes
 
@@ -351,48 +320,6 @@ The Dockerfile passes `COMMIT_SHA` and `BUILD_TIME` build args as `VITE_APP_*` e
 **Local Development:**
 During local builds, Vite automatically uses `git rev-parse --short HEAD` for the commit SHA and the current timestamp for build time.
 
-### Static Asset Caching Strategy
-
-The server implements a multi-tier caching strategy for optimal performance and version control:
-
-**1. HTML Files (`index.html`)**
-```
-Cache-Control: no-cache, no-store, must-revalidate
-Pragma: no-cache
-Expires: 0
-```
-- Always fetches the latest version from server
-- Ensures users get new deployments immediately
-- Critical for preventing stale app shells
-
-**2. Hashed Assets (JS, CSS, Fonts)**
-```
-Cache-Control: public, max-age=31536000, immutable
-```
-- Applies to files matching pattern: `/assets/*-[hash].(js|css|woff2?|ttf|eot|otf)`
-- Example: `index-CwY8jhIn.css`, `workbox-window.prod.es5-CwtvwXb3.js`
-- Safe to cache indefinitely since content changes result in new hash
-- Reduces bandwidth and improves load times
-
-**3. Service Worker Files**
-```
-Cache-Control: no-cache, must-revalidate
-```
-- Applies to: `sw.js`, `workbox-*.js`, `manifest.webmanifest`
-- Prevents stale service worker from blocking updates
-- Allows automatic update detection
-
-**4. Source Maps and Images**
-- Not specifically cached with immutable headers
-- Left to default 1-hour cache from `maxAge` setting
-- Can be adjusted based on deployment needs
-
-This strategy ensures:
-- ✅ New deployments are immediately visible
-- ✅ Repeat visits load instantly from cache
-- ✅ No manual cache clearing needed
-- ✅ CDN-friendly for production scaling
-
 ### Service Worker Cleanup
 
 On app load, the application automatically:
@@ -405,78 +332,13 @@ This temporary cleanup ensures all users get the latest bundle after deployment,
 
 ## Troubleshooting
 
-### Verifying Current Version
-
-To confirm which version is currently running:
-
-1. **Browser UI**: Look for the version badge in the header next to "Vehicle Order Tracker" (displays as `v<commit-sha> @ <build-time>`, hover for ISO timestamp)
-2. **Browser Console**: Check the logs for:
-   ```
-   App Version: <commit-sha>
-   Build Time: <ISO timestamp>
-   ```
-3. **API Endpoint**: Visit `/api/status` or run:
-   ```bash
-   curl https://your-app-url.com/api/status
-   ```
-   This returns:
-   ```json
-   {
-     "geminiEnabled": true,
-     "version": "<commit-sha>",
-     "appVersion": "<commit-sha>",
-     "commitSha": "<commit-sha>",
-     "buildTime": "<ISO timestamp>",
-     "kRevision": "<Cloud Run revision>",
-     "timestamp": "<current time>"
-   }
-   ```
-
-4. **Server Logs** (Cloud Run or local): Check logs for:
-   ```
-   [Server] App Version: <commit-sha>
-   [Server] Build Time: <ISO timestamp>
-   ```
-
-### "Settings" buttons not visible
+### "User Management" buttons not visible
 
 If manager UI is not showing:
-
-1. **Check for version mismatch warning**: 
-   - Look for an amber/yellow banner at the top saying "Version mismatch detected"
-   - If present, click "Reload Now" to get the latest version
-   - This indicates your browser is using stale JavaScript
-
-2. **Verify manager role**: 
-   - Check Firestore `users` collection - ensure user has `isManager: true`
-   - Log out and log back in to refresh the user data
-
-3. **Check version synchronization**:
-   - Open browser console (F12)
-   - Look for logs showing: `Client version: <sha>` and `Server version: <sha>`
-   - If they don't match, you have a caching issue (see below)
-   
-4. **Clear browser cache**: 
-   - Hard refresh with `Ctrl+Shift+R` (Windows) or `Cmd+Shift+R` (Mac)
-   - If that doesn't work, proceed to step 5
-
-5. **Clear service worker and all caches**:
-   - Open DevTools > Application > Service Workers
-   - Click "Unregister" for any service workers
-   - Open DevTools > Application > Storage
-   - Click "Clear storage" to remove all caches
-   - Hard refresh the page (`Ctrl+Shift+R` or `Cmd+Shift+R`)
-
-6. **Verify versions match**:
-   - Check the VersionBadge in the header (shows `v<commit-sha>`)
-   - Visit `/api/status` in your browser to see server version
-   - Console should show: `✓ Client and server versions match`
-   - If versions still don't match after clearing caches, contact support
-
-7. **Check for auth issues**: 
-   - Verify the user is logged in with a `@priorityautomotive.com` email
-   - Check the header shows "(Manager)" next to the username
-   - Check for the debug badge showing `[isManager: true]`
+1. Hard refresh the browser: `Ctrl+Shift+R` (Windows) or `Cmd+Shift+R` (Mac)
+2. Clear service worker cache in DevTools > Application > Service Workers
+3. Verify user has `isManager: true` in Firestore `users` collection
+4. Check console for version - ensure latest build is loaded
 
 ### Service Worker Issues
 
@@ -488,50 +350,11 @@ To reset service worker:
 
 ### Stale Cache After Deploy
 
-The app includes multiple mechanisms to ensure users get the latest version:
-
-**Automatic Detection & Alerts:**
-1. **Version Mismatch Banner**: If the client and server versions don't match, an amber warning banner appears automatically
-2. **Service Worker Update Banner**: When a new version is detected by the service worker, a blue banner appears
-3. **Automatic Unregistration**: On first load, legacy service workers are automatically unregistered
-4. **Console Warnings**: Version mismatches are logged to the console with `⚠️` indicator
-
-**If the app still shows an old version after deploy:**
-
-1. **Look for automatic banners**:
-   - **Amber banner** (version mismatch): Click "Reload Now" immediately
-   - **Blue banner** (new version available): Click "Reload" to update
-   - These banners appear automatically when mismatches are detected
-
-2. **Check console for version information**:
-   ```
-   ✓ Client and server versions match  (good - no action needed)
-   ⚠️ Version mismatch detected!        (bad - reload required)
-   ```
-
-3. **Force service worker update**: 
-   - Open DevTools > Application > Service Workers
-   - Click "Update" to manually trigger SW update
-   - Look for banners and click "Reload"
-
-4. **Verify Cloud Run deployment**:
-   ```bash
-   # Check which revision is serving traffic
-   gcloud run services describe YOUR_SERVICE_NAME --region YOUR_REGION
-   ```
-   - Confirm 100% traffic is routed to the latest revision
-   - Check image digest matches the new build
-
-3. **Check cache headers**:
-   ```bash
-   # Verify index.html is not cached
-   curl -I https://your-app-url.com/
-   # Should show: Cache-Control: no-cache, no-store, must-revalidate
-   
-   # Verify hashed assets are cached long-term
-   curl -I https://your-app-url.com/assets/index-HASH.js
-   # Should show: Cache-Control: public, max-age=31536000, immutable
-   ```
+The app includes automatic service worker cleanup:
+1. **On first load after deploy**: Legacy service workers are automatically unregistered
+2. **Automatic reload**: A one-time reload occurs to fetch the fresh bundle
+3. **No user action needed**: The cleanup happens transparently
+4. **Verification**: Check console for "Unregistering X legacy service worker(s)..." message
 
 Additionally:
 - Ensure `index.html` has short cache duration on your hosting platform
