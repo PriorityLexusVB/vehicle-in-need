@@ -224,6 +224,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
         <div className="space-y-4">
              <h3 className="text-base font-semibold text-slate-600 border-b pb-2">Status & Notes</h3>
               <div>
+                {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
                 <label className="block text-sm font-medium text-slate-700" id="status-label">Status*</label>
                 <div className="mt-2 flex flex-wrap gap-2" role="group" aria-labelledby="status-label">
                     {activeStatusOptions.map(status => (

@@ -39,6 +39,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                     checked={user.isManager}
                     disabled={user.uid === currentUser.uid}
                     onChange={(e) => onUpdateUserRole(user.uid, e.target.checked)}
+                    aria-label={`Toggle manager permission for ${user.displayName}`}
                   />
                   <div className="w-11 h-6 bg-slate-300 rounded-full peer peer-focus:ring-4 peer-focus:ring-sky-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600 peer-disabled:cursor-not-allowed peer-disabled:opacity-50"></div>
                 </label>
