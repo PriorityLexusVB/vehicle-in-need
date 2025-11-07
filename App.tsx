@@ -83,12 +83,20 @@ const App: React.FC = () => {
         }
         
         const data = await response.json();
+        // Server returns version info in both commitSha (preferred) and version (legacy) properties
         const serverVersion = data.commitSha || data.version;
         
         console.log(`Client version: ${__APP_VERSION__}`);
         console.log(`Server version: ${serverVersion}`);
         
-        if (serverVersion && serverVersion !== UNKNOWN_VERSION && __APP_VERSION__ !== serverVersion) {
+        // Only show mismatch if both versions are valid (not 'unknown') and they differ
+        if (
+          __APP_VERSION__ && 
+          __APP_VERSION__ !== UNKNOWN_VERSION && 
+          serverVersion && 
+          serverVersion !== UNKNOWN_VERSION && 
+          __APP_VERSION__ !== serverVersion
+        ) {
           console.warn('⚠️ Version mismatch detected! Client and server are out of sync.');
           console.warn(`Client: ${__APP_VERSION__}, Server: ${serverVersion}`);
           setVersionMismatch(true);
@@ -319,7 +327,7 @@ const App: React.FC = () => {
       )}
       {versionMismatch && (
         <div 
-          className="fixed top-0 left-0 right-0 bg-amber-600 text-white py-3 px-4 z-50 flex items-center justify-between shadow-lg"
+          className={`fixed left-0 right-0 bg-amber-600 text-white py-3 px-4 z-50 flex items-center justify-between shadow-lg transition-all ${needRefresh ? 'top-[60px]' : 'top-0'}`}
           role="alert"
           aria-live="assertive"
         >
