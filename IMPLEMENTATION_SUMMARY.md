@@ -219,3 +219,197 @@ The `npm ci` command in Docker may show "Exit handler never called!" error in so
 ## Conclusion
 
 All requirements from the problem statement have been addressed. The only gap was the version badge environment variable wiring, which has been successfully implemented with proper fallbacks for both local development and Docker builds.
+
+## Deployment Pipeline Enhancements (Latest Session)
+
+### Problem Statement
+Production was potentially serving stale bundles due to:
+- Lack of deployment verification procedures
+- Missing runtime diagnostics to detect stale builds
+- No documented rollback procedures
+- Insufficient deployment checklists
+
+### Solution: Comprehensive Deployment Infrastructure
+
+#### 1. Deployment Checklist (DEPLOYMENT_CHECKLIST.md)
+Created comprehensive 400+ line deployment checklist covering:
+- **Pre-build validation**: Git status, dependencies, environment variables
+- **Build verification**: Asset generation, hash validation, CDN check
+- **Docker build verification**: Local container testing
+- **Cloud Run deployment**: Build triggers, image verification, traffic routing
+- **Post-deployment verification**: Automated and manual smoke tests
+- **Rollback procedures**: Step-by-step commands for reverting deployments
+- **Troubleshooting guide**: Common issues with solutions
+- **Security & performance checklists**: Validation criteria
+
+#### 2. Pre-Deployment Validation Script (scripts/pre-deploy-check.cjs)
+Automated validation script that checks before deployment:
+- ✅ Build artifacts exist (dist/, index.html, assets/)
+- ✅ No Tailwind CDN references in production build
+- ✅ Hashed assets present with correct naming pattern
+- ✅ Favicons and service worker files generated
+- ✅ Bundle sizes reasonable (warns if > 5MB for JS, > 1MB for CSS)
+- ✅ Git status clean and on correct branch
+- ✅ Manifest and HTML structure valid
+
+**Exit codes:**
+- `0` = All checks passed (ready to deploy)
+- `1` = Critical errors found (do not deploy)
+
+**Usage:** `node scripts/pre-deploy-check.cjs`
+
+#### 3. Post-Deployment Verification Script (scripts/verify-deployment.cjs)
+Automated post-deployment testing script:
+- ✅ Health endpoint responds correctly
+- ✅ API status endpoint returns version info
+- ✅ No Tailwind CDN in served HTML
+- ✅ Hashed assets served with correct MIME types
+- ✅ Cache headers configured properly:
+  - `no-cache` for index.html
+  - `max-age=31536000, immutable` for hashed assets
+  - `no-cache` for service worker
+- ✅ Favicons load successfully
+- ✅ Service worker accessible
+
+**Exit codes:**
+- `0` = All tests passed
+- `1` = One or more tests failed
+
+**Usage:** `node scripts/verify-deployment.cjs https://your-production-url.com`
+
+#### 4. Runtime Bundle Diagnostics (index.tsx)
+Added `logBundleInfo()` function that runs on app initialization:
+```javascript
+console.log('🚀 Application Bundle Info');
+console.log(`Version: ${commitSha}`);
+console.log(`Build Time: ${buildTime}`);
+console.log(`User Agent: ${navigator.userAgent}`);
+console.log(`Timestamp: ${new Date().toISOString()}`);
+```
+
+Includes stale bundle detection:
+```javascript
+if (!commitSha || commitSha === 'unknown' || commitSha === 'dev') {
+  console.warn('⚠️ STALE_BUNDLE_DETECTED: Version information missing or invalid');
+}
+```
+
+#### 5. Enhanced API Status Endpoint (server/index.cjs)
+Expanded `/api/status` endpoint to return comprehensive server info:
+```json
+{
+  "status": "healthy",
+  "geminiEnabled": true,
+  "version": "abc1234",
+  "buildTime": "2025-11-07T23:00:00.000Z",
+  "nodeVersion": "v20.19.5",
+  "environment": "production",
+  "timestamp": "2025-11-07T23:42:18.248Z",
+  "uptime": 25.5
+}
+```
+
+Fixed cache header regex to properly match Vite's hash format:
+- **Before:** `/\.[a-f0-9]{8}\.(js|css)/` (hex only)
+- **After:** `/\-[a-zA-Z0-9_-]{8,}\.(js|css)$/` (base64-like)
+
+#### 6. README Documentation Updates
+Added "Deployment Verification" section to README with:
+- Pre-deployment check procedures
+- Post-deployment verification steps
+- Manual smoke test checklist
+- Stale bundle recovery guide
+- Troubleshooting common problems
+- Command examples for verification
+
+### Testing Results
+
+**Pre-deployment validation:**
+```
+✅ All checks passed (0 errors, 2 warnings)
+⚠️  Working directory has uncommitted changes (expected)
+⚠️  Not on main branch (expected for feature branch)
+```
+
+**Post-deployment verification:**
+```
+✅ All 25 tests passed
+- Health endpoint: ✅
+- Status endpoint: ✅
+- No Tailwind CDN: ✅
+- Hashed assets: ✅
+- Cache headers: ✅
+- Favicons: ✅
+- Service worker: ✅
+- MIME types: ✅
+```
+
+**Local server testing:**
+```bash
+# Health check
+curl http://localhost:3001/health
+# Output: healthy
+
+# Status check
+curl http://localhost:3001/api/status | jq
+# Output: Full JSON with version info
+
+# Verification script
+node scripts/verify-deployment.cjs http://localhost:3001
+# Output: 25/25 tests passed
+```
+
+### Benefits
+
+1. **Repeatable Deployments**: Step-by-step checklist ensures consistency
+2. **Early Detection**: Pre-deployment script catches issues before deploying
+3. **Automated Verification**: Post-deployment script validates critical functionality
+4. **Quick Troubleshooting**: Runtime diagnostics help identify stale bundles
+5. **Comprehensive Documentation**: Clear procedures for deployment and rollback
+6. **Security**: Validated with CodeQL scan (2 false positives documented)
+
+### Security Audit
+
+CodeQL scan found 2 alerts (both false positives):
+- `js/incomplete-url-substring-sanitization` in verification scripts
+- These check for 'cdn.tailwindcss.com' presence in HTML (content validation, not URL sanitization)
+- Added clarifying comments to document this
+- **No actual security vulnerabilities introduced**
+
+### Files Modified
+
+1. **New Files:**
+   - `DEPLOYMENT_CHECKLIST.md` (408 lines)
+   - `scripts/pre-deploy-check.cjs` (327 lines)
+   - `scripts/verify-deployment.cjs` (395 lines)
+
+2. **Modified Files:**
+   - `index.tsx` - Added runtime bundle diagnostics
+   - `server/index.cjs` - Enhanced status endpoint, fixed cache regex
+   - `README.md` - Added deployment verification section
+
+**Total: 1,291 lines added**
+
+### Next Steps for Production
+
+To deploy these improvements to production:
+
+1. **Merge this PR** to main branch
+2. **Run pre-deployment check**: `node scripts/pre-deploy-check.cjs`
+3. **Deploy via Cloud Build**: `gcloud builds submit --config cloudbuild.yaml`
+4. **Run post-deployment verification**: `node scripts/verify-deployment.cjs https://production-url.com`
+5. **Manual smoke test**: Follow checklist in DEPLOYMENT_CHECKLIST.md
+6. **Monitor runtime logs**: Check for bundle info and no STALE_BUNDLE_DETECTED warnings
+
+### Acceptance Criteria ✅
+
+All original requirements met:
+- ✅ Comprehensive deployment checklist created
+- ✅ Pre-deployment validation script working
+- ✅ Post-deployment verification script working
+- ✅ Runtime bundle diagnostics implemented
+- ✅ Enhanced status endpoint with version info
+- ✅ Documentation updated (README, comments)
+- ✅ Cache headers fixed for Vite hash format
+- ✅ Security scan completed (no real vulnerabilities)
+- ✅ All scripts tested and validated locally
