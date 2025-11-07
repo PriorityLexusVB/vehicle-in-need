@@ -48,6 +48,7 @@ const App: React.FC = () => {
     readyForDelivery: 0,
     deliveredLast30Days: 0,
   });
+  const [versionMismatch, setVersionMismatch] = useState(false);
 
   // Service Worker registration with update notification
   const {
@@ -62,10 +63,34 @@ const App: React.FC = () => {
     },
   });
 
-  // Log version on load
+  // Log version on load and check for version mismatch
   useEffect(() => {
     console.log(`App Version: ${__APP_VERSION__}`);
     console.log(`Build Time: ${__BUILD_TIME__}`);
+    
+    // Check if client version matches server version
+    const checkVersionMatch = async () => {
+      try {
+        const response = await fetch('/api/status');
+        const data = await response.json();
+        const serverVersion = data.commitSha || data.version;
+        
+        console.log(`Client version: ${__APP_VERSION__}`);
+        console.log(`Server version: ${serverVersion}`);
+        
+        if (serverVersion && serverVersion !== 'unknown' && __APP_VERSION__ !== serverVersion) {
+          console.warn('⚠️ Version mismatch detected! Client and server are out of sync.');
+          console.warn(`Client: ${__APP_VERSION__}, Server: ${serverVersion}`);
+          setVersionMismatch(true);
+        } else {
+          console.log('✓ Client and server versions match');
+        }
+      } catch (error) {
+        console.error('Failed to check version:', error);
+      }
+    };
+    
+    checkVersionMatch();
   }, []);
 
   useEffect(() => {
@@ -276,6 +301,31 @@ const App: React.FC = () => {
             <button
               onClick={() => setNeedRefresh(false)}
               className="text-white px-3 py-1 text-sm hover:bg-sky-700 rounded-md transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+      {versionMismatch && (
+        <div className="fixed top-0 left-0 right-0 bg-amber-600 text-white py-3 px-4 z-50 flex items-center justify-between shadow-lg">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">⚠️</span>
+            <div>
+              <div className="text-sm font-medium">Version mismatch detected</div>
+              <div className="text-xs opacity-90">Your browser is using outdated code. Please reload to get the latest version.</div>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-white text-amber-600 px-4 py-1 rounded-md text-sm font-semibold hover:bg-amber-50 transition-colors"
+            >
+              Reload Now
+            </button>
+            <button
+              onClick={() => setVersionMismatch(false)}
+              className="text-white px-3 py-1 text-sm hover:bg-amber-700 rounded-md transition-colors"
             >
               Dismiss
             </button>

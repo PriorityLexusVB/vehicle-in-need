@@ -441,15 +441,42 @@ To confirm which version is currently running:
 ### "Settings" buttons not visible
 
 If manager UI is not showing:
-1. **Verify manager role**: Check Firestore `users` collection - ensure user has `isManager: true`
-2. **Clear browser cache**: Hard refresh with `Ctrl+Shift+R` (Windows) or `Cmd+Shift+R` (Mac)
-3. **Clear service worker**:
+
+1. **Check for version mismatch warning**: 
+   - Look for an amber/yellow banner at the top saying "Version mismatch detected"
+   - If present, click "Reload Now" to get the latest version
+   - This indicates your browser is using stale JavaScript
+
+2. **Verify manager role**: 
+   - Check Firestore `users` collection - ensure user has `isManager: true`
+   - Log out and log back in to refresh the user data
+
+3. **Check version synchronization**:
+   - Open browser console (F12)
+   - Look for logs showing: `Client version: <sha>` and `Server version: <sha>`
+   - If they don't match, you have a caching issue (see below)
+   
+4. **Clear browser cache**: 
+   - Hard refresh with `Ctrl+Shift+R` (Windows) or `Cmd+Shift+R` (Mac)
+   - If that doesn't work, proceed to step 5
+
+5. **Clear service worker and all caches**:
    - Open DevTools > Application > Service Workers
    - Click "Unregister" for any service workers
+   - Open DevTools > Application > Storage
    - Click "Clear storage" to remove all caches
-   - Hard refresh the page
-4. **Check version**: Ensure the latest build is loaded (see "Verifying Current Version" above)
-5. **Check for auth issues**: Verify the user is logged in with a `@priorityautomotive.com` email
+   - Hard refresh the page (`Ctrl+Shift+R` or `Cmd+Shift+R`)
+
+6. **Verify versions match**:
+   - Check the VersionBadge in the header (shows `v<commit-sha>`)
+   - Visit `/api/status` in your browser to see server version
+   - Console should show: `✓ Client and server versions match`
+   - If versions still don't match after clearing caches, contact support
+
+7. **Check for auth issues**: 
+   - Verify the user is logged in with a `@priorityautomotive.com` email
+   - Check the header shows "(Manager)" next to the username
+   - Check for the debug badge showing `[isManager: true]`
 
 ### Service Worker Issues
 
@@ -461,19 +488,33 @@ To reset service worker:
 
 ### Stale Cache After Deploy
 
-The app includes automatic service worker cleanup:
-1. **On first load after deploy**: Legacy service workers are automatically unregistered
-2. **Automatic reload**: A one-time reload occurs to fetch the fresh bundle
-3. **No user action needed**: The cleanup happens transparently
-4. **Verification**: Check console for "Unregistering X legacy service worker(s)..." message
+The app includes multiple mechanisms to ensure users get the latest version:
 
-If the app still shows an old version after deploy:
-1. **Force service worker update**: 
+**Automatic Detection & Alerts:**
+1. **Version Mismatch Banner**: If the client and server versions don't match, an amber warning banner appears automatically
+2. **Service Worker Update Banner**: When a new version is detected by the service worker, a blue banner appears
+3. **Automatic Unregistration**: On first load, legacy service workers are automatically unregistered
+4. **Console Warnings**: Version mismatches are logged to the console with `⚠️` indicator
+
+**If the app still shows an old version after deploy:**
+
+1. **Look for automatic banners**:
+   - **Amber banner** (version mismatch): Click "Reload Now" immediately
+   - **Blue banner** (new version available): Click "Reload" to update
+   - These banners appear automatically when mismatches are detected
+
+2. **Check console for version information**:
+   ```
+   ✓ Client and server versions match  (good - no action needed)
+   ⚠️ Version mismatch detected!        (bad - reload required)
+   ```
+
+3. **Force service worker update**: 
    - Open DevTools > Application > Service Workers
    - Click "Update" to manually trigger SW update
-   - Look for "A new version is available!" banner and click "Reload"
+   - Look for banners and click "Reload"
 
-2. **Verify Cloud Run deployment**:
+4. **Verify Cloud Run deployment**:
    ```bash
    # Check which revision is serving traffic
    gcloud run services describe YOUR_SERVICE_NAME --region YOUR_REGION
