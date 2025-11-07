@@ -40,7 +40,7 @@ app.get('/api/status', (req, res) => {
     appVersion: version,
     commitSha: version,
     buildTime: process.env.BUILD_TIME || 'unknown',
-    kRevision: process.env.K_REVISION || null,
+    kRevision: process.env.K_REVISION || 'N/A',
     timestamp: new Date().toISOString()
   });
 });
