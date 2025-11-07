@@ -41,8 +41,3 @@ coverage/
 # Documentation (not needed for build)
 *.md
 !README.md
-
-# Docker files (avoid recursion)
-Dockerfile
-.dockerignore
-docker-compose.yml

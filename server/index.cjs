@@ -56,8 +56,8 @@ app.use(express.static(distPath, {
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
     }
-    // Long-term cache for hashed assets (all assets under /assets/ with whitelisted extensions)
-    else if (filepath.includes('/assets/') && /\.(js|css|woff2?|ttf|eot|otf|svg|png|jpg|jpeg|gif|webp)$/.test(filepath)) {
+    // Long-term cache for hashed assets (JS, CSS, and fonts under /assets/)
+    else if (filepath.includes('/assets/') && /\.(js|css|woff2?|ttf|eot|otf)$/.test(filepath)) {
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     }
     // Short cache for service worker and manifest
