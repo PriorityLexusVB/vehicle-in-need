@@ -56,8 +56,8 @@ app.use(express.static(distPath, {
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
     }
-    // Long-term cache for hashed assets
-    else if (filepath.includes('/assets/') && /\.[a-f0-9]{8}\.(js|css)/.test(filepath)) {
+    // Long-term cache for hashed assets (Vite uses base64-like hashes with underscores/dashes)
+    else if (filepath.includes('/assets/') && /\-[a-zA-Z0-9_-]{8,}\.(js|css)$/.test(filepath)) {
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     }
     // Short cache for service worker and manifest
