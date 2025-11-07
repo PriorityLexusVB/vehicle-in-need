@@ -26,12 +26,19 @@ const VersionBadge: React.FC = () => {
     }
   };
 
+  // Format: v<short-sha> @ <build-time>
+  // For space efficiency, show formatted time inline but full ISO in tooltip
+  const formattedTime = formatBuildTime(buildTime);
+  const displayText = buildTime && buildTime !== 'unknown' 
+    ? `v${version} @ ${formattedTime}`
+    : `v${version}`;
+
   return (
     <span 
-      className="ml-2 text-xs font-mono text-slate-400 hover:text-slate-600 transition-colors cursor-help" 
-      title={buildTime ? `Built: ${formatBuildTime(buildTime)}` : 'Version information'}
+      className="ml-2 text-xs font-mono text-slate-400 hover:text-slate-600 transition-colors cursor-help hidden lg:inline" 
+      title={buildTime ? `Built: ${formattedTime} (${buildTime})` : 'Version information'}
     >
-      v{version}
+      {displayText}
     </span>
   );
 };

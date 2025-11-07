@@ -351,6 +351,48 @@ The Dockerfile passes `COMMIT_SHA` and `BUILD_TIME` build args as `VITE_APP_*` e
 **Local Development:**
 During local builds, Vite automatically uses `git rev-parse --short HEAD` for the commit SHA and the current timestamp for build time.
 
+### Static Asset Caching Strategy
+
+The server implements a multi-tier caching strategy for optimal performance and version control:
+
+**1. HTML Files (`index.html`)**
+```
+Cache-Control: no-cache, no-store, must-revalidate
+Pragma: no-cache
+Expires: 0
+```
+- Always fetches the latest version from server
+- Ensures users get new deployments immediately
+- Critical for preventing stale app shells
+
+**2. Hashed Assets (JS, CSS, Fonts)**
+```
+Cache-Control: public, max-age=31536000, immutable
+```
+- Applies to files matching pattern: `/assets/*-[hash].(js|css|woff2?|ttf|eot|otf)`
+- Example: `index-CwY8jhIn.css`, `workbox-window.prod.es5-CwtvwXb3.js`
+- Safe to cache indefinitely since content changes result in new hash
+- Reduces bandwidth and improves load times
+
+**3. Service Worker Files**
+```
+Cache-Control: no-cache, must-revalidate
+```
+- Applies to: `sw.js`, `workbox-*.js`, `manifest.webmanifest`
+- Prevents stale service worker from blocking updates
+- Allows automatic update detection
+
+**4. Source Maps and Images**
+- Not specifically cached with immutable headers
+- Left to default 1-hour cache from `maxAge` setting
+- Can be adjusted based on deployment needs
+
+This strategy ensures:
+- ✅ New deployments are immediately visible
+- ✅ Repeat visits load instantly from cache
+- ✅ No manual cache clearing needed
+- ✅ CDN-friendly for production scaling
+
 ### Service Worker Cleanup
 
 On app load, the application automatically:
@@ -367,7 +409,7 @@ This temporary cleanup ensures all users get the latest bundle after deployment,
 
 To confirm which version is currently running:
 
-1. **Browser UI**: Look for the version badge in the header next to "Vehicle Order Tracker" (displays as `v<commit-sha>`, hover for build time)
+1. **Browser UI**: Look for the version badge in the header next to "Vehicle Order Tracker" (displays as `v<commit-sha> @ <build-time>`, hover for ISO timestamp)
 2. **Browser Console**: Check the logs for:
    ```
    App Version: <commit-sha>

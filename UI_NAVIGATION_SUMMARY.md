@@ -222,10 +222,10 @@ Vehicle Order Tracker v{commit-sha}
 
 ### Display Format
 ```
-Vehicle Order Tracker v{commit-sha}
-                      ↑
+Vehicle Order Tracker v{commit-sha} @ {formatted-build-time}
+                      ↑ (hidden on mobile, visible on lg+ screens)
                       Hover shows:
-                      "Built: Nov 6, 2025, 01:54 AM UTC"
+                      "Built: Nov 7, 2025, 12:54 PM PST (2025-11-07T20:54:00Z)"
 ```
 
 ### Data Flow
@@ -249,7 +249,8 @@ Browser Bundle:
        ↓
 VersionBadge Component:
   - const version = import.meta.env.VITE_APP_COMMIT_SHA
-  - Renders: v{version}
+  - const buildTime = import.meta.env.VITE_APP_BUILD_TIME
+  - Renders: v{version} @ {formatBuildTime(buildTime)}
 ```
 
 ## Error Handling
