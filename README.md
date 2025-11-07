@@ -367,7 +367,7 @@ This temporary cleanup ensures all users get the latest bundle after deployment,
 
 To confirm which version is currently running:
 
-1. **Browser UI**: Look for the version badge in the header next to "Vehicle Order Tracker" (displays as `v<commit-sha>`, hover for build time)
+1. **Browser UI**: Look for the version badge in the header next to "Vehicle Order Tracker" (displays as `v<commit-sha> @ <build-time>`, hover for ISO timestamp)
 2. **Browser Console**: Check the logs for:
    ```
    App Version: <commit-sha>

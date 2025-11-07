@@ -26,12 +26,17 @@ const VersionBadge: React.FC = () => {
     }
   };
 
+  // Format: v<short-sha> @ <build-time>
+  const displayText = buildTime && buildTime !== 'unknown' 
+    ? `v${version} @ ${formatBuildTime(buildTime)}`
+    : `v${version}`;
+
   return (
     <span 
       className="ml-2 text-xs font-mono text-slate-400 hover:text-slate-600 transition-colors cursor-help" 
-      title={buildTime ? `Built: ${formatBuildTime(buildTime)}` : 'Version information'}
+      title={buildTime ? `Built: ${buildTime}` : 'Version information'}
     >
-      v{version}
+      {displayText}
     </span>
   );
 };
