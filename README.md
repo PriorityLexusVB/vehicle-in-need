@@ -4,7 +4,7 @@
 
 # Pre-Order & Dealer Exchange Tracker
 
-A vehicle order tracking application for Priority Automotive with manager controls, user management, and AI-powered email generation.
+A vehicle order tracking application for Priority Automotive with manager controls and user management.
 
 View your app in AI Studio: https://ai.studio/apps/drive/1XrFhCIH0pgEmQ_DSYHkXD3TovOfqWFJu
 
@@ -13,95 +13,94 @@ View your app in AI Studio: https://ai.studio/apps/drive/1XrFhCIH0pgEmQ_DSYHkXD3
 - 🚗 Track vehicle pre-orders and dealer exchanges
 - 👥 User management with role-based access control
 - 📊 Dashboard with real-time statistics
-- 🤖 **AI-powered email generation** via secure server-side Vertex AI integration
 - 🔔 Service worker with automatic update notifications
 - 🎨 Optimized Tailwind CSS (no CDN in production)
 - 📱 Responsive design for mobile and desktop
 - 🔗 Deep linking support (e.g., `#settings` for direct access)
-- 🔒 **Secure architecture** with no client-side API keys
-
-## Architecture
-
-### AI Email Generation Flow
-
-```
-Browser → /api/generate-email → Express Server → Vertex AI (Gemini 2.0 Flash)
-                                      ↓
-                            Service Account IAM
-                         (Vertex AI User role)
-```
-
-**Security improvements:**
-- ✅ No API keys exposed in client bundle
-- ✅ Uses Google Cloud Application Default Credentials (ADC)
-- ✅ Service account with proper IAM roles (Vertex AI User)
-- ✅ Server-side validation and error handling
-
-The application is split into:
-1. **Frontend (React + Vite)**: Static files served by Express
-2. **Backend (Express + Node.js)**: Serves static files + API endpoints
-
-### API Endpoints
-
-- `GET /health` - Health check endpoint (returns "healthy")
-- `GET /api/status` - Returns AI service status and version info
-- `POST /api/generate-email` - Generate follow-up emails for customer orders
 
 ## Run Locally
 
-**Prerequisites:** Node.js (v20 or higher recommended)
-
-### Option 1: Development Mode (Frontend Only)
+**Prerequisites:** Node.js (v18 or higher recommended)
 
 1. Install dependencies:
    ```bash
    npm install
    ```
 
-2. For AI features, the application uses server-side Vertex AI integration:
+2. **(Optional) Enable AI Features:** Create a `.env.local` file and add your Gemini API key:
    ```bash
-   gcloud auth application-default login
+   cp .env.example .env.local
+   # Edit .env.local and set VITE_GEMINI_API_KEY=your_actual_key_here
    ```
    
-   This authenticates your local development environment using Application Default Credentials (ADC). The server will automatically use these credentials when calling Vertex AI APIs.
-   
-   **Note:** No client-side API keys are required. AI features are accessed through the `/api/generate-email` endpoint which handles authentication server-side. This is more secure than exposing API keys in the client.
+   **Note:** The AI email generation feature will be disabled if no API key is provided. The app will display a message indicating that AI features are unavailable.
 
-3. Run the frontend development server:
+3. Run the development server:
    ```bash
    npm run dev
    ```
 
 4. Open your browser to `http://localhost:3000`
 
-**Note:** In dev mode, API calls will fail unless you also run the backend server separately.
+## Environment Variables
 
-### Option 2: Full Stack (Frontend + Backend)
+The application uses the following environment variables:
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
+### Local Development
 
-2. Build the frontend:
-   ```bash
-   npm run build
-   ```
+- **VITE_GEMINI_API_KEY**: (Optional) API key for Google Gemini AI. Required for AI email generation features.
+  - Create a `.env.local` file (not committed to git)
+  - Copy from `.env.example` template
+  - Get your key from [Google AI Studio](https://aistudio.google.com/apikey)
 
-3. Run the server:
-   ```bash
-   npm run server
-   ```
+### Production (Docker/Cloud Build)
 
-4. Open your browser to `http://localhost:8080`
+**⚠️ Security Warning**: Using client-side API keys exposes them in the browser bundle. This approach is temporary and not recommended for production.
 
-This mode runs the full application with the Express server serving both static files and API endpoints.
+**Quick Path (Temporary - Client-side key):**
+Pass `VITE_GEMINI_API_KEY` as a build argument to Docker:
+
+```bash
+docker build \
+  --build-arg COMMIT_SHA=$(git rev-parse --short HEAD) \
+  --build-arg BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+  --build-arg VITE_GEMINI_API_KEY=your_key_here \
+  -t vehicle-tracker:latest .
+```
+
+For **Cloud Build**, add to your trigger's build-time environment variables or substitutions:
+```yaml
+# cloudbuild.yaml
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--build-arg'
+      - 'COMMIT_SHA=$SHORT_SHA'
+      - '--build-arg'
+      - 'BUILD_TIME=$_BUILD_TIME'
+      - '--build-arg'
+      - 'VITE_GEMINI_API_KEY=$_VITE_GEMINI_API_KEY'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/vehicle-tracker:$SHORT_SHA'
+      - '.'
+substitutions:
+  _BUILD_TIME: '$(date -u +"%Y-%m-%dT%H:%M:%SZ")'
+  _VITE_GEMINI_API_KEY: 'your_key_from_secret_manager'
+```
+
+**Recommended Path (Future - Server-side proxy):**
+- Implement a backend API endpoint that uses Vertex AI with service account authentication
+- The service account already has Vertex AI roles assigned (see IAM screenshots)
+- Client calls your backend endpoint; backend proxies to Vertex AI using Application Default Credentials (ADC)
+- No API keys exposed in client code
+- **This is the recommended production approach but requires additional backend implementation**
 
 ## Build and Deploy
 
 ### Docker Build (Recommended for Production)
 
-The application uses a multi-stage Dockerfile that builds the frontend and packages it with a Node.js server:
+The application includes a multi-stage Dockerfile for deterministic, reproducible builds:
 
 **Build the Docker image:**
 
@@ -112,15 +111,15 @@ docker build \
   -t vehicle-tracker:latest .
 ```
 
-**Note:** If you encounter an npm "Exit handler never called!" error when building locally, this is a [known npm bug](https://github.com/npm/cli/issues) in certain Docker environments. **The recommended approach is to build using Google Cloud Build** where this issue doesn't occur. For local testing, you can:
-- Build the frontend with `npm run build` locally
-- Run the server with `npm run server` to test the full stack
-- Skip Docker build for local development
+**Note:** If you encounter an npm "Exit handler never called!" error when building locally, this is a [known npm bug](https://github.com/npm/cli/issues) in certain Docker environments. Workarounds:
+- Use `docker build --network=host` 
+- Update Docker Desktop to the latest version
+- Build in Cloud Build (recommended) where this issue doesn't occur
 
-**Run the container locally (if Docker build succeeds):**
+**Run the container locally:**
 
 ```bash
-docker run -p 8080:8080 vehicle-tracker:latest
+docker run -p 8080:80 vehicle-tracker:latest
 ```
 
 Then open http://localhost:8080 in your browser.
@@ -129,84 +128,9 @@ Then open http://localhost:8080 in your browser.
 - ✅ Deterministic builds with consistent Node 20 environment
 - ✅ Proper cache control headers (no-cache for index.html, immutable for hashed assets)
 - ✅ Version visibility via VersionBadge component in header
-- ✅ Minimal production image size (Node 20 Alpine runtime)
+- ✅ Minimal production image size (nginx-alpine runtime)
 - ✅ Built-in health check endpoint at `/health`
-- ✅ Integrated Express server for static files + API
-
-### Cloud Run Deployment
-
-When deploying to Google Cloud Run:
-
-1. **Ensure your service account has required roles:**
-   - `Vertex AI User` - for calling Gemini models
-   - `Service Account Token Creator` (if needed for service-to-service calls)
-
-2. **Deploy with Cloud Build:**
-   ```bash
-   gcloud builds submit --config cloudbuild.yaml
-   ```
-
-3. **The container automatically:**
-   - Uses the attached service account credentials (no API keys needed)
-   - Serves both static files and API endpoints on port 8080
-   - Provides health check at `/health` for Cloud Run
-
-**Important:** No environment variables for API keys are needed. The application uses Application Default Credentials (ADC) which are automatically provided by the Cloud Run environment.
-
-### Environment Variables (Optional)
-
-See [.env.example](.env.example) for configuration options:
-
-- `GOOGLE_CLOUD_PROJECT` - Auto-detected from environment (optional override)
-- `VERTEX_AI_LOCATION` - Defaults to `us-central1` (optional)
-- `PORT` - Server port, defaults to `8080` (optional)
-- `LOCAL_GEMINI_KEY` - **Local dev only**, fallback API key (not recommended for production)
-
-### Security: Removing Old API Keys
-
-After verifying the server-side proxy works correctly:
-
-1. **Navigate to Google Cloud Console** → APIs & Services → Credentials
-2. **Locate the API keys** previously used for client-side Gemini access
-3. **Delete unused API keys** to prevent potential exposure
-4. **Keep only service account IAM roles** for production access
-
-**What to delete:**
-- ❌ Any API keys labeled for "Gemini API" or "Browser access"
-- ❌ The `VITE_GEMINI_API_KEY` from GitHub Secrets (if present)
-
-**What to keep:**
-- ✅ Service account with "Vertex AI User" role attached to Cloud Run
-- ✅ No API keys should be present in the final deployment
-
-### Build for Production (npm)
-
-```bash
-npm run build
-```
-
-This creates an optimized production build in the `dist/` directory with:
-- Compiled and minified JavaScript
-- Optimized CSS (Tailwind utilities tree-shaken)
-- Service worker for offline support and caching
-- Web app manifest for PWA support
-- Version information (git commit SHA + build time)
-- **No client-side API keys** (removed from bundle)
-
-### Build Output
-
-```
-dist/
-├── index.html                    # Entry point (not cached long-term)
-├── manifest.webmanifest          # PWA manifest
-├── sw.js                         # Service worker
-├── workbox-*.js                  # Workbox runtime
-└── assets/
-    ├── index-[hash].css          # Optimized CSS
-    └── index-[hash].js           # Bundled JavaScript
-```
-
-**Bundle size improvement:** The removal of `@google/genai` from the client reduced the JavaScript bundle from ~469 KB to ~268 KB (43% reduction).
+- ✅ No legacy service worker files in final image
 
 **Cloud Build Configuration:**
 
@@ -239,16 +163,45 @@ To rollback to a previous version:
      --image gcr.io/PROJECT_ID/vehicle-tracker:PREVIOUS_SHA
    ```
 
+### Build for Production (npm)
+
+```bash
+npm run build
+```
+
+This creates an optimized production build in the `dist/` directory with:
+- Compiled and minified JavaScript
+- Optimized CSS (Tailwind utilities tree-shaken)
+- Service worker for offline support and caching
+- Web app manifest for PWA support
+- Version information (git commit SHA + build time)
+
+### Build Output
+
+```
+dist/
+├── index.html                    # Entry point (not cached long-term)
+├── manifest.webmanifest          # PWA manifest
+├── sw.js                         # Service worker
+├── workbox-*.js                  # Workbox runtime
+└── assets/
+    ├── index-[hash].css          # Optimized CSS
+    └── index-[hash].js           # Bundled JavaScript
+```
+
 ### Deploy
 
-The app can be deployed to any container platform or static hosting service:
+The app can be deployed to any static hosting service:
 
 - **Docker Container** (recommended): Use the provided Dockerfile for Cloud Run, Kubernetes, or any container platform
-- **Firebase Hosting**: `firebase deploy` (requires separate backend deployment for API)
-- **Netlify**: Connect your repo with build command `npm run build` (requires serverless functions for API)
-- **Vercel**: Connect your GitHub repo with build command `npm run build` (requires serverless functions for API)
+- **Firebase Hosting**: `firebase deploy`
+- **Netlify**: Drag and drop the `dist/` folder or connect your repo
+- **Vercel**: Connect your GitHub repo with build command `npm run build`
+- **GitHub Pages**: Use a deployment action to publish the `dist/` folder
 
-**Note:** If deploying to static hosting (Firebase/Netlify/Vercel), you'll need to separately deploy the backend API or use their serverless function capabilities.
+**Important:** When not using Docker, ensure your hosting is configured to:
+- Set `Cache-Control: no-cache` for `index.html` to allow service worker updates
+- Allow longer caching for hashed assets (`assets/index-*.js`, `assets/index-*.css`)
 
 **With Docker**, these cache headers are automatically configured in `nginx.conf`.
 
@@ -284,47 +237,18 @@ The app uses Tailwind CSS via PostCSS (no CDN):
 
 Users designated as managers can:
 - View all orders from all users
-- Access the Settings page to manage user roles
+- Access the "User Management" settings page
 - Toggle manager permissions for other users
 - Cannot change their own role (security safeguard)
 
-### Accessing Settings (Admin)
+### Accessing User Management
 
-Managers have multiple ways to access Settings:
-1. **Pill navigation** (Header): Click "Settings" in the left-side pill nav (visible after login as manager)
-2. **Gear icon** (Header): Click the settings gear icon in the header (right side, labeled "Settings")
-3. **Admin button** (Navbar): Click the "Admin" button in the top navigation bar
-4. **Deep link**: Navigate directly to `/#/admin` in the URL
-
-All three UI controls (pill navigation, gear icon, and Admin button) have `data-testid` attributes for automated testing:
-- `data-testid="pill-admin-link"` - Pill navigation link
-- `data-testid="header-admin-gear"` - Gear icon button
-- `data-testid="navbar-admin-link"` - Admin button in navbar
+Managers have multiple ways to access User Management:
+1. **Pill navigation**: Click "User Management" in the left-side pill nav
+2. **Gear icon**: Click the settings gear icon in the header (right side)
+3. **Deep link**: Navigate directly to `/#/admin` in the URL
 
 Non-managers attempting to access `/#/admin` will be automatically redirected to the dashboard.
-
-### Granting Manager Role
-
-To grant manager permissions to a user:
-
-1. **Via Settings Page** (recommended):
-   - Log in as an existing manager
-   - Navigate to Settings using any of the methods above
-   - Find the user in the list
-   - Toggle the "Manager" switch to enable manager permissions
-
-2. **Via Firestore Console** (for initial setup):
-   - Open Firebase Console > Firestore Database
-   - Navigate to the `users` collection
-   - Find or create the user document
-   - Set `isManager: true` in the document
-
-3. **First-time Bootstrap** (optional):
-   - Set environment variable `ENABLE_FIRST_USER_ADMIN=true` (Cloud Run or Docker)
-   - The first user with a `@priorityautomotive.com` email will automatically become a manager
-   - After the first manager is created, disable this flag to prevent auto-promotion
-
-**Note:** Users are initially seeded as managers based on the `MANAGER_EMAILS` constant in `constants.ts`, but subsequent role changes are managed exclusively through Firestore to ensure persistence.
 
 ## Development Notes
 
@@ -351,48 +275,6 @@ The Dockerfile passes `COMMIT_SHA` and `BUILD_TIME` build args as `VITE_APP_*` e
 **Local Development:**
 During local builds, Vite automatically uses `git rev-parse --short HEAD` for the commit SHA and the current timestamp for build time.
 
-### Static Asset Caching Strategy
-
-The server implements a multi-tier caching strategy for optimal performance and version control:
-
-**1. HTML Files (`index.html`)**
-```
-Cache-Control: no-cache, no-store, must-revalidate
-Pragma: no-cache
-Expires: 0
-```
-- Always fetches the latest version from server
-- Ensures users get new deployments immediately
-- Critical for preventing stale app shells
-
-**2. Hashed Assets (JS, CSS, Fonts)**
-```
-Cache-Control: public, max-age=31536000, immutable
-```
-- Applies to files matching pattern: `/assets/*-[hash].(js|css|woff2?|ttf|eot|otf)`
-- Example: `index-CwY8jhIn.css`, `workbox-window.prod.es5-CwtvwXb3.js`
-- Safe to cache indefinitely since content changes result in new hash
-- Reduces bandwidth and improves load times
-
-**3. Service Worker Files**
-```
-Cache-Control: no-cache, must-revalidate
-```
-- Applies to: `sw.js`, `workbox-*.js`, `manifest.webmanifest`
-- Prevents stale service worker from blocking updates
-- Allows automatic update detection
-
-**4. Source Maps and Images**
-- Not specifically cached with immutable headers
-- Left to default 1-hour cache from `maxAge` setting
-- Can be adjusted based on deployment needs
-
-This strategy ensures:
-- ✅ New deployments are immediately visible
-- ✅ Repeat visits load instantly from cache
-- ✅ No manual cache clearing needed
-- ✅ CDN-friendly for production scaling
-
 ### Service Worker Cleanup
 
 On app load, the application automatically:
@@ -405,78 +287,13 @@ This temporary cleanup ensures all users get the latest bundle after deployment,
 
 ## Troubleshooting
 
-### Verifying Current Version
-
-To confirm which version is currently running:
-
-1. **Browser UI**: Look for the version badge in the header next to "Vehicle Order Tracker" (displays as `v<commit-sha> @ <build-time>`, hover for ISO timestamp)
-2. **Browser Console**: Check the logs for:
-   ```
-   App Version: <commit-sha>
-   Build Time: <ISO timestamp>
-   ```
-3. **API Endpoint**: Visit `/api/status` or run:
-   ```bash
-   curl https://your-app-url.com/api/status
-   ```
-   This returns:
-   ```json
-   {
-     "geminiEnabled": true,
-     "version": "<commit-sha>",
-     "appVersion": "<commit-sha>",
-     "commitSha": "<commit-sha>",
-     "buildTime": "<ISO timestamp>",
-     "kRevision": "<Cloud Run revision>",
-     "timestamp": "<current time>"
-   }
-   ```
-
-4. **Server Logs** (Cloud Run or local): Check logs for:
-   ```
-   [Server] App Version: <commit-sha>
-   [Server] Build Time: <ISO timestamp>
-   ```
-
-### "Settings" buttons not visible
+### "User Management" buttons not visible
 
 If manager UI is not showing:
-
-1. **Check for version mismatch warning**: 
-   - Look for an amber/yellow banner at the top saying "Version mismatch detected"
-   - If present, click "Reload Now" to get the latest version
-   - This indicates your browser is using stale JavaScript
-
-2. **Verify manager role**: 
-   - Check Firestore `users` collection - ensure user has `isManager: true`
-   - Log out and log back in to refresh the user data
-
-3. **Check version synchronization**:
-   - Open browser console (F12)
-   - Look for logs showing: `Client version: <sha>` and `Server version: <sha>`
-   - If they don't match, you have a caching issue (see below)
-   
-4. **Clear browser cache**: 
-   - Hard refresh with `Ctrl+Shift+R` (Windows) or `Cmd+Shift+R` (Mac)
-   - If that doesn't work, proceed to step 5
-
-5. **Clear service worker and all caches**:
-   - Open DevTools > Application > Service Workers
-   - Click "Unregister" for any service workers
-   - Open DevTools > Application > Storage
-   - Click "Clear storage" to remove all caches
-   - Hard refresh the page (`Ctrl+Shift+R` or `Cmd+Shift+R`)
-
-6. **Verify versions match**:
-   - Check the VersionBadge in the header (shows `v<commit-sha>`)
-   - Visit `/api/status` in your browser to see server version
-   - Console should show: `✓ Client and server versions match`
-   - If versions still don't match after clearing caches, contact support
-
-7. **Check for auth issues**: 
-   - Verify the user is logged in with a `@priorityautomotive.com` email
-   - Check the header shows "(Manager)" next to the username
-   - Check for the debug badge showing `[isManager: true]`
+1. Hard refresh the browser: `Ctrl+Shift+R` (Windows) or `Cmd+Shift+R` (Mac)
+2. Clear service worker cache in DevTools > Application > Service Workers
+3. Verify user has `isManager: true` in Firestore `users` collection
+4. Check console for version - ensure latest build is loaded
 
 ### Service Worker Issues
 
@@ -488,50 +305,11 @@ To reset service worker:
 
 ### Stale Cache After Deploy
 
-The app includes multiple mechanisms to ensure users get the latest version:
-
-**Automatic Detection & Alerts:**
-1. **Version Mismatch Banner**: If the client and server versions don't match, an amber warning banner appears automatically
-2. **Service Worker Update Banner**: When a new version is detected by the service worker, a blue banner appears
-3. **Automatic Unregistration**: On first load, legacy service workers are automatically unregistered
-4. **Console Warnings**: Version mismatches are logged to the console with `⚠️` indicator
-
-**If the app still shows an old version after deploy:**
-
-1. **Look for automatic banners**:
-   - **Amber banner** (version mismatch): Click "Reload Now" immediately
-   - **Blue banner** (new version available): Click "Reload" to update
-   - These banners appear automatically when mismatches are detected
-
-2. **Check console for version information**:
-   ```
-   ✓ Client and server versions match  (good - no action needed)
-   ⚠️ Version mismatch detected!        (bad - reload required)
-   ```
-
-3. **Force service worker update**: 
-   - Open DevTools > Application > Service Workers
-   - Click "Update" to manually trigger SW update
-   - Look for banners and click "Reload"
-
-4. **Verify Cloud Run deployment**:
-   ```bash
-   # Check which revision is serving traffic
-   gcloud run services describe YOUR_SERVICE_NAME --region YOUR_REGION
-   ```
-   - Confirm 100% traffic is routed to the latest revision
-   - Check image digest matches the new build
-
-3. **Check cache headers**:
-   ```bash
-   # Verify index.html is not cached
-   curl -I https://your-app-url.com/
-   # Should show: Cache-Control: no-cache, no-store, must-revalidate
-   
-   # Verify hashed assets are cached long-term
-   curl -I https://your-app-url.com/assets/index-HASH.js
-   # Should show: Cache-Control: public, max-age=31536000, immutable
-   ```
+The app includes automatic service worker cleanup:
+1. **On first load after deploy**: Legacy service workers are automatically unregistered
+2. **Automatic reload**: A one-time reload occurs to fetch the fresh bundle
+3. **No user action needed**: The cleanup happens transparently
+4. **Verification**: Check console for "Unregistering X legacy service worker(s)..." message
 
 Additionally:
 - Ensure `index.html` has short cache duration on your hosting platform
