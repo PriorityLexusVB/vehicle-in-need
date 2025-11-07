@@ -1,5 +1,31 @@
 # UI Navigation Summary
 
+## Manager-Only Navigation Controls
+
+**Overview:** Managers have access to three distinct UI controls to access the Settings (Admin) page:
+
+1. **Pill Navigation Link** - In the header, "Settings" pill next to "Dashboard"
+   - `data-testid="pill-admin-link"`
+   - Routes to `/#/admin`
+   
+2. **Header Gear Button** - Right side of header, gear icon with "Settings" label
+   - `data-testid="header-admin-gear"`
+   - Routes to `/#/admin`
+   
+3. **Navbar Admin Button** - Top navigation bar, "Admin" button
+   - `data-testid="navbar-admin-link"`
+   - Routes to `/#/admin`
+
+**Visibility Rules:**
+- All three controls are visible ONLY when `user.isManager === true`
+- Non-managers see none of these controls
+- Controlled by conditional rendering: `{user.isManager && (...)}`
+
+**Protection:**
+- Even if a non-manager navigates to `/#/admin` directly (e.g., typing in URL)
+- `ProtectedRoute` component checks `user?.isManager`
+- Redirects to `/#/` with `<Navigate to="/" replace />`
+
 ## Header Layout (Manager View)
 
 ```
@@ -217,6 +243,56 @@ Vehicle Order Tracker v{commit-sha}
 [Server] App Version: abc1234
 [Server] Build Time: 2025-11-07T18:00:00Z
 ```
+
+### Automatic Version Mismatch Detection
+
+The app automatically checks if the client and server versions match on load:
+
+**Console Logs:**
+```javascript
+// When versions match (good):
+Client version: abc1234
+Server version: abc1234
+✓ Client and server versions match
+
+// When versions don't match (needs reload):
+Client version: xyz5678
+Server version: abc1234
+⚠️ Version mismatch detected! Client and server are out of sync.
+Client: xyz5678, Server: abc1234
+```
+
+**UI Indicators:**
+
+1. **Version Mismatch Banner** (when client ≠ server):
+   ```
+   ┌────────────────────────────────────────────────────────────┐
+   │ ⚠️ Version mismatch detected                    [Reload Now] [Dismiss] │
+   │    Your browser is using outdated code. Please reload...               │
+   └────────────────────────────────────────────────────────────┘
+   ```
+   - Background: Amber/yellow (`bg-amber-600`)
+   - Fixed at top of page, above all other content
+   - "Reload Now" button triggers `window.location.reload()`
+   - "Dismiss" button hides the banner (not recommended)
+
+2. **Service Worker Update Banner** (when new version available):
+   ```
+   ┌────────────────────────────────────────────────────────────┐
+   │ A new version is available!                      [Reload] [Dismiss]    │
+   └────────────────────────────────────────────────────────────┘
+   ```
+   - Background: Blue (`bg-sky-600`)
+   - Fixed at top of page
+   - "Reload" button activates new service worker
+   - "Dismiss" button hides the banner
+
+**Detection Logic:**
+- Runs on app load via `useEffect` in `App.tsx`
+- Fetches `/api/status` to get server version
+- Compares server `commitSha` with client `__APP_VERSION__`
+- Shows banner if mismatch detected
+- Logs results to console for debugging
 
 ## Version Badge Implementation
 

@@ -35,6 +35,9 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 declare const __APP_VERSION__: string;
 declare const __BUILD_TIME__: string;
 
+// Version check constants
+const UNKNOWN_VERSION = 'unknown';
+
 const App: React.FC = () => {
   const location = useLocation();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -48,6 +51,7 @@ const App: React.FC = () => {
     readyForDelivery: 0,
     deliveredLast30Days: 0,
   });
+  const [versionMismatch, setVersionMismatch] = useState(false);
 
   // Service Worker registration with update notification
   const {
@@ -62,10 +66,53 @@ const App: React.FC = () => {
     },
   });
 
-  // Log version on load
+  // Log version on load and check for version mismatch
   useEffect(() => {
     console.log(`App Version: ${__APP_VERSION__}`);
     console.log(`Build Time: ${__BUILD_TIME__}`);
+    
+    // Check if client version matches server version
+    const checkVersionMatch = async () => {
+      try {
+        const response = await fetch('/api/status');
+        
+        // Check HTTP status before parsing JSON
+        if (!response.ok) {
+          console.error(`Failed to fetch version info: HTTP ${response.status}`);
+          return;
+        }
+        
+        const data = await response.json();
+        // Server /api/status returns multiple version fields for compatibility:
+        // - commitSha (preferred, set via APP_VERSION env var)
+        // - version (alias, also set via APP_VERSION)
+        // - appVersion (another alias)
+        // All contain the same git commit SHA value
+        const serverVersion = data.commitSha || data.version;
+        
+        console.log(`Client version: ${__APP_VERSION__}`);
+        console.log(`Server version: ${serverVersion}`);
+        
+        // Only show mismatch if both versions are valid (not 'unknown' or undefined) and they differ
+        if (
+          __APP_VERSION__ && 
+          __APP_VERSION__ !== UNKNOWN_VERSION && 
+          serverVersion && 
+          serverVersion !== UNKNOWN_VERSION && 
+          __APP_VERSION__ !== serverVersion
+        ) {
+          console.warn('⚠️ Version mismatch detected! Client and server are out of sync.');
+          console.warn(`Client: ${__APP_VERSION__}, Server: ${serverVersion}`);
+          setVersionMismatch(true);
+        } else {
+          console.log('✓ Client and server versions match');
+        }
+      } catch (error) {
+        console.error('Failed to check version:', error);
+      }
+    };
+    
+    checkVersionMatch();
   }, []);
 
   useEffect(() => {
@@ -276,6 +323,37 @@ const App: React.FC = () => {
             <button
               onClick={() => setNeedRefresh(false)}
               className="text-white px-3 py-1 text-sm hover:bg-sky-700 rounded-md transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+      {versionMismatch && (
+        <div 
+          className={`fixed left-0 right-0 bg-amber-600 text-white py-3 px-4 z-50 flex items-center justify-between shadow-lg transition-all ${needRefresh ? 'top-[60px]' : 'top-0'}`}
+          role="alert"
+          aria-live="assertive"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-lg" aria-hidden="true">⚠️</span>
+            <div>
+              <div className="text-sm font-medium">Version mismatch detected</div>
+              <div className="text-xs opacity-90">Your browser is using outdated code. Please reload to get the latest version.</div>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-white text-amber-600 px-4 py-1 rounded-md text-sm font-semibold hover:bg-amber-50 transition-colors"
+              aria-label="Reload page to get the latest version"
+            >
+              Reload Now
+            </button>
+            <button
+              onClick={() => setVersionMismatch(false)}
+              className="text-white px-3 py-1 text-sm hover:bg-amber-700 rounded-md transition-colors"
+              aria-label="Dismiss version mismatch warning"
             >
               Dismiss
             </button>
