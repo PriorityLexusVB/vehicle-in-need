@@ -49,7 +49,9 @@ EXPOSE 8080
 
 # Set environment variable for version info
 ARG COMMIT_SHA=unknown
+ARG BUILD_TIME=unknown
 ENV APP_VERSION=$COMMIT_SHA
+ENV BUILD_TIME=$BUILD_TIME
 
 # Health check (using curl which is more commonly available)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

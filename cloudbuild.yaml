@@ -53,7 +53,7 @@ steps:
       - 'managed'
       - '--allow-unauthenticated'
       - '--set-env-vars'
-      - 'NODE_ENV=production,APP_VERSION=${SHORT_SHA}'
+      - 'NODE_ENV=production,APP_VERSION=${SHORT_SHA},BUILD_TIME=${BUILD_ID}'
     id: 'deploy-cloud-run'
     waitFor: ['push-image']
 

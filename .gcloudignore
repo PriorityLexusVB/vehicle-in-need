@@ -1,0 +1,43 @@
+# Files/directories to ignore when running `gcloud builds submit`
+# This helps speed up uploads to Cloud Build.
+
+# Node modules
+node_modules/
+
+# Build outputs (will be built in Docker)
+dist/
+dist-ssr/
+
+# Git and version control
+.git/
+.gitignore
+.github/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs and temporary files
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Test artifacts
+screenshots/
+coverage/
+
+# Documentation (not needed for build)
+*.md
+!README.md
