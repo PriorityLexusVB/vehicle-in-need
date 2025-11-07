@@ -284,18 +284,47 @@ The app uses Tailwind CSS via PostCSS (no CDN):
 
 Users designated as managers can:
 - View all orders from all users
-- Access the "User Management" settings page
+- Access the Settings page to manage user roles
 - Toggle manager permissions for other users
 - Cannot change their own role (security safeguard)
 
-### Accessing User Management
+### Accessing Settings (Admin)
 
-Managers have multiple ways to access User Management:
-1. **Pill navigation**: Click "User Management" in the left-side pill nav
-2. **Gear icon**: Click the settings gear icon in the header (right side)
-3. **Deep link**: Navigate directly to `/#/admin` in the URL
+Managers have multiple ways to access Settings:
+1. **Pill navigation** (Header): Click "Settings" in the left-side pill nav (visible after login as manager)
+2. **Gear icon** (Header): Click the settings gear icon in the header (right side, labeled "Settings")
+3. **Admin button** (Navbar): Click the "Admin" button in the top navigation bar
+4. **Deep link**: Navigate directly to `/#/admin` in the URL
+
+All three UI controls (pill navigation, gear icon, and Admin button) have `data-testid` attributes for automated testing:
+- `data-testid="pill-admin-link"` - Pill navigation link
+- `data-testid="header-admin-gear"` - Gear icon button
+- `data-testid="navbar-admin-link"` - Admin button in navbar
 
 Non-managers attempting to access `/#/admin` will be automatically redirected to the dashboard.
+
+### Granting Manager Role
+
+To grant manager permissions to a user:
+
+1. **Via Settings Page** (recommended):
+   - Log in as an existing manager
+   - Navigate to Settings using any of the methods above
+   - Find the user in the list
+   - Toggle the "Manager" switch to enable manager permissions
+
+2. **Via Firestore Console** (for initial setup):
+   - Open Firebase Console > Firestore Database
+   - Navigate to the `users` collection
+   - Find or create the user document
+   - Set `isManager: true` in the document
+
+3. **First-time Bootstrap** (optional):
+   - Set environment variable `ENABLE_FIRST_USER_ADMIN=true` (Cloud Run or Docker)
+   - The first user with a `@priorityautomotive.com` email will automatically become a manager
+   - After the first manager is created, disable this flag to prevent auto-promotion
+
+**Note:** Users are initially seeded as managers based on the `MANAGER_EMAILS` constant in `constants.ts`, but subsequent role changes are managed exclusively through Firestore to ensure persistence.
 
 ## Development Notes
 
@@ -334,13 +363,51 @@ This temporary cleanup ensures all users get the latest bundle after deployment,
 
 ## Troubleshooting
 
-### "User Management" buttons not visible
+### Verifying Current Version
+
+To confirm which version is currently running:
+
+1. **Browser UI**: Look for the version badge in the header next to "Vehicle Order Tracker" (displays as `v<commit-sha>`, hover for build time)
+2. **Browser Console**: Check the logs for:
+   ```
+   App Version: <commit-sha>
+   Build Time: <ISO timestamp>
+   ```
+3. **API Endpoint**: Visit `/api/status` or run:
+   ```bash
+   curl https://your-app-url.com/api/status
+   ```
+   This returns:
+   ```json
+   {
+     "geminiEnabled": true,
+     "version": "<commit-sha>",
+     "appVersion": "<commit-sha>",
+     "commitSha": "<commit-sha>",
+     "buildTime": "<ISO timestamp>",
+     "kRevision": "<Cloud Run revision>",
+     "timestamp": "<current time>"
+   }
+   ```
+
+4. **Server Logs** (Cloud Run or local): Check logs for:
+   ```
+   [Server] App Version: <commit-sha>
+   [Server] Build Time: <ISO timestamp>
+   ```
+
+### "Settings" buttons not visible
 
 If manager UI is not showing:
-1. Hard refresh the browser: `Ctrl+Shift+R` (Windows) or `Cmd+Shift+R` (Mac)
-2. Clear service worker cache in DevTools > Application > Service Workers
-3. Verify user has `isManager: true` in Firestore `users` collection
-4. Check console for version - ensure latest build is loaded
+1. **Verify manager role**: Check Firestore `users` collection - ensure user has `isManager: true`
+2. **Clear browser cache**: Hard refresh with `Ctrl+Shift+R` (Windows) or `Cmd+Shift+R` (Mac)
+3. **Clear service worker**:
+   - Open DevTools > Application > Service Workers
+   - Click "Unregister" for any service workers
+   - Click "Clear storage" to remove all caches
+   - Hard refresh the page
+4. **Check version**: Ensure the latest build is loaded (see "Verifying Current Version" above)
+5. **Check for auth issues**: Verify the user is logged in with a `@priorityautomotive.com` email
 
 ### Service Worker Issues
 
@@ -357,6 +424,31 @@ The app includes automatic service worker cleanup:
 2. **Automatic reload**: A one-time reload occurs to fetch the fresh bundle
 3. **No user action needed**: The cleanup happens transparently
 4. **Verification**: Check console for "Unregistering X legacy service worker(s)..." message
+
+If the app still shows an old version after deploy:
+1. **Force service worker update**: 
+   - Open DevTools > Application > Service Workers
+   - Click "Update" to manually trigger SW update
+   - Look for "A new version is available!" banner and click "Reload"
+
+2. **Verify Cloud Run deployment**:
+   ```bash
+   # Check which revision is serving traffic
+   gcloud run services describe YOUR_SERVICE_NAME --region YOUR_REGION
+   ```
+   - Confirm 100% traffic is routed to the latest revision
+   - Check image digest matches the new build
+
+3. **Check cache headers**:
+   ```bash
+   # Verify index.html is not cached
+   curl -I https://your-app-url.com/
+   # Should show: Cache-Control: no-cache, no-store, must-revalidate
+   
+   # Verify hashed assets are cached long-term
+   curl -I https://your-app-url.com/assets/index-HASH.js
+   # Should show: Cache-Control: public, max-age=31536000, immutable
+   ```
 
 Additionally:
 - Ensure `index.html` has short cache duration on your hosting platform

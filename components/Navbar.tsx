@@ -26,6 +26,7 @@ const Navbar: React.FC<NavbarProps> = ({ user }) => {
             {user.isManager && (
               <Link
                 to="/admin"
+                data-testid="navbar-admin-link"
                 className={`px-6 py-2 rounded-full font-bold text-sm transition-all duration-200 transform hover:scale-105 shadow-md ${
                   isAdmin
                     ? 'bg-white text-sky-700 hover:bg-sky-50'
