@@ -28,13 +28,14 @@ app.get('/health', (req, res) => {
   res.status(200).send('healthy\n');
 });
 
-// API status endpoint - returns whether Gemini is enabled
+// API status endpoint - returns version and metadata
 app.get('/api/status', (req, res) => {
+  const version = process.env.APP_VERSION || 'unknown';
   res.json({
     geminiEnabled: true, // Always return true since we're using Vertex AI
-    version: process.env.APP_VERSION || 'unknown',
-    appVersion: process.env.APP_VERSION || 'unknown',
-    commitSha: process.env.APP_VERSION || 'unknown',
+    version: version,
+    appVersion: version,
+    commitSha: version,
     buildTime: process.env.BUILD_TIME || 'unknown',
     kRevision: process.env.K_REVISION || undefined,
     timestamp: new Date().toISOString()
@@ -92,19 +93,23 @@ app.use((err, req, res, next) => {
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
+  const version = process.env.APP_VERSION || 'unknown';
+  const buildTime = process.env.BUILD_TIME || 'unknown';
+  const kRevision = process.env.K_REVISION || 'N/A';
+  
   console.log(`
 ╔════════════════════════════════════════════════════╗
 ║  Vehicle Order Tracker Server                      ║
 ║  Running on: http://0.0.0.0:${PORT}                    ║
 ║  Environment: ${process.env.NODE_ENV || 'production'}                        ║
-║  Version: ${process.env.APP_VERSION || 'unknown'}                           ║
-║  Commit SHA: ${process.env.APP_VERSION || 'unknown'}                        ║
-║  Build Time: ${process.env.BUILD_TIME || 'unknown'}                        ║
-║  K_REVISION: ${process.env.K_REVISION || 'N/A'}                            ║
+║  Version: ${version}                           ║
+║  Commit SHA: ${version}                        ║
+║  Build Time: ${buildTime}                        ║
+║  K_REVISION: ${kRevision}                            ║
 ╚════════════════════════════════════════════════════╝
   `);
-  console.log(`[Server] App Version: ${process.env.APP_VERSION || 'unknown'}`);
-  console.log(`[Server] Build Time: ${process.env.BUILD_TIME || 'unknown'}`);
+  console.log(`[Server] App Version: ${version}`);
+  console.log(`[Server] Build Time: ${buildTime}`);
 });
 
 // Graceful shutdown
