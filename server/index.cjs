@@ -104,11 +104,11 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`
 ╔════════════════════════════════════════════════════╗
 ║  Vehicle Order Tracker Server                      ║
-║  Running on: http://0.0.0.0:${PORT}                    ║
-║  Environment: ${process.env.NODE_ENV || 'production'}                        ║
-║  Version (Commit SHA): ${version}                  ║
-║  Build Time: ${buildTime}                        ║
-║  K_REVISION: ${kRevision}                            ║
+║  Running on: http://0.0.0.0:${PORT.toString().padEnd(4)}                    ║
+║  Environment: ${(process.env.NODE_ENV || 'production').padEnd(10)}                        ║
+║  Version: ${version.padEnd(30)} ║
+║  Build Time: ${buildTime.padEnd(27)} ║
+║  K_REVISION: ${kRevision.padEnd(27)} ║
 ╚════════════════════════════════════════════════════╝
   `);
   console.log(`[Server] App Version (Commit SHA): ${version}`);
