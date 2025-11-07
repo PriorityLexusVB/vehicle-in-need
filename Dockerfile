@@ -17,7 +17,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 # Clean install dependencies using package-lock.json
-RUN npm ci --prefer-offline --no-audit
+RUN npm ci
 
 # Copy source code
 COPY . .
@@ -36,7 +36,7 @@ WORKDIR /app
 
 # Copy package files and install production dependencies only
 COPY package.json package-lock.json ./
-RUN npm ci --only=production --prefer-offline --no-audit
+RUN npm ci --omit=dev
 
 # Copy server code
 COPY server ./server
