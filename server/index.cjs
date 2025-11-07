@@ -33,7 +33,10 @@ app.get('/api/status', (req, res) => {
   res.json({
     geminiEnabled: true, // Always return true since we're using Vertex AI
     version: process.env.APP_VERSION || 'unknown',
+    appVersion: process.env.APP_VERSION || 'unknown',
+    commitSha: process.env.APP_VERSION || 'unknown',
     buildTime: process.env.BUILD_TIME || 'unknown',
+    kRevision: process.env.K_REVISION || undefined,
     timestamp: new Date().toISOString()
   });
 });
@@ -95,9 +98,13 @@ app.listen(PORT, '0.0.0.0', () => {
 ║  Running on: http://0.0.0.0:${PORT}                    ║
 ║  Environment: ${process.env.NODE_ENV || 'production'}                        ║
 ║  Version: ${process.env.APP_VERSION || 'unknown'}                           ║
+║  Commit SHA: ${process.env.APP_VERSION || 'unknown'}                        ║
 ║  Build Time: ${process.env.BUILD_TIME || 'unknown'}                        ║
+║  K_REVISION: ${process.env.K_REVISION || 'N/A'}                            ║
 ╚════════════════════════════════════════════════════╝
   `);
+  console.log(`[Server] App Version: ${process.env.APP_VERSION || 'unknown'}`);
+  console.log(`[Server] Build Time: ${process.env.BUILD_TIME || 'unknown'}`);
 });
 
 // Graceful shutdown

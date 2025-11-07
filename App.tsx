@@ -177,11 +177,6 @@ const App: React.FC = () => {
           console.error("Error fetching users from Firestore: ", error);
       });
 
-    } else {
-      // If user is not a manager, ensure orders and user lists are empty
-      setOrders([]);
-      setAllUsers([]);
-      setStats({ totalActive: 0, awaitingAction: 0, readyForDelivery: 0, deliveredLast30Days: 0 });
     }
 
     return () => {

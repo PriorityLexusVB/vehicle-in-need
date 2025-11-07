@@ -15,7 +15,16 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   return (
     <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg border border-slate-200 animate-fade-in-down">
       <div className="max-w-3xl mx-auto">
-        <h2 className="text-2xl font-bold text-slate-800 mb-2">User Management</h2>
+        {/* Breadcrumb / Subheader for visual distinction */}
+        <nav className="text-sm text-slate-500 mb-4" aria-label="Breadcrumb">
+          <ol className="flex items-center gap-2">
+            <li>Dashboard</li>
+            <li>&gt;</li>
+            <li className="text-slate-800 font-medium">Settings</li>
+          </ol>
+        </nav>
+        
+        <h2 className="text-3xl font-bold text-slate-800 mb-2">Settings</h2>
         <p className="text-sm text-slate-600 mb-8">
           Use the toggles to grant or revoke manager permissions for users. Managers can view all orders and manage user roles. You cannot change your own role.
         </p>
