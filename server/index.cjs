@@ -30,6 +30,9 @@ app.get('/health', (req, res) => {
 
 // API status endpoint - returns version and metadata
 app.get('/api/status', (req, res) => {
+  // Note: version, appVersion, and commitSha all use APP_VERSION which contains the git commit SHA
+  // This is intentional: in our deployment, APP_VERSION IS the commit SHA (set via Dockerfile)
+  // Multiple fields are provided for API compatibility with different client expectations
   const version = process.env.APP_VERSION || 'unknown';
   res.json({
     geminiEnabled: true, // Always return true since we're using Vertex AI
@@ -93,6 +96,7 @@ app.use((err, req, res, next) => {
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
+  // Note: APP_VERSION contains the git commit SHA (set via Dockerfile from COMMIT_SHA build arg)
   const version = process.env.APP_VERSION || 'unknown';
   const buildTime = process.env.BUILD_TIME || 'unknown';
   const kRevision = process.env.K_REVISION || 'N/A';
@@ -102,13 +106,12 @@ app.listen(PORT, '0.0.0.0', () => {
 ║  Vehicle Order Tracker Server                      ║
 ║  Running on: http://0.0.0.0:${PORT}                    ║
 ║  Environment: ${process.env.NODE_ENV || 'production'}                        ║
-║  Version: ${version}                           ║
-║  Commit SHA: ${version}                        ║
+║  Version (Commit SHA): ${version}                  ║
 ║  Build Time: ${buildTime}                        ║
 ║  K_REVISION: ${kRevision}                            ║
 ╚════════════════════════════════════════════════════╝
   `);
-  console.log(`[Server] App Version: ${version}`);
+  console.log(`[Server] App Version (Commit SHA): ${version}`);
   console.log(`[Server] Build Time: ${buildTime}`);
 });
 
