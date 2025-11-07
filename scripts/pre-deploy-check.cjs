@@ -118,7 +118,9 @@ const indexPath = path.join(distPath, 'index.html');
 if (fs.existsSync(indexPath)) {
   const indexContent = fs.readFileSync(indexPath, 'utf-8');
   
-  // Check for Tailwind CDN (should NOT be present)
+  // Check for Tailwind CDN (should NOT be present in production)
+  // Note: This is checking if the CDN URL string exists in HTML content,
+  // not sanitizing or constructing a URL. False positive for CodeQL alert.
   if (indexContent.includes('cdn.tailwindcss.com')) {
     logError('Tailwind CDN script found in index.html (should use compiled CSS)');
     errors++;
