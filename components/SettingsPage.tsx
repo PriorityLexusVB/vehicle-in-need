@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { AppUser } from '../types';
 
 interface SettingsPageProps {
@@ -18,9 +19,13 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
         {/* Breadcrumb / Subheader for visual distinction */}
         <nav className="text-sm text-slate-500 mb-4" aria-label="Breadcrumb">
           <ol className="flex items-center gap-2">
-            <li>Dashboard</li>
-            <li>&gt;</li>
-            <li className="text-slate-800 font-medium">Settings</li>
+            <li>
+              <Link to="/" className="hover:text-slate-700 hover:underline">
+                Dashboard
+              </Link>
+            </li>
+            <li aria-hidden="true">&gt;</li>
+            <li className="text-slate-800 font-medium" aria-current="page">Settings</li>
           </ol>
         </nav>
         
