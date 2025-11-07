@@ -33,6 +33,7 @@ app.get('/api/status', (req, res) => {
   res.json({
     geminiEnabled: true, // Always return true since we're using Vertex AI
     version: process.env.APP_VERSION || 'unknown',
+    buildTime: process.env.BUILD_TIME || 'unknown',
     timestamp: new Date().toISOString()
   });
 });
@@ -55,8 +56,8 @@ app.use(express.static(distPath, {
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
     }
-    // Long-term cache for hashed assets
-    else if (filepath.includes('/assets/') && /\.[a-f0-9]{8}\.(js|css)/.test(filepath)) {
+    // Long-term cache for hashed assets (all assets under /assets/ with whitelisted extensions)
+    else if (filepath.includes('/assets/') && /\.(js|css|woff2?|ttf|eot|otf|svg|png|jpg|jpeg|gif|webp)$/.test(filepath)) {
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     }
     // Short cache for service worker and manifest
@@ -92,6 +93,8 @@ app.listen(PORT, '0.0.0.0', () => {
 ║  Vehicle Order Tracker Server                      ║
 ║  Running on: http://0.0.0.0:${PORT}                    ║
 ║  Environment: ${process.env.NODE_ENV || 'production'}                        ║
+║  Version: ${process.env.APP_VERSION || 'unknown'}                           ║
+║  Build Time: ${process.env.BUILD_TIME || 'unknown'}                        ║
 ╚════════════════════════════════════════════════════╝
   `);
 });
