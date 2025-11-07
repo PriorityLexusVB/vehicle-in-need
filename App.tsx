@@ -35,6 +35,9 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 declare const __APP_VERSION__: string;
 declare const __BUILD_TIME__: string;
 
+// Version check constants
+const UNKNOWN_VERSION = 'unknown';
+
 const App: React.FC = () => {
   const location = useLocation();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -72,13 +75,20 @@ const App: React.FC = () => {
     const checkVersionMatch = async () => {
       try {
         const response = await fetch('/api/status');
+        
+        // Check HTTP status before parsing JSON
+        if (!response.ok) {
+          console.error(`Failed to fetch version info: HTTP ${response.status}`);
+          return;
+        }
+        
         const data = await response.json();
         const serverVersion = data.commitSha || data.version;
         
         console.log(`Client version: ${__APP_VERSION__}`);
         console.log(`Server version: ${serverVersion}`);
         
-        if (serverVersion && serverVersion !== 'unknown' && __APP_VERSION__ !== serverVersion) {
+        if (serverVersion && serverVersion !== UNKNOWN_VERSION && __APP_VERSION__ !== serverVersion) {
           console.warn('⚠️ Version mismatch detected! Client and server are out of sync.');
           console.warn(`Client: ${__APP_VERSION__}, Server: ${serverVersion}`);
           setVersionMismatch(true);
@@ -308,9 +318,13 @@ const App: React.FC = () => {
         </div>
       )}
       {versionMismatch && (
-        <div className="fixed top-0 left-0 right-0 bg-amber-600 text-white py-3 px-4 z-50 flex items-center justify-between shadow-lg">
+        <div 
+          className="fixed top-0 left-0 right-0 bg-amber-600 text-white py-3 px-4 z-50 flex items-center justify-between shadow-lg"
+          role="alert"
+          aria-live="assertive"
+        >
           <div className="flex items-center gap-2">
-            <span className="text-lg">⚠️</span>
+            <span className="text-lg" aria-hidden="true">⚠️</span>
             <div>
               <div className="text-sm font-medium">Version mismatch detected</div>
               <div className="text-xs opacity-90">Your browser is using outdated code. Please reload to get the latest version.</div>
@@ -320,12 +334,14 @@ const App: React.FC = () => {
             <button
               onClick={() => window.location.reload()}
               className="bg-white text-amber-600 px-4 py-1 rounded-md text-sm font-semibold hover:bg-amber-50 transition-colors"
+              aria-label="Reload page to get the latest version"
             >
               Reload Now
             </button>
             <button
               onClick={() => setVersionMismatch(false)}
               className="text-white px-3 py-1 text-sm hover:bg-amber-700 rounded-md transition-colors"
+              aria-label="Dismiss version mismatch warning"
             >
               Dismiss
             </button>
