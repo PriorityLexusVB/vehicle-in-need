@@ -83,13 +83,17 @@ const App: React.FC = () => {
         }
         
         const data = await response.json();
-        // Server returns version info in both commitSha (preferred) and version (legacy) properties
+        // Server /api/status returns multiple version fields for compatibility:
+        // - commitSha (preferred, set via APP_VERSION env var)
+        // - version (alias, also set via APP_VERSION)
+        // - appVersion (another alias)
+        // All contain the same git commit SHA value
         const serverVersion = data.commitSha || data.version;
         
         console.log(`Client version: ${__APP_VERSION__}`);
         console.log(`Server version: ${serverVersion}`);
         
-        // Only show mismatch if both versions are valid (not 'unknown') and they differ
+        // Only show mismatch if both versions are valid (not 'unknown' or undefined) and they differ
         if (
           __APP_VERSION__ && 
           __APP_VERSION__ !== UNKNOWN_VERSION && 
