@@ -1,0 +1,73 @@
+# Cloud Build configuration for building and deploying to Cloud Run
+# This file defines the steps to build a Docker image and deploy it to Cloud Run
+
+substitutions:
+  _REGION: us-west1
+  _SERVICE: pre-order-dealer-exchange-tracker
+  _IMAGE_NAME: gcr.io/${PROJECT_ID}/${_SERVICE}
+
+steps:
+  # Step 1: Build the Docker image with build-time version info
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--build-arg'
+      - 'COMMIT_SHA=${SHORT_SHA}'
+      - '--build-arg'
+      - 'BUILD_TIME=${BUILD_ID}'
+      - '-t'
+      - '${_IMAGE_NAME}:${SHORT_SHA}'
+      - '-t'
+      - '${_IMAGE_NAME}:latest'
+      - '.'
+    id: 'build-image'
+
+  # Step 2: Push the Docker image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '${_IMAGE_NAME}:${SHORT_SHA}'
+    id: 'push-image'
+    waitFor: ['build-image']
+
+  # Step 3: Push the latest tag
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '${_IMAGE_NAME}:latest'
+    id: 'push-latest'
+    waitFor: ['build-image']
+
+  # Step 4: Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_SERVICE}'
+      - '--image'
+      - '${_IMAGE_NAME}:${SHORT_SHA}'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'NODE_ENV=production,APP_VERSION=${SHORT_SHA}'
+    id: 'deploy-cloud-run'
+    waitFor: ['push-image']
+
+# Image to be pushed to Container Registry
+images:
+  - '${_IMAGE_NAME}:${SHORT_SHA}'
+  - '${_IMAGE_NAME}:latest'
+
+# Build timeout (20 minutes)
+timeout: 1200s
+
+# Options for the build
+options:
+  # Use a larger machine type for faster builds
+  machineType: 'N1_HIGHCPU_8'
+  # Log streaming option
+  logging: CLOUD_LOGGING_ONLY

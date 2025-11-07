@@ -6,7 +6,8 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Build outputs
-dist
+# Note: dist is built inside the Docker image during the build stage
+# so we don't exclude it from being created, only from being copied initially
 dist-ssr
 *.local
 
