@@ -56,8 +56,9 @@ app.use(express.static(distPath, {
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
     }
-    // Long-term cache for hashed assets (JS, CSS, and fonts under /assets/)
-    else if (filepath.includes('/assets/') && /\.(js|css|woff2?|ttf|eot|otf)$/.test(filepath)) {
+    // Long-term cache for hashed assets (JS, CSS, and fonts under /assets/ with hash patterns)
+    // Vite generates filenames like: index-CwY8jhIn.css, workbox-window.prod.es5-CwtvwXb3.js
+    else if (filepath.includes('/assets/') && /[\w.-]+-[A-Za-z0-9_-]{6,}\.(js|css|woff2?|ttf|eot|otf)$/.test(filepath)) {
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     }
     // Short cache for service worker and manifest
