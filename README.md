@@ -278,6 +278,139 @@ The app uses Tailwind CSS via PostCSS (no CDN):
 - ✅ Tree-shaking removes unused Tailwind utilities
 - ✅ Consistent styling (no CDN version conflicts)
 
+## Deployment Verification
+
+### Pre-Deployment Checks
+
+Before deploying to production, run the pre-deployment validation script:
+
+```bash
+npm run build
+node scripts/pre-deploy-check.cjs
+```
+
+This script validates:
+- ✅ Build artifacts exist and are correct
+- ✅ No Tailwind CDN references in production build
+- ✅ Hashed assets present (not source .tsx files)
+- ✅ Favicons and service worker files exist
+- ✅ Bundle sizes are reasonable
+- ✅ Git status is clean
+
+**Exit codes:**
+- `0` - All checks passed
+- `1` - Critical errors found (fix before deploying)
+
+### Post-Deployment Verification
+
+After deploying, verify the deployment with the automated verification script:
+
+```bash
+node scripts/verify-deployment.cjs https://your-app-url.com
+```
+
+This script tests:
+- ✅ Health endpoint responds correctly
+- ✅ API status endpoint returns version info
+- ✅ No Tailwind CDN in served HTML
+- ✅ Hashed assets served with correct MIME types
+- ✅ Cache headers configured correctly (no-cache for HTML, immutable for assets)
+- ✅ Favicons load successfully
+- ✅ Service worker files accessible
+
+**Example output:**
+```
+============================================================
+Test Summary
+============================================================
+Total Tests: 25
+Passed: 25
+Failed: 0
+Warnings: 0
+
+✅ Deployment verification PASSED
+```
+
+### Manual Smoke Tests
+
+After automated verification passes, perform manual smoke tests:
+
+1. **Fresh Browser Test (No Cache)**
+   - Open production URL in incognito/private window
+   - Login as manager user
+   - Verify manager navigation visible (Dashboard + User Management pills)
+   - Verify VersionBadge shows in header
+   - Navigate to `/#/admin` and verify SettingsPage loads
+   - Check browser console for no errors
+
+2. **Version Verification**
+   ```bash
+   curl https://your-app-url.com/api/status | jq
+   ```
+   Verify `version` field matches latest commit SHA
+
+3. **Bundle Freshness**
+   - Open DevTools Console
+   - Look for "Application Bundle Info" log
+   - Verify version and build time are current
+   - No "STALE_BUNDLE_DETECTED" warnings
+
+### Stale Bundle Recovery
+
+If production is serving an outdated bundle:
+
+1. **Unregister Service Workers**
+   - Open DevTools → Application → Service Workers
+   - Click "Unregister" on all workers
+   - Hard refresh: Ctrl/Cmd + Shift + R
+
+2. **Clear Browser Storage**
+   ```javascript
+   // Run in browser console
+   localStorage.clear();
+   sessionStorage.clear();
+   location.reload();
+   ```
+
+3. **Verify New Build Deployed**
+   ```bash
+   # Check Cloud Run revision
+   gcloud run services describe pre-order-dealer-exchange-tracker \
+     --region=us-west1 \
+     --format='value(status.latestCreatedRevisionName)'
+   
+   # Verify 100% traffic to latest
+   gcloud run services describe pre-order-dealer-exchange-tracker \
+     --region=us-west1 \
+     --format='table(status.traffic.revisionName,status.traffic.percent)'
+   ```
+
+4. **Force New Deployment** (if needed)
+   ```bash
+   # Rebuild without cache
+   gcloud builds submit --config cloudbuild.yaml --no-cache
+   ```
+
+### Troubleshooting
+
+**Problem: VersionBadge shows "unknown" or missing**
+- **Cause:** Build args not passed during Docker build
+- **Fix:** Verify `cloudbuild.yaml` passes `COMMIT_SHA=${SHORT_SHA}`
+
+**Problem: Module script MIME type errors**
+- **Cause:** Assets returning HTML instead of JavaScript (404 fallback)
+- **Fix:** Verify assets exist in dist/ and Docker COPY includes dist/
+
+**Problem: Manager navigation not visible**
+- **Cause:** User role not set in Firestore
+- **Fix:** Set `isManager: true` in Firestore users collection
+
+**Problem: Tailwind CDN warning in console**
+- **Cause:** Old build or source index.html has CDN script
+- **Fix:** Clear dist/, rebuild, redeploy
+
+See [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md) for comprehensive deployment procedures.
+
 ## Manager Features
 
 Users designated as managers can:

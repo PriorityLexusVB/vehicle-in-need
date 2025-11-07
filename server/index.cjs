@@ -28,12 +28,17 @@ app.get('/health', (req, res) => {
   res.status(200).send('healthy\n');
 });
 
-// API status endpoint - returns whether Gemini is enabled
+// API status endpoint - returns service status and version info
 app.get('/api/status', (req, res) => {
   res.json({
+    status: 'healthy',
     geminiEnabled: true, // Always return true since we're using Vertex AI
     version: process.env.APP_VERSION || 'unknown',
-    timestamp: new Date().toISOString()
+    buildTime: process.env.BUILD_TIME || 'unknown',
+    nodeVersion: process.version,
+    environment: process.env.NODE_ENV || 'production',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
   });
 });
 

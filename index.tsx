@@ -44,9 +44,30 @@ function setupMutationObserverGuard() {
   });
 }
 
+// Runtime diagnostics to detect stale bundle
+function logBundleInfo() {
+  // @ts-ignore - These are injected by Vite at build time
+  const commitSha = typeof import.meta !== 'undefined' && import.meta.env?.VITE_APP_COMMIT_SHA;
+  // @ts-ignore
+  const buildTime = typeof import.meta !== 'undefined' && import.meta.env?.VITE_APP_BUILD_TIME;
+  
+  console.log('%c🚀 Application Bundle Info', 'color: #0ea5e9; font-weight: bold; font-size: 14px;');
+  console.log(`Version: ${commitSha || 'unknown'}`);
+  console.log(`Build Time: ${buildTime || 'unknown'}`);
+  console.log(`User Agent: ${navigator.userAgent}`);
+  console.log(`Timestamp: ${new Date().toISOString()}`);
+  
+  // Check if bundle seems stale
+  if (!commitSha || commitSha === 'unknown' || commitSha === 'dev') {
+    console.warn('%c⚠️ STALE_BUNDLE_DETECTED: Version information missing or invalid', 'color: #f59e0b; font-weight: bold;');
+    console.warn('This may indicate an outdated deployment or build configuration issue.');
+  }
+}
+
 // Initialize app
 async function initializeApp() {
   try {
+    logBundleInfo();
     setupMutationObserverGuard();
     
     const willReload = await unregisterLegacyServiceWorkers();
