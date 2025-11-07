@@ -223,9 +223,9 @@ Vehicle Order Tracker v{commit-sha}
 ### Display Format
 ```
 Vehicle Order Tracker v{commit-sha} @ {formatted-build-time}
-                      ↑
+                      ↑ (hidden on mobile, visible on lg+ screens)
                       Hover shows:
-                      "Built: 2025-11-06T01:54:00Z" (ISO 8601 format)
+                      "Built: Nov 7, 2025, 12:54 PM PST (2025-11-07T20:54:00Z)"
 ```
 
 ### Data Flow
