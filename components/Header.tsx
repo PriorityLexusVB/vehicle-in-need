@@ -39,11 +39,10 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
                 </Link>
                 <Link 
                   to="/admin"
-                  data-testid="pill-admin-link"
                   className={`flex items-center gap-2 px-4 py-1.5 text-sm font-semibold rounded-full transition-colors ${currentPath === '/admin' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
                 >
                   <SettingsIcon className="w-4 h-4" />
-                  <span>Settings</span>
+                  <span>User Management</span>
                 </Link>
               </nav>
             )}
@@ -61,13 +60,12 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
             {user.isManager && (
               <Link
                 to="/admin"
-                data-testid="header-admin-gear"
                 className="flex items-center gap-2 px-3 py-2 rounded-full text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-colors"
-                aria-label="Settings (Admin)"
-                title="Settings (Admin)"
+                aria-label="User Management"
+                title="User Management"
               >
                 <SettingsIcon className="w-5 h-5" />
-                <span className="text-sm font-medium hidden sm:inline">Settings</span>
+                <span className="text-sm font-medium hidden sm:inline">User Management</span>
               </Link>
             )}
             <button
