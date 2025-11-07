@@ -100,7 +100,9 @@ const Login: React.FC = () => {
     setIsSigningIn(true);
     
     // Prefer redirect flow when cross-origin isolated (COOP/COEP headers present)
-    // or when popup might be blocked
+    // or when popup might be blocked. The crossOriginIsolated property may not exist
+    // in older browsers (Safari < 15.2, Firefox < 92), so we default to redirect
+    // for maximum compatibility and to avoid COOP-related popup blocking issues.
     const shouldUseRedirect = window.crossOriginIsolated || 
                               typeof window.crossOriginIsolated === 'undefined';
     
