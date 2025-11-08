@@ -81,24 +81,30 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`
+// Export app for testing
+module.exports = app;
+
+// Only start server if this file is run directly (not required in tests)
+if (require.main === module) {
+  // Start server
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`
 ╔════════════════════════════════════════════════════╗
 ║  Vehicle Order Tracker Server                      ║
 ║  Running on: http://0.0.0.0:${PORT}                    ║
 ║  Environment: ${process.env.NODE_ENV || 'production'}                        ║
 ╚════════════════════════════════════════════════════╝
-  `);
-});
+    `);
+  });
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully...');
-  process.exit(0);
-});
+  // Graceful shutdown
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM received, shutting down gracefully...');
+    process.exit(0);
+  });
 
-process.on('SIGINT', () => {
-  console.log('SIGINT received, shutting down gracefully...');
-  process.exit(0);
-});
+  process.on('SIGINT', () => {
+    console.log('SIGINT received, shutting down gracefully...');
+    process.exit(0);
+  });
+}
