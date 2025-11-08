@@ -641,35 +641,100 @@ npm run verify:parity https://your-app-url.com
 
 Automated tests run on every push and pull request to `main` via the GitHub Actions workflow in `.github/workflows/ci.yml`:
 
-**Status Badge:** Add the badge near the top (already included) once you replace `USERNAME/REPO` with your actual GitHub org/repo.
+**Status Badge:** 
+
+[![CI Status](https://github.com/PriorityLexusVB/vehicle-in-need/actions/workflows/ci.yml/badge.svg)](https://github.com/PriorityLexusVB/vehicle-in-need/actions/workflows/ci.yml)
 
 **Jobs:**
 
-- `unit` – Installs dependencies and runs Vitest once (`npm test -- --run`).
-- `e2e` – After unit tests pass: installs Playwright browsers, builds the app, starts the server, checks `/health`, then runs Playwright tests.
+- `lint` – Runs ESLint and markdownlint to enforce code quality and documentation standards
+- `unit` – Installs dependencies and runs Vitest tests including frontend components and backend API tests (`npm test -- --run`)
+- `e2e` – After unit tests pass: installs Playwright browsers (with caching), builds the app, starts the server, checks `/health`, then runs Playwright tests
+
+**Test Coverage:**
+
+- **Unit Tests:** Component tests (ProtectedRoute, SettingsPage, VersionBadge, OrderForm, OrderList) + Server API tests (health, status, AI endpoints)
+- **E2E Tests:** End-to-end user flows with Playwright (manager flows, non-manager restrictions, authentication)
+- **Crypto Polyfills:** Verified Buffer and getRandomValues availability
+
+**Playwright Artifacts:**
+
+On E2E test failures, the CI workflow automatically uploads:
+- Screenshots of failed tests
+- Video recordings of test execution
+- Trace files for detailed debugging
+
+Artifacts are retained for 7 days and can be downloaded from the Actions tab in GitHub.
+
+**Browser Caching:**
+
+Playwright browser binaries are cached between CI runs to speed up workflow execution. The cache key is based on Playwright version from package-lock.json.
 
 **Local equivalent:**
 
 ```bash
+# Run linting
+npm run lint
+npm run lint:md
+
+# Run unit tests
 npm ci
 npm test -- --run
+
+# Run E2E tests
 npx playwright install --with-deps
 npm run build
 npm run server &
 npm run test:e2e
 ```
 
-**Adding authenticated E2E tests:** Manager/user role tests are skipped until an authentication harness is implemented. Provide test credentials via environment variables or a fixture setup before un-skipping.
+**Linting Commands:**
 
-**Caching:** The workflow uses `actions/setup-node` with npm cache to speed up installs.
+- `npm run lint` - Run ESLint on all TypeScript/JavaScript files
+- `npm run lint:fix` - Auto-fix ESLint issues where possible
+- `npm run lint:md` - Run markdownlint on all markdown files
+- `npm run lint:md:fix` - Auto-fix markdown formatting issues
+
+**Testing with data-testid:**
+
+Key UI elements now include `data-testid` attributes for stable E2E testing:
+- `submit-order-button` - Order form submit button
+- `manager-toggle-{uid}` - Manager role toggle switches
+- `user-row-{uid}` - User management rows
+
+**Adding authenticated E2E tests:** 
+
+Manager/user role tests are skipped until an authentication harness is implemented. To enable:
+
+1. Set up test Firebase project or use Firebase Local Emulator Suite
+2. Provide test credentials via environment variables:
+   ```bash
+   export PLAYWRIGHT_TEST_EMAIL="test-manager@example.com"
+   export PLAYWRIGHT_TEST_PASSWORD="test-password"
+   ```
+3. Configure Playwright to use authentication state:
+   ```typescript
+   // In playwright.config.ts
+   use: {
+     storageState: 'playwright/.auth/user.json'
+   }
+   ```
+4. Create global setup to generate auth state:
+   ```typescript
+   // In playwright/global-setup.ts
+   // Login once, save storageState to file
+   ```
+5. Remove `.skip()` from tests in `e2e/manager-flow.spec.ts`
 
 **Health gate:** E2E job waits for `http://localhost:8080/health` before executing tests.
 
 **Future enhancements:**
 
-- Add authenticated Playwright flows (remove `.skip`) using a test Firebase project.
-- Cache Playwright browser downloads across workflow runs for faster CI.
-- Add artifact upload (videos/screenshots on failure) for easier debugging.
+- Integrate Firebase Local Emulator for authenticated E2E flows
+- Add code coverage reporting
+- Add visual regression testing
+- Implement quality gate summary artifact (JSON/markdown report)
+
 
 ## Manager Features
 
@@ -771,21 +836,84 @@ The app includes a defensive error handler that suppresses MutationObserver erro
 
 If you see a 404 when authenticating a GitHub Copilot MCP server and the browser URL is `https://api.githubcopilot.com/authorize?...`, update your user MCP config to use the `/mcp` base:
 
-- Edit `vscode-userdata:/User/mcp.json`
-- Ensure the GitHub entry looks like:
+**Step-by-step recovery:**
 
+1. **Locate your MCP configuration file:**
+   - VS Code: `vscode-userdata:/User/mcp.json` or `~/.vscode/extensions/github.copilot-chat-*/mcp.json`
+   - Other editors: Check editor-specific configuration paths
+
+2. **Edit the GitHub MCP server entry:**
+   ```json
+   {
+     "github/github-mcp-server": {
+       "type": "http",
+       "url": "https://api.githubcopilot.com/mcp"
+     }
+   }
+   ```
+   
+   **Key change:** Ensure the URL ends with `/mcp` (not just `https://api.githubcopilot.com`)
+
+3. **Restart MCP servers:**
+   - Command Palette → `Developer: Reload Window`
+   - Command Palette → `GitHub Copilot: Restart MCP Servers`
+
+4. **Clear cached authentication (if still stuck):**
+   - Open Secret Storage (Command Palette → `Developer: Open Secret Storage`)
+   - Remove entries related to Copilot MCP auth
+   - Restart VS Code
+
+5. **Verify the fix:**
+   - Browser should now open `https://api.githubcopilot.com/mcp/authorize?...`
+   - Complete authentication flow
+   - MCP server should connect successfully
+
+**Automated reset script:**
+
+Create a shell script to automate MCP reset:
+
+```bash
+#!/bin/bash
+# mcp-reset.sh - Reset GitHub Copilot MCP server configuration
+
+echo "Stopping VS Code..."
+pkill -x "Code" || true
+
+echo "Updating MCP configuration..."
+MCP_CONFIG="$HOME/.vscode/extensions/github.copilot-chat-*/mcp.json"
+if [ -f "$MCP_CONFIG" ]; then
+  # Backup existing config
+  cp "$MCP_CONFIG" "${MCP_CONFIG}.backup"
+  
+  # Update URL to include /mcp base path
+  sed -i 's|https://api.githubcopilot.com"|https://api.githubcopilot.com/mcp"|g' "$MCP_CONFIG"
+  echo "Configuration updated"
+else
+  echo "MCP config not found at $MCP_CONFIG"
+fi
+
+echo "Restarting VS Code..."
+code
 ```
-"github/github-mcp-server": {
-   "type": "http",
-   "url": "https://api.githubcopilot.com/mcp"
-}
+
+Make executable and run:
+```bash
+chmod +x mcp-reset.sh
+./mcp-reset.sh
 ```
 
-Then:
+**Common issues:**
 
-- Command Palette → Developer: Reload Window
-- Command Palette → GitHub Copilot: Restart MCP Servers
-- If still stuck, open Secret Storage and remove Copilot MCP auth entries.
+- **Still getting 404:** Clear browser cookies for `githubcopilot.com` and retry
+- **Server won't start:** Check VS Code logs (Help → Toggle Developer Tools → Console)
+- **Permission denied:** Ensure your GitHub account has Copilot access
+- **Network errors:** Check firewall/proxy settings for `api.githubcopilot.com`
+
+**Prevention:**
+
+- Always use the full MCP base URL: `https://api.githubcopilot.com/mcp`
+- Keep VS Code and Copilot extensions updated
+- Regularly restart MCP servers after updates
 
 The browser should open `https://api.githubcopilot.com/mcp/authorize?...`.
 

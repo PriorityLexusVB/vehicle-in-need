@@ -24,6 +24,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             <div
               key={user.uid}
               className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"
+              data-testid={`user-row-${user.uid}`}
             >
               <div>
                 <p className="font-semibold text-slate-800">{user.displayName}</p>
@@ -36,6 +37,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                   <input
                     type="checkbox"
                     id={`manager-toggle-${user.uid}`}
+                    data-testid={`manager-toggle-${user.uid}`}
                     className="sr-only peer"
                     checked={user.isManager}
                     disabled={user.uid === currentUser.uid}

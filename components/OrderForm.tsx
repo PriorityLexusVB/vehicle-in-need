@@ -241,7 +241,11 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
             </FormField>
         </div>
 
-        <button type="submit" disabled={isSubmitting} className="w-full flex justify-center items-center gap-2 bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 disabled:from-slate-400 disabled:to-slate-500 disabled:shadow-none disabled:transform-none disabled:cursor-wait">
+        <button 
+          type="submit" 
+          disabled={isSubmitting} 
+          data-testid="submit-order-button"
+          className="w-full flex justify-center items-center gap-2 bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 disabled:from-slate-400 disabled:to-slate-500 disabled:shadow-none disabled:transform-none disabled:cursor-wait">
           {isSubmitting ? (
             <>
               <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
