@@ -1,9 +1,8 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import OrderList from '../OrderList';
 import { Order, OrderStatus } from '../../types';
-import { Timestamp } from 'https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js';
 
 describe('OrderList', () => {
   const mockOrders: Order[] = [
@@ -14,8 +13,8 @@ describe('OrderList', () => {
       model: 'Lexus RX 350',
       status: OrderStatus.FactoryOrder,
       date: '2024-01-15',
-      salesperson: 'Alice',
-      createdAt: Timestamp.now(),
+  salesperson: 'Alice',
+  createdAt: new Date(),
       dealNumber: 'DEAL-001',
       stockNumber: 'STOCK-001',
     },
@@ -26,8 +25,8 @@ describe('OrderList', () => {
       model: 'Lexus ES 350',
       status: OrderStatus.Delivered,
       date: '2024-01-10',
-      salesperson: 'Bob',
-      createdAt: Timestamp.now(),
+  salesperson: 'Bob',
+  createdAt: new Date(),
       dealNumber: 'DEAL-002',
       stockNumber: 'STOCK-002',
     },
@@ -38,8 +37,8 @@ describe('OrderList', () => {
       model: 'Lexus NX 350',
       status: OrderStatus.Locate,
       date: '2024-01-20',
-      salesperson: 'Charlie',
-      createdAt: Timestamp.now(),
+  salesperson: 'Charlie',
+  createdAt: new Date(),
       dealNumber: 'DEAL-003',
       stockNumber: 'STOCK-003',
     },
