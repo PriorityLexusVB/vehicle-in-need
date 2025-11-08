@@ -4,9 +4,7 @@
 
 # Pre-Order & Dealer Exchange Tracker
 
-A vehicle order tracking application for Priority Automotive with manager controls, user management, AI-powered email generation, and continuous integration.
-
-[![CI Status](https://github.com/USERNAME/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/USERNAME/REPO/actions/workflows/ci.yml)
+A vehicle order tracking application for Priority Automotive with manager controls, user management, and AI-powered email generation.
 
 View your app in AI Studio: https://ai.studio/apps/drive/1XrFhCIH0pgEmQ_DSYHkXD3TovOfqWFJu
 
@@ -641,8 +639,6 @@ npm run verify:parity https://your-app-url.com
 
 Automated tests run on every push and pull request to `main` via the GitHub Actions workflow in `.github/workflows/ci.yml`:
 
-**Status Badge:** Add the badge near the top (already included) once you replace `USERNAME/REPO` with your actual GitHub org/repo.
-
 **Jobs:**
 
 - `unit` – Installs dependencies and runs Vitest once (`npm test -- --run`).
@@ -664,12 +660,6 @@ npm run test:e2e
 **Caching:** The workflow uses `actions/setup-node` with npm cache to speed up installs.
 
 **Health gate:** E2E job waits for `http://localhost:8080/health` before executing tests.
-
-**Future enhancements:**
-
-- Add authenticated Playwright flows (remove `.skip`) using a test Firebase project.
-- Cache Playwright browser downloads across workflow runs for faster CI.
-- Add artifact upload (videos/screenshots on failure) for easier debugging.
 
 ## Manager Features
 
