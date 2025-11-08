@@ -36,6 +36,7 @@ Browser → /api/generate-email → Express Server → Vertex AI (Gemini 2.0 Fla
 ```
 
 **Benefits:**
+
 - ✅ No API keys exposed in client bundle
 - ✅ Uses Google Cloud Application Default Credentials (ADC)
 - ✅ Service account with proper IAM roles (Vertex AI User)
@@ -51,6 +52,7 @@ VITE_GEMINI_API_KEY
 ```
 
 **Use cases:**
+
 - 🔧 Local development without server setup
 - 🔄 Fallback when server is unavailable
 - 🧪 Testing and prototyping
@@ -60,10 +62,12 @@ VITE_GEMINI_API_KEY
 #### Automatic Mode Selection
 
 The application automatically detects which method to use:
+
 1. If `VITE_GEMINI_API_KEY` is set at build time → Uses client-side API
 2. Otherwise → Falls back to server-side proxy
 
 The application is split into:
+
 1. **Frontend (React + Vite)**: Static files served by Express
 2. **Backend (Express + Node.js)**: Serves static files + API endpoints
 
@@ -82,23 +86,27 @@ The application is split into:
 The recommended approach for production-like testing.
 
 1. Install dependencies:
+
    ```bash
    npm install
    ```
 
 2. Authenticate with Google Cloud:
+
    ```bash
    gcloud auth application-default login
    ```
-   
+
    This authenticates your local environment using Application Default Credentials (ADC). The server will automatically use these credentials when calling Vertex AI APIs.
 
 3. Build the frontend:
+
    ```bash
    npm run build
    ```
 
 4. Run the server:
+
    ```bash
    npm run server
    ```
@@ -106,6 +114,7 @@ The recommended approach for production-like testing.
 5. Open your browser to `http://localhost:8080`
 
 **How it works:**
+
 - Frontend is served as static files from `dist/`
 - API endpoint `/api/generate-email` uses Vertex AI with ADC
 - No client-side API keys needed
@@ -115,18 +124,21 @@ The recommended approach for production-like testing.
 Quick setup for frontend development without running a server.
 
 1. Install dependencies:
+
    ```bash
    npm install
    ```
 
 2. Create `.env.local` with your Gemini API key:
+
    ```bash
    echo "VITE_GEMINI_API_KEY=your-api-key-here" > .env.local
    ```
-   
+
    Get an API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
 
 3. Run the development server:
+
    ```bash
    npm run dev
    ```
@@ -140,6 +152,7 @@ Quick setup for frontend development without running a server.
 For frontend development with server-side API calls:
 
 1. Terminal 1 - Backend server:
+
    ```bash
    gcloud auth application-default login  # One-time setup
    npm run server
@@ -180,6 +193,7 @@ docker build \
 **⚠️ Note:** Client-side API keys are visible in the browser bundle. For production, use the server-side proxy instead.
 
 **Note:** If you encounter an npm "Exit handler never called!" error when building locally, this is a [known npm bug](https://github.com/npm/cli/issues) in certain Docker environments. **The recommended approach is to build using Google Cloud Build** where this issue doesn't occur. For local testing, you can:
+
 - Build the frontend with `npm run build` locally
 - Run the server with `npm run server` to test the full stack
 - Skip Docker build for local development
@@ -193,6 +207,7 @@ docker run -p 8080:8080 vehicle-tracker:latest
 Then open http://localhost:8080 in your browser.
 
 **Benefits of Docker build:**
+
 - ✅ Deterministic builds with consistent Node 20 environment
 - ✅ Proper cache control headers (no-cache for index.html, immutable for hashed assets)
 - ✅ Version visibility via VersionBadge component in header
@@ -205,34 +220,37 @@ Then open http://localhost:8080 in your browser.
 When deploying to Google Cloud Run:
 
 1. **Ensure your service account has required roles:**
+
    - `Vertex AI User` - for calling Gemini models via server-side proxy
    - `Service Account Token Creator` (if needed for service-to-service calls)
 
 2. **Deploy with Cloud Build (server-side mode - recommended):**
+
    ```bash
    gcloud builds submit --config cloudbuild.yaml
    ```
 
 3. **Deploy with client-side API key (optional):**
-   
+
    Add to your `cloudbuild.yaml`:
+
    ```yaml
    steps:
-     - name: 'gcr.io/cloud-builders/docker'
+     - name: "gcr.io/cloud-builders/docker"
        args:
-         - 'build'
-         - '--build-arg'
-         - 'COMMIT_SHA=$SHORT_SHA'
-         - '--build-arg'
-         - 'BUILD_TIME=$_BUILD_TIME'
-         - '--build-arg'
-         - 'VITE_GEMINI_API_KEY=${_VITE_GEMINI_API_KEY}'
-         - '-t'
-         - 'gcr.io/$PROJECT_ID/vehicle-tracker:$SHORT_SHA'
-         - '.'
+         - "build"
+         - "--build-arg"
+         - "COMMIT_SHA=$SHORT_SHA"
+         - "--build-arg"
+         - "BUILD_TIME=$_BUILD_TIME"
+         - "--build-arg"
+         - "VITE_GEMINI_API_KEY=${_VITE_GEMINI_API_KEY}"
+         - "-t"
+         - "gcr.io/$PROJECT_ID/vehicle-tracker:$SHORT_SHA"
+         - "."
    substitutions:
      _BUILD_TIME: '$(date -u +"%Y-%m-%dT%H:%M:%SZ")'
-     _VITE_GEMINI_API_KEY: 'your-api-key-or-secret-ref'
+     _VITE_GEMINI_API_KEY: "your-api-key-or-secret-ref"
    ```
 
 4. **The container automatically:**
@@ -248,11 +266,13 @@ When deploying to Google Cloud Run:
 See [.env.example](.env.example) for detailed configuration options:
 
 **Server-side configuration:**
+
 - `GOOGLE_CLOUD_PROJECT` - Auto-detected from environment (optional override)
 - `VERTEX_AI_LOCATION` - Defaults to `us-central1` (optional)
 - `PORT` - Server port, defaults to `8080` (optional)
 
 **Client-side configuration:**
+
 - `VITE_GEMINI_API_KEY` - Gemini API key for client-side mode (build-time only)
   - Set in `.env.local` for local development
   - Pass as `--build-arg` for Docker builds
@@ -269,10 +289,12 @@ After verifying the server-side proxy works correctly:
 4. **Keep only service account IAM roles** for production access
 
 **What to delete:**
+
 - ❌ Any API keys labeled for "Gemini API" or "Browser access"
 - ❌ The `VITE_GEMINI_API_KEY` from GitHub Secrets (if present)
 
 **What to keep:**
+
 - ✅ Service account with "Vertex AI User" role attached to Cloud Run
 - ✅ No API keys should be present in the final deployment
 
@@ -283,6 +305,7 @@ npm run build
 ```
 
 This creates an optimized production build in the `dist/` directory with:
+
 - Compiled and minified JavaScript
 - Optimized CSS (Tailwind utilities tree-shaken)
 - Service worker for offline support and caching
@@ -311,16 +334,16 @@ For Google Cloud Build, configure build substitutions in your `cloudbuild.yaml`:
 
 ```yaml
 steps:
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: "gcr.io/cloud-builders/docker"
     args:
-      - 'build'
-      - '--build-arg'
-      - 'COMMIT_SHA=$SHORT_SHA'
-      - '--build-arg'
-      - 'BUILD_TIME=$_BUILD_TIME'
-      - '-t'
-      - 'gcr.io/$PROJECT_ID/vehicle-tracker:$SHORT_SHA'
-      - '.'
+      - "build"
+      - "--build-arg"
+      - "COMMIT_SHA=$SHORT_SHA"
+      - "--build-arg"
+      - "BUILD_TIME=$_BUILD_TIME"
+      - "-t"
+      - "gcr.io/$PROJECT_ID/vehicle-tracker:$SHORT_SHA"
+      - "."
 substitutions:
   _BUILD_TIME: '$(date -u +"%Y-%m-%dT%H:%M:%SZ")'
 ```
@@ -357,6 +380,7 @@ The app includes automatic update detection:
 4. **Version display**: Current version (git commit SHA) shown in the header
 
 To verify the live version:
+
 - Check the console for: `App Version: [commit-sha]` and `Build Time: [timestamp]`
 - Look for version number next to "Vehicle Order Tracker" in the header
 
@@ -370,6 +394,7 @@ The app uses Tailwind CSS via PostCSS (no CDN):
 - **Output**: Optimized CSS bundle with unused styles removed
 
 **Production benefits:**
+
 - ✅ No CDN warnings in console
 - ✅ Faster initial load (no external script)
 - ✅ Tree-shaking removes unused Tailwind utilities
@@ -387,6 +412,7 @@ node scripts/pre-deploy-check.cjs
 ```
 
 This script validates:
+
 - ✅ Build artifacts exist and are correct
 - ✅ No Tailwind CDN references in production build
 - ✅ Hashed assets present (not source .tsx files)
@@ -395,6 +421,7 @@ This script validates:
 - ✅ Git status is clean
 
 **Exit codes:**
+
 - `0` - All checks passed
 - `1` - Critical errors found (fix before deploying)
 
@@ -407,6 +434,7 @@ node scripts/verify-deployment.cjs https://your-app-url.com
 ```
 
 This script tests:
+
 - ✅ Health endpoint responds correctly
 - ✅ API status endpoint returns version info
 - ✅ No Tailwind CDN in served HTML
@@ -416,6 +444,7 @@ This script tests:
 - ✅ Service worker files accessible
 
 **Example output:**
+
 ```
 ============================================================
 Test Summary
@@ -433,6 +462,7 @@ Warnings: 0
 After automated verification passes, perform manual smoke tests:
 
 1. **Fresh Browser Test (No Cache)**
+
    - Open production URL in incognito/private window
    - Login as manager user
    - Verify manager navigation visible (Dashboard + User Management pills)
@@ -441,9 +471,11 @@ After automated verification passes, perform manual smoke tests:
    - Check browser console for no errors
 
 2. **Version Verification**
+
    ```bash
    curl https://your-app-url.com/api/status | jq
    ```
+
    Verify `version` field matches latest commit SHA
 
 3. **Bundle Freshness**
@@ -457,11 +489,13 @@ After automated verification passes, perform manual smoke tests:
 If production is serving an outdated bundle:
 
 1. **Unregister Service Workers**
+
    - Open DevTools → Application → Service Workers
    - Click "Unregister" on all workers
    - Hard refresh: Ctrl/Cmd + Shift + R
 
 2. **Clear Browser Storage**
+
    ```javascript
    // Run in browser console
    localStorage.clear();
@@ -470,12 +504,13 @@ If production is serving an outdated bundle:
    ```
 
 3. **Verify New Build Deployed**
+
    ```bash
    # Check Cloud Run revision
    gcloud run services describe pre-order-dealer-exchange-tracker \
      --region=us-west1 \
      --format='value(status.latestCreatedRevisionName)'
-   
+
    # Verify 100% traffic to latest
    gcloud run services describe pre-order-dealer-exchange-tracker \
      --region=us-west1 \
@@ -491,18 +526,22 @@ If production is serving an outdated bundle:
 ### Troubleshooting
 
 **Problem: VersionBadge shows "unknown" or missing**
+
 - **Cause:** Build args not passed during Docker build
 - **Fix:** Verify `cloudbuild.yaml` passes `COMMIT_SHA=${SHORT_SHA}`
 
 **Problem: Module script MIME type errors**
+
 - **Cause:** Assets returning HTML instead of JavaScript (404 fallback)
 - **Fix:** Verify assets exist in dist/ and Docker COPY includes dist/
 
 **Problem: Manager navigation not visible**
+
 - **Cause:** User role not set in Firestore
 - **Fix:** Set `isManager: true` in Firestore users collection
 
 **Problem: Tailwind CDN warning in console**
+
 - **Cause:** Old build or source index.html has CDN script
 - **Fix:** Clear dist/, rebuild, redeploy
 
@@ -517,10 +556,11 @@ The application includes automated tests to ensure code quality and functionalit
 Unit tests are written using Vitest and Testing Library. They cover critical components:
 
 - **ProtectedRoute** - Route protection logic for manager-only pages
-- **SettingsPage** - User management and role toggle functionality  
+- **SettingsPage** - User management and role toggle functionality
 - **VersionBadge** - Version display component
 
 **Run unit tests:**
+
 ```bash
 npm test              # Run tests in watch mode
 npm test -- --run     # Run tests once
@@ -538,18 +578,21 @@ E2E tests are written using Playwright and cover user flows:
 - **Authentication flow** - Login, unauthenticated access
 
 **Run E2E tests:**
+
 ```bash
 npm run test:e2e           # Run all E2E tests
 npm run test:e2e:ui        # Run with Playwright UI
 ```
 
 **Note:** E2E tests require:
+
 - Built application (`npm run build`)
 - Running server (`npm run server`)
 - Firebase authentication configured
 - Test user accounts
 
 Most E2E tests are skipped by default (`.skip`) because they require authenticated sessions. To run them:
+
 1. Set up test user accounts in Firebase
 2. Configure authentication in tests
 3. Remove `.skip` from desired tests
@@ -565,6 +608,7 @@ npm run verify:parity https://your-production-url.com
 ```
 
 This script checks:
+
 - ✅ Production version matches local commit SHA
 - ✅ Build time is recent
 - ✅ No Tailwind CDN (using compiled CSS)
@@ -572,6 +616,7 @@ This script checks:
 - ✅ Service worker cleanup script included
 
 **Exit codes:**
+
 - `0` - Parity verified
 - `1` - Parity check failed (investigate and redeploy)
 
@@ -590,9 +635,36 @@ npm run test:e2e
 npm run verify:parity https://your-app-url.com
 ```
 
+## Continuous Integration (CI)
+
+Automated tests run on every push and pull request to `main` via the GitHub Actions workflow in `.github/workflows/ci.yml`:
+
+**Jobs:**
+
+- `unit` – Installs dependencies and runs Vitest once (`npm test -- --run`).
+- `e2e` – After unit tests pass: installs Playwright browsers, builds the app, starts the server, checks `/health`, then runs Playwright tests.
+
+**Local equivalent:**
+
+```bash
+npm ci
+npm test -- --run
+npx playwright install --with-deps
+npm run build
+npm run server &
+npm run test:e2e
+```
+
+**Adding authenticated E2E tests:** Manager/user role tests are skipped until an authentication harness is implemented. Provide test credentials via environment variables or a fixture setup before un-skipping.
+
+**Caching:** The workflow uses `actions/setup-node` with npm cache to speed up installs.
+
+**Health gate:** E2E job waits for `http://localhost:8080/health` before executing tests.
+
 ## Manager Features
 
 Users designated as managers can:
+
 - View all orders from all users
 - Access the "User Management" settings page
 - Toggle manager permissions for other users
@@ -601,6 +673,7 @@ Users designated as managers can:
 ### Accessing User Management
 
 Managers have multiple ways to access User Management:
+
 1. **Pill navigation**: Click "User Management" in the left-side pill nav
 2. **Gear icon**: Click the settings gear icon in the header (right side)
 3. **Deep link**: Navigate directly to `/#/admin` in the URL
@@ -612,6 +685,7 @@ Non-managers attempting to access `/#/admin` will be automatically redirected to
 ### Routing Structure
 
 The app uses React Router with HashRouter for client-side routing:
+
 - `/#/` or `/` - Dashboard view (shows order form for non-managers, order list for managers)
 - `/#/admin` - User Management page (protected, managers only)
 
@@ -620,6 +694,7 @@ The app uses React Router with HashRouter for client-side routing:
 ### Version Information
 
 The app displays version information in the header:
+
 - **Version format**: `v[commit-sha]` (e.g., `v3a2b1c4`)
 - **Build time**: Hover over version to see build timestamp
 - **Console logs**: Version info is logged on app load
@@ -635,6 +710,7 @@ During local builds, Vite automatically uses `git rev-parse --short HEAD` for th
 ### Service Worker Cleanup
 
 On app load, the application automatically:
+
 1. **Checks for legacy service workers**: Detects any registered service workers
 2. **Unregisters them**: Removes old service workers to prevent stale cache issues
 3. **One-time reload**: If service workers were found, triggers a single page reload
@@ -647,6 +723,7 @@ This temporary cleanup ensures all users get the latest bundle after deployment,
 ### "User Management" buttons not visible
 
 If manager UI is not showing:
+
 1. Hard refresh the browser: `Ctrl+Shift+R` (Windows) or `Cmd+Shift+R` (Mac)
 2. Clear service worker cache in DevTools > Application > Service Workers
 3. Verify user has `isManager: true` in Firestore `users` collection
@@ -655,6 +732,7 @@ If manager UI is not showing:
 ### Service Worker Issues
 
 To reset service worker:
+
 1. Open DevTools > Application > Service Workers
 2. Click "Unregister" for the current service worker
 3. Click "Clear storage" to remove all caches
@@ -663,12 +741,14 @@ To reset service worker:
 ### Stale Cache After Deploy
 
 The app includes automatic service worker cleanup:
+
 1. **On first load after deploy**: Legacy service workers are automatically unregistered
 2. **Automatic reload**: A one-time reload occurs to fetch the fresh bundle
 3. **No user action needed**: The cleanup happens transparently
 4. **Verification**: Check console for "Unregistering X legacy service worker(s)..." message
 
 Additionally:
+
 - Ensure `index.html` has short cache duration on your hosting platform
 - The service worker update banner will appear for version updates
 - Users can manually hard refresh if needed: `Ctrl+Shift+R` (Windows) or `Cmd+Shift+R` (Mac)
@@ -692,6 +772,7 @@ If you see a 404 when authenticating a GitHub Copilot MCP server and the browser
 ```
 
 Then:
+
 - Command Palette → Developer: Reload Window
 - Command Palette → GitHub Copilot: Restart MCP Servers
 - If still stuck, open Secret Storage and remove Copilot MCP auth entries.
