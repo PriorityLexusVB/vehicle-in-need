@@ -28,12 +28,17 @@ app.get('/health', (req, res) => {
   res.status(200).send('healthy\n');
 });
 
-// API status endpoint - returns whether Gemini is enabled
+// API status endpoint - returns service status and version info
 app.get('/api/status', (req, res) => {
   res.json({
+    status: 'healthy',
     geminiEnabled: true, // Always return true since we're using Vertex AI
     version: process.env.APP_VERSION || 'unknown',
-    timestamp: new Date().toISOString()
+    buildTime: process.env.BUILD_TIME || 'unknown',
+    nodeVersion: process.version,
+    environment: process.env.NODE_ENV || 'production',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
   });
 });
 
@@ -51,8 +56,8 @@ app.use(express.static(distPath, {
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
     }
-    // Long-term cache for hashed assets
-    else if (filepath.includes('/assets/') && /\.[a-f0-9]{8}\.(js|css)/.test(filepath)) {
+    // Long-term cache for hashed assets (Vite uses base64-like hashes with underscores/dashes)
+    else if (filepath.includes('/assets/') && /\-[a-zA-Z0-9_-]{8,}\.(js|css)$/.test(filepath)) {
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     }
     // Short cache for service worker and manifest
