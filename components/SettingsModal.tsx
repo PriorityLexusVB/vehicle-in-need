@@ -19,17 +19,23 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      aria-labelledby="modal-title"
-      role="dialog"
-      aria-modal="true"
-      onClick={onClose}
+      onClick={handleBackdropClick}
+      role="presentation"
     >
       <div
         className="relative bg-white w-full max-w-2xl max-h-[90vh] rounded-2xl shadow-xl border border-slate-200 flex flex-col"
-        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-labelledby="modal-title"
+        aria-modal="true"
       >
         <div className="flex items-center justify-between p-4 sm:p-6 border-b border-slate-200">
           <h2 id="modal-title" className="text-xl font-bold text-slate-800">
@@ -61,6 +67,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 <div className="flex items-center space-x-3">
                   <span className="text-sm font-medium text-slate-600">Manager</span>
                   <label htmlFor={`manager-toggle-${user.uid}`} className="relative inline-flex items-center cursor-pointer">
+                    <span className="sr-only">Toggle manager status for {user.displayName}</span>
                     <input
                       type="checkbox"
                       id={`manager-toggle-${user.uid}`}

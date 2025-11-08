@@ -17,6 +17,8 @@ export default defineConfig({
     setupFiles: './vitest.setup.ts',
     css: true,
     exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**', '**/.{idea,git,cache,output,temp}/**'],
+    // Allow .cjs test files for server tests
+    include: ['**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
   },
   resolve: {
     alias: {

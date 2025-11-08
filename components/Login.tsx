@@ -11,7 +11,6 @@ import { GoogleIcon } from "./icons/GoogleIcon";
 const UnauthorizedDomainError: React.FC = () => {
   const hostname =
     typeof window !== "undefined" ? window.location.hostname : "";
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
   const [copySuccess, setCopySuccess] = useState(false);
 
   const handleCopy = () => {
@@ -33,16 +32,17 @@ const UnauthorizedDomainError: React.FC = () => {
 
       <div className="space-y-4 mt-4">
         <div>
-          <label className="font-semibold text-slate-700 block mb-1">
+          <label htmlFor="domain-input" className="font-semibold text-slate-700 block mb-1">
             1. Copy this exact domain (hostname only):
           </label>
           <div className="flex items-center gap-2">
             <input
+              id="domain-input"
               type="text"
               readOnly
               value={hostname}
               className="w-full p-2 border border-slate-300 rounded bg-slate-100 text-xs font-mono"
-              onClick={(e: any) => e.target.select()}
+              onClick={(e: React.MouseEvent<HTMLInputElement>) => e.currentTarget.select()}
             />
             <button
               onClick={handleCopy}
@@ -129,12 +129,13 @@ const Login: React.FC = () => {
         if (!result) {
           setIsSigningIn(false);
         }
-      } catch (err: any) {
+      } catch (err) {
+        const error = err as { code?: string };
         console.error("Redirect Authentication Error:", err);
-        if (err.code === "auth/unauthorized-domain") {
+        if (error.code === "auth/unauthorized-domain") {
           setError({ type: "unauthorized-domain", message: "" });
         } else if (
-          err.code === "auth/account-exists-with-different-credential"
+          error.code === "auth/account-exists-with-different-credential"
         ) {
           setError({
             type: "generic",
@@ -142,7 +143,7 @@ const Login: React.FC = () => {
               "An account already exists with this email using a different sign-in method.",
           });
         } else if (
-          err.code === "auth/operation-not-supported-in-this-environment"
+          error.code === "auth/operation-not-supported-in-this-environment"
         ) {
           setError({
             type: "generic",
@@ -176,22 +177,24 @@ const Login: React.FC = () => {
       }
 
       await signInWithPopup(auth, googleProvider);
-    } catch (popupError: any) {
+    } catch (popupError) {
+      const error = popupError as { code?: string };
       console.warn(
         "Popup sign-in failed, falling back to redirect. Reason:",
-        popupError.code
+        error.code
       );
       console.debug("Popup error detail:", popupError);
       // If popup fails for any reason, try redirect.
       // This will navigate away. Errors will be handled by getRedirectResult upon return.
       await signInWithRedirect(auth, googleProvider).catch(
-        (redirectError: any) => {
+        (redirectError) => {
+          const redirError = redirectError as { code?: string };
           // This catch is only for errors *initiating* the redirect.
           console.error(
             "Authentication Initiation Error (Redirect):",
             redirectError
           );
-          if (redirectError.code === "auth/unauthorized-domain") {
+          if (redirError.code === "auth/unauthorized-domain") {
             setError({ type: "unauthorized-domain", message: "" });
           } else {
             setError({
