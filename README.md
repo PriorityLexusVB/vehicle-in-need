@@ -1,14 +1,12 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
-
 # Pre-Order & Dealer Exchange Tracker
 
-A vehicle order tracking application for Priority Automotive with manager controls, user management, AI-powered email generation, and continuous integration.
+![GH Banner](https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6)
 
-[![CI Status](https://github.com/PriorityLexusVB/vehicle-in-need/actions/workflows/ci.yml/badge.svg)](https://github.com/PriorityLexusVB/vehicle-in-need/actions/workflows/ci.yml)
+[![CI](https://github.com/PriorityLexusVB/vehicle-in-need/actions/workflows/ci.yml/badge.svg)](https://github.com/PriorityLexusVB/vehicle-in-need/actions/workflows/ci.yml)
 
-View your app in AI Studio: https://ai.studio/apps/drive/1XrFhCIH0pgEmQ_DSYHkXD3TovOfqWFJu
+A vehicle order tracking application for Priority Automotive with manager controls, user management, and AI-powered email generation.
+
+View your app in AI Studio: [AI Studio App](https://ai.studio/apps/drive/1XrFhCIH0pgEmQ_DSYHkXD3TovOfqWFJu)
 
 ## Features
 
@@ -30,7 +28,7 @@ The application supports **two methods** for AI email generation:
 
 #### Method 1: Server-Side Vertex AI Proxy (Recommended for Production)
 
-```
+```text
 Browser → /api/generate-email → Express Server → Vertex AI (Gemini 2.0 Flash)
                                       ↓
                             Service Account IAM
@@ -47,9 +45,9 @@ Browser → /api/generate-email → Express Server → Vertex AI (Gemini 2.0 Fla
 
 #### Method 2: Client-Side Gemini API (Development/Fallback)
 
-```
+```text
 Browser → Gemini API (direct)
-    ↓
+   ↓
 VITE_GEMINI_API_KEY
 ```
 
@@ -113,7 +111,7 @@ The recommended approach for production-like testing.
    npm run server
    ```
 
-5. Open your browser to `http://localhost:8080`
+5. Open your browser to [`http://localhost:8080`](http://localhost:8080)
 
 **How it works:**
 
@@ -145,7 +143,7 @@ Quick setup for frontend development without running a server.
    npm run dev
    ```
 
-4. Open your browser to `http://localhost:3000`
+4. Open your browser to [`http://localhost:3000`](http://localhost:3000)
 
 **⚠️ Note:** This exposes the API key in the browser bundle. Use only for development!
 
@@ -161,6 +159,7 @@ For frontend development with server-side API calls:
    ```
 
 2. Terminal 2 - Frontend dev server:
+
    ```bash
    npm run dev
    ```
@@ -206,7 +205,7 @@ docker build \
 docker run -p 8080:8080 vehicle-tracker:latest
 ```
 
-Then open http://localhost:8080 in your browser.
+Then open [`http://localhost:8080`](http://localhost:8080) in your browser.
 
 **Benefits of Docker build:**
 
@@ -317,15 +316,15 @@ This creates an optimized production build in the `dist/` directory with:
 
 ### Build Output
 
-```
+```text
 dist/
 ├── index.html                    # Entry point (not cached long-term)
 ├── manifest.webmanifest          # PWA manifest
 ├── sw.js                         # Service worker
 ├── workbox-*.js                  # Workbox runtime
 └── assets/
-    ├── index-[hash].css          # Optimized CSS
-    └── index-[hash].js           # Bundled JavaScript
+   ├── index-[hash].css          # Optimized CSS
+   └── index-[hash].js           # Bundled JavaScript
 ```
 
 **Bundle size improvement:** The removal of `@google/genai` from the client reduced the JavaScript bundle from ~469 KB to ~268 KB (43% reduction).
@@ -356,9 +355,10 @@ To rollback to a previous version:
 
 1. Find the previous image tag (commit SHA) in your container registry
 2. Deploy the previous image:
+
    ```bash
    gcloud run deploy vehicle-tracker \
-     --image gcr.io/PROJECT_ID/vehicle-tracker:PREVIOUS_SHA
+      --image gcr.io/PROJECT_ID/vehicle-tracker:PREVIOUS_SHA
    ```
 
 ### Deploy
@@ -447,7 +447,7 @@ This script tests:
 
 **Example output:**
 
-```
+```text
 ============================================================
 Test Summary
 ============================================================
@@ -520,6 +520,7 @@ If production is serving an outdated bundle:
    ```
 
 4. **Force New Deployment** (if needed)
+
    ```bash
    # Rebuild without cache
    gcloud builds submit --config cloudbuild.yaml --no-cache
@@ -527,22 +528,22 @@ If production is serving an outdated bundle:
 
 ### Troubleshooting
 
-**Problem: VersionBadge shows "unknown" or missing**
+### Problem: VersionBadge shows "unknown" or missing
 
 - **Cause:** Build args not passed during Docker build
 - **Fix:** Verify `cloudbuild.yaml` passes `COMMIT_SHA=${SHORT_SHA}`
 
-**Problem: Module script MIME type errors**
+### Problem: Module script MIME type errors
 
 - **Cause:** Assets returning HTML instead of JavaScript (404 fallback)
 - **Fix:** Verify assets exist in dist/ and Docker COPY includes dist/
 
-**Problem: Manager navigation not visible**
+### Problem: Manager navigation not visible
 
 - **Cause:** User role not set in Firestore
 - **Fix:** Set `isManager: true` in Firestore users collection
 
-**Problem: Tailwind CDN warning in console**
+### Problem: Tailwind CDN warning in console
 
 - **Cause:** Old build or source index.html has CDN script
 - **Fix:** Clear dist/, rebuild, redeploy
@@ -793,7 +794,7 @@ On app load, the application automatically:
 
 This temporary cleanup ensures all users get the latest bundle after deployment, even if they were stuck behind an old service worker cache.
 
-## Troubleshooting
+## Troubleshooting (General)
 
 ### "User Management" buttons not visible
 
