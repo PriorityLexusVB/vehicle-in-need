@@ -6,7 +6,7 @@
 
 A vehicle order tracking application for Priority Automotive with manager controls, user management, AI-powered email generation, and continuous integration.
 
-[![CI Status](https://github.com/USERNAME/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/USERNAME/REPO/actions/workflows/ci.yml)
+[![CI Status](https://github.com/PriorityLexusVB/vehicle-in-need/actions/workflows/ci.yml/badge.svg)](https://github.com/PriorityLexusVB/vehicle-in-need/actions/workflows/ci.yml)
 
 View your app in AI Studio: https://ai.studio/apps/drive/1XrFhCIH0pgEmQ_DSYHkXD3TovOfqWFJu
 

@@ -224,8 +224,8 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
         <div className="space-y-4">
              <h3 className="text-base font-semibold text-slate-600 border-b pb-2">Status & Notes</h3>
               <div>
-                <label className="block text-sm font-medium text-slate-700">Status*</label>
-                <div className="mt-2 flex flex-wrap gap-2">
+                <label htmlFor="status-buttons" className="block text-sm font-medium text-slate-700">Status*</label>
+                <div id="status-buttons" className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Select status">
                     {activeStatusOptions.map(status => (
                     <button key={status} type="button" onClick={() => setFormState(s => ({...s, status}))} className={`px-4 py-2 text-sm rounded-full border-2 transition-colors ${formState.status === status ? 'bg-sky-600 border-sky-600 text-white font-semibold' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-100 hover:border-slate-400'}`}>
                         {status}

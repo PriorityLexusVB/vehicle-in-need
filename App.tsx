@@ -124,64 +124,63 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    let unsubscribeOrders: (() => void) | undefined;
-    let unsubscribeUsers: (() => void) | undefined;
-
-    if (user?.isManager) {
-      // Fetch orders for managers
-      const ordersQuery = query(collection(db, "orders"), orderBy("createdAt", "desc"));
-      unsubscribeOrders = onSnapshot(ordersQuery, (querySnapshot) => {
-        const ordersData: Order[] = querySnapshot.docs.map(doc => ({
-          ...doc.data(),
-          id: doc.id
-        } as Order));
-        setOrders(ordersData);
-        
-        // Calculate stats
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        const newStats = ordersData.reduce((acc, order) => {
-            if (order.status !== OrderStatus.Delivered) {
-                acc.totalActive++;
-            }
-            if ([OrderStatus.FactoryOrder, OrderStatus.Locate, OrderStatus.DealerExchange].includes(order.status)) {
-                acc.awaitingAction++;
-            }
-            if (order.status === OrderStatus.Received) {
-                acc.readyForDelivery++;
-            }
-            const createdAtDate = (order.createdAt as Timestamp)?.toDate();
-            if (order.status === OrderStatus.Delivered && createdAtDate && createdAtDate > thirtyDaysAgo) {
-                acc.deliveredLast30Days++;
-            }
-            return acc;
-        }, {
-            totalActive: 0,
-            awaitingAction: 0,
-            readyForDelivery: 0,
-            deliveredLast30Days: 0,
-        });
-        setStats(newStats);
-
-      }, (error) => {
-          console.error("Error fetching orders from Firestore: ", error);
+    if (!user?.isManager) {
+      // If user is not a manager, reset state outside the effect
+      Promise.resolve().then(() => {
+        setOrders([]);
+        setAllUsers([]);
+        setStats({ totalActive: 0, awaitingAction: 0, readyForDelivery: 0, deliveredLast30Days: 0 });
       });
-      
-      // Fetch all users for managers
-      const usersQuery = query(collection(db, USERS_COLLECTION), orderBy("displayName", "asc"));
-      unsubscribeUsers = onSnapshot(usersQuery, (querySnapshot) => {
-          const usersData: AppUser[] = querySnapshot.docs.map(doc => doc.data() as AppUser);
-          setAllUsers(usersData);
-      }, (error) => {
-          console.error("Error fetching users from Firestore: ", error);
-      });
-
-    } else {
-      // If user is not a manager, ensure orders and user lists are empty
-      setOrders([]);
-      setAllUsers([]);
-      setStats({ totalActive: 0, awaitingAction: 0, readyForDelivery: 0, deliveredLast30Days: 0 });
+      return;
     }
+
+    // Fetch orders for managers
+    const ordersQuery = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+    const unsubscribeOrders = onSnapshot(ordersQuery, (querySnapshot) => {
+      const ordersData: Order[] = querySnapshot.docs.map(doc => ({
+        ...doc.data(),
+        id: doc.id
+      } as Order));
+      setOrders(ordersData);
+      
+      // Calculate stats
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const newStats = ordersData.reduce((acc, order) => {
+          if (order.status !== OrderStatus.Delivered) {
+              acc.totalActive++;
+          }
+          if ([OrderStatus.FactoryOrder, OrderStatus.Locate, OrderStatus.DealerExchange].includes(order.status)) {
+              acc.awaitingAction++;
+          }
+          if (order.status === OrderStatus.Received) {
+              acc.readyForDelivery++;
+          }
+          const createdAtDate = (order.createdAt as Timestamp)?.toDate();
+          if (order.status === OrderStatus.Delivered && createdAtDate && createdAtDate > thirtyDaysAgo) {
+              acc.deliveredLast30Days++;
+          }
+          return acc;
+      }, {
+          totalActive: 0,
+          awaitingAction: 0,
+          readyForDelivery: 0,
+          deliveredLast30Days: 0,
+      });
+      setStats(newStats);
+
+    }, (error) => {
+        console.error("Error fetching orders from Firestore: ", error);
+    });
+    
+    // Fetch all users for managers
+    const usersQuery = query(collection(db, USERS_COLLECTION), orderBy("displayName", "asc"));
+    const unsubscribeUsers = onSnapshot(usersQuery, (querySnapshot) => {
+        const usersData: AppUser[] = querySnapshot.docs.map(doc => doc.data() as AppUser);
+        setAllUsers(usersData);
+    }, (error) => {
+        console.error("Error fetching users from Firestore: ", error);
+    });
 
     return () => {
         unsubscribeOrders?.();

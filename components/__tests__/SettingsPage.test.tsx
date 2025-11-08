@@ -129,7 +129,6 @@ describe('SettingsPage', () => {
   });
 
   it('prevents current user from changing their own role', async () => {
-    const user = userEvent.setup();
     const onUpdateUserRole = vi.fn();
 
     const { container } = render(

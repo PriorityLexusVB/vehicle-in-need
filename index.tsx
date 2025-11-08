@@ -46,9 +46,9 @@ function setupMutationObserverGuard() {
 
 // Runtime diagnostics to detect stale bundle
 function logBundleInfo() {
-  // @ts-ignore - These are injected by Vite at build time
+  // @ts-expect-error - These are injected by Vite at build time
   const commitSha = typeof import.meta !== 'undefined' && import.meta.env?.VITE_APP_COMMIT_SHA;
-  // @ts-ignore
+  // @ts-expect-error - Build time is also injected by Vite
   const buildTime = typeof import.meta !== 'undefined' && import.meta.env?.VITE_APP_BUILD_TIME;
   
   console.log('%c🚀 Application Bundle Info', 'color: #0ea5e9; font-weight: bold; font-size: 14px;');
