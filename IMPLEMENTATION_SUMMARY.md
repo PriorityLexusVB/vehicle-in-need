@@ -413,3 +413,218 @@ All original requirements met:
 - ✅ Cache headers fixed for Vite hash format
 - ✅ Security scan completed (no real vulnerabilities)
 - ✅ All scripts tested and validated locally
+
+## Phase 10: Automated Testing (Latest Session)
+
+### Problem Statement
+User requested inclusion of Phase 10 (Automated Testing) which was marked as "Optional but Recommended" in the original problem statement. This phase includes:
+- Integration tests (Playwright/Cypress) for manager and non-manager flows
+- Unit tests (Jest/RTL) for ProtectedRoute, SettingsPage, VersionBadge
+- Deploy parity verification script
+
+### Solution: Complete Testing Infrastructure
+
+#### 1. Unit Tests (Vitest + Testing Library)
+**Setup:**
+- Installed Vitest, @testing-library/react, @testing-library/jest-dom, @testing-library/user-event, jsdom
+- Created `vitest.config.ts` with proper configuration
+- Created `vitest.setup.ts` for test environment setup
+
+**Test Files Created:**
+- `components/__tests__/ProtectedRoute.test.tsx` (4 tests)
+  - ✅ Renders children when user is manager
+  - ✅ Redirects non-manager to home
+  - ✅ Redirects when user is null
+  - ✅ Redirects when isManager is undefined
+
+- `components/__tests__/SettingsPage.test.tsx` (8 tests)
+  - ✅ Renders user management header
+  - ✅ Displays all users with details
+  - ✅ Disables toggle for current user
+  - ✅ Enables toggle for other users
+  - ✅ Calls onUpdateUserRole when toggle changed
+  - ✅ Reflects manager status in checkbox
+  - ✅ Prevents current user from changing own role
+  - ✅ Renders correct number of user rows
+
+- `components/__tests__/VersionBadge.test.tsx` (3 tests)
+  - ✅ Renders null for undefined version
+  - ✅ Component exports successfully
+  - ✅ Renders without crashing
+
+**Result:** All 15 unit tests passing ✅
+
+**Commands:**
+```bash
+npm test              # Run tests in watch mode
+npm test -- --run     # Run tests once
+npm test -- --ui      # Run with UI
+```
+
+#### 2. End-to-End Tests (Playwright)
+**Setup:**
+- Installed @playwright/test
+- Created `playwright.config.ts` with proper configuration
+- Set up webServer to run tests against local build
+
+**Test Files Created:**
+- `e2e/manager-flow.spec.ts` - Comprehensive E2E test suite covering:
+  - **Manager User Flow:**
+    - Display manager navigation elements
+    - Navigate to admin settings page
+    - Display user list with toggles
+    - Prevent manager from changing own role
+    - Allow manager to toggle other users' roles
+  
+  - **Non-Manager User Flow:**
+    - Should not display manager navigation
+    - Should redirect from admin page to dashboard
+  
+  - **Unauthenticated User Flow:**
+    - Display login page
+    - Redirect from admin page
+
+**Status:** Tests are written but `.skip` by default because they require:
+- Firebase authentication configured
+- Test user accounts (manager + non-manager)
+- Authenticated browser sessions
+
+**Commands:**
+```bash
+npm run test:e2e      # Run E2E tests
+npm run test:e2e:ui   # Run with Playwright UI
+```
+
+#### 3. Deploy Parity Verification Script
+Created `scripts/verify-deploy-parity.cjs` that checks:
+- ✅ Production version matches local commit SHA
+- ✅ Build time is recent (within 7 days)
+- ✅ No Tailwind CDN (using compiled CSS)
+- ✅ Hashed JavaScript bundle present
+- ✅ Hashed CSS bundle present
+- ✅ Service worker cleanup script included
+
+**Exit codes:**
+- `0` - Parity verified successfully
+- `1` - Parity check failed (version mismatch or missing features)
+
+**Commands:**
+```bash
+npm run verify:parity <production-url>
+```
+
+#### 4. Documentation
+**Created:**
+- `MANUAL_TESTING_STEPS.md` - Comprehensive guide for completing E2E test setup
+  - Step-by-step instructions for Playwright browser installation
+  - Firebase test account creation procedures
+  - Authentication configuration examples
+  - CI/CD integration suggestions
+
+**Updated:**
+- `README.md` - Added "Testing" section with:
+  - Unit test documentation and commands
+  - E2E test documentation and requirements
+  - Deploy parity verification usage
+  - Running all tests guide
+
+- `DEPLOYMENT_CHECKLIST.md` - Added:
+  - Run automated tests before deployment
+  - Deploy parity verification in post-deployment checks
+
+- `package.json` - Added scripts:
+  - `test` - Run Vitest unit tests
+  - `test:ui` - Run Vitest with UI
+  - `test:e2e` - Run Playwright E2E tests
+  - `test:e2e:ui` - Run Playwright with UI
+  - `verify:parity` - Run deploy parity check
+
+### Testing Results ✅
+
+**Unit Tests:**
+```
+✓ components/__tests__/ProtectedRoute.test.tsx (4 tests)
+✓ components/__tests__/VersionBadge.test.tsx (3 tests)
+✓ components/__tests__/SettingsPage.test.tsx (8 tests)
+
+Test Files  3 passed (3)
+     Tests  15 passed (15)
+```
+
+**E2E Tests:** Framework configured, tests written (require manual setup for authentication)
+
+**Deploy Parity:** Script functional and tested locally
+
+### Files Added/Modified
+
+**New Files:**
+- `vitest.config.ts` - Vitest configuration
+- `vitest.setup.ts` - Test environment setup
+- `playwright.config.ts` - Playwright configuration
+- `components/__tests__/ProtectedRoute.test.tsx` - Unit tests
+- `components/__tests__/SettingsPage.test.tsx` - Unit tests
+- `components/__tests__/VersionBadge.test.tsx` - Unit tests
+- `e2e/manager-flow.spec.ts` - E2E tests
+- `scripts/verify-deploy-parity.cjs` - Deploy parity verification
+- `MANUAL_TESTING_STEPS.md` - Manual setup guide
+
+**Modified Files:**
+- `package.json` - Added test dependencies and scripts
+- `README.md` - Added Testing section
+- `DEPLOYMENT_CHECKLIST.md` - Added automated test steps
+
+### What's Immediately Usable ✅
+
+1. **Unit Tests** - Fully functional, can run immediately:
+   ```bash
+   npm test -- --run
+   ```
+
+2. **Deploy Parity Check** - Fully functional:
+   ```bash
+   npm run verify:parity https://your-production-url.com
+   ```
+
+3. **Test Infrastructure** - All configuration files in place
+
+### What Requires Manual Setup ⚠️
+
+1. **Playwright Browsers** - Need to be installed locally:
+   ```bash
+   npx playwright install
+   ```
+
+2. **Firebase Test Accounts** - Need to be created in Firebase Console:
+   - Test manager account with `isManager: true`
+   - Test non-manager account with `isManager: false`
+
+3. **E2E Authentication** - Need to configure authentication in tests:
+   - Add authentication setup in `e2e/auth.setup.ts`
+   - Update `playwright.config.ts` with storage state
+   - Remove `.skip` from E2E tests
+
+**See `MANUAL_TESTING_STEPS.md` for detailed instructions.**
+
+### Benefits
+
+1. **Automated Quality Assurance** - 15 unit tests prevent regressions
+2. **Critical Component Coverage** - Tests for ProtectedRoute, SettingsPage, VersionBadge
+3. **E2E Framework Ready** - Just needs authentication configured
+4. **Deploy Confidence** - Parity check ensures production matches expectations
+5. **CI/CD Ready** - All scripts can be integrated into GitHub Actions
+6. **Documentation Complete** - Clear instructions for manual steps
+
+### Phase 10 Acceptance Criteria ✅
+
+- ✅ Unit tests for ProtectedRoute behavior
+- ✅ Unit tests for SettingsPage role toggle and disable logic
+- ✅ Unit tests for VersionBadge rendering
+- ✅ E2E test framework (Playwright) configured
+- ✅ E2E tests written for manager/non-manager flows
+- ✅ Deploy parity verification script functional
+- ✅ Test documentation (README, MANUAL_TESTING_STEPS)
+- ✅ Package scripts configured for all test commands
+- ⚠️  E2E tests require Firebase authentication setup (documented)
+- ⚠️  Playwright browsers require local installation (documented)
+
+**All code implemented. Manual steps documented in `MANUAL_TESTING_STEPS.md`.**

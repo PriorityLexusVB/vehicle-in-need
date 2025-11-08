@@ -411,6 +411,88 @@ If production is serving an outdated bundle:
 
 See [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md) for comprehensive deployment procedures.
 
+## Testing
+
+The application includes automated tests to ensure code quality and functionality.
+
+### Unit Tests
+
+Unit tests are written using Vitest and Testing Library. They cover critical components:
+
+- **ProtectedRoute** - Route protection logic for manager-only pages
+- **SettingsPage** - User management and role toggle functionality  
+- **VersionBadge** - Version display component
+
+**Run unit tests:**
+```bash
+npm test              # Run tests in watch mode
+npm test -- --run     # Run tests once
+npm test -- --ui      # Run with UI
+```
+
+**Test files:** `components/__tests__/*.test.tsx`
+
+### End-to-End Tests
+
+E2E tests are written using Playwright and cover user flows:
+
+- **Manager flow** - Navigation, settings access, user management
+- **Non-manager flow** - Access restrictions, redirects
+- **Authentication flow** - Login, unauthenticated access
+
+**Run E2E tests:**
+```bash
+npm run test:e2e           # Run all E2E tests
+npm run test:e2e:ui        # Run with Playwright UI
+```
+
+**Note:** E2E tests require:
+- Built application (`npm run build`)
+- Running server (`npm run server`)
+- Firebase authentication configured
+- Test user accounts
+
+Most E2E tests are skipped by default (`.skip`) because they require authenticated sessions. To run them:
+1. Set up test user accounts in Firebase
+2. Configure authentication in tests
+3. Remove `.skip` from desired tests
+
+**Test files:** `e2e/*.spec.ts`
+
+### Deploy Parity Verification
+
+Verify that production matches the local repository state:
+
+```bash
+npm run verify:parity https://your-production-url.com
+```
+
+This script checks:
+- ✅ Production version matches local commit SHA
+- ✅ Build time is recent
+- ✅ No Tailwind CDN (using compiled CSS)
+- ✅ Hashed assets present
+- ✅ Service worker cleanup script included
+
+**Exit codes:**
+- `0` - Parity verified
+- `1` - Parity check failed (investigate and redeploy)
+
+### Running All Tests
+
+```bash
+# Unit tests
+npm test -- --run
+
+# E2E tests (requires server running)
+npm run build
+npm run server &
+npm run test:e2e
+
+# Deploy parity (against production)
+npm run verify:parity https://your-app-url.com
+```
+
 ## Manager Features
 
 Users designated as managers can:

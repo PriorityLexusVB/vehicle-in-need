@@ -25,6 +25,15 @@ This document provides a comprehensive checklist for deploying the Vehicle Order
   - Google Cloud project settings for Vertex AI
   - Any required secrets
 
+- [ ] Run automated tests
+  ```bash
+  npm test -- --run
+  ```
+
+- [ ] Verify all tests pass
+  - Unit tests for ProtectedRoute, SettingsPage, VersionBadge
+  - All test suites should pass with no failures
+
 ## Build Verification
 
 - [ ] Run local build successfully
@@ -130,6 +139,12 @@ This document provides a comprehensive checklist for deploying the Vehicle Order
   ```bash
   node scripts/verify-deployment.cjs https://pre-order-dealer-exchange-tracker-<hash>.a.run.app
   ```
+
+- [ ] Run deploy parity verification
+  ```bash
+  npm run verify:parity https://pre-order-dealer-exchange-tracker-<hash>.a.run.app
+  ```
+  Confirms production matches local repository state
 
 - [ ] Check health endpoint
   ```bash
