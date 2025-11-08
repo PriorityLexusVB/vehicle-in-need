@@ -17,15 +17,21 @@ const location = process.env.VERTEX_AI_LOCATION || 'us-central1';
 let vertexAI;
 let generativeModel;
 
-try {
-  vertexAI = new VertexAI({ project: projectId, location: location });
-  generativeModel = vertexAI.preview.getGenerativeModel({
-    model: 'gemini-2.0-flash-exp',
-  });
-  console.log(`[AI Proxy] Vertex AI initialized for project: ${projectId}, location: ${location}`);
-} catch (error) {
-  console.error('[AI Proxy] Failed to initialize Vertex AI:', error.message);
+// Skip Vertex AI initialization in test environments
+if (process.env.DISABLE_VERTEX_AI === 'true' || process.env.VITEST === 'true') {
+  console.log('[AI Proxy] Vertex AI initialization skipped (test mode)');
   generativeModel = null;
+} else {
+  try {
+    vertexAI = new VertexAI({ project: projectId, location: location });
+    generativeModel = vertexAI.preview.getGenerativeModel({
+      model: 'gemini-2.0-flash-exp',
+    });
+    console.log(`[AI Proxy] Vertex AI initialized for project: ${projectId}, location: ${location}`);
+  } catch (error) {
+    console.error('[AI Proxy] Failed to initialize Vertex AI:', error.message);
+    generativeModel = null;
+  }
 }
 
 /**
