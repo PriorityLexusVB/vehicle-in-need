@@ -1,9 +1,16 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    nodePolyfills({
+      // To make getRandomValues work correctly
+      protocolImports: true,
+    }),
+    react(),
+  ],
   test: {
     globals: true,
     environment: 'jsdom',
