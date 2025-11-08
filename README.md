@@ -22,7 +22,11 @@ View your app in AI Studio: https://ai.studio/apps/drive/1XrFhCIH0pgEmQ_DSYHkXD3
 
 ## Architecture
 
-### AI Email Generation Flow
+### AI Email Generation - Dual Mode Support
+
+The application supports **two methods** for AI email generation:
+
+#### Method 1: Server-Side Vertex AI Proxy (Recommended for Production)
 
 ```
 Browser → /api/generate-email → Express Server → Vertex AI (Gemini 2.0 Flash)
@@ -31,11 +35,33 @@ Browser → /api/generate-email → Express Server → Vertex AI (Gemini 2.0 Fla
                          (Vertex AI User role)
 ```
 
-**Security improvements:**
+**Benefits:**
 - ✅ No API keys exposed in client bundle
 - ✅ Uses Google Cloud Application Default Credentials (ADC)
 - ✅ Service account with proper IAM roles (Vertex AI User)
 - ✅ Server-side validation and error handling
+- ✅ Smaller client bundle size (~280 KB vs ~469 KB)
+
+#### Method 2: Client-Side Gemini API (Development/Fallback)
+
+```
+Browser → Gemini API (direct)
+    ↓
+VITE_GEMINI_API_KEY
+```
+
+**Use cases:**
+- 🔧 Local development without server setup
+- 🔄 Fallback when server is unavailable
+- 🧪 Testing and prototyping
+
+**⚠️ Security Warning:** API keys are visible in browser DevTools. Use only for development!
+
+#### Automatic Mode Selection
+
+The application automatically detects which method to use:
+1. If `VITE_GEMINI_API_KEY` is set at build time → Uses client-side API
+2. Otherwise → Falls back to server-side proxy
 
 The application is split into:
 1. **Frontend (React + Vite)**: Static files served by Express
@@ -51,51 +77,80 @@ The application is split into:
 
 **Prerequisites:** Node.js (v20 or higher recommended)
 
-### Option 1: Development Mode (Frontend Only)
+### Setup 1: Server-Side Proxy (Production Mode)
+
+The recommended approach for production-like testing.
 
 1. Install dependencies:
    ```bash
    npm install
    ```
 
-2. For AI features, the application uses server-side Vertex AI integration:
+2. Authenticate with Google Cloud:
    ```bash
    gcloud auth application-default login
    ```
    
-   This authenticates your local development environment using Application Default Credentials (ADC). The server will automatically use these credentials when calling Vertex AI APIs.
-   
-   **Note:** No client-side API keys are required. AI features are accessed through the `/api/generate-email` endpoint which handles authentication server-side. This is more secure than exposing API keys in the client.
+   This authenticates your local environment using Application Default Credentials (ADC). The server will automatically use these credentials when calling Vertex AI APIs.
 
-3. Run the frontend development server:
+3. Build the frontend:
+   ```bash
+   npm run build
+   ```
+
+4. Run the server:
+   ```bash
+   npm run server
+   ```
+
+5. Open your browser to `http://localhost:8080`
+
+**How it works:**
+- Frontend is served as static files from `dist/`
+- API endpoint `/api/generate-email` uses Vertex AI with ADC
+- No client-side API keys needed
+
+### Setup 2: Client-Side API (Development Mode)
+
+Quick setup for frontend development without running a server.
+
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+2. Create `.env.local` with your Gemini API key:
+   ```bash
+   echo "VITE_GEMINI_API_KEY=your-api-key-here" > .env.local
+   ```
+   
+   Get an API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
+
+3. Run the development server:
    ```bash
    npm run dev
    ```
 
 4. Open your browser to `http://localhost:3000`
 
-**Note:** In dev mode, API calls will fail unless you also run the backend server separately.
+**⚠️ Note:** This exposes the API key in the browser bundle. Use only for development!
 
-### Option 2: Full Stack (Frontend + Backend)
+### Setup 3: Hybrid Development
 
-1. Install dependencies:
+For frontend development with server-side API calls:
+
+1. Terminal 1 - Backend server:
    ```bash
-   npm install
-   ```
-
-2. Build the frontend:
-   ```bash
-   npm run build
-   ```
-
-3. Run the server:
-   ```bash
+   gcloud auth application-default login  # One-time setup
    npm run server
    ```
 
-4. Open your browser to `http://localhost:8080`
+2. Terminal 2 - Frontend dev server:
+   ```bash
+   npm run dev
+   ```
 
-This mode runs the full application with the Express server serving both static files and API endpoints.
+The dev server (port 3000) will proxy API calls to the backend (port 8080).
 
 ## Build and Deploy
 
@@ -103,7 +158,7 @@ This mode runs the full application with the Express server serving both static 
 
 The application uses a multi-stage Dockerfile that builds the frontend and packages it with a Node.js server:
 
-**Build the Docker image:**
+**Build with server-side Vertex AI (recommended):**
 
 ```bash
 docker build \
@@ -111,6 +166,18 @@ docker build \
   --build-arg BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
   -t vehicle-tracker:latest .
 ```
+
+**Build with client-side API key (optional):**
+
+```bash
+docker build \
+  --build-arg COMMIT_SHA=$(git rev-parse --short HEAD) \
+  --build-arg BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+  --build-arg VITE_GEMINI_API_KEY=your-api-key-here \
+  -t vehicle-tracker:latest .
+```
+
+**⚠️ Note:** Client-side API keys are visible in the browser bundle. For production, use the server-side proxy instead.
 
 **Note:** If you encounter an npm "Exit handler never called!" error when building locally, this is a [known npm bug](https://github.com/npm/cli/issues) in certain Docker environments. **The recommended approach is to build using Google Cloud Build** where this issue doesn't occur. For local testing, you can:
 - Build the frontend with `npm run build` locally
@@ -138,29 +205,59 @@ Then open http://localhost:8080 in your browser.
 When deploying to Google Cloud Run:
 
 1. **Ensure your service account has required roles:**
-   - `Vertex AI User` - for calling Gemini models
+   - `Vertex AI User` - for calling Gemini models via server-side proxy
    - `Service Account Token Creator` (if needed for service-to-service calls)
 
-2. **Deploy with Cloud Build:**
+2. **Deploy with Cloud Build (server-side mode - recommended):**
    ```bash
    gcloud builds submit --config cloudbuild.yaml
    ```
 
-3. **The container automatically:**
-   - Uses the attached service account credentials (no API keys needed)
+3. **Deploy with client-side API key (optional):**
+   
+   Add to your `cloudbuild.yaml`:
+   ```yaml
+   steps:
+     - name: 'gcr.io/cloud-builders/docker'
+       args:
+         - 'build'
+         - '--build-arg'
+         - 'COMMIT_SHA=$SHORT_SHA'
+         - '--build-arg'
+         - 'BUILD_TIME=$_BUILD_TIME'
+         - '--build-arg'
+         - 'VITE_GEMINI_API_KEY=${_VITE_GEMINI_API_KEY}'
+         - '-t'
+         - 'gcr.io/$PROJECT_ID/vehicle-tracker:$SHORT_SHA'
+         - '.'
+   substitutions:
+     _BUILD_TIME: '$(date -u +"%Y-%m-%dT%H:%M:%SZ")'
+     _VITE_GEMINI_API_KEY: 'your-api-key-or-secret-ref'
+   ```
+
+4. **The container automatically:**
+   - Uses the attached service account credentials (for server-side proxy)
+   - Or uses the build-time API key (if VITE_GEMINI_API_KEY provided)
    - Serves both static files and API endpoints on port 8080
    - Provides health check at `/health` for Cloud Run
 
-**Important:** No environment variables for API keys are needed. The application uses Application Default Credentials (ADC) which are automatically provided by the Cloud Run environment.
+**Recommended:** Use server-side Vertex AI proxy for production (no API key needed). The client-side option is available for development/testing.
 
 ### Environment Variables (Optional)
 
-See [.env.example](.env.example) for configuration options:
+See [.env.example](.env.example) for detailed configuration options:
 
+**Server-side configuration:**
 - `GOOGLE_CLOUD_PROJECT` - Auto-detected from environment (optional override)
 - `VERTEX_AI_LOCATION` - Defaults to `us-central1` (optional)
 - `PORT` - Server port, defaults to `8080` (optional)
-- `LOCAL_GEMINI_KEY` - **Local dev only**, fallback API key (not recommended for production)
+
+**Client-side configuration:**
+- `VITE_GEMINI_API_KEY` - Gemini API key for client-side mode (build-time only)
+  - Set in `.env.local` for local development
+  - Pass as `--build-arg` for Docker builds
+  - Add as substitution in Cloud Build
+  - ⚠️ Visible in browser - use only for development!
 
 ### Security: Removing Old API Keys
 
