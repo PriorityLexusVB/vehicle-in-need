@@ -1,4 +1,3 @@
-import { GoogleGenAI } from "@google/genai";
 import { Order, OrderStatus } from "../types";
 
 // Read from Vite env (import.meta.env.VITE_*)
@@ -6,9 +5,6 @@ const CLIENT_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 // Check if client-side Gemini is available
 const hasClientKey = !!CLIENT_API_KEY;
-
-// Only instantiate the client if we have an API key
-const ai = hasClientKey ? new GoogleGenAI({ apiKey: CLIENT_API_KEY! }) : null;
 
 // Export flag to indicate if any AI features are available (client or server)
 // In production, server-side is preferred; client-side key is for development/fallback
@@ -27,7 +23,7 @@ if (hasClientKey) {
  */
 export const generateFollowUpEmail = async (order: Order): Promise<string> => {
   // If client-side API key is available, use it directly
-  if (hasClientKey && ai) {
+  if (hasClientKey) {
     return generateEmailClientSide(order);
   }
   
@@ -37,12 +33,17 @@ export const generateFollowUpEmail = async (order: Order): Promise<string> => {
 
 /**
  * Generate email using client-side Gemini API
+ * Uses dynamic import to avoid bundling @google/genai when not needed
  */
 async function generateEmailClientSide(order: Order): Promise<string> {
   const prompt = buildEmailPrompt(order);
 
   try {
-    const response = await ai!.models.generateContent({
+    // Dynamic import to enable tree-shaking when not using client-side mode
+    const { GoogleGenAI } = await import("@google/genai");
+    const ai = new GoogleGenAI({ apiKey: CLIENT_API_KEY! });
+    
+    const response = await ai.models.generateContent({
       model: 'gemini-2.0-flash-exp',
       contents: prompt,
     });
