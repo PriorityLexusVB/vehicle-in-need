@@ -676,3 +676,38 @@ Additionally:
 ### MutationObserver Errors
 
 The app includes a defensive error handler that suppresses MutationObserver errors from third-party code that might break rendering. Other errors are not suppressed and will display normally.
+
+### MCP authentication 404 at /authorize
+
+If you see a 404 when authenticating a GitHub Copilot MCP server and the browser URL is `https://api.githubcopilot.com/authorize?...`, update your user MCP config to use the `/mcp` base:
+
+- Edit `vscode-userdata:/User/mcp.json`
+- Ensure the GitHub entry looks like:
+
+```
+"github/github-mcp-server": {
+   "type": "http",
+   "url": "https://api.githubcopilot.com/mcp"
+}
+```
+
+Then:
+- Command Palette → Developer: Reload Window
+- Command Palette → GitHub Copilot: Restart MCP Servers
+- If still stuck, open Secret Storage and remove Copilot MCP auth entries.
+
+The browser should open `https://api.githubcopilot.com/mcp/authorize?...`.
+
+### Firebase auth/unauthorized-domain on Codespaces
+
+If sign-in fails with `auth/unauthorized-domain` while using Codespaces or preview URLs (e.g. `*.app.github.dev`):
+
+1. Copy your exact origin from the address bar (e.g. `https://<id>-4000.app.github.dev`).
+2. In Firebase Console → Authentication → Settings → Authorized domains, add that origin.
+3. Return to the app tab and click “Sign in with Google” again (don’t refresh; changes may take ~1 minute).
+
+The Login screen in this app provides a helper UI and a deep link to the correct Firebase Console page when this error occurs.
+
+### Node polyfills (crypto)
+
+This project uses `vite-plugin-node-polyfills` with `protocolImports: true` in both `vite.config.ts` and `vitest.config.ts` so that `crypto.getRandomValues` works in browser and tests. If you introduce code that relies on other Node globals, prefer web APIs or small shims rather than adding heavy polyfills.
