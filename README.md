@@ -8,6 +8,14 @@ A vehicle order tracking application for Priority Automotive with manager contro
 
 View your app in AI Studio: https://ai.studio/apps/drive/1XrFhCIH0pgEmQ_DSYHkXD3TovOfqWFJu
 
+## ⚠️ Security Notice
+
+**API Key Exposure Warning**: The current implementation uses client-side API keys for Google Gemini AI, which exposes them in the browser bundle. This approach is **temporary and not recommended for production**.
+
+**Recommended for production**: Implement a backend API endpoint that uses Vertex AI with service account authentication. The client should call your backend endpoint, which proxies requests to Vertex AI using Application Default Credentials (ADC). This keeps API keys secure on the server side.
+
+See the [Environment Variables](#environment-variables) section for more details on the recommended server-side approach.
+
 ## Features
 
 - 🚗 Track vehicle pre-orders and dealer exchanges
@@ -54,8 +62,6 @@ The application uses the following environment variables:
   - Get your key from [Google AI Studio](https://aistudio.google.com/apikey)
 
 ### Production (Docker/Cloud Build)
-
-**⚠️ Security Warning**: Using client-side API keys exposes them in the browser bundle. This approach is temporary and not recommended for production.
 
 **Quick Path (Temporary - Client-side key):**
 Pass `VITE_GEMINI_API_KEY` as a build argument to Docker:

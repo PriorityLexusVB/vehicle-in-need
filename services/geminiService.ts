@@ -16,7 +16,7 @@ if (!isGeminiEnabled) {
 }
 
 // Only instantiate the client if we have an API key
-const ai = isGeminiEnabled ? new GoogleGenAI({ apiKey: API_KEY }) : null;
+const ai = isGeminiEnabled ? new GoogleGenAI({ apiKey: API_KEY! }) : null;
 
 export const generateFollowUpEmail = async (order: Order): Promise<string> => {
   // If Gemini is not enabled, return a friendly message
@@ -98,9 +98,6 @@ export const generateFollowUpEmail = async (order: Order): Promise<string> => {
   `;
 
   try {
-    if (!ai) {
-      throw new Error("Gemini client not initialized");
-    }
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: prompt,
