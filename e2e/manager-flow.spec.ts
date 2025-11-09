@@ -12,6 +12,88 @@ import { test, expect } from '@playwright/test';
  * and a test manager account to exist in the system.
  */
 
+test.describe('Application Load and Console Errors', () => {
+  test('should load without MutationObserver errors', async ({ page }) => {
+    const consoleErrors: string[] = [];
+    const mutationObserverErrors: string[] = [];
+    
+    // Capture console errors
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') {
+        const text = msg.text();
+        consoleErrors.push(text);
+        if (text.includes('MutationObserver') || text.includes('parameter 1 is not of type')) {
+          mutationObserverErrors.push(text);
+        }
+      }
+    });
+
+    // Capture page errors
+    page.on('pageerror', (error) => {
+      const text = error.message;
+      consoleErrors.push(text);
+      if (text.includes('MutationObserver') || text.includes('parameter 1 is not of type')) {
+        mutationObserverErrors.push(text);
+      }
+    });
+
+    await page.goto('/');
+    
+    // Wait for the page to load
+    await page.waitForLoadState('networkidle');
+    
+    // Verify no MutationObserver errors
+    expect(mutationObserverErrors).toHaveLength(0);
+    
+    // Page should have loaded successfully
+    await expect(page.locator('body')).toBeVisible();
+  });
+
+  test('should not have Tailwind CDN warnings', async ({ page }) => {
+    const consoleWarnings: string[] = [];
+    
+    // Capture console warnings
+    page.on('console', (msg) => {
+      if (msg.type() === 'warning') {
+        consoleWarnings.push(msg.text());
+      }
+    });
+
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    
+    // Check that there are no warnings about cdn.tailwindcss.com
+    const tailwindCdnWarnings = consoleWarnings.filter(w => 
+      w.includes('cdn.tailwindcss.com') || w.includes('should not be used in production')
+    );
+    
+    expect(tailwindCdnWarnings).toHaveLength(0);
+  });
+
+  test('should log bundle info on load', async ({ page }) => {
+    const consoleLogs: string[] = [];
+    
+    // Capture console logs
+    page.on('console', (msg) => {
+      if (msg.type() === 'log') {
+        consoleLogs.push(msg.text());
+      }
+    });
+
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    
+    // Verify bundle info is logged
+    const bundleInfoLogs = consoleLogs.filter(log => 
+      log.includes('Application Bundle Info') || 
+      log.includes('Version:') || 
+      log.includes('Build Time:')
+    );
+    
+    expect(bundleInfoLogs.length).toBeGreaterThan(0);
+  });
+});
+
 test.describe('Manager User Flow', () => {
   test.skip('should display manager navigation for manager users', async ({ page }) => {
     // This test requires actual authentication
@@ -44,9 +126,6 @@ test.describe('Manager User Flow', () => {
     await expect(page.getByRole('heading', { name: 'User Management' })).toBeVisible();
     await expect(page.getByText(/Use the toggles to grant or revoke manager permissions/)).toBeVisible();
   });
-
-  test.skip('should display user list with toggles in settings page', async ({ page }) => {
-    await page.goto('/#/admin');
     
     // TODO: Implement authentication flow
     

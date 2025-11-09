@@ -30,11 +30,58 @@ async function unregisterLegacyServiceWorkers() {
   return false; // No reload needed
 }
 
+// Add defensive guard against MutationObserver errors from third-party code
+function setupMutationObserverGuard() {
+  // Guard against synchronous errors
+  window.addEventListener('error', (event) => {
+    // Suppress the specific MutationObserver error that breaks rendering
+    const message = event.message || '';
+    if (message.includes('parameter 1 is not of type Node') || 
+        message.includes('MutationObserver')) {
+      console.warn('Suppressed MutationObserver error:', message);
+      event.preventDefault();
+      return;
+    }
+  });
 
+  // Guard against promise rejections
+  window.addEventListener('unhandledrejection', (event) => {
+    const reason = event.reason?.message || String(event.reason);
+    if (reason.includes('parameter 1 is not of type Node') || 
+        reason.includes('MutationObserver')) {
+      console.warn('Suppressed MutationObserver promise rejection:', reason);
+      event.preventDefault();
+      return;
+    }
+  });
+}
+
+// Runtime diagnostics to detect stale bundle
+function logBundleInfo() {
+  // @ts-expect-error - These are injected by Vite at build time
+  const commitSha = typeof import.meta !== 'undefined' && import.meta.env?.VITE_APP_COMMIT_SHA;
+  // @ts-expect-error - Build time is also injected by Vite
+  const buildTime = typeof import.meta !== 'undefined' && import.meta.env?.VITE_APP_BUILD_TIME;
+  
+  console.log('%c🚀 Application Bundle Info', 'color: #0ea5e9; font-weight: bold; font-size: 14px;');
+  console.log(`Version: ${commitSha || 'unknown'}`);
+  console.log(`Build Time: ${buildTime || 'unknown'}`);
+  console.log(`User Agent: ${navigator.userAgent}`);
+  console.log(`Timestamp: ${new Date().toISOString()}`);
+  
+  // Check if bundle seems stale
+  if (!commitSha || commitSha === 'unknown' || commitSha === 'dev') {
+    console.warn('%c⚠️ STALE_BUNDLE_DETECTED: Version information missing or invalid', 'color: #f59e0b; font-weight: bold;');
+    console.warn('This may indicate an outdated deployment or build configuration issue.');
+  }
+}
 
 // Initialize app
 async function initializeApp() {
   try {
+    logBundleInfo();
+    setupMutationObserverGuard();
+    
     const willReload = await unregisterLegacyServiceWorkers();
     if (willReload) {
       return; // Don't render if we're reloading

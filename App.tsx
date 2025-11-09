@@ -73,12 +73,17 @@ const App: React.FC = () => {
         const userDocRef = doc(db, USERS_COLLECTION, authUser.uid);
         const userDoc = await getDoc(userDocRef);
 
+        console.log('%c👤 Auth Flow - User Document Fetch', 'color: #10b981; font-weight: bold;');
+        console.log('User email:', authUser.email);
+        console.log('User document exists:', userDoc.exists());
+
         let appUser: AppUser;
 
         if (!userDoc.exists()) {
           // NEW USER: First-time login - seed isManager from MANAGER_EMAILS constant.
           // IMPORTANT: MANAGER_EMAILS is ONLY used for initial seeding, not on subsequent logins.
           const isManager = MANAGER_EMAILS.includes(authUser.email!.toLowerCase());
+          console.log('NEW USER - Seeding isManager from MANAGER_EMAILS:', isManager);
           appUser = {
             uid: authUser.uid,
             email: authUser.email,
@@ -86,16 +91,20 @@ const App: React.FC = () => {
             isManager: isManager,
           };
           await setDoc(userDocRef, appUser);
+          console.log('Created new user document with isManager:', isManager);
         } else {
           // EXISTING USER: Firestore is the single source of truth for the manager role.
           // Changes made via Settings page will persist because we read from Firestore, not MANAGER_EMAILS.
           const existingData = userDoc.data();
           let isManager = existingData.isManager;
+          console.log('EXISTING USER - Firestore document data:', existingData);
+          console.log('Fetched isManager from Firestore:', isManager);
 
           // One-time migration for older user documents that might not have the isManager field.
           // Checking for non-boolean handles undefined, null, and any incorrectly stored values.
           if (typeof isManager !== 'boolean') {
             isManager = MANAGER_EMAILS.includes(authUser.email!.toLowerCase());
+            console.log('MIGRATION - isManager was not boolean, setting to:', isManager);
             // Write the migrated value to Firestore so it persists.
             await updateDoc(userDocRef, { isManager });
           }
@@ -107,6 +116,12 @@ const App: React.FC = () => {
             isManager: isManager, // This value came from Firestore, ensuring Settings changes persist.
           };
         }
+        
+        console.log('%c✅ Auth Complete - Final AppUser State', 'color: #10b981; font-weight: bold;');
+        console.log('isManager:', appUser.isManager);
+        console.log('displayName:', appUser.displayName);
+        console.log('email:', appUser.email);
+        
         setUser(appUser);
 
       } else {
