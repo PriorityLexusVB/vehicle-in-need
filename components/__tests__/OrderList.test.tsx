@@ -118,8 +118,10 @@ describe("OrderList", () => {
       />
     );
 
-    // Click the "Locate" filter pill/button (semantic role+name)
-    const locateFilterBtn = screen.getByRole("button", { name: /locate/i });
+    // Click the "Locate" filter button (no select in current UI); disambiguate if multiple role="button" matches
+    const locateFilterBtn = screen.getAllByRole("button", {
+      name: /locate/i,
+    })[0];
     await user.click(locateFilterBtn);
 
     // Should only show orders with Locate status
