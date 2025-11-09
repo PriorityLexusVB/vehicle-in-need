@@ -22,23 +22,46 @@ import admin from "firebase-admin";
 // --- Simple args parsing ---
 function parseArgs(argv) {
   const out = { project: undefined, emails: [], apply: false, dryRun: true };
+  let passthrough = false;
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
-    if (a === "--project") out.project = argv[++i];
-    else if (a === "--emails") {
-      const list = argv[++i] || "";
-      out.emails = list
-        .split(",")
-        .map((s) => s.trim().toLowerCase())
-        .filter(Boolean);
-    } else if (a === "--apply") {
-      out.apply = true;
-      out.dryRun = false;
-    } else if (a === "--dry-run") {
-      out.dryRun = true;
-      out.apply = false;
+    if (a === "--") {
+      passthrough = true;
+      continue;
+    }
+    if (!passthrough) {
+      if (a === "--project") {
+        out.project = argv[++i];
+        continue;
+      }
+      if (a === "--emails") {
+        const list = argv[++i] || "";
+        out.emails.push(
+          ...list
+            .split(",")
+            .map((e) => e.trim().toLowerCase())
+            .filter(Boolean)
+        );
+        continue;
+      }
+      if (a === "--apply") {
+        out.apply = true;
+        out.dryRun = false;
+        continue;
+      }
+      if (a === "--dry-run") {
+        out.dryRun = true;
+        out.apply = false;
+        continue;
+      }
+    } else {
+      a.split(",").forEach((part) => {
+        const e = part.trim().toLowerCase();
+        if (e) out.emails.push(e);
+      });
     }
   }
+  out.emails = [...new Set(out.emails)];
   return out;
 }
 
@@ -49,13 +72,18 @@ if (!args.project) {
   process.exit(2);
 }
 if (!Array.isArray(args.emails) || args.emails.length === 0) {
-  console.error("Missing --emails <comma,separated,emails>");
+  console.error(
+    "No emails provided. Use --emails a@b.com,c@d.com OR npm script with: pnpm run seed:managers:dry-run -- a@b.com b@c.com"
+  );
   process.exit(2);
 }
 
 console.log("\n=== Seed Managers ===");
 console.log("Project: ", args.project);
-console.log("Emails : ", args.emails.join(", "));
+console.log(
+  "Emails : ",
+  args.emails.length ? args.emails.join(", ") : "(none supplied)"
+);
 console.log(
   "Mode   : ",
   args.dryRun ? "DRY-RUN (no writes)" : "APPLY (writes enabled)"

@@ -42,13 +42,17 @@ Prereqs:
 Dry-run (no writes):
 
 ```bash
-pnpm run seed:managers:dry-run --emails rob.brasco@priorityautomotive.com
+pnpm run seed:managers:dry-run -- --emails rob.brasco@priorityautomotive.com
+# or
+pnpm run seed:managers:dry-run -- rob.brasco@priorityautomotive.com
 ```
 
 Apply (writes):
 
 ```bash
-pnpm run seed:managers:apply --emails rob.brasco@priorityautomotive.com
+pnpm run seed:managers:apply -- --emails rob.brasco@priorityautomotive.com
+# or
+pnpm run seed:managers:apply -- rob.brasco@priorityautomotive.com
 ```
 
 Notes:
