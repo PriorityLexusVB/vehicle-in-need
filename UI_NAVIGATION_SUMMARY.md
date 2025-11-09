@@ -36,19 +36,24 @@
 ## Routes
 
 ### `/#/` or `/` - Dashboard Route
+
 **Manager View:**
+
 - Dashboard statistics cards
 - "Add New Order" button
 - Full order list with status management
 - Delete capabilities
 
 **Non-Manager View:**
+
 - Single order form
 - Submit button
 - No order list visibility
 
 ### `/#/admin` - User Management Route (Protected)
+
 **Manager Access:**
+
 ```
 ┌────────────────────────────────────────────┐
 │ User Management                            │
@@ -69,6 +74,7 @@
 ```
 
 **Non-Manager Access:**
+
 - Automatic redirect to `/#/`
 - No error message (silent redirect)
 
@@ -140,6 +146,7 @@ index.tsx
 ## Navigation Behavior
 
 ### Manager Navigation
+
 1. **From Dashboard to Admin:**
    - Click "User Management" in pill nav → Routes to `/#/admin`
    - Click gear icon in header → Routes to `/#/admin`
@@ -156,6 +163,7 @@ index.tsx
    - User lands on SettingsPage (no redirect)
 
 ### Non-Manager Navigation
+
 1. **Attempt to Access Admin:**
    - Type `/#/admin` in URL bar
    - ProtectedRoute checks `user?.isManager`
@@ -170,6 +178,7 @@ index.tsx
 ## Version Badge Implementation
 
 ### Display Format
+
 ```
 Vehicle Order Tracker v{commit-sha}
                       ↑
@@ -178,6 +187,7 @@ Vehicle Order Tracker v{commit-sha}
 ```
 
 ### Data Flow
+
 ```
 Docker Build Args:
   COMMIT_SHA=abc1234
@@ -204,6 +214,7 @@ VersionBadge Component:
 ## Error Handling
 
 ### MutationObserver Guard (index.tsx)
+
 ```javascript
 window.addEventListener('error', (event) => {
   // Suppress MutationObserver errors from third-party code
@@ -216,6 +227,7 @@ window.addEventListener('error', (event) => {
 ```
 
 ### Protected Route Guard (components/ProtectedRoute.tsx)
+
 ```typescript
 if (!user?.isManager) {
   return <Navigate to="/" replace />;
@@ -224,6 +236,7 @@ return <>{children}</>;
 ```
 
 ### Domain Restriction (App.tsx)
+
 ```typescript
 if (authUser && !authUser.email?.endsWith('@priorityautomotive.com')) {
   await signOut(auth);
@@ -234,6 +247,7 @@ if (authUser && !authUser.email?.endsWith('@priorityautomotive.com')) {
 ## Summary
 
 ✅ **All navigation requirements met:**
+
 - React Router with HashRouter
 - Protected /admin route
 - Router Links (not view state)
@@ -243,6 +257,7 @@ if (authUser && !authUser.email?.endsWith('@priorityautomotive.com')) {
 - Version badge using import.meta.env
 
 ✅ **Production ready:**
+
 - No /index.tsx references
 - Service worker intentional
 - Proper cache headers

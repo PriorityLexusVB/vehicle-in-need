@@ -23,6 +23,7 @@ gcloud builds submit --config cloudbuild.yaml
 ```
 
 Or trigger from Git:
+
 ```bash
 git push origin main  # If you have Cloud Build triggers configured
 ```
@@ -57,7 +58,7 @@ npm run build
 npm start
 ```
 
-Then visit http://localhost:8080
+Then visit <http://localhost:8080>
 
 ## Why Cloud Build Works
 
@@ -69,7 +70,7 @@ To verify the production build serves correctly:
 
 1. Build locally: `npm run build`
 2. Start server: `npm start`
-3. Visit http://localhost:8080
+3. Visit <http://localhost:8080>
 4. Check for:
    - No Tailwind CDN in page source
    - No `/index.tsx` references

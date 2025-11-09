@@ -278,3 +278,107 @@ This would run tests automatically on every push/PR.
 - ⚠️ Run tests to verify
 
 All code is ready - just needs Firebase access and local execution!
+
+## Service Account Key Rotation
+
+To maintain security, service account keys should be rotated regularly, especially if they have been exposed or committed to version control.
+
+### When to Rotate Keys
+
+- **Immediately**: If a key was accidentally committed to Git or exposed publicly
+- **Regularly**: Every 90 days as a security best practice
+- **After Compromise**: If there's any suspicion of unauthorized access
+
+### Rotation Steps
+
+1. **Delete the Old Key (Google Cloud Console)**
+
+   - Navigate to [Google Cloud Console → IAM & Admin → Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts)
+   - Select your project: `vehicles-in-need`
+   - Click on the service account used for seeding (e.g., `vin-seeder`)
+   - Go to the "Keys" tab
+   - Locate the compromised/old key and click the three-dot menu → "Delete"
+   - Confirm deletion
+
+2. **Create a New Key**
+
+   - On the same service account page, click "Add Key" → "Create new key"
+   - Select "JSON" format
+   - Click "Create" - the key will download automatically
+   - **Important**: Store the key securely outside of Git (e.g., `.secrets/vin-seeder.json`)
+
+3. **Update Environment Variable**
+
+   ```bash
+   export GOOGLE_APPLICATION_CREDENTIALS="/path/to/.secrets/vin-seeder.json"
+   ```
+
+   Or use Application Default Credentials:
+
+   ```bash
+   gcloud auth application-default login
+   ```
+
+4. **Verify New Key Works**
+
+   Run a dry-run to confirm the new key has proper permissions:
+
+   ```bash
+   pnpm run seed:managers:dry-run -- --emails your.email@priorityautomotive.com
+   ```
+
+   Expected output should show:
+
+   ```text
+   === Seed Managers ===
+   Project:  vehicles-in-need
+   Mode   :  DRY-RUN (no writes)
+   Results:
+   - your.email@priorityautomotive.com: noop uid=xxx
+   ```
+
+5. **Update `.gitignore`**
+
+   Ensure your `.gitignore` file excludes the secrets directory:
+
+   ```gitignore
+   .secrets/
+   *.json
+   !package*.json
+   !tsconfig*.json
+   ```
+
+6. **Revoke Old Key in Git History (if committed)**
+
+   If the key was committed to Git, you'll need to:
+
+   - Delete the key from Google Cloud (step 1 above)
+   - Remove it from Git history using `git filter-branch` or `BFG Repo-Cleaner`
+   - Force push the cleaned history (coordinate with team)
+   - All collaborators must re-clone the repository
+
+### Security Best Practices
+
+- **Never commit service account keys** to version control
+- **Use Application Default Credentials (ADC)** for local development when possible
+- **Store keys in `.secrets/` directory** that is gitignored
+- **Set key permissions to 600**: `chmod 600 .secrets/vin-seeder.json`
+- **Use secret management services** for production (e.g., Secret Manager, Vault)
+- **Rotate keys regularly** (every 90 days minimum)
+- **Monitor key usage** in Cloud Console audit logs
+
+### Verification
+
+After rotation, verify that:
+
+- [ ] Old key is deleted from Google Cloud Console
+- [ ] New key is stored securely outside of Git
+- [ ] New key works with the seeder script (dry-run passes)
+- [ ] Old key is removed from Git history (if it was committed)
+- [ ] `.gitignore` excludes the secrets directory
+- [ ] Team members are notified of the key rotation
+
+For more information on service account key management, see:
+
+- [Google Cloud: Best practices for managing service account keys](https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys)
+- [Rotating service account keys](https://cloud.google.com/iam/docs/keys-rotate)

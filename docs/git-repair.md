@@ -101,6 +101,7 @@ git log --oneline -5
 ```
 
 Expected result:
+
 - Clean working tree
 - No difference with origin/main
 - One consolidated commit on top of previous main
@@ -125,6 +126,7 @@ git push --force-with-lease origin main
 ### Authentication Failed
 
 Ensure you have:
+
 - Valid Git credentials configured
 - Push access to the repository
 - GitHub token or SSH key properly set up

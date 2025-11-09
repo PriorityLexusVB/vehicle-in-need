@@ -1,11 +1,13 @@
 # Admin Route Navigation Implementation Summary
 
 ## Overview
+
 This document summarizes the implementation of react-router navigation with a protected /admin route for the Vehicle Order Tracker application.
 
 ## Implementation Status
 
 ### ✅ Already Implemented (Prior Work)
+
 All major requirements were already implemented in previous PRs:
 
 1. **Routing Infrastructure**
@@ -36,12 +38,15 @@ All major requirements were already implemented in previous PRs:
 The only remaining gap was the **version badge environment variable wiring**:
 
 #### 1. VersionBadge Component (`components/VersionBadge.tsx`)
+
 **Before:** Received version and buildTime as props from Header
+
 ```tsx
 const VersionBadge: React.FC<VersionBadgeProps> = ({ version, buildTime }) => {
 ```
 
 **After:** Reads directly from Vite-exposed environment variables
+
 ```tsx
 const VersionBadge: React.FC<VersionBadgeProps> = () => {
   const version = import.meta.env.VITE_APP_COMMIT_SHA;
@@ -49,7 +54,9 @@ const VersionBadge: React.FC<VersionBadgeProps> = () => {
 ```
 
 #### 2. Vite Configuration (`vite.config.ts`)
+
 **Added:** Support for VITE_APP_* environment variables with fallback to git
+
 ```typescript
 // Use VITE_APP_* env vars if available (set by Docker), otherwise fall back to git
 const commitSha = env.VITE_APP_COMMIT_SHA || getGitCommitSha();
@@ -57,6 +64,7 @@ const buildTime = env.VITE_APP_BUILD_TIME || getBuildTime();
 ```
 
 **Added:** Expose values via import.meta.env for browser access
+
 ```typescript
 define: {
   // ... existing defines ...
@@ -67,7 +75,9 @@ define: {
 ```
 
 #### 3. Dockerfile Updates (`Dockerfile`)
+
 **Added:** Environment variable exposure for Vite build
+
 ```dockerfile
 ARG COMMIT_SHA=unknown
 ARG BUILD_TIME=unknown
@@ -78,7 +88,9 @@ ENV VITE_APP_BUILD_TIME=$BUILD_TIME
 ```
 
 #### 4. TypeScript Declarations (`vite-env.d.ts`)
+
 **Created:** Type definitions for import.meta.env
+
 ```typescript
 interface ImportMetaEnv {
   readonly VITE_APP_COMMIT_SHA: string;
@@ -91,25 +103,30 @@ interface ImportMeta {
 ```
 
 #### 5. Simplified Prop Chain
+
 **Updated:** `Header.tsx` and `App.tsx` to remove version props since VersionBadge is now self-contained
 
 ## How It Works
 
 ### Local Development Build
+
 ```bash
 npm run build
 ```
+
 - Vite reads git commit SHA via `git rev-parse --short HEAD`
 - Vite generates build timestamp
 - Values embedded in browser bundle via `import.meta.env.VITE_APP_*`
 
 ### Docker Production Build
+
 ```bash
 docker build \
   --build-arg COMMIT_SHA=$(git rev-parse --short HEAD) \
   --build-arg BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
   -t vehicle-tracker:latest .
 ```
+
 - Dockerfile receives COMMIT_SHA and BUILD_TIME as build args
 - Exposes them as `VITE_APP_COMMIT_SHA` and `VITE_APP_BUILD_TIME` environment variables
 - Vite reads these during `npm run build` in container
@@ -118,6 +135,7 @@ docker build \
 ## Verification
 
 ### Build Output Verification
+
 ```bash
 # Build completed successfully
 ✓ built in 2.08s
@@ -132,6 +150,7 @@ grep -r "index\.tsx" dist/
 ```
 
 ### Route Protection Testing
+
 The implementation includes:
 
 1. **Manager Access to /admin**
@@ -162,7 +181,9 @@ The implementation includes:
 ## Known Issues
 
 ### Docker Build in Local Environment
+
 The `npm ci` command in Docker may show "Exit handler never called!" error in some local Docker environments. This is a [known npm bug](https://github.com/npm/cli/issues) that:
+
 - **Does not occur** in Google Cloud Build or production CI/CD pipelines
 - **Workaround**: Use `docker build --network=host` or upgrade Docker Desktop
 - **Note**: This does not affect the implementation - it's a local development environment issue only
@@ -170,12 +191,14 @@ The `npm ci` command in Docker may show "Exit handler never called!" error in so
 ## Architecture Decisions
 
 ### Why import.meta.env Instead of Props?
+
 1. **Single Source of Truth**: Version information is build-time constant
 2. **Reduced Prop Drilling**: VersionBadge component is self-contained
 3. **Vite Standard**: Using Vite's built-in environment variable system
 4. **Type Safety**: TypeScript declarations provide compile-time checking
 
 ### Why VITE_APP_* Naming?
+
 1. **Vite Convention**: Environment variables must start with `VITE_` to be exposed to browser
 2. **Clear Distinction**: `VITE_APP_*` clearly indicates app-specific variables
 3. **Docker Compatibility**: ENV variables in Dockerfile are visible to Vite build process
@@ -194,24 +217,29 @@ The `npm ci` command in Docker may show "Exit handler never called!" error in so
 ## Acceptance Criteria Status
 
 ✅ **Routing & Protection**
+
 - Visiting /#/admin as manager shows SettingsPage
 - Non-managers redirected to /#/
 - Deep linking works
 
 ✅ **Header Navigation**
+
 - Left pill nav with "Dashboard" and "User Management"
 - Right gear button navigates to /#/admin
 - Router links used (not view state)
 
 ✅ **Error Handling**
+
 - MutationObserver error guard in place
 
 ✅ **Version Badge**
+
 - Uses import.meta.env.VITE_APP_* values
 - Dockerfile exposes VITE_APP_* env vars
 - Shows v<short-sha> @ <build-time>
 
 ✅ **Production Sanity**
+
 - No runtime requests for /index.tsx
 - Service worker present (intentional)
 - Existing business logic unchanged
@@ -223,7 +251,9 @@ All requirements from the problem statement have been addressed. The only gap wa
 ## Deployment Pipeline Enhancements (Latest Session)
 
 ### Problem Statement
+
 Production was potentially serving stale bundles due to:
+
 - Lack of deployment verification procedures
 - Missing runtime diagnostics to detect stale builds
 - No documented rollback procedures
@@ -232,7 +262,9 @@ Production was potentially serving stale bundles due to:
 ### Solution: Comprehensive Deployment Infrastructure
 
 #### 1. Deployment Checklist (DEPLOYMENT_CHECKLIST.md)
+
 Created comprehensive 400+ line deployment checklist covering:
+
 - **Pre-build validation**: Git status, dependencies, environment variables
 - **Build verification**: Asset generation, hash validation, CDN check
 - **Docker build verification**: Local container testing
@@ -243,7 +275,9 @@ Created comprehensive 400+ line deployment checklist covering:
 - **Security & performance checklists**: Validation criteria
 
 #### 2. Pre-Deployment Validation Script (scripts/pre-deploy-check.cjs)
+
 Automated validation script that checks before deployment:
+
 - ✅ Build artifacts exist (dist/, index.html, assets/)
 - ✅ No Tailwind CDN references in production build
 - ✅ Hashed assets present with correct naming pattern
@@ -253,13 +287,16 @@ Automated validation script that checks before deployment:
 - ✅ Manifest and HTML structure valid
 
 **Exit codes:**
+
 - `0` = All checks passed (ready to deploy)
 - `1` = Critical errors found (do not deploy)
 
 **Usage:** `node scripts/pre-deploy-check.cjs`
 
 #### 3. Post-Deployment Verification Script (scripts/verify-deployment.cjs)
+
 Automated post-deployment testing script:
+
 - ✅ Health endpoint responds correctly
 - ✅ API status endpoint returns version info
 - ✅ No Tailwind CDN in served HTML
@@ -272,13 +309,16 @@ Automated post-deployment testing script:
 - ✅ Service worker accessible
 
 **Exit codes:**
+
 - `0` = All tests passed
 - `1` = One or more tests failed
 
 **Usage:** `node scripts/verify-deployment.cjs https://your-production-url.com`
 
 #### 4. Runtime Bundle Diagnostics (index.tsx)
+
 Added `logBundleInfo()` function that runs on app initialization:
+
 ```javascript
 console.log('🚀 Application Bundle Info');
 console.log(`Version: ${commitSha}`);
@@ -288,6 +328,7 @@ console.log(`Timestamp: ${new Date().toISOString()}`);
 ```
 
 Includes stale bundle detection:
+
 ```javascript
 if (!commitSha || commitSha === 'unknown' || commitSha === 'dev') {
   console.warn('⚠️ STALE_BUNDLE_DETECTED: Version information missing or invalid');
@@ -295,7 +336,9 @@ if (!commitSha || commitSha === 'unknown' || commitSha === 'dev') {
 ```
 
 #### 5. Enhanced API Status Endpoint (server/index.cjs)
+
 Expanded `/api/status` endpoint to return comprehensive server info:
+
 ```json
 {
   "status": "healthy",
@@ -310,11 +353,14 @@ Expanded `/api/status` endpoint to return comprehensive server info:
 ```
 
 Fixed cache header regex to properly match Vite's hash format:
+
 - **Before:** `/\.[a-f0-9]{8}\.(js|css)/` (hex only)
 - **After:** `/\-[a-zA-Z0-9_-]{8,}\.(js|css)$/` (base64-like)
 
 #### 6. README Documentation Updates
+
 Added "Deployment Verification" section to README with:
+
 - Pre-deployment check procedures
 - Post-deployment verification steps
 - Manual smoke test checklist
@@ -325,6 +371,7 @@ Added "Deployment Verification" section to README with:
 ### Testing Results
 
 **Pre-deployment validation:**
+
 ```
 ✅ All checks passed (0 errors, 2 warnings)
 ⚠️  Working directory has uncommitted changes (expected)
@@ -332,6 +379,7 @@ Added "Deployment Verification" section to README with:
 ```
 
 **Post-deployment verification:**
+
 ```
 ✅ All 25 tests passed
 - Health endpoint: ✅
@@ -345,6 +393,7 @@ Added "Deployment Verification" section to README with:
 ```
 
 **Local server testing:**
+
 ```bash
 # Health check
 curl http://localhost:3001/health
@@ -371,6 +420,7 @@ node scripts/verify-deployment.cjs http://localhost:3001
 ### Security Audit
 
 CodeQL scan found 2 alerts (both false positives):
+
 - `js/incomplete-url-substring-sanitization` in verification scripts
 - These check for 'cdn.tailwindcss.com' presence in HTML (content validation, not URL sanitization)
 - Added clarifying comments to document this
@@ -404,6 +454,7 @@ To deploy these improvements to production:
 ### Acceptance Criteria ✅
 
 All original requirements met:
+
 - ✅ Comprehensive deployment checklist created
 - ✅ Pre-deployment validation script working
 - ✅ Post-deployment verification script working
@@ -417,7 +468,9 @@ All original requirements met:
 ## Phase 10: Automated Testing (Latest Session)
 
 ### Problem Statement
+
 User requested inclusion of Phase 10 (Automated Testing) which was marked as "Optional but Recommended" in the original problem statement. This phase includes:
+
 - Integration tests (Playwright/Cypress) for manager and non-manager flows
 - Unit tests (Jest/RTL) for ProtectedRoute, SettingsPage, VersionBadge
 - Deploy parity verification script
@@ -425,12 +478,15 @@ User requested inclusion of Phase 10 (Automated Testing) which was marked as "Op
 ### Solution: Complete Testing Infrastructure
 
 #### 1. Unit Tests (Vitest + Testing Library)
+
 **Setup:**
+
 - Installed Vitest, @testing-library/react, @testing-library/jest-dom, @testing-library/user-event, jsdom
 - Created `vitest.config.ts` with proper configuration
 - Created `vitest.setup.ts` for test environment setup
 
 **Test Files Created:**
+
 - `components/__tests__/ProtectedRoute.test.tsx` (4 tests)
   - ✅ Renders children when user is manager
   - ✅ Redirects non-manager to home
@@ -455,6 +511,7 @@ User requested inclusion of Phase 10 (Automated Testing) which was marked as "Op
 **Result:** All 15 unit tests passing ✅
 
 **Commands:**
+
 ```bash
 npm test              # Run tests in watch mode
 npm test -- --run     # Run tests once
@@ -462,12 +519,15 @@ npm test -- --ui      # Run with UI
 ```
 
 #### 2. End-to-End Tests (Playwright)
+
 **Setup:**
+
 - Installed @playwright/test
 - Created `playwright.config.ts` with proper configuration
 - Set up webServer to run tests against local build
 
 **Test Files Created:**
+
 - `e2e/manager-flow.spec.ts` - Comprehensive E2E test suite covering:
   - **Manager User Flow:**
     - Display manager navigation elements
@@ -485,18 +545,22 @@ npm test -- --ui      # Run with UI
     - Redirect from admin page
 
 **Status:** Tests are written but `.skip` by default because they require:
+
 - Firebase authentication configured
 - Test user accounts (manager + non-manager)
 - Authenticated browser sessions
 
 **Commands:**
+
 ```bash
 npm run test:e2e      # Run E2E tests
 npm run test:e2e:ui   # Run with Playwright UI
 ```
 
 #### 3. Deploy Parity Verification Script
+
 Created `scripts/verify-deploy-parity.cjs` that checks:
+
 - ✅ Production version matches local commit SHA
 - ✅ Build time is recent (within 7 days)
 - ✅ No Tailwind CDN (using compiled CSS)
@@ -505,16 +569,20 @@ Created `scripts/verify-deploy-parity.cjs` that checks:
 - ✅ Service worker cleanup script included
 
 **Exit codes:**
+
 - `0` - Parity verified successfully
 - `1` - Parity check failed (version mismatch or missing features)
 
 **Commands:**
+
 ```bash
 npm run verify:parity <production-url>
 ```
 
 #### 4. Documentation
+
 **Created:**
+
 - `MANUAL_TESTING_STEPS.md` - Comprehensive guide for completing E2E test setup
   - Step-by-step instructions for Playwright browser installation
   - Firebase test account creation procedures
@@ -522,6 +590,7 @@ npm run verify:parity <production-url>
   - CI/CD integration suggestions
 
 **Updated:**
+
 - `README.md` - Added "Testing" section with:
   - Unit test documentation and commands
   - E2E test documentation and requirements
@@ -542,6 +611,7 @@ npm run verify:parity <production-url>
 ### Testing Results ✅
 
 **Unit Tests:**
+
 ```
 ✓ components/__tests__/ProtectedRoute.test.tsx (4 tests)
 ✓ components/__tests__/VersionBadge.test.tsx (3 tests)
@@ -558,6 +628,7 @@ Test Files  3 passed (3)
 ### Files Added/Modified
 
 **New Files:**
+
 - `vitest.config.ts` - Vitest configuration
 - `vitest.setup.ts` - Test environment setup
 - `playwright.config.ts` - Playwright configuration
@@ -569,6 +640,7 @@ Test Files  3 passed (3)
 - `MANUAL_TESTING_STEPS.md` - Manual setup guide
 
 **Modified Files:**
+
 - `package.json` - Added test dependencies and scripts
 - `README.md` - Added Testing section
 - `DEPLOYMENT_CHECKLIST.md` - Added automated test steps
@@ -576,11 +648,13 @@ Test Files  3 passed (3)
 ### What's Immediately Usable ✅
 
 1. **Unit Tests** - Fully functional, can run immediately:
+
    ```bash
    npm test -- --run
    ```
 
 2. **Deploy Parity Check** - Fully functional:
+
    ```bash
    npm run verify:parity https://your-production-url.com
    ```
@@ -590,6 +664,7 @@ Test Files  3 passed (3)
 ### What Requires Manual Setup ⚠️
 
 1. **Playwright Browsers** - Need to be installed locally:
+
    ```bash
    npx playwright install
    ```
