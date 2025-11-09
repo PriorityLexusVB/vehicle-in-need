@@ -126,6 +126,9 @@ test.describe('Manager User Flow', () => {
     await expect(page.getByRole('heading', { name: 'User Management' })).toBeVisible();
     await expect(page.getByText(/Use the toggles to grant or revoke manager permissions/)).toBeVisible();
   });
+
+  test.skip('should display user list with toggles in settings page', async ({ page }) => {
+    await page.goto('/#/admin');
     
     // TODO: Implement authentication flow
     
