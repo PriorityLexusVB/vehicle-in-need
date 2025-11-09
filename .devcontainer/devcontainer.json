@@ -1,0 +1,27 @@
+{
+  "name": "VIN (Node 20 + PNPM)",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "updateContentCommand": "corepack enable && corepack prepare pnpm@10.15.0 --activate && pnpm install",
+  "postCreateCommand": "npm i -g firebase-tools && firebase --version && sudo apt-get update && sudo apt-get install -y ripgrep",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "EditorConfig.EditorConfig",
+        "bradlc.vscode-tailwindcss",
+        "vitest.explorer",
+        "eamodio.gitlens",
+  "usernamehw.errorlens",
+  "humao.rest-client"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": { "source.fixAll.eslint": "explicit" },
+        "eslint.useFlatConfig": true,
+        "typescript.tsdk": "node_modules/typescript/lib"
+      }
+    }
+  },
+  "forwardPorts": [3000, 5173, 9229]
+}
