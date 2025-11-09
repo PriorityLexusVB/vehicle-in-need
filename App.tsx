@@ -122,6 +122,20 @@ const App: React.FC = () => {
         console.log('displayName:', appUser.displayName);
         console.log('email:', appUser.email);
         
+        // Development-only: Log admin nav render intent
+        if (import.meta.env.DEV) {
+          console.log('%c🔍 Admin Nav Render Check', 'color: #8b5cf6; font-weight: bold;');
+          console.log(`Will render admin navigation: ${appUser.isManager ? 'YES' : 'NO'}`);
+          if (appUser.isManager) {
+            console.log('✓ Manager user should see:');
+            console.log('  - Navigation pill with Dashboard/User Management links');
+            console.log('  - Gear icon link to /#/admin in header');
+            console.log('  - Active orders count');
+          } else {
+            console.log('✗ Non-manager user will NOT see admin navigation elements');
+          }
+        }
+        
         setUser(appUser);
 
       } else {
