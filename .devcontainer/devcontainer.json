@@ -12,8 +12,8 @@
         "bradlc.vscode-tailwindcss",
         "vitest.explorer",
         "eamodio.gitlens",
-  "usernamehw.errorlens",
-  "humao.rest-client"
+        "usernamehw.errorlens",
+        "humao.rest-client"
       ],
       "settings": {
         "editor.formatOnSave": true,
