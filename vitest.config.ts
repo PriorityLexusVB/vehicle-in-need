@@ -19,6 +19,9 @@ export default defineConfig({
     exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**', '**/.{idea,git,cache,output,temp}/**'],
     // Allow .cjs test files for server tests
     include: ['**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    env: {
+      DISABLE_VERTEX_AI: 'true',
+    },
   },
   resolve: {
     alias: {

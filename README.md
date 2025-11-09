@@ -835,7 +835,9 @@ The app includes a defensive error handler that suppresses MutationObserver erro
 
 ### MCP authentication 404 at /authorize
 
-If you see a 404 when authenticating a GitHub Copilot MCP server and the browser URL is `https://api.githubcopilot.com/authorize?...`, update your user MCP config to use the `/mcp` base:
+If you see a 404 when authenticating a GitHub Copilot MCP server and the browser URL is `https://api.githubcopilot.com/authorize?...`, update your user MCP config to use the `/mcp` base.
+
+**📖 For detailed reset instructions, see [docs/mcp-reset.md](docs/mcp-reset.md)**
 
 **Step-by-step recovery:**
 

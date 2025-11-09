@@ -37,6 +37,8 @@ jobs:
           cache: "npm"
       - run: npm ci
       - name: Run unit tests
+        env:
+          DISABLE_VERTEX_AI: true
         run: npm test -- --run
 
   e2e:
