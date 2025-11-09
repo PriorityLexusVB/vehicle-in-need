@@ -118,10 +118,8 @@ describe("OrderList", () => {
       />
     );
 
-    // Click the "Locate" filter button (no select in current UI); disambiguate if multiple role="button" matches
-    const locateFilterBtn = screen.getAllByRole("button", {
-      name: /locate/i,
-    })[0];
+    // Click the "Locate" filter button (no select in current UI); disambiguate if multiple role="button" matches by taking the first pill
+    const locateFilterBtn = screen.getAllByRole("button", { name: /locate/i })[0];
     await user.click(locateFilterBtn);
 
     // Should only show orders with Locate status
@@ -154,7 +152,7 @@ describe("OrderList", () => {
       />
     );
 
-    // Should show count of active orders (excluding delivered) in the current UI copy
+  // Dynamic active order count using current UI label 'Active Orders <count>'
     const activeCount = mockOrders.filter(
       (o) => o.status !== OrderStatus.Delivered
     ).length;
@@ -176,7 +174,7 @@ describe("OrderList", () => {
       />
     );
 
-    // Should show count of delivered orders in the current UI copy
+  // Dynamic delivered order count using current UI label 'Delivered History <count>'
     const deliveredCount = mockOrders.filter(
       (o) => o.status === OrderStatus.Delivered
     ).length;
