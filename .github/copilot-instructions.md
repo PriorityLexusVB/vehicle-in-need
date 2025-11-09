@@ -1,6 +1,6 @@
 # Agent Rules (Repo-wide)
 
-1. Prefer **Firebase CLI & Emulators** over raw shell for data/auth:
+1) Prefer **Firebase CLI & Emulators** over raw shell for data/auth:
 
    - DB/storage/auth tasks → use Firebase CLI & Emulators (read-only by default; use `--project <dev>`).
    - Prefer emulator commands: `firebase emulators:start`, `firebase emulators:exec`.
