@@ -7,8 +7,6 @@
     "vitest.explorer",
     "eamodio.gitlens",
     "usernamehw.errorlens",
-    "Prisma.prisma",
-    "supabase.vscode-supabase",
     "humao.rest-client"
   ]
 }

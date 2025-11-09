@@ -1,8 +1,9 @@
 # Agent Rules (Repo-wide)
 
-1. Prefer **MCP tools** over shell:
+1) Prefer **Firebase CLI & Emulators** over raw shell for data/auth:
 
-   - DB work → Supabase/Prisma MCP.
+   - DB/storage/auth tasks → use Firebase CLI & Emulators (read-only by default; use `--project <dev>`).
+   - Prefer emulator commands: `firebase emulators:start`, `firebase emulators:exec`.
    - Repo/PR/issues → GitHub tools.
    - HTTP testing → use REST Client (or Thunder Client if present).
 
@@ -15,11 +16,11 @@
 
    - Default to read-only DB actions unless I say "write" or "migrate".
    - Never commit directly to `main`/`work`. Create `feat/...` or `setup/...` + PR.
-   - Before any of: `git push`, `prisma migrate`, `supabase db push`, `firebase deploy`, `rm -rf`, print the command and ask for approval.
+   - Before any of: `git push`, `firebase deploy`, `rm -rf`, or any rules write, print the command and ask for approval.
 
 4. **Validation**
 
-   - After edits: run lint/tests. For DB: `prisma validate` and `prisma migrate status` when Prisma is present.
+   - After edits: run lint/tests. For Firebase changes: prefer emulator-first validation (`firebase emulators:exec`).
 
 5. **Environment awareness**
    - In Codespaces, use the dev container terminal; in WSL, use the remote WSL terminal.
