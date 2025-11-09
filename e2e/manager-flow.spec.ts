@@ -63,6 +63,7 @@ test.describe('Application Load and Console Errors', () => {
     await page.waitForLoadState('networkidle');
     
     // Check that there are no warnings about cdn.tailwindcss.com
+    // Note: This is a test that checks console warning strings, not URL sanitization
     const tailwindCdnWarnings = consoleWarnings.filter(w => 
       w.includes('cdn.tailwindcss.com') || w.includes('should not be used in production')
     );
