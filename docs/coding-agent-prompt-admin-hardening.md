@@ -3,20 +3,23 @@
 This file captures the full execution instructions for an automated coding agent to finalize remaining tasks for the **admin hardening & documentation** effort on branch `feat/admin-hardening-docs`.
 
 ## Branch Context
+
 - Active feature branch: `feat/admin-hardening-docs`
 - Base branch: `main`
 - Completed changes so far:
-  - Auth loop fix (popup-first, redirect fallback)
-  - Access Denied state (domain normalization) without infinite sign-out loop
-  - Standardized `[ROLE-ELEVATION] email=<email> uid=<uid> elevated=true` logging using a ref to avoid duplicates
-  - Removed explicit `any` types from targeted files (`OrderCard.tsx`, `OrderList.tsx`, `geminiService.ts`, `types.ts`, crypto tests)
-  - Firebase MCP server implemented (`mcp/firebase-v5/index.mjs`) and documented (`docs/mcp-firebase.md`)
-  - ZeroManagerWarning component + tests (dismiss & accessibility)
+   - Auth loop fix (popup-first, redirect fallback)
+   - Access Denied state (domain normalization) without infinite sign-out loop
+   - Standardized `[ROLE-ELEVATION] email=<email> uid=<uid> elevated=true` logging using a ref to avoid duplicates
+   - Removed explicit `any` types from targeted files (`OrderCard.tsx`, `OrderList.tsx`, `geminiService.ts`, `types.ts`, crypto tests)
+   - Firebase MCP server implemented (`mcp/firebase-v5/index.mjs`) and documented (`docs/mcp-firebase.md`)
+   - ZeroManagerWarning component + tests (dismiss & accessibility)
 
 ## Objective
+
 Finish remaining hardening tasks: markdown cleanup, security/key rotation docs, deployment role verification steps, role UI examples doc, final quality gates, and prepare the comprehensive Pull Request.
 
 ## Constraints
+
 - Do NOT regress authentication or elevation logic.
 - No new external dependencies unless absolutely required.
 - Keep secrets out of version control (`.secrets/` remains gitignored).
@@ -25,6 +28,7 @@ Finish remaining hardening tasks: markdown cleanup, security/key rotation docs, 
 - Use markdownlint disable only for MD013 (line length) where necessary.
 
 ## Task List
+
 1. Markdown Documentation Cleanup
 2. Security & Key Rotation Docs
 3. Deployment Checklist Enhancement
@@ -38,12 +42,16 @@ Finish remaining hardening tasks: markdown cleanup, security/key rotation docs, 
 Apply these fixes across the listed markdown files.
 
 ### Files to Adjust MD013 (Line Length)
+
 Add at the very top (after any existing title) two lines:
-```
+
+```text
 <!-- markdownlint-disable MD013 -->
 <!-- Long lines intentional for readability / tables / list formatting. -->
 ```
+
 Target files:
+
 - `README.md`
 - `DEPLOYMENT_CHECKLIST.md`
 - `IMPLEMENTATION_SUMMARY.md`
@@ -58,6 +66,7 @@ Target files:
 
 ### MD040 (Fenced Code Blocks Need Language)
 Add appropriate languages:
+
 - Shell commands: `bash`
 - JSON examples: `json`
 - YAML examples: `yaml`
