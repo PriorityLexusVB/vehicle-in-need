@@ -32,13 +32,21 @@ async function unregisterLegacyServiceWorkers() {
 
 // Add defensive guard against MutationObserver errors from third-party code
 function setupMutationObserverGuard() {
+  // Only log detailed diagnostics in production
+  const isDev = import.meta.env.DEV;
+  
   // Guard against synchronous errors
   window.addEventListener('error', (event) => {
     // Suppress the specific MutationObserver error that breaks rendering
     const message = event.message || '';
     if (message.includes('parameter 1 is not of type Node') || 
         message.includes('MutationObserver')) {
-      console.warn('Suppressed MutationObserver error:', message);
+      if (!isDev) {
+        // Production: Log with origin tag for diagnostics
+        console.warn('[MutationObserver Guard] Suppressed error:', message);
+      } else {
+        console.warn('Suppressed MutationObserver error:', message);
+      }
       event.preventDefault();
       return;
     }
@@ -49,7 +57,12 @@ function setupMutationObserverGuard() {
     const reason = event.reason?.message || String(event.reason);
     if (reason.includes('parameter 1 is not of type Node') || 
         reason.includes('MutationObserver')) {
-      console.warn('Suppressed MutationObserver promise rejection:', reason);
+      if (!isDev) {
+        // Production: Log with origin tag for diagnostics
+        console.warn('[MutationObserver Guard] Suppressed promise rejection:', reason);
+      } else {
+        console.warn('Suppressed MutationObserver promise rejection:', reason);
+      }
       event.preventDefault();
       return;
     }
@@ -62,10 +75,12 @@ function logBundleInfo() {
   const commitSha = typeof import.meta !== 'undefined' && import.meta.env?.VITE_APP_COMMIT_SHA;
   // @ts-expect-error - Build time is also injected by Vite
   const buildTime = typeof import.meta !== 'undefined' && import.meta.env?.VITE_APP_BUILD_TIME;
+  const isDev = import.meta.env.DEV;
   
   console.log('%c🚀 Application Bundle Info', 'color: #0ea5e9; font-weight: bold; font-size: 14px;');
   console.log(`Version: ${commitSha || 'unknown'}`);
   console.log(`Build Time: ${buildTime || 'unknown'}`);
+  console.log(`Environment: ${isDev ? 'development' : 'production'}`);
   console.log(`User Agent: ${navigator.userAgent}`);
   console.log(`Timestamp: ${new Date().toISOString()}`);
   
@@ -73,6 +88,11 @@ function logBundleInfo() {
   if (!commitSha || commitSha === 'unknown' || commitSha === 'dev') {
     console.warn('%c⚠️ STALE_BUNDLE_DETECTED: Version information missing or invalid', 'color: #f59e0b; font-weight: bold;');
     console.warn('This may indicate an outdated deployment or build configuration issue.');
+  }
+  
+  // Production-only: Check for Tailwind CDN usage (should not be present)
+  if (!isDev && document.querySelector('script[src*="cdn.tailwindcss.com"]')) {
+    console.error('[Production Error] Tailwind CDN detected - should use bundled CSS');
   }
 }
 
