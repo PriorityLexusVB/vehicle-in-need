@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "github": {
+      "command": "gh",
+      "args": ["mcp", "server"]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@microsoft/mcp-playwright", "stdio"]
+    },
+    "firebase-v5": {
+      "command": "node",
+      "args": ["./mcp/firebase-v5/index.mjs"],
+      "env": {
+        "FIREBASE_SERVICE_ACCOUNT_FILE": "/workspaces/vehicle-in-need/.secrets/vin-seeder.json",
+        "FIREBASE_PROJECT_ID": "vehicles-in-need"
+      }
+    }
+  }
+}
