@@ -538,6 +538,8 @@ gcloud builds submit --config cloudbuild.yaml --no-cache
 
 ## Security Checklist
 
+### Code & Configuration Security
+
 - [ ] No API keys or secrets in client-side code
 - [ ] Service account has minimum required IAM roles
 - [ ] CORS configured appropriately (not allowing all origins in production)
@@ -546,6 +548,73 @@ gcloud builds submit --config cloudbuild.yaml --no-cache
 - [ ] Dependencies scanned for vulnerabilities (`npm audit`)
 - [ ] Environment variables properly scoped and secured
 - [ ] HTTPS enforced for all traffic (Cloud Run default)
+
+### Service Account Key Rotation
+
+Service account keys should be rotated regularly as a security best practice:
+
+**Rotation Schedule:**
+
+- [ ] Rotate keys every 90 days (recommended)
+- [ ] Rotate immediately if key is exposed or committed to Git
+- [ ] Rotate after any suspected compromise
+- [ ] Document rotation date in team notes
+
+**Rotation Procedure:**
+
+1. **Create new key** in Google Cloud Console:
+
+   ```bash
+   # Navigate to IAM & Admin → Service Accounts
+   # Select service account → Keys → Add Key → Create new key (JSON)
+   ```
+
+2. **Update key in secure locations**:
+   - Update `GOOGLE_APPLICATION_CREDENTIALS` environment variable
+   - Update secret manager entries (if applicable)
+   - Update CI/CD pipeline secrets
+
+3. **Test new key**:
+
+   ```bash
+   # Verify new key works with seeder script
+   GOOGLE_APPLICATION_CREDENTIALS=path/to/new-key.json \
+     pnpm run seed:managers:dry-run -- --emails test@priorityautomotive.com
+   ```
+
+4. **Delete old key** in Google Cloud Console:
+   - Wait 24-48 hours to ensure no systems depend on old key
+   - Delete old key from Service Accounts → Keys section
+
+5. **Remove old key files**:
+
+   ```bash
+   # Securely delete old key file
+   shred -u path/to/old-key.json  # Linux
+   # or
+   rm -P path/to/old-key.json     # macOS
+   ```
+
+**If Key is Compromised:**
+
+1. **Immediately** disable the key in Google Cloud Console
+2. Rotate to a new key following procedure above
+3. Review audit logs for unauthorized access
+4. Update incident response documentation
+5. Consider notifying security team if suspicious activity detected
+
+### Firebase Security Rules
+
+- [ ] Firestore rules restrict write access appropriately
+- [ ] Anonymous access disabled for sensitive collections
+- [ ] Test rules using Firebase Emulator before deployment
+
+### API Endpoint Security
+
+- [ ] Server-side Vertex AI proxy does not expose credentials
+- [ ] Rate limiting configured on API endpoints (if applicable)
+- [ ] Input validation on all API routes
+- [ ] Error messages do not leak sensitive information
 
 ## Post-Deployment Admin Verification
 

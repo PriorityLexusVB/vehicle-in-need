@@ -1,6 +1,11 @@
+<!-- markdownlint-disable MD013 -->
+<!-- Long lines intentional for command examples and comprehensive task descriptions -->
+
 # Coding Agent Prompt: Admin Hardening & Documentation Completion
 
-This file captures the full execution instructions for an automated coding agent to finalize remaining tasks for the **admin hardening & documentation** effort on branch `feat/admin-hardening-docs`.
+This file captures the full execution instructions for an automated coding agent
+to finalize remaining tasks for the **admin hardening & documentation** effort
+on branch `feat/admin-hardening-docs`.
 
 ## Branch Context
 
@@ -9,21 +14,27 @@ This file captures the full execution instructions for an automated coding agent
 - Completed changes so far:
   - Auth loop fix (popup-first, redirect fallback)
   - Access Denied state (domain normalization) without infinite sign-out loop
-  - Standardized `[ROLE-ELEVATION] email=<email> uid=<uid> elevated=true` logging using a ref to avoid duplicates
-  - Removed explicit `any` types from targeted files (`OrderCard.tsx`, `OrderList.tsx`, `geminiService.ts`, `types.ts`, crypto tests)
-  - Firebase MCP server implemented (`mcp/firebase-v5/index.mjs`) and documented (`docs/mcp-firebase.md`)
+  - Standardized `[ROLE-ELEVATION] email=<email> uid=<uid> elevated=true`
+    logging using a ref to avoid duplicates
+  - Removed explicit `any` types from targeted files (`OrderCard.tsx`,
+    `OrderList.tsx`, `geminiService.ts`, `types.ts`, crypto tests)
+  - Firebase MCP server implemented (`mcp/firebase-v5/index.mjs`) and
+    documented (`docs/mcp-firebase.md`)
   - ZeroManagerWarning component + tests (dismiss & accessibility)
 
 ## Objective
 
-Finish remaining hardening tasks: markdown cleanup, security/key rotation docs, deployment role verification steps, role UI examples doc, final quality gates, and prepare the comprehensive Pull Request.
+Finish remaining hardening tasks: markdown cleanup, security/key rotation docs,
+deployment role verification steps, role UI examples doc, final quality gates,
+and prepare the comprehensive Pull Request.
 
 ## Constraints
 
 - Do NOT regress authentication or elevation logic.
 - No new external dependencies unless absolutely required.
 - Keep secrets out of version control (`.secrets/` remains gitignored).
-- Minimize rewrite scope; apply surgical documentation and minor code adjustments only.
+- Minimize rewrite scope; apply surgical documentation and minor code
+  adjustments only.
 - Tests must continue to pass (current baseline: 50 passed / 4 skipped).
 - Use markdownlint disable only for MD013 (line length) where necessary.
 
