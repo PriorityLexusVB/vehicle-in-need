@@ -582,6 +582,9 @@ E2E tests are written using Playwright and cover user flows:
 - **Manager flow** - Navigation, settings access, user management
 - **Non-manager flow** - Access restrictions, redirects
 - **Authentication flow** - Login, unauthenticated access
+- **Role-based access** - UI visibility based on user role
+- **Production diagnostics** - Bundle info logging, no Tailwind CDN
+- **Service worker** - Cleanup behavior, no infinite reload
 
 **Run E2E tests:**
 
@@ -593,17 +596,20 @@ npm run test:e2e:ui        # Run with Playwright UI
 **Note:** E2E tests require:
 
 - Built application (`npm run build`)
-- Running server (`npm run server`)
-- Firebase authentication configured
-- Test user accounts
+- Playwright browsers installed (`npx playwright install`)
+- Running server (`npm run server` or auto-started by Playwright)
 
-Most E2E tests are skipped by default (`.skip`) because they require authenticated sessions. To run them:
+**Test Implementation:**
 
-1. Set up test user accounts in Firebase
-2. Configure authentication in tests
-3. Remove `.skip` from desired tests
+The E2E tests use a graceful detection approach:
+- Tests check if manager/non-manager UI elements are present
+- Tests verify expected behavior when elements are available
+- Tests skip gracefully when authentication is not configured
+- Firebase Auth/Firestore mocking utilities provided in `e2e/auth-mock-utils.ts`
 
-**Test files:** `e2e/*.spec.ts`
+**Test files:**
+- `e2e/manager-flow.spec.ts` - Original tests for application load and console errors
+- `e2e/role-based-access.spec.ts` - Comprehensive role-based UI visibility tests
 
 ### Deploy Parity Verification
 
