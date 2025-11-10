@@ -1,3 +1,6 @@
+<!-- markdownlint-disable MD013 -->
+<!-- Long lines intentional for UI examples and code snippets -->
+
 # Role-Based UI Examples
 
 This document provides verification artifacts for the manager vs non-manager UI states in the Vehicle Order Tracker application.

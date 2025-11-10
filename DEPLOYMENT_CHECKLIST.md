@@ -1,3 +1,6 @@
+<!-- markdownlint-disable MD013 -->
+<!-- Long lines intentional for readability, table formatting, and command examples -->
+
 # Deployment Checklist
 
 This document provides a comprehensive checklist for deploying the Vehicle Order Tracker application to production.

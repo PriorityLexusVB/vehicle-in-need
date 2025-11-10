@@ -1,3 +1,6 @@
+<!-- markdownlint-disable MD013 -->
+<!-- Long lines intentional for table formatting -->
+
 # Firebase MCP Server
 
 This document describes the custom MCP server used to expose limited Firestore capabilities via JSON-RPC over stdio.
