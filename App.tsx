@@ -5,6 +5,7 @@ import {
   collection,
   query,
   orderBy,
+  where,
   onSnapshot,
   doc,
   getDoc,
@@ -280,8 +281,8 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!user?.isManager) {
-      // If user is not a manager, reset state outside the effect
+    if (!user) {
+      // If user is not logged in, reset state
       Promise.resolve().then(() => {
         setOrders([]);
         setAllUsers([]);
@@ -295,11 +296,15 @@ const App: React.FC = () => {
       return;
     }
 
-    // Fetch orders for managers
-    const ordersQuery = query(
-      collection(db, "orders"),
-      orderBy("createdAt", "desc")
-    );
+    // Fetch orders based on user role
+    const ordersQuery = user.isManager
+      ? query(collection(db, "orders"), orderBy("createdAt", "desc"))
+      : query(
+          collection(db, "orders"),
+          where("createdByUid", "==", user.uid),
+          orderBy("createdAt", "desc")
+        );
+
     const unsubscribeOrders = onSnapshot(
       ordersQuery,
       (querySnapshot) => {
@@ -312,7 +317,7 @@ const App: React.FC = () => {
         );
         setOrders(ordersData);
 
-        // Calculate stats
+        // Calculate stats (only for managers, but compute for all users for simplicity)
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         const newStats = ordersData.reduce(
@@ -356,23 +361,26 @@ const App: React.FC = () => {
       }
     );
 
-    // Fetch all users for managers
-    const usersQuery = query(
-      collection(db, USERS_COLLECTION),
-      orderBy("displayName", "asc")
-    );
-    const unsubscribeUsers = onSnapshot(
-      usersQuery,
-      (querySnapshot) => {
-        const usersData: AppUser[] = querySnapshot.docs.map(
-          (doc) => doc.data() as AppUser
-        );
-        setAllUsers(usersData);
-      },
-      (error) => {
-        console.error("Error fetching users from Firestore: ", error);
-      }
-    );
+    // Fetch all users (only for managers)
+    let unsubscribeUsers: (() => void) | undefined;
+    if (user.isManager) {
+      const usersQuery = query(
+        collection(db, USERS_COLLECTION),
+        orderBy("displayName", "asc")
+      );
+      unsubscribeUsers = onSnapshot(
+        usersQuery,
+        (querySnapshot) => {
+          const usersData: AppUser[] = querySnapshot.docs.map(
+            (doc) => doc.data() as AppUser
+          );
+          setAllUsers(usersData);
+        },
+        (error) => {
+          console.error("Error fetching users from Firestore: ", error);
+        }
+      );
+    }
 
     return () => {
       unsubscribeOrders?.();
@@ -393,6 +401,8 @@ const App: React.FC = () => {
         await addDoc(collection(db, "orders"), {
           ...orderPayload,
           createdAt: serverTimestamp(),
+          createdByUid: user?.uid,
+          createdByEmail: user?.email,
         });
         return true;
       } catch (error) {
@@ -401,7 +411,7 @@ const App: React.FC = () => {
         return false;
       }
     },
-    []
+    [user]
   );
 
   const handleAddOrderAndCloseForm = useCallback(
@@ -552,6 +562,7 @@ const App: React.FC = () => {
                     orders={orders}
                     onUpdateStatus={handleUpdateOrderStatus}
                     onDeleteOrder={handleDeleteOrder}
+                    currentUser={user}
                   />
                 </div>
               ) : (
@@ -565,13 +576,24 @@ const App: React.FC = () => {
                       dealer exchange request.
                     </p>
                   </div>
-                  <div className="flex justify-center">
+                  <div className="flex justify-center mb-8">
                     <div className="w-full max-w-3xl">
                       <OrderForm
                         onAddOrder={handleAddOrder}
                         currentUser={user}
                       />
                     </div>
+                  </div>
+                  <div className="mt-12">
+                    <h2 className="text-2xl font-bold text-slate-800 mb-6">
+                      Your Orders
+                    </h2>
+                    <OrderList
+                      orders={orders}
+                      onUpdateStatus={handleUpdateOrderStatus}
+                      onDeleteOrder={handleDeleteOrder}
+                      currentUser={user}
+                    />
                   </div>
                 </div>
               )

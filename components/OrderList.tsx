@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Order, OrderStatus } from '../types';
+import { Order, OrderStatus, AppUser } from '../types';
 import OrderCard from './OrderCard';
 import { STATUS_OPTIONS } from '../constants';
 import { DownloadIcon } from './icons/DownloadIcon';
@@ -9,9 +9,10 @@ interface OrderListProps {
   orders: Order[];
   onUpdateStatus: (orderId: string, status: OrderStatus) => void;
   onDeleteOrder: (orderId: string) => void;
+  currentUser?: AppUser | null;
 }
 
-const OrderList: React.FC<OrderListProps> = ({ orders, onUpdateStatus, onDeleteOrder }) => {
+const OrderList: React.FC<OrderListProps> = ({ orders, onUpdateStatus, onDeleteOrder, currentUser }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [activeTab, setActiveTab] = useState<'active' | 'delivered'>('active');
@@ -206,6 +207,7 @@ const OrderList: React.FC<OrderListProps> = ({ orders, onUpdateStatus, onDeleteO
               order={order} 
               onUpdateStatus={onUpdateStatus}
               onDeleteOrder={onDeleteOrder}
+              currentUser={currentUser}
             />
           ))
         ) : (

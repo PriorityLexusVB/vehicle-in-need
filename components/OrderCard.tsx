@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { Order, OrderStatus } from '../types';
+import { Order, OrderStatus, AppUser } from '../types';
 import { STATUS_OPTIONS } from '../constants';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
 import StatusBadge from './StatusBadge';
@@ -12,6 +13,7 @@ interface OrderCardProps {
   order: Order;
   onUpdateStatus: (orderId: string, status: OrderStatus) => void;
   onDeleteOrder: (orderId: string) => void;
+  currentUser?: AppUser | null;
 }
 
 const DetailItem: React.FC<{label: string, children: React.ReactNode}> = ({ label, children }) => (
@@ -21,7 +23,7 @@ const DetailItem: React.FC<{label: string, children: React.ReactNode}> = ({ labe
     </div>
 );
 
-const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOrder }) => {
+const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOrder, currentUser }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedEmail, setGeneratedEmail] = useState('');
@@ -103,7 +105,7 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOr
             <div className="p-3 mb-4 rounded-lg bg-slate-50 border border-slate-200">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center space-x-2">
-                    {isActive ? (
+                    {currentUser?.isManager && isActive ? (
                     <>
                         <label htmlFor={`status-select-${order.id}`} className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
                            Change Status:
@@ -119,26 +121,30 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOr
                     </>
                     ) : (isReceived ? (
                         <div className="text-sm font-medium text-slate-700">Vehicle at dealership. Ready for delivery.</div>
-                    ) : (
+                    ) : isDelivered ? (
                         <div className="text-sm font-medium text-green-700">Order Completed</div>
+                    ) : (
+                        <div className="text-sm font-medium text-slate-700">Status: {order.status}</div>
                     ))}
                 </div>
 
                 <div className="flex items-center gap-2">
-                    {isActive && (
+                    {currentUser?.isManager && isActive && (
                         <button onClick={() => onUpdateStatus(order.id, OrderStatus.Received)} className="flex items-center gap-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-3 rounded-lg shadow-sm transition-colors">
                            Mark as Received
                         </button>
                     )}
-                    {isReceived && (
+                    {currentUser?.isManager && isReceived && (
                         <button onClick={() => onUpdateStatus(order.id, OrderStatus.Delivered)} className="flex items-center gap-1.5 text-sm bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-3 rounded-lg shadow-sm transition-colors">
                            Mark as Delivered
                         </button>
                     )}
-                    <button onClick={() => onDeleteOrder(order.id)} className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-800 font-medium py-2 px-3 rounded-lg hover:bg-red-50 transition-colors">
-                        <TrashIcon className="w-4 h-4 text-red-500" />
-                        Delete
-                    </button>
+                    {currentUser?.isManager && (
+                        <button onClick={() => onDeleteOrder(order.id)} className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-800 font-medium py-2 px-3 rounded-lg hover:bg-red-50 transition-colors">
+                            <TrashIcon className="w-4 h-4 text-red-500" />
+                            Delete
+                        </button>
+                    )}
                 </div>
                 </div>
             </div>
