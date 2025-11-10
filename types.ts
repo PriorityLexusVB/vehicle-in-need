@@ -1,3 +1,5 @@
+import type { Timestamp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+
 export enum OrderStatus {
   FactoryOrder = 'Factory Order',
   Locate = 'Locate',
@@ -31,7 +33,7 @@ export interface Order {
   status: OrderStatus;
   options: string;
   notes?: string;
-  createdAt?: any; // Used for Firestore server-side ordering
+  createdAt?: Timestamp; // Firestore server timestamp for ordering
 }
 
 export interface AppUser {

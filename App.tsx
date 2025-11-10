@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import {
   onAuthStateChanged,
@@ -51,6 +51,9 @@ const App: React.FC = () => {
     readyForDelivery: 0,
     deliveredLast30Days: 0,
   });
+
+  // Track logged elevations to prevent duplicate logging
+  const loggedElevations = useRef<Set<string>>(new Set());
 
   // Service Worker registration with update notification
   const {
@@ -128,9 +131,12 @@ const App: React.FC = () => {
           ) {
             // Persistent elevation: if an existing user is in MANAGER_EMAILS but not a manager yet,
             // elevate them now. This keeps MANAGER_EMAILS as an allow-list for upgrades only.
-            console.log(
-              `[ROLE-ELEVATION] ${authUser.email} upgraded (was false)`
-            );
+            // Log only once per user to avoid duplicate logs on re-renders
+            const elevationKey = `${authUser.uid}-elevation`;
+            if (!loggedElevations.current.has(elevationKey)) {
+              console.log(`[ROLE-ELEVATION] email=${authUser.email} uid=${authUser.uid} elevated=true`);
+              loggedElevations.current.add(elevationKey);
+            }
             isManager = true;
             await updateDoc(userDocRef, { isManager: true });
           }
