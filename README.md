@@ -1,3 +1,6 @@
+<!-- markdownlint-disable MD013 -->
+<!-- Long lines intentional for command examples, URLs, and comprehensive explanations -->
+
 # Pre-Order & Dealer Exchange Tracker
 
 ![GH Banner](https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6)
@@ -813,7 +816,7 @@ The application uses a two-tier authorization system:
 
 **Manager Elevation Flow:**
 
-```
+```text
 User First Login → Check MANAGER_EMAILS → Seed isManager: true/false → Store in Firestore
 Subsequent Logins → Read isManager from Firestore (MANAGER_EMAILS ignored)
 ```

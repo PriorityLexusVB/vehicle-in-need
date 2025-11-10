@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import {
   onAuthStateChanged,
@@ -51,8 +51,9 @@ const App: React.FC = () => {
     readyForDelivery: 0,
     deliveredLast30Days: 0,
   });
-  const [accessDeniedEmail, setAccessDeniedEmail] = useState<string | null>(null);
-  const elevationLoggedRef = React.useRef(false);
+
+  // Track logged elevations to prevent duplicate logging
+  const loggedElevations = useRef<Set<string>>(new Set());
 
   // Service Worker registration with update notification
   const {
@@ -75,123 +76,195 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (authUser) => {
-      if (authUser && authUser.email) {
-        const normalizedEmail = authUser.email.toLowerCase();
-        const domainOk = normalizedEmail.endsWith("@priorityautomotive.com") || import.meta.env.VITE_ALLOW_ANY_DOMAIN_FOR_DEV === "1";
-        if (!domainOk) {
-          console.warn(`[AUTH-DOMAIN-BLOCK] email=${normalizedEmail} domainCheckFailed=true`);
-          setAccessDeniedEmail(authUser.email || null);
-          setUser(null);
-          setIsLoading(false);
-          return;
-        }
-        const userDocRef = doc(db, USERS_COLLECTION, authUser.uid);
-        const userDoc = await getDoc(userDocRef);
-
-        console.log(
-          "%c👤 Auth Flow - User Document Fetch",
-          "color: #10b981; font-weight: bold;"
-        );
-        console.log("User email:", authUser.email);
-        console.log("User document exists:", userDoc.exists());
-
-        let appUser: AppUser;
-
-        if (!userDoc.exists()) {
-          // NEW USER: First-time login - seed isManager from MANAGER_EMAILS constant.
-          // IMPORTANT: MANAGER_EMAILS is ONLY used for initial seeding, not on subsequent logins.
-          const isManager = MANAGER_EMAILS.includes(
-            authUser.email!.toLowerCase()
-          );
+      try {
+        if (authUser && authUser.email?.endsWith("@priorityautomotive.com")) {
+          const userDocRef = doc(db, USERS_COLLECTION, authUser.uid);
+          
           console.log(
-            "NEW USER - Seeding isManager from MANAGER_EMAILS:",
-            isManager
+            "%c👤 Auth Flow - User Document Fetch",
+            "color: #10b981; font-weight: bold;"
           );
-          appUser = {
-            uid: authUser.uid,
-            email: authUser.email,
-            displayName: authUser.displayName,
-            isManager: isManager,
-          };
-          await setDoc(userDocRef, appUser);
-          console.log("Created new user document with isManager:", isManager);
-        } else {
-          // EXISTING USER: Firestore is the single source of truth for the manager role.
-          // Changes made via Settings page will persist because we read from Firestore, not MANAGER_EMAILS.
-          const existingData = userDoc.data();
-          let isManager = existingData.isManager;
-          console.log("EXISTING USER - Firestore document data:", existingData);
-          console.log("Fetched isManager from Firestore:", isManager);
+          console.log("User email:", authUser.email);
+          console.log("User UID:", authUser.uid);
 
-          // One-time migration for older user documents that might not have the isManager field.
-          // Checking for non-boolean handles undefined, null, and any incorrectly stored values.
-          if (typeof isManager !== "boolean") {
-            isManager = MANAGER_EMAILS.includes(normalizedEmail);
+          let userDoc;
+          try {
+            userDoc = await getDoc(userDocRef);
+            console.log("User document exists:", userDoc.exists());
+          } catch (firestoreError) {
+            console.error(
+              "%c❌ Firestore Error - Failed to fetch user document",
+              "color: #ef4444; font-weight: bold;",
+              firestoreError
+            );
+            // Continue with auth info but log the error
+            alert(
+              "Warning: Could not load user profile. You may have limited access. Please refresh the page or contact support if this persists."
+            );
+            // Create a minimal user object from auth data only
+            const fallbackUser: AppUser = {
+              uid: authUser.uid,
+              email: authUser.email,
+              displayName: authUser.displayName,
+              isManager: MANAGER_EMAILS.includes(authUser.email!.toLowerCase()),
+            };
+            setUser(fallbackUser);
+            setIsLoading(false);
+            return;
+          }
+
+          let appUser: AppUser;
+
+          if (!userDoc.exists()) {
+            // NEW USER: First-time login - seed isManager from MANAGER_EMAILS constant.
+            // IMPORTANT: MANAGER_EMAILS is ONLY used for initial seeding, not on subsequent logins.
+            const isManager = MANAGER_EMAILS.includes(
+              authUser.email!.toLowerCase()
+            );
             console.log(
-              "MIGRATION - isManager was not boolean, setting to:",
+              "NEW USER - Seeding isManager from MANAGER_EMAILS:",
               isManager
             );
-            // Write the migrated value to Firestore so it persists.
-            await updateDoc(userDocRef, { isManager });
-          } else if (
-            !isManager &&
-            MANAGER_EMAILS.includes(normalizedEmail)
-          ) {
-            // Persistent elevation: if an existing user is in MANAGER_EMAILS but not a manager yet,
-            // elevate them now. This keeps MANAGER_EMAILS as an allow-list for upgrades only.
-            if (!elevationLoggedRef.current) {
-              console.log(`[ROLE-ELEVATION] email=${normalizedEmail} uid=${authUser.uid} elevated=true`);
-              elevationLoggedRef.current = true;
+            appUser = {
+              uid: authUser.uid,
+              email: authUser.email,
+              displayName: authUser.displayName,
+              isManager: isManager,
+            };
+            
+            try {
+              await setDoc(userDocRef, appUser);
+              console.log("Created new user document with isManager:", isManager);
+            } catch (firestoreError) {
+              console.error(
+                "%c❌ Firestore Error - Failed to create user document",
+                "color: #ef4444; font-weight: bold;",
+                firestoreError
+              );
+              // Continue with the user object even if Firestore write failed
+              console.warn("Proceeding with in-memory user object");
             }
-            isManager = true;
-            await updateDoc(userDocRef, { isManager: true });
-          }
-
-          appUser = {
-            uid: authUser.uid,
-            email: authUser.email,
-            displayName: authUser.displayName,
-            isManager: isManager, // This value came from Firestore, ensuring Settings changes persist.
-          };
-        }
-
-        console.log(
-          "%c✅ Auth Complete - Final AppUser State",
-          "color: #10b981; font-weight: bold;"
-        );
-        console.log("isManager:", appUser.isManager);
-        console.log("displayName:", appUser.displayName);
-        console.log("email:", appUser.email);
-
-        // Development-only: Log admin nav render intent
-        if (import.meta.env.DEV) {
-          console.log(
-            "%c🔍 Admin Nav Render Check",
-            "color: #8b5cf6; font-weight: bold;"
-          );
-          console.log(
-            `Will render admin navigation: ${appUser.isManager ? "YES" : "NO"}`
-          );
-          if (appUser.isManager) {
-            console.log("✓ Manager user should see:");
-            console.log(
-              "  - Navigation pill with Dashboard/User Management links"
-            );
-            console.log("  - Gear icon link to /#/admin in header");
-            console.log("  - Active orders count");
           } else {
+            // EXISTING USER: Firestore is the single source of truth for the manager role.
+            // Changes made via Settings page will persist because we read from Firestore, not MANAGER_EMAILS.
+            const existingData = userDoc.data();
+            let isManager = existingData.isManager;
+            console.log("EXISTING USER - Firestore document data:", existingData);
+            console.log("Fetched isManager from Firestore:", isManager);
+
+            // One-time migration for older user documents that might not have the isManager field.
+            // Checking for non-boolean handles undefined, null, and any incorrectly stored values.
+            if (typeof isManager !== "boolean") {
+              isManager = MANAGER_EMAILS.includes(authUser.email!.toLowerCase());
+              console.log(
+                "MIGRATION - isManager was not boolean, setting to:",
+                isManager
+              );
+              // Write the migrated value to Firestore so it persists.
+              try {
+                await updateDoc(userDocRef, { isManager });
+              } catch (firestoreError) {
+                console.error(
+                  "%c❌ Firestore Error - Failed to update isManager field",
+                  "color: #ef4444; font-weight: bold;",
+                  firestoreError
+                );
+                // Continue with the migrated value even if write failed
+              }
+            } else if (
+              !isManager &&
+              MANAGER_EMAILS.includes(authUser.email!.toLowerCase())
+            ) {
+              // Persistent elevation: if an existing user is in MANAGER_EMAILS but not a manager yet,
+              // elevate them now. This keeps MANAGER_EMAILS as an allow-list for upgrades only.
+              // Log only once per user to avoid duplicate logs on re-renders
+              const elevationKey = `${authUser.uid}-elevation`;
+              if (!loggedElevations.current.has(elevationKey)) {
+                console.log(`[ROLE-ELEVATION] email=${authUser.email} uid=${authUser.uid} elevated=true`);
+                loggedElevations.current.add(elevationKey);
+              }
+              isManager = true;
+              try {
+                await updateDoc(userDocRef, { isManager: true });
+              } catch (firestoreError) {
+                console.error(
+                  "%c❌ Firestore Error - Failed to elevate user to manager",
+                  "color: #ef4444; font-weight: bold;",
+                  firestoreError
+                );
+                // Continue with the elevated value even if write failed
+              }
+            }
+
+            appUser = {
+              uid: authUser.uid,
+              email: authUser.email,
+              displayName: authUser.displayName,
+              isManager: isManager, // This value came from Firestore, ensuring Settings changes persist.
+            };
+          }
+
+          console.log(
+            "%c✅ Auth Complete - Final AppUser State",
+            "color: #10b981; font-weight: bold;"
+          );
+          console.log("isManager:", appUser.isManager);
+          console.log("displayName:", appUser.displayName);
+          console.log("email:", appUser.email);
+
+          // Development-only: Log admin nav render intent
+          if (import.meta.env.DEV) {
             console.log(
-              "✗ Non-manager user will NOT see admin navigation elements"
+              "%c🔍 Admin Nav Render Check",
+              "color: #8b5cf6; font-weight: bold;"
+            );
+            console.log(
+              `Will render admin navigation: ${appUser.isManager ? "YES" : "NO"}`
+            );
+            if (appUser.isManager) {
+              console.log("✓ Manager user should see:");
+              console.log(
+                "  - Navigation pill with Dashboard/User Management links"
+              );
+              console.log("  - Gear icon link to /#/admin in header");
+              console.log("  - Active orders count");
+            } else {
+              console.log(
+                "✗ Non-manager user will NOT see admin navigation elements"
+              );
+            }
+          }
+
+          setUser(appUser);
+        } else {
+          if (authUser) {
+            // Domain restriction: Only @priorityautomotive.com emails are allowed.
+            console.log(
+              "%c⛔ Domain Restriction - Signing out user",
+              "color: #f59e0b; font-weight: bold;"
+            );
+            console.log("User email:", authUser.email);
+            await signOut(auth);
+            alert(
+              "Access denied. Please use a '@priorityautomotive.com' email address."
             );
           }
+          setUser(null);
         }
-
-        setUser(appUser);
-      } else {
-        // Not authenticated
+      } catch (error) {
+        console.error(
+          "%c❌ Critical Auth Error",
+          "color: #ef4444; font-weight: bold;",
+          error
+        );
+        // On critical error, sign out and show error
         setUser(null);
+        alert(
+          "An unexpected error occurred during sign-in. Please try again or contact support if this persists."
+        );
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     });
 
     return () => unsubscribeAuth();
@@ -388,36 +461,8 @@ const App: React.FC = () => {
     return <LoadingSpinner />;
   }
 
-  if (!user && !accessDeniedEmail) {
+  if (!user) {
     return <Login />;
-  }
-
-  if (accessDeniedEmail) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
-        <div className="max-w-md w-full bg-white border border-red-300 rounded-xl p-6 shadow">
-          <h1 className="text-xl font-bold text-red-700 mb-2">Access Denied</h1>
-          <p className="text-sm text-slate-700 mb-4">
-            The account <strong>{accessDeniedEmail}</strong> is not authorized for this application.
-            Please sign in with an <code>@priorityautomotive.com</code> email address.
-          </p>
-          <button
-            onClick={async () => {
-              await signOut(auth);
-              setAccessDeniedEmail(null);
-            }}
-            className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md shadow-sm transition-colors"
-          >
-            Sign Out
-          </button>
-          {import.meta.env.VITE_ALLOW_ANY_DOMAIN_FOR_DEV === "1" && (
-            <p className="mt-3 text-xs text-amber-600">
-              Dev override active (VITE_ALLOW_ANY_DOMAIN_FOR_DEV=1) — domain restriction relaxed.
-            </p>
-          )}
-        </div>
-      </div>
-    );
   }
 
   return (
