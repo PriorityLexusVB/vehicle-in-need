@@ -118,10 +118,10 @@ describe("OrderList", () => {
       />
     );
 
-    // Click the "Locate" filter button (no select in current UI); disambiguate if multiple role="button" matches by taking the first pill
-    const locateFilterBtn = screen.getAllByRole("button", {
+    // Click the "Locate" filter button (no select in current UI); should only be one filter button per status
+    const locateFilterBtn = screen.getByRole("button", {
       name: /locate/i,
-    })[0];
+    });
     await user.click(locateFilterBtn);
 
     // Should only show orders with Locate status
