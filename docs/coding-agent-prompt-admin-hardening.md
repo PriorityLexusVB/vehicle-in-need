@@ -7,12 +7,12 @@ This file captures the full execution instructions for an automated coding agent
 - Active feature branch: `feat/admin-hardening-docs`
 - Base branch: `main`
 - Completed changes so far:
-   - Auth loop fix (popup-first, redirect fallback)
-   - Access Denied state (domain normalization) without infinite sign-out loop
-   - Standardized `[ROLE-ELEVATION] email=<email> uid=<uid> elevated=true` logging using a ref to avoid duplicates
-   - Removed explicit `any` types from targeted files (`OrderCard.tsx`, `OrderList.tsx`, `geminiService.ts`, `types.ts`, crypto tests)
-   - Firebase MCP server implemented (`mcp/firebase-v5/index.mjs`) and documented (`docs/mcp-firebase.md`)
-   - ZeroManagerWarning component + tests (dismiss & accessibility)
+  - Auth loop fix (popup-first, redirect fallback)
+  - Access Denied state (domain normalization) without infinite sign-out loop
+  - Standardized `[ROLE-ELEVATION] email=<email> uid=<uid> elevated=true` logging using a ref to avoid duplicates
+  - Removed explicit `any` types from targeted files (`OrderCard.tsx`, `OrderList.tsx`, `geminiService.ts`, `types.ts`, crypto tests)
+  - Firebase MCP server implemented (`mcp/firebase-v5/index.mjs`) and documented (`docs/mcp-firebase.md`)
+  - ZeroManagerWarning component + tests (dismiss & accessibility)
 
 ## Objective
 
@@ -37,6 +37,7 @@ Finish remaining hardening tasks: markdown cleanup, security/key rotation docs, 
 6. Pull Request Preparation
 
 ---
+
 ## 1. Markdown Documentation Cleanup
 
 Apply these fixes across the listed markdown files.
@@ -65,6 +66,7 @@ Target files:
 - `docs/role-ui-examples.md` (after creation)
 
 ### MD040 (Fenced Code Blocks Need Language)
+
 Add appropriate languages:
 
 - Shell commands: `bash`
@@ -75,30 +77,39 @@ Add appropriate languages:
 - Plain output/logs: use `text`
 
 ### MD041 (Top-level Heading First Line)
+
 Ensure `docs/MCP-NOTES.md` starts with an H1 (`# MCP Notes`) and then content.
 
 ### MD036 (Emphasis Used as Heading)
+
 In `MANUAL_TESTING_STEPS.md` and `IMPLEMENTATION_SUMMARY.md`, replace emphasized pseudo-headings (e.g., lines starting with `*Option A:` or single-line bold/italic styles acting as a heading) with `###` or `####` level headings.
 
 ### MD024 (Duplicate Headings)
+
 In `IMPLEMENTATION_SUMMARY.md`, rename duplicates:
+
 - "Files Modified" → "Files Modified (Initial)" / "Files Modified (Follow-up)"
 - "Problem Statement" if repeated → add suffix such as "Problem Statement (Context)".
 - "Benefits" duplicates → "Benefits (Phase 1)" / "Benefits (Current)".
 
 ### MD033 (Inline HTML)
-Replace `<short-sha>` and `<build-time>` with backticks: ``short-sha`` and ``build-time``.
+
+Replace `<short-sha>` and `<build-time>` with backticks: `short-sha` and `build-time`.
 
 ### General
+
 Ensure each fenced block has blank line preceding and following (avoid MD031).
 
 ---
+
 ## 2. Security & Key Rotation Docs
 
 ### README.md
+
 Add section near security-related content (near deployment or setup) titled:
 `## Security & Key Rotation`
 Include:
+
 1. Purpose of rotating Firebase service account keys.
 2. Steps:
    - Revoke old key in Firebase Console.
@@ -109,6 +120,7 @@ Include:
 3. Never commit the JSON key file.
 4. Suggest periodic (e.g., quarterly) rotation and immediate rotation on suspected exposure.
 5. Provide example commands:
+
 ```bash
 ls -l .secrets/vin-seeder.json
 grep -i project_id .secrets/vin-seeder.json
@@ -116,12 +128,15 @@ pnpm run seed:managers:dry-run
 ```
 
 ### MANUAL_TESTING_STEPS.md
+
 Add subsection: `### Service Account Key Rotation` summarizing the README steps with a short checklist.
 
 ---
+
 ## 3. Deployment Checklist Enhancement
 
 In `DEPLOYMENT_CHECKLIST.md` add `## Admin/Role Verification` section containing:
+
 - Run seeder dry-run to confirm manager(s) presence.
 - Login with known manager; confirm admin nav visible; ensure no new `[ROLE-ELEVATION]` log appears.
 - Login with non-manager; admin nav absent.
@@ -130,19 +145,23 @@ In `DEPLOYMENT_CHECKLIST.md` add `## Admin/Role Verification` section containing
 - Confirm version + build time appear in console logs.
 
 ---
+
 ## 4. Role UI Examples Doc
 
 Create `docs/role-ui-examples.md` if missing.
 Content blocks with fenced `text` code style showing simplified DOM/text states:
+
 - Manager view snippet (header shows admin nav items, Add New Order button, DashboardStats).
 - Non-manager view (Submit New Vehicle Request heading; absence of admin nav; presence of OrderForm only).
 - Zero-manager warning snippet (alert block with dismiss button aria-label).
-Add a short table summarizing which elements appear per role state.
+  Add a short table summarizing which elements appear per role state.
 
 ---
+
 ## 5. Final Quality Gates
 
 Run commands:
+
 ```bash
 pnpm install
 pnpm eslint .
@@ -150,7 +169,9 @@ pnpm markdownlint-cli2 "**/*.md" "#node_modules"
 pnpm test --run
 pnpm build
 ```
+
 Acceptance:
+
 - ESLint: 0 errors (warnings acceptable only for external modules we intentionally ignore).
 - Markdownlint: Only MD013 remaining in files where disabled (others resolved).
 - Tests: All previously passing remain passing; new tests (if any) pass.
@@ -159,11 +180,13 @@ Acceptance:
 Capture outputs for PR body (summarize counts; do not paste full logs unless needed).
 
 ---
+
 ## 6. Pull Request Preparation
 
 Title: `Admin Hardening & Docs Cleanup`
 
 Body Template Sections:
+
 1. Summary
 2. Changes
    - Auth loop remediation & Access Denied screen
@@ -186,7 +209,9 @@ Body Template Sections:
 Commit message style for final docs commit: `docs(admin): markdown cleanup, security rotation section, deployment verification`
 
 ---
+
 ## Implementation Order (Reiterated)
+
 1. Apply markdown changes & create new docs.
 2. Add security sections (README, MANUAL_TESTING_STEPS).
 3. Extend DEPLOYMENT_CHECKLIST.md.
@@ -196,7 +221,9 @@ Commit message style for final docs commit: `docs(admin): markdown cleanup, secu
 7. Open PR with prepared body.
 
 ---
+
 ## Edge Cases / Notes
+
 - Leave existing elevation logic intact; only change logging format already standardized.
 - Do not alter Firestore collection names or queries.
 - Avoid adding write operations to MCP Firebase server (read-only as documented).
@@ -204,13 +231,18 @@ Commit message style for final docs commit: `docs(admin): markdown cleanup, secu
 - If ESLint flags CDN import typing, consider adding a `// @ts-ignore` directly above those lines (document rationale in PR under "Changes").
 
 ---
+
 ## Completion Criteria
+
 PR open with full body sections; tests & build green; docs updated; only MD013 disabled intentionally; no secrets committed; branch up to date with stated changes.
 
 ---
+
 ## Optional Enhancements (Defer unless requested)
+
 - Add a small integration test for Access Denied page (domain mismatch) using jsdom (would require adjustable domain mock).
 - Add screenshot automation via Playwright (out of scope unless requested).
 
 ---
+
 End of execution prompt.
