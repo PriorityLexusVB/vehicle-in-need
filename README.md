@@ -642,7 +642,7 @@ npm run verify:parity https://your-app-url.com
 
 Automated tests run on every push and pull request to `main` via the GitHub Actions workflow in `.github/workflows/ci.yml`:
 
-**Status Badge:** 
+**Status Badge:**
 
 [![CI Status](https://github.com/PriorityLexusVB/vehicle-in-need/actions/workflows/ci.yml/badge.svg)](https://github.com/PriorityLexusVB/vehicle-in-need/actions/workflows/ci.yml)
 
@@ -661,6 +661,7 @@ Automated tests run on every push and pull request to `main` via the GitHub Acti
 **Playwright Artifacts:**
 
 On E2E test failures, the CI workflow automatically uploads:
+
 - Screenshots of failed tests
 - Video recordings of test execution
 - Trace files for detailed debugging
@@ -699,32 +700,39 @@ npm run test:e2e
 **Testing with data-testid:**
 
 Key UI elements now include `data-testid` attributes for stable E2E testing:
+
 - `submit-order-button` - Order form submit button
 - `manager-toggle-{uid}` - Manager role toggle switches
 - `user-row-{uid}` - User management rows
 
-**Adding authenticated E2E tests:** 
+**Adding authenticated E2E tests:**
 
 Manager/user role tests are skipped until an authentication harness is implemented. To enable:
 
 1. Set up test Firebase project or use Firebase Local Emulator Suite
 2. Provide test credentials via environment variables:
+
    ```bash
    export PLAYWRIGHT_TEST_EMAIL="test-manager@example.com"
    export PLAYWRIGHT_TEST_PASSWORD="test-password"
    ```
+
 3. Configure Playwright to use authentication state:
+
    ```typescript
    // In playwright.config.ts
    use: {
      storageState: 'playwright/.auth/user.json'
    }
    ```
+
 4. Create global setup to generate auth state:
+
    ```typescript
    // In playwright/global-setup.ts
    // Login once, save storageState to file
    ```
+
 5. Remove `.skip()` from tests in `e2e/manager-flow.spec.ts`
 
 **Health gate:** E2E job waits for `http://localhost:8080/health` before executing tests.
@@ -735,7 +743,6 @@ Manager/user role tests are skipped until an authentication harness is implement
 - Add code coverage reporting
 - Add visual regression testing
 - Implement quality gate summary artifact (JSON/markdown report)
-
 
 ## Manager Features
 
@@ -755,6 +762,104 @@ Managers have multiple ways to access User Management:
 3. **Deep link**: Navigate directly to `/#/admin` in the URL
 
 Non-managers attempting to access `/#/admin` will be automatically redirected to the dashboard.
+
+## Security & Role Management
+
+### Service Account Key Security
+
+**Never commit service account keys to version control.** The application uses Firebase Admin SDK for manager role seeding, which requires authentication.
+
+**Recommended Authentication Methods** (in order of preference):
+
+1. **Application Default Credentials (ADC)** - For local development:
+
+   ```bash
+   gcloud auth application-default login
+   ```
+
+2. **Service Account Key File** - For automation/CI:
+   - Store keys outside of Git (e.g., `.secrets/vin-seeder.json`)
+   - Set `GOOGLE_APPLICATION_CREDENTIALS` environment variable
+   - Ensure `.gitignore` excludes `.secrets/` directory
+
+**If a key is accidentally committed:**
+
+1. **Immediately delete the key** from Google Cloud Console
+2. **Rotate the key** by creating a new one (see [MANUAL_TESTING_STEPS.md](./MANUAL_TESTING_STEPS.md#service-account-key-rotation))
+3. **Remove from Git history** using `git filter-branch` or BFG Repo-Cleaner
+4. **Notify team members** to re-clone the repository
+
+**Key Rotation Schedule:**
+
+- **Immediately** if exposed or committed to Git
+- **Every 90 days** as a security best practice
+- **After any suspected compromise**
+
+See [MANUAL_TESTING_STEPS.md - Service Account Key Rotation](./MANUAL_TESTING_STEPS.md#service-account-key-rotation) for detailed rotation instructions.
+
+### Role Management System
+
+The application uses a two-tier authorization system:
+
+1. **Initial Seeding** - The `MANAGER_EMAILS` constant in `constants.ts`:
+   - Used **only** on first login to seed initial manager status
+   - Provides a bootstrap mechanism for new users
+   - New managers can be added by updating this constant before their first login
+
+2. **Persistent Storage** - Firestore is the single source of truth:
+   - After first login, role data is stored in Firestore `users` collection
+   - Role changes via Settings page persist across logins
+   - Removing an email from `MANAGER_EMAILS` won't demote existing managers
+
+**Manager Elevation Flow:**
+
+```
+User First Login → Check MANAGER_EMAILS → Seed isManager: true/false → Store in Firestore
+Subsequent Logins → Read isManager from Firestore (MANAGER_EMAILS ignored)
+```
+
+**Adding a New Manager:**
+
+Option 1: Before first login (automatic):
+
+1. Add email to `MANAGER_EMAILS` in `constants.ts`
+2. Deploy the change
+3. User logs in → automatically becomes manager
+
+Option 2: After first login (manual):
+
+1. Use existing manager account to access User Management (`/#/admin`)
+2. Toggle the user's manager role switch
+3. Change persists immediately in Firestore
+
+Option 3: Using seeder script:
+
+```bash
+pnpm run seed:managers:apply -- --emails newmanager@priorityautomotive.com
+```
+
+**Security Safeguards:**
+
+- ✅ Domain restriction: Only `@priorityautomotive.com` emails can access the app
+- ✅ Manager self-protection: Managers cannot demote themselves
+- ✅ Protected routes: `/admin` route is guarded by `ProtectedRoute` component
+- ✅ Zero-manager warning: Non-managers see an alert if no managers exist
+- ✅ Elevation logging: Manager upgrades are logged with `[ROLE-ELEVATION]` prefix
+
+**Role Verification:**
+
+After deployment, verify roles are correct:
+
+```bash
+# Check manager roles in Firestore
+# Use Firebase Console → Firestore → users collection
+# Verify isManager: true for expected users
+
+# Or use the seeder script in dry-run mode
+pnpm run seed:managers:dry-run -- --emails manager@priorityautomotive.com
+```
+
+For comprehensive role UI documentation, see [docs/role-ui-examples.md](./docs/role-ui-examples.md).
 
 ## Development Notes
 
@@ -846,6 +951,7 @@ If you see a 404 when authenticating a GitHub Copilot MCP server and the browser
    - Other editors: Check editor-specific configuration paths
 
 2. **Edit the GitHub MCP server entry:**
+
    ```json
    {
      "github/github-mcp-server": {
@@ -854,7 +960,7 @@ If you see a 404 when authenticating a GitHub Copilot MCP server and the browser
      }
    }
    ```
-   
+
    **Key change:** Ensure the URL ends with `/mcp` (not just `https://api.githubcopilot.com`)
 
 3. **Restart MCP servers:**
@@ -900,6 +1006,7 @@ code
 ```
 
 Make executable and run:
+
 ```bash
 chmod +x mcp-reset.sh
 ./mcp-reset.sh

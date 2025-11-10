@@ -29,6 +29,7 @@ import LoadingSpinner from "./components/LoadingSpinner";
 import SettingsPage from "./components/SettingsPage";
 import DashboardStats from "./components/DashboardStats";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ZeroManagerWarning from "./components/ZeroManagerWarning";
 import { PlusIcon } from "./components/icons/PlusIcon";
 import { CloseIcon } from "./components/icons/CloseIcon";
 import { useRegisterSW } from "virtual:pwa-register/react";
@@ -128,8 +129,7 @@ const App: React.FC = () => {
             // Persistent elevation: if an existing user is in MANAGER_EMAILS but not a manager yet,
             // elevate them now. This keeps MANAGER_EMAILS as an allow-list for upgrades only.
             console.log(
-              "%cELEVATION - User found in MANAGER_EMAILS but isManager=false. Elevating to manager.",
-              "color: #2563eb; font-weight: bold;"
+              `[ROLE-ELEVATION] ${authUser.email} upgraded (was false)`
             );
             isManager = true;
             await updateDoc(userDocRef, { isManager: true });
@@ -416,6 +416,10 @@ const App: React.FC = () => {
         currentPath={location.pathname}
       />
       <main className="container mx-auto p-4 sm:p-6 lg:p-8">
+        <ZeroManagerWarning
+          hasManagers={allUsers.some((u) => u.isManager)}
+          isCurrentUserManager={user.isManager}
+        />
         <Routes>
           <Route
             path="/"

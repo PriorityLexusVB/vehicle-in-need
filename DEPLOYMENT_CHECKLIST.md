@@ -5,17 +5,20 @@ This document provides a comprehensive checklist for deploying the Vehicle Order
 ## Pre-Build Checklist
 
 - [ ] Pull latest code from `main` branch
+
   ```bash
   git checkout main
   git pull origin main
   ```
 
 - [ ] Verify working directory is clean (no uncommitted changes)
+
   ```bash
   git status
   ```
 
 - [ ] Install/update dependencies
+
   ```bash
   npm ci
   ```
@@ -26,6 +29,7 @@ This document provides a comprehensive checklist for deploying the Vehicle Order
   - Any required secrets
 
 - [ ] Run automated tests
+
   ```bash
   npm test -- --run
   ```
@@ -37,32 +41,38 @@ This document provides a comprehensive checklist for deploying the Vehicle Order
 ## Build Verification
 
 - [ ] Run local build successfully
+
   ```bash
   npm run build
   ```
 
 - [ ] Verify build artifacts are generated
+
   ```bash
   ls -la dist/
   ls -la dist/assets/
   ```
 
 - [ ] Check that index.html references hashed assets (not source files)
+
   ```bash
   grep -E 'assets/.*\-[a-zA-Z0-9_-]{8,}\.(js|css)' dist/index.html
   ```
 
 - [ ] Verify no Tailwind CDN script tag in built index.html
+
   ```bash
   ! grep -q 'cdn.tailwindcss.com' dist/index.html && echo "✓ No Tailwind CDN" || echo "✗ Tailwind CDN found!"
   ```
 
 - [ ] Confirm favicons are copied to dist
+
   ```bash
   ls -la dist/favicon.*
   ```
 
 - [ ] Check service worker files are generated
+
   ```bash
   ls -la dist/sw.js dist/workbox-*.js
   ```
@@ -70,6 +80,7 @@ This document provides a comprehensive checklist for deploying the Vehicle Order
 ## Docker Build Verification
 
 - [ ] Build Docker image with build args
+
   ```bash
   docker build \
     --build-arg COMMIT_SHA=$(git rev-parse --short HEAD) \
@@ -79,11 +90,12 @@ This document provides a comprehensive checklist for deploying the Vehicle Order
   ```
 
 - [ ] Run container locally to verify
+
   ```bash
   docker run -p 8080:8080 vehicle-tracker:local-test
   ```
 
-- [ ] Test local container at http://localhost:8080
+- [ ] Test local container at <http://localhost:8080>
   - [ ] Login works
   - [ ] Manager navigation visible (for manager users)
   - [ ] SettingsPage loads at `/#/admin`
@@ -91,6 +103,7 @@ This document provides a comprehensive checklist for deploying the Vehicle Order
   - [ ] No console errors related to module loading or MIME types
 
 - [ ] Stop test container
+
   ```bash
   docker stop $(docker ps -q --filter ancestor=vehicle-tracker:local-test)
   ```
@@ -98,37 +111,44 @@ This document provides a comprehensive checklist for deploying the Vehicle Order
 ## Cloud Build & Deploy
 
 - [ ] Verify Cloud Build trigger is configured
+
   ```bash
   gcloud builds triggers list
   ```
 
 - [ ] Trigger Cloud Build (automatic on push to main, or manual)
+
   ```bash
   gcloud builds submit --config cloudbuild.yaml
   ```
 
 - [ ] Monitor build progress
+
   ```bash
   gcloud builds list --limit=1
   gcloud builds log <BUILD_ID> --stream
   ```
 
 - [ ] Verify image was pushed with correct tag
+
   ```bash
   gcloud container images list-tags gcr.io/${PROJECT_ID}/pre-order-dealer-exchange-tracker --limit=5
   ```
 
 - [ ] Confirm Cloud Run deployment succeeded
+
   ```bash
   gcloud run services describe pre-order-dealer-exchange-tracker --region=us-west1
   ```
 
 - [ ] Verify 100% traffic to latest revision
+
   ```bash
   gcloud run services describe pre-order-dealer-exchange-tracker \
     --region=us-west1 \
     --format='value(status.traffic[0].percent)'
   ```
+
   Expected output: `100`
 
 ## Post-Deployment Verification
@@ -136,31 +156,39 @@ This document provides a comprehensive checklist for deploying the Vehicle Order
 ### Automated Checks
 
 - [ ] Run deployment verification script
+
   ```bash
   node scripts/verify-deployment.cjs https://pre-order-dealer-exchange-tracker-<hash>.a.run.app
   ```
 
 - [ ] Run deploy parity verification
+
   ```bash
   npm run verify:parity https://pre-order-dealer-exchange-tracker-<hash>.a.run.app
   ```
+
   Confirms production matches local repository state
 
 - [ ] Check health endpoint
+
   ```bash
   curl https://pre-order-dealer-exchange-tracker-<hash>.a.run.app/health
   ```
+
   Expected: `healthy`
 
 - [ ] Check status endpoint and verify version
+
   ```bash
   curl https://pre-order-dealer-exchange-tracker-<hash>.a.run.app/api/status | jq
   ```
+
   Verify `version` matches latest commit SHA
 
 ### Manual Smoke Tests
 
 #### Fresh Browser (No Cache)
+
 - [ ] Open production URL in incognito/private window
 - [ ] Verify no browser console errors
 - [ ] Check Network tab for:
@@ -171,7 +199,8 @@ This document provides a comprehensive checklist for deploying the Vehicle Order
   - [ ] Hashed assets served with `Cache-Control: public, max-age=31536000, immutable`
 
 #### Manager User Flow
-- [ ] Login with manager account (e.g., rob.brasco@priorityautomotive.com)
+
+- [ ] Login with manager account (e.g., <rob.brasco@priorityautomotive.com>)
 - [ ] Verify manager badge shows in header: `(Manager)` and `[isManager: true]`
 - [ ] Verify VersionBadge visible in header with format `v<short-sha>`
 - [ ] Verify pill navigation shows:
@@ -185,6 +214,7 @@ This document provides a comprehensive checklist for deploying the Vehicle Order
 - [ ] Verify dashboard displays orders and statistics
 
 #### Non-Manager User Flow
+
 - [ ] Login with non-manager test account
 - [ ] Verify NO manager badge in header
 - [ ] Verify NO pill navigation
@@ -193,6 +223,7 @@ This document provides a comprehensive checklist for deploying the Vehicle Order
 - [ ] Verify redirected back to `/#/`
 
 #### AI Feature Test (Manager Only)
+
 - [ ] Select an order with customer email
 - [ ] Click "Generate Follow-up Email" button (sparkles icon)
 - [ ] Verify email generation works (no API key errors in console)
@@ -200,6 +231,7 @@ This document provides a comprehensive checklist for deploying the Vehicle Order
 - [ ] Verify no client-side errors related to missing `VITE_GEMINI_API_KEY`
 
 #### Service Worker & Updates
+
 - [ ] After deployment, refresh page (Ctrl/Cmd + R)
 - [ ] If service worker is registered, verify update prompt appears (if new version detected)
 - [ ] Check browser console for service worker logs:
@@ -215,13 +247,16 @@ This document provides a comprehensive checklist for deploying the Vehicle Order
   - [ ] No "STALE_BUNDLE_DETECTED" errors
 
 - [ ] Verify favicon loads correctly (both .ico and .svg)
+
   ```bash
   curl -I https://pre-order-dealer-exchange-tracker-<hash>.a.run.app/favicon.ico
   curl -I https://pre-order-dealer-exchange-tracker-<hash>.a.run.app/favicon.svg
   ```
+
   Both should return `200 OK`
 
 - [ ] Confirm no Tailwind CDN usage
+
   ```bash
   curl -s https://pre-order-dealer-exchange-tracker-<hash>.a.run.app/ | grep -q 'cdn.tailwindcss.com' && echo "✗ CDN found" || echo "✓ No CDN"
   ```
@@ -229,6 +264,7 @@ This document provides a comprehensive checklist for deploying the Vehicle Order
 ### Cloud Run Monitoring
 
 - [ ] Check Cloud Run logs for any errors
+
   ```bash
   gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=pre-order-dealer-exchange-tracker" --limit=50 --format=json
   ```
@@ -236,16 +272,109 @@ This document provides a comprehensive checklist for deploying the Vehicle Order
 - [ ] Verify no elevated error rates in Cloud Run metrics
 - [ ] Check request latency is within acceptable range (< 500ms for most requests)
 
+### Admin/Role Verification
+
+After deployment, verify that role management is working correctly:
+
+#### Manager Role Verification
+
+- [ ] **Check Firestore for managers**
+
+  ```bash
+  # View users collection in Firebase Console
+  # Verify at least one user has isManager: true
+  ```
+
+- [ ] **Run seeder script dry-run**
+
+  ```bash
+  pnpm run seed:managers:dry-run -- --emails manager@priorityautomotive.com
+  ```
+
+  Expected output should show:
+
+  ```text
+  === Seed Managers ===
+  Mode   :  DRY-RUN (no writes)
+  Results:
+  - manager@priorityautomotive.com: noop uid=xxx
+  Summary:
+    noop: 1
+  No changes required.
+  ```
+
+- [ ] **Login as seeded manager**
+  - [ ] Verify "(Manager)" badge appears in header
+  - [ ] Verify pill navigation visible (Dashboard + User Management)
+  - [ ] Verify settings gear icon visible in top-right
+  - [ ] Navigate to `/#/admin` → user management page loads
+  - [ ] Verify user list displays with role toggle switches
+  - [ ] Verify cannot toggle own manager role (disabled)
+
+- [ ] **Login as non-manager (if test account exists)**
+  - [ ] Verify NO "(Manager)" badge in header
+  - [ ] Verify NO pill navigation
+  - [ ] Verify NO settings gear icon
+  - [ ] Verify only order form visible (no order list or stats)
+  - [ ] Attempt to navigate to `/#/admin` → verify redirect to `/#/`
+
+#### Zero-Manager Warning Banner
+
+- [ ] **Simulate zero-manager scenario (in test environment only)**
+  - Set all users to `isManager: false` temporarily
+  - Login as non-manager
+  - Verify yellow warning banner appears:
+
+    ```text
+    ⚠️ No managers detected. Please contact an administrator...
+    ```
+
+  - Click dismiss button → verify banner disappears
+  - Restore at least one manager role
+
+#### Role Elevation Logging
+
+- [ ] **Check browser console for elevation events**
+  - Add a new email to `MANAGER_EMAILS` in `constants.ts`
+  - Login with that user (first time)
+  - Check console for: `[ROLE-ELEVATION] email@domain.com upgraded (was false)`
+  - Subsequent logins should NOT show elevation log (already a manager)
+
+#### Role Persistence
+
+- [ ] **Verify role changes persist**
+  - Manager demotes User A via Settings page
+  - User A logs out and back in
+  - Verify User A still has non-manager status (change persisted)
+  - Manager promotes User A back via Settings page
+  - User A logs out and back in
+  - Verify User A has manager status again
+
+#### Domain Restriction
+
+- [ ] **Verify domain enforcement**
+  - Attempt login with <non-@priorityautomotive.com> email
+  - Verify access denied with alert message
+  - User should be immediately signed out
+
+#### Documentation Verification
+
+- [ ] Review [docs/role-ui-examples.md](./docs/role-ui-examples.md) for UI state examples
+- [ ] Review [MANUAL_TESTING_STEPS.md](./MANUAL_TESTING_STEPS.md#service-account-key-rotation) for key rotation procedures
+- [ ] Confirm README security section is up-to-date
+
 ## Rollback Procedure
 
 If deployment verification fails:
 
 1. **Identify previous working revision**
+
    ```bash
    gcloud run revisions list --service=pre-order-dealer-exchange-tracker --region=us-west1
    ```
 
 2. **Roll back traffic to previous revision**
+
    ```bash
    gcloud run services update-traffic pre-order-dealer-exchange-tracker \
      --region=us-west1 \
@@ -253,6 +382,7 @@ If deployment verification fails:
    ```
 
 3. **Verify rollback successful**
+
    ```bash
    curl https://pre-order-dealer-exchange-tracker-<hash>.a.run.app/api/status | jq '.version'
    ```
@@ -268,14 +398,16 @@ If deployment verification fails:
 ## Troubleshooting Common Issues
 
 ### Issue: "Tailwind CDN script still present in production"
+
 - **Cause:** Old build cached or CDN script in source index.html
-- **Fix:** 
+- **Fix:**
   1. Verify source `index.html` has no `<script src="https://cdn.tailwindcss.com">`
   2. Clear build cache: `rm -rf dist/ node_modules/.vite`
   3. Rebuild: `npm run build`
   4. Redeploy
 
 ### Issue: "Module script MIME type errors"
+
 - **Cause:** Server returning HTML instead of JS for asset requests (404 fallback)
 - **Fix:**
   1. Verify assets exist in dist/assets/ with hashed names
@@ -284,6 +416,7 @@ If deployment verification fails:
   4. Ensure no route conflicts with /assets/* paths
 
 ### Issue: "VersionBadge not displaying or shows 'unknown'"
+
 - **Cause:** Build args not passed to Docker build or environment variables not injected
 - **Fix:**
   1. Verify cloudbuild.yaml passes `COMMIT_SHA=${SHORT_SHA}` and `BUILD_TIME=${BUILD_ID}`
@@ -291,6 +424,7 @@ If deployment verification fails:
   3. Confirm vite.config.ts exposes via `import.meta.env`
 
 ### Issue: "Manager navigation not visible"
+
 - **Cause:** User role not set correctly in Firestore
 - **Fix:**
   1. Check Firestore `users` collection
@@ -298,6 +432,7 @@ If deployment verification fails:
   3. Clear browser storage and re-login
 
 ### Issue: "Service worker serving stale assets"
+
 - **Cause:** Old service worker still active
 - **Fix:**
   1. Open DevTools → Application → Service Workers
@@ -306,8 +441,10 @@ If deployment verification fails:
   4. Verify localStorage has `sw_cleanup_v1_done = true`
 
 ### Issue: "403/401 errors on AI email generation"
+
 - **Cause:** Service account lacks Vertex AI User IAM role
 - **Fix:**
+
   ```bash
   gcloud projects add-iam-policy-binding ${PROJECT_ID} \
     --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" \
