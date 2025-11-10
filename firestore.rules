@@ -1,0 +1,118 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /****************************************
+     * Helper Functions
+     ****************************************/
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Manager check based on Firestore user document.
+    // (You can later migrate this to custom claims if desired.)
+    function isManager() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isManager == true;
+    }
+
+    function isBool(v) {
+      return v is bool;
+    }
+
+    /****************************************
+     * Users Collection
+     ****************************************/
+    match /users/{userId} {
+
+      // CREATE:
+      // User can create their own profile but cannot assign themselves manager.
+      // We enforce allowed keys and ensure isManager is false (or omitted).
+      allow create: if isOwner(userId)
+        && (
+          // Either isManager is omitted OR explicitly false
+          !('isManager' in request.resource.data)
+          || request.resource.data.isManager == false
+        )
+        // Allowed keys (adjust if you store more fields)
+        && request.resource.data.keys().hasOnly(['uid', 'displayName', 'email', 'isManager'])
+        // Email must match auth token (ensures integrity)
+        && request.resource.data.email == request.auth.token.email
+        // If provided, isManager must be boolean
+        && (!('isManager' in request.resource.data) || isBool(request.resource.data.isManager));
+
+      // READ: User can read self; managers can read anyone.
+      allow read: if isOwner(userId) || isManager();
+
+      // UPDATE:
+      // - Manager can update other users (including changing isManager).
+      // - User updating self cannot change isManager.
+      // - Email is immutable; restrict key set to existing keys to avoid schema drift.
+      allow update: if (
+          (isManager() && !isOwner(userId))  // Manager editing another user
+          ||
+          (isOwner(userId) && request.resource.data.isManager == resource.data.isManager) // Self without role change
+        )
+        // Keep email immutable
+        && request.resource.data.email == resource.data.email
+        // Prevent adding arbitrary new keys (exact same set as before)
+        && request.resource.data.keys().hasOnly(resource.data.keys())
+        // Role must stay a boolean
+        && isBool(resource.data.isManager);
+
+      // DELETE: Blocked from client.
+      allow delete: if false;
+    }
+
+    /****************************************
+     * Orders Collection
+     ****************************************/
+    match /orders/{orderId} {
+
+      // Helper: current order owner
+      function isOrderOwner() {
+        return isSignedIn() && resource.data.createdByUid == request.auth.uid;
+      }
+
+      // CREATE:
+      // Authenticated user can create an order but must set ownership fields correctly.
+      // Enforce required fields and simple schema constraints.
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasAll(['createdByUid', 'createdByEmail', 'createdAt'])
+        // Ownership integrity
+        && request.resource.data.createdByUid == request.auth.uid
+        && request.resource.data.createdByEmail == request.auth.token.email
+        // Basic status constraint (adjust as needed)
+        && request.resource.data.status in ['Factory Order', 'Locate', 'Dealer Exchange', 'Received', 'Delivered'];
+
+      // READ:
+      // Managers can read any order; non-managers only their own.
+      allow read: if isManager() || isOrderOwner();
+
+      // UPDATE:
+      // - Managers can update any order.
+      // - Owners can update limited mutable fields (e.g. status, notes) without changing ownership.
+      allow update: if (
+          isManager()
+        ) || (
+          isOrderOwner()
+          // Ownership must remain unchanged
+          && request.resource.data.createdByUid == resource.data.createdByUid
+          && request.resource.data.createdByEmail == resource.data.createdByEmail
+          // Restrict which keys owner may touch (cannot add/remove ownership fields or other protected fields)
+          && request.resource.data.keys().hasOnly(resource.data.keys())
+          // Optional: owners can only change these fields
+          && request.resource.data.status in ['Factory Order', 'Locate', 'Dealer Exchange', 'Received', 'Delivered']
+        );
+
+      // DELETE: Managers only (or disallow entirely if you prefer soft deletes).
+      allow delete: if isManager();
+    }
+  }
+}
