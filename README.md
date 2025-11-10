@@ -602,12 +602,14 @@ npm run test:e2e:ui        # Run with Playwright UI
 **Test Implementation:**
 
 The E2E tests use a graceful detection approach:
+
 - Tests check if manager/non-manager UI elements are present
 - Tests verify expected behavior when elements are available
 - Tests skip gracefully when authentication is not configured
 - Firebase Auth/Firestore mocking utilities provided in `e2e/auth-mock-utils.ts`
 
 **Test files:**
+
 - `e2e/manager-flow.spec.ts` - Original tests for application load and console errors
 - `e2e/role-based-access.spec.ts` - Comprehensive role-based UI visibility tests
 
