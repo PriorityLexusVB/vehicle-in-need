@@ -166,23 +166,11 @@ const Login: React.FC = () => {
     setError(null);
     setIsSigningIn(true);
     try {
-      // In Codespaces/preview environments, popups can be flaky due to cookie and focus policies;
-      // prefer redirect first to avoid a popup-close loop.
-      const isCodespaces =
-        typeof window !== "undefined" &&
-        window.location.hostname.endsWith(".app.github.dev");
-      if (isCodespaces) {
-        await signInWithRedirect(auth, googleProvider);
-        return; // navigation expected
-      }
-
+      // Prefer popup first; if it fails (blocked/closed), fall back to redirect
       await signInWithPopup(auth, googleProvider);
     } catch (popupError) {
       const error = popupError as { code?: string };
-      console.warn(
-        "Popup sign-in failed, falling back to redirect. Reason:",
-        error.code
-      );
+      console.warn("Popup sign-in failed, evaluating fallback:", error.code);
       console.debug("Popup error detail:", popupError);
       // If popup fails for any reason, try redirect.
       // This will navigate away. Errors will be handled by getRedirectResult upon return.
