@@ -249,6 +249,8 @@ const App: React.FC = () => {
               "Access denied. Please use a '@priorityautomotive.com' email address."
             );
           }
+          // Clear elevation tracking when user logs out
+          loggedElevations.current.clear();
           setUser(null);
         }
       } catch (error) {
