@@ -24,6 +24,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             <div
               key={user.uid}
               className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"
+              data-testid={`user-row-${user.uid}`}
             >
               <div>
                 <p className="font-semibold text-slate-800">{user.displayName}</p>
@@ -32,9 +33,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
               <div className="flex items-center space-x-3">
                 <span className="text-sm font-medium text-slate-600">Manager</span>
                 <label htmlFor={`manager-toggle-${user.uid}`} className="relative inline-flex items-center cursor-pointer">
+                  <span className="sr-only">Toggle manager status for {user.displayName}</span>
                   <input
                     type="checkbox"
                     id={`manager-toggle-${user.uid}`}
+                    data-testid={`manager-toggle-${user.uid}`}
                     className="sr-only peer"
                     checked={user.isManager}
                     disabled={user.uid === currentUser.uid}

@@ -11,9 +11,17 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
+.env.local
+.env.production
+.secrets/
+*.key.json
+*service-account*.json
 
 # Test artifacts
 screenshots
+test-results/
+playwright-report/
 
 # Editor directories and files
 .vscode/*
