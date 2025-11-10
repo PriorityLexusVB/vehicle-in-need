@@ -9,3 +9,20 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+// Vite PWA virtual module type shim
+declare module "virtual:pwa-register/react" {
+  import type { Dispatch, SetStateAction } from "react";
+  export interface UseRegisterSWOptions {
+    immediate?: boolean;
+    onRegistered?: (
+      registration: ServiceWorkerRegistration | undefined
+    ) => void;
+    onRegisterError?: (error: unknown) => void;
+  }
+  export function useRegisterSW(options?: UseRegisterSWOptions): {
+    needRefresh: [boolean, Dispatch<SetStateAction<boolean>>];
+    offlineReady: [boolean, Dispatch<SetStateAction<boolean>>];
+    updateServiceWorker: (reloadPage?: boolean) => Promise<void>;
+  };
+}

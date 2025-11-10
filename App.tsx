@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
-import {
-  onAuthStateChanged,
-  signOut,
-} from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import {
   collection,
   query,
@@ -17,7 +14,7 @@ import {
   updateDoc,
   deleteDoc,
   Timestamp,
-} from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+} from "firebase/firestore";
 import { db, auth } from "./services/firebase";
 import { Order, OrderStatus, AppUser } from "./types";
 import { MANAGER_EMAILS, USERS_COLLECTION } from "./constants";
@@ -79,7 +76,7 @@ const App: React.FC = () => {
       try {
         if (authUser && authUser.email?.endsWith("@priorityautomotive.com")) {
           const userDocRef = doc(db, USERS_COLLECTION, authUser.uid);
-          
+
           console.log(
             "%c👤 Auth Flow - User Document Fetch",
             "color: #10b981; font-weight: bold;"
@@ -131,10 +128,13 @@ const App: React.FC = () => {
               displayName: authUser.displayName,
               isManager: isManager,
             };
-            
+
             try {
               await setDoc(userDocRef, appUser);
-              console.log("Created new user document with isManager:", isManager);
+              console.log(
+                "Created new user document with isManager:",
+                isManager
+              );
             } catch (firestoreError) {
               console.error(
                 "%c❌ Firestore Error - Failed to create user document",
@@ -149,13 +149,18 @@ const App: React.FC = () => {
             // Changes made via Settings page will persist because we read from Firestore, not MANAGER_EMAILS.
             const existingData = userDoc.data();
             let isManager = existingData.isManager;
-            console.log("EXISTING USER - Firestore document data:", existingData);
+            console.log(
+              "EXISTING USER - Firestore document data:",
+              existingData
+            );
             console.log("Fetched isManager from Firestore:", isManager);
 
             // One-time migration for older user documents that might not have the isManager field.
             // Checking for non-boolean handles undefined, null, and any incorrectly stored values.
             if (typeof isManager !== "boolean") {
-              isManager = MANAGER_EMAILS.includes(authUser.email!.toLowerCase());
+              isManager = MANAGER_EMAILS.includes(
+                authUser.email!.toLowerCase()
+              );
               console.log(
                 "MIGRATION - isManager was not boolean, setting to:",
                 isManager
@@ -180,7 +185,9 @@ const App: React.FC = () => {
               // Log only once per user to avoid duplicate logs on re-renders
               const elevationKey = `${authUser.uid}-elevation`;
               if (!loggedElevations.current.has(elevationKey)) {
-                console.log(`[ROLE-ELEVATION] email=${authUser.email} uid=${authUser.uid} elevated=true`);
+                console.log(
+                  `[ROLE-ELEVATION] email=${authUser.email} uid=${authUser.uid} elevated=true`
+                );
                 loggedElevations.current.add(elevationKey);
               }
               isManager = true;
@@ -219,7 +226,9 @@ const App: React.FC = () => {
               "color: #8b5cf6; font-weight: bold;"
             );
             console.log(
-              `Will render admin navigation: ${appUser.isManager ? "YES" : "NO"}`
+              `Will render admin navigation: ${
+                appUser.isManager ? "YES" : "NO"
+              }`
             );
             if (appUser.isManager) {
               console.log("✓ Manager user should see:");
