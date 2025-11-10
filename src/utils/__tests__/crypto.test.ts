@@ -4,8 +4,8 @@ import { describe, it, expect } from "vitest";
 
 describe("crypto polyfill", () => {
   it("provides getRandomValues", () => {
-    // @ts-expect-error - global crypto exists in jsdom with polyfill
-    const c: Crypto = globalThis.crypto as any;
+    // globalThis.crypto is provided by polyfill in test environment
+    const c = globalThis.crypto as Crypto;
     expect(c).toBeDefined();
     expect(typeof c.getRandomValues).toBe("function");
     const arr = new Uint8Array(4);

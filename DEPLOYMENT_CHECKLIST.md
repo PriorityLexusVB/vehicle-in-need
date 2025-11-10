@@ -1,3 +1,6 @@
+<!-- markdownlint-disable MD013 -->
+<!-- Long lines intentional for readability, table formatting, and command examples -->
+
 # Deployment Checklist
 
 This document provides a comprehensive checklist for deploying the Vehicle Order Tracker application to production.
@@ -543,6 +546,60 @@ gcloud builds submit --config cloudbuild.yaml --no-cache
 - [ ] Dependencies scanned for vulnerabilities (`npm audit`)
 - [ ] Environment variables properly scoped and secured
 - [ ] HTTPS enforced for all traffic (Cloud Run default)
+
+## Post-Deployment Admin Verification
+
+After deployment, perform comprehensive verification of admin and role management features:
+
+### Manager Account Verification
+
+1. **Run seeder in dry-run mode** to verify manager roles:
+
+   ```bash
+   pnpm run seed:managers:dry-run -- --emails manager@priorityautomotive.com
+   ```
+
+2. **Login as manager account** and verify:
+   - Manager navigation pill is visible (Dashboard | User Management)
+   - Settings gear icon appears in header
+   - Can access `/#/admin` route
+   - Can view User Management page
+   - Can toggle other users' manager status
+
+3. **Check console logs** for role elevation:
+   - Look for `[ROLE-ELEVATION]` log entries during first-time manager login
+   - Verify format: `[ROLE-ELEVATION] email={email} uid={uid} elevated=true`
+   - Confirm no duplicate elevation logs on subsequent logins
+
+### Non-Manager Verification
+
+1. **Login as non-manager account** and verify:
+   - No manager navigation pill visible
+   - No settings gear icon in header
+   - Cannot access `/#/admin` (redirects to dashboard)
+   - Can still create and view own orders
+
+### Zero-Manager Warning
+
+1. **If no managers exist in system**:
+   - Non-managers should see yellow warning banner
+   - Banner message: "No managers detected. Please contact an administrator..."
+   - Banner is dismissible via close button
+   - Managers do not see this warning
+
+2. **Verify warning disappears** once at least one manager exists
+
+### Firestore Data Verification
+
+1. **Check Firestore Console**:
+   - Navigate to Firebase Console → Firestore → `users` collection
+   - Verify `isManager: true` for expected users
+   - Confirm no orphaned or incorrect role data
+
+2. **Verify role persistence**:
+   - Change a user's role via User Management page
+   - Logout and login again
+   - Confirm role change persisted
 
 ## Performance Checklist
 

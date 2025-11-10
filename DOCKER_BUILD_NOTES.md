@@ -1,10 +1,13 @@
+<!-- markdownlint-disable MD013 -->
+<!-- Long lines intentional for code examples and command demonstrations -->
+
 # Docker Build Notes
 
 ## Local Docker Build Issues
 
 If you encounter the following error when building the Docker image locally:
 
-```
+```text
 npm error Exit handler never called!
 npm error This is an error with npm itself. Please report this error at:
 npm error   <https://github.com/npm/cli/issues>

@@ -1,3 +1,6 @@
+<!-- markdownlint-disable MD013 -->
+<!-- Long lines intentional for command examples -->
+
 # MCP Reset Guide (GitHub MCP Server)
 
 This guide documents the steps to reset MCP authentication when experiencing issues such as:

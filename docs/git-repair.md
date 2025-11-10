@@ -1,3 +1,6 @@
+<!-- markdownlint-disable MD013 -->
+<!-- Long lines intentional for command examples -->
+
 # Git Repair Instructions
 
 This document provides instructions for consolidating Git history and pushing changes to the main branch.

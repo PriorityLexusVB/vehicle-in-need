@@ -1,3 +1,6 @@
+<!-- markdownlint-disable MD013 -->
+<!-- Long lines intentional for command examples and Firebase commands -->
+
 # Agent Rules (Repo-wide)
 
 1) Prefer **Firebase CLI & Emulators** over raw shell for data/auth:
