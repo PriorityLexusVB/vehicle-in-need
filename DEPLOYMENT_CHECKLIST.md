@@ -224,6 +224,40 @@ This document provides a comprehensive checklist for deploying the Vehicle Order
 - [ ] Verify NO gear icon
 - [ ] Attempt direct navigation to `/#/admin`
 - [ ] Verify redirected back to `/#/`
+- [ ] Verify "Submit a New Vehicle Request" heading visible
+- [ ] Verify order form is always visible
+- [ ] Verify "Your Orders" section visible below form
+- [ ] Create a test order
+- [ ] Verify order appears in "Your Orders" section
+- [ ] Verify NO status change controls visible in order card
+- [ ] Verify NO delete button visible in order card
+
+#### Order Visibility Testing
+
+- [ ] **Manager can see all orders**
+  - Login as manager
+  - Create an order
+  - Note the order details
+  - Logout
+
+- [ ] **Non-manager sees only their orders**
+  - Login as non-manager user (different from manager)
+  - Verify the manager's order is NOT visible
+  - Create an order as non-manager
+  - Verify only the non-manager's order is visible
+
+- [ ] **Order ownership verification**
+  - Check Firestore for a recently created order
+  - Verify `createdByUid` field is populated
+  - Verify `createdByEmail` field is populated
+  - Verify `createdAt` timestamp is present
+
+- [ ] **Firestore index verification**
+  - Navigate to Firestore Database → Indexes in Firebase Console
+  - Verify composite index exists:
+    - Collection: `orders`
+    - Fields: `createdByUid` (Ascending), `createdAt` (Descending)
+  - If missing, create the index following README instructions
 
 #### AI Feature Test (Manager Only)
 
