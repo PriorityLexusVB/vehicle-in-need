@@ -27,7 +27,13 @@ const nonManager: AppUser = {
 
 function renderRoutes(user: AppUser | null) {
   return render(
-    <MemoryRouter initialEntries={["/admin"]}>
+    <MemoryRouter 
+      initialEntries={["/admin"]}
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <Routes>
         <Route
           path="/admin"
