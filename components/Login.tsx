@@ -124,14 +124,42 @@ const Login: React.FC = () => {
 
   useEffect(() => {
     const checkRedirectResult = async () => {
+      console.log(
+        "%c🔄 Login - Checking for redirect result",
+        "color: #3b82f6; font-weight: bold;"
+      );
+      
       try {
         const result = await getRedirectResult(auth);
-        if (!result) {
+        
+        if (result) {
+          // Successful redirect sign-in
+          console.log(
+            "%c✅ Login - Redirect sign-in successful",
+            "color: #10b981; font-weight: bold;"
+          );
+          console.log("User email:", result.user.email);
+          console.log("User UID:", result.user.uid);
+          // The onAuthStateChanged listener in App.tsx will handle setting the user
+          // Keep isSigningIn true while App.tsx processes the auth state
+        } else {
+          // No pending redirect result (normal page load)
+          console.log(
+            "%c📋 Login - No pending redirect result",
+            "color: #64748b; font-weight: normal;"
+          );
           setIsSigningIn(false);
         }
       } catch (err) {
-        const error = err as { code?: string };
-        console.error("Redirect Authentication Error:", err);
+        const error = err as { code?: string; message?: string };
+        console.error(
+          "%c❌ Login - Redirect Authentication Error",
+          "color: #ef4444; font-weight: bold;",
+          err
+        );
+        console.error("Error code:", error.code);
+        console.error("Error message:", error.message);
+        
         if (error.code === "auth/unauthorized-domain") {
           setError({ type: "unauthorized-domain", message: "" });
         } else if (
@@ -150,10 +178,22 @@ const Login: React.FC = () => {
             message:
               "Login failed: This browser environment is not supported or has cookies disabled.",
           });
+        } else if (error.code === "auth/network-request-failed") {
+          setError({
+            type: "generic",
+            message:
+              "Network error. Please check your connection and try again.",
+          });
+        } else if (error.code === "auth/internal-error") {
+          setError({
+            type: "generic",
+            message:
+              "An internal error occurred. Please try refreshing the page or clearing your browser cache.",
+          });
         } else {
           setError({
             type: "generic",
-            message: "An error occurred during sign-in. Please try again.",
+            message: `An error occurred during sign-in: ${error.message || "Please try again."}`,
           });
         }
         setIsSigningIn(false);
@@ -165,47 +205,70 @@ const Login: React.FC = () => {
   const handleLogin = async () => {
     setError(null);
     setIsSigningIn(true);
+    
+    console.log(
+      "%c🔐 Login - Initiating sign-in process",
+      "color: #3b82f6; font-weight: bold;"
+    );
+    console.log("Current hostname:", window.location.hostname);
+    console.log("Current href:", window.location.href);
+    
     try {
       // In Codespaces/preview environments, popups can be flaky due to cookie and focus policies;
       // prefer redirect first to avoid a popup-close loop.
       const isCodespaces =
         typeof window !== "undefined" &&
         window.location.hostname.endsWith(".app.github.dev");
+      
+      console.log("Is Codespaces environment:", isCodespaces);
+      
       if (isCodespaces) {
+        console.log("Using redirect sign-in for Codespaces");
         await signInWithRedirect(auth, googleProvider);
         return; // navigation expected
       }
 
+      console.log("Attempting popup sign-in");
       await signInWithPopup(auth, googleProvider);
+      console.log("Popup sign-in successful");
     } catch (popupError) {
-      const error = popupError as { code?: string };
+      const error = popupError as { code?: string; message?: string };
       console.warn(
-        "Popup sign-in failed, falling back to redirect. Reason:",
-        error.code
+        "%c⚠️ Login - Popup sign-in failed, falling back to redirect",
+        "color: #f59e0b; font-weight: bold;"
       );
+      console.warn("Popup error code:", error.code);
+      console.warn("Popup error message:", error.message);
       console.debug("Popup error detail:", popupError);
+      
       // If popup fails for any reason, try redirect.
       // This will navigate away. Errors will be handled by getRedirectResult upon return.
-      await signInWithRedirect(auth, googleProvider).catch(
-        (redirectError) => {
-          const redirError = redirectError as { code?: string };
-          // This catch is only for errors *initiating* the redirect.
-          console.error(
-            "Authentication Initiation Error (Redirect):",
-            redirectError
-          );
-          if (redirError.code === "auth/unauthorized-domain") {
-            setError({ type: "unauthorized-domain", message: "" });
-          } else {
-            setError({
-              type: "generic",
-              message:
-                "Failed to start the sign-in process. Please check your connection and try again.",
-            });
-          }
-          setIsSigningIn(false);
+      try {
+        console.log("Attempting redirect sign-in as fallback");
+        await signInWithRedirect(auth, googleProvider);
+        // Navigation expected, so no further action here
+      } catch (redirectError) {
+        const redirError = redirectError as { code?: string; message?: string };
+        // This catch is only for errors *initiating* the redirect.
+        console.error(
+          "%c❌ Login - Authentication Initiation Error (Redirect)",
+          "color: #ef4444; font-weight: bold;",
+          redirectError
+        );
+        console.error("Redirect error code:", redirError.code);
+        console.error("Redirect error message:", redirError.message);
+        
+        if (redirError.code === "auth/unauthorized-domain") {
+          setError({ type: "unauthorized-domain", message: "" });
+        } else {
+          setError({
+            type: "generic",
+            message:
+              "Failed to start the sign-in process. Please check your connection and try again.",
+          });
         }
-      );
+        setIsSigningIn(false);
+      }
     }
   };
 

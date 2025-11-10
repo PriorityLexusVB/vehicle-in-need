@@ -19,7 +19,13 @@ const managerUser: AppUser = {
 
 function renderHeader(user: AppUser) {
   return render(
-    <MemoryRouter initialEntries={["/"]}>
+    <MemoryRouter 
+      initialEntries={["/"]}
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <Header
         user={user}
         totalOrders={42}
