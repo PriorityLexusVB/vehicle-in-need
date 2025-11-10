@@ -2,9 +2,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import OrderList from "../OrderList";
-import { Order, OrderStatus } from "../../types";
+import { Order, OrderStatus, AppUser } from "../../types";
 
 describe("OrderList", () => {
+  const mockManagerUser: AppUser = {
+    uid: "manager-123",
+    email: "manager@priorityautomotive.com",
+    displayName: "Manager User",
+    isManager: true,
+  };
+
   const mockOrders: Order[] = [
     {
       id: "1",
@@ -57,6 +64,7 @@ describe("OrderList", () => {
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
+        currentUser={mockManagerUser}
       />
     );
 
@@ -72,6 +80,7 @@ describe("OrderList", () => {
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
+        currentUser={mockManagerUser}
       />
     );
 
@@ -90,6 +99,7 @@ describe("OrderList", () => {
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
+        currentUser={mockManagerUser}
       />
     );
 
@@ -115,6 +125,7 @@ describe("OrderList", () => {
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
+        currentUser={mockManagerUser}
       />
     );
 
@@ -134,6 +145,7 @@ describe("OrderList", () => {
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
+        currentUser={mockManagerUser}
       />
     );
 
@@ -149,6 +161,7 @@ describe("OrderList", () => {
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
+        currentUser={mockManagerUser}
       />
     );
 
@@ -171,6 +184,7 @@ describe("OrderList", () => {
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
+        currentUser={mockManagerUser}
       />
     );
 
@@ -193,6 +207,7 @@ describe("OrderList", () => {
         orders={[]}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
+        currentUser={mockManagerUser}
       />
     );
 

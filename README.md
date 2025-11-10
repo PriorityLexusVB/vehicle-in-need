@@ -23,6 +23,112 @@ View your app in AI Studio: [AI Studio App](https://ai.studio/apps/drive/1XrFhCI
 - 🔗 Deep linking support (e.g., `#settings` for direct access)
 - 🔒 **Secure architecture** with no client-side API keys
 
+## Role-Based Access Control
+
+The application provides distinct experiences for two user roles:
+
+### Manager Role
+
+Managers have full access to all features:
+
+- ✅ View **All Orders** from all users
+- ✅ Dashboard with statistics (active orders, pending actions, deliveries)
+- ✅ Create new orders
+- ✅ Update order status and delete orders
+- ✅ Access User Management at `/#/admin`
+- ✅ Toggle manager status for other users
+- ✅ Admin navigation visible in header
+
+### Non-Manager Role
+
+Non-managers have a streamlined experience:
+
+- ✅ Submit new vehicle requests via always-visible form
+- ✅ View **Your Orders** (filtered to only their created orders)
+- ❌ Cannot see orders created by other users
+- ❌ Cannot update status or delete orders
+- ❌ No access to `/#/admin` (automatically redirected)
+- ❌ No admin navigation or settings
+
+### Order Ownership
+
+All orders are automatically stamped with creator identity:
+
+- `createdByUid` - User ID of the order creator
+- `createdByEmail` - Email of the order creator
+- `createdAt` - Server timestamp when order was created
+
+This ensures proper order filtering and audit trails.
+
+### Firestore Index Requirements
+
+To support per-user order queries, you need a composite index in Firestore:
+
+```text
+Collection: orders
+Fields:
+  - createdByUid (Ascending)
+  - createdAt (Descending)
+```
+
+**To create the index:**
+
+1. In Firebase Console, go to Firestore Database → Indexes
+2. Click "Create Index"
+3. Collection: `orders`
+4. Add field: `createdByUid` (Ascending)
+5. Add field: `createdAt` (Descending)
+6. Click "Create Index"
+
+Or run a query in your app and follow the Firebase Console link in the error message.
+
+### Verifying Roles Locally
+
+#### Using Firebase Emulator
+
+1. Start the Firebase Emulator:
+
+   ```bash
+   firebase emulators:start
+   ```
+
+2. Set environment variables to point to emulator:
+
+   ```bash
+   export FIRESTORE_EMULATOR_HOST='localhost:8080'
+   export FIREBASE_AUTH_EMULATOR_HOST='localhost:9099'
+   ```
+
+3. Create test users with custom tokens:
+
+   **Non-manager user:**
+
+   ```bash
+   node scripts/auth-impersonate.mjs --email ron.jordan@priorityautomotive.com --non-manager
+   ```
+
+   **Manager user:**
+
+   ```bash
+   node scripts/auth-impersonate.mjs --email manager@priorityautomotive.com --manager
+   ```
+
+4. Copy the generated token and use `signInWithCustomToken()` in the browser console
+
+#### Migration Script for Legacy Orders
+
+For existing orders without owner information:
+
+```bash
+# Dry run to preview changes
+node scripts/migrations/backfill-order-owners.mjs --project vehicles-in-need --dry-run
+
+# Apply changes
+node scripts/migrations/backfill-order-owners.mjs --project vehicles-in-need --apply
+```
+
+The script attempts to match orders to users by salesperson name and provides a report of matched and unmatched orders.
+
 ## Architecture
 
 ### AI Email Generation - Dual Mode Support

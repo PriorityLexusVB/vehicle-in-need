@@ -34,6 +34,8 @@ export interface Order {
   options: string;
   notes?: string;
   createdAt?: Timestamp; // Firestore server timestamp for ordering
+  createdByUid?: string; // UID of user who created the order
+  createdByEmail?: string; // Email of user who created the order
 }
 
 export interface AppUser {
