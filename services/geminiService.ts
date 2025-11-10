@@ -95,14 +95,14 @@ async function generateEmailServerSide(order: Order): Promise<string> {
 
     return data.email;
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error calling email generation API:", error);
     
-    if (error.name === 'AbortError') {
+    if (error instanceof DOMException && error.name === 'AbortError') {
       throw new Error("Request timed out. Please try again.");
     }
     
-    if (error.message) {
+    if (error instanceof Error) {
       throw error;
     }
     

@@ -4,8 +4,7 @@ import { describe, it, expect } from "vitest";
 
 describe("crypto polyfill", () => {
   it("provides getRandomValues", () => {
-    // @ts-expect-error - global crypto exists in jsdom with polyfill
-    const c: Crypto = globalThis.crypto as any;
+    const c = globalThis.crypto as unknown as Crypto;
     expect(c).toBeDefined();
     expect(typeof c.getRandomValues).toBe("function");
     const arr = new Uint8Array(4);
@@ -15,8 +14,7 @@ describe("crypto polyfill", () => {
   });
 
   it("provides Buffer via polyfill", () => {
-    // @ts-expect-error - Buffer should be available via node polyfills
-    const BufferConstructor = globalThis.Buffer;
+    const BufferConstructor = (globalThis as unknown as { Buffer: typeof Buffer }).Buffer;
     expect(BufferConstructor).toBeDefined();
     
     // Verify Buffer functionality
@@ -26,8 +24,7 @@ describe("crypto polyfill", () => {
   });
 
   it("can create and manipulate Buffers", () => {
-    // @ts-expect-error - Buffer from polyfill
-    const BufferConstructor = globalThis.Buffer;
+    const BufferConstructor = (globalThis as unknown as { Buffer: typeof Buffer }).Buffer;
     
     // Create from string
     const buf1 = BufferConstructor.from([0x62, 0x75, 0x66, 0x66, 0x65, 0x72]);

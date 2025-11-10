@@ -51,6 +51,8 @@ const App: React.FC = () => {
     readyForDelivery: 0,
     deliveredLast30Days: 0,
   });
+  const [accessDeniedEmail, setAccessDeniedEmail] = useState<string | null>(null);
+  const elevationLoggedRef = React.useRef(false);
 
   // Service Worker registration with update notification
   const {
@@ -73,7 +75,16 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (authUser) => {
-      if (authUser && authUser.email?.endsWith("@priorityautomotive.com")) {
+      if (authUser && authUser.email) {
+        const normalizedEmail = authUser.email.toLowerCase();
+        const domainOk = normalizedEmail.endsWith("@priorityautomotive.com") || import.meta.env.VITE_ALLOW_ANY_DOMAIN_FOR_DEV === "1";
+        if (!domainOk) {
+          console.warn(`[AUTH-DOMAIN-BLOCK] email=${normalizedEmail} domainCheckFailed=true`);
+          setAccessDeniedEmail(authUser.email || null);
+          setUser(null);
+          setIsLoading(false);
+          return;
+        }
         const userDocRef = doc(db, USERS_COLLECTION, authUser.uid);
         const userDoc = await getDoc(userDocRef);
 
@@ -115,7 +126,7 @@ const App: React.FC = () => {
           // One-time migration for older user documents that might not have the isManager field.
           // Checking for non-boolean handles undefined, null, and any incorrectly stored values.
           if (typeof isManager !== "boolean") {
-            isManager = MANAGER_EMAILS.includes(authUser.email!.toLowerCase());
+            isManager = MANAGER_EMAILS.includes(normalizedEmail);
             console.log(
               "MIGRATION - isManager was not boolean, setting to:",
               isManager
@@ -124,13 +135,14 @@ const App: React.FC = () => {
             await updateDoc(userDocRef, { isManager });
           } else if (
             !isManager &&
-            MANAGER_EMAILS.includes(authUser.email!.toLowerCase())
+            MANAGER_EMAILS.includes(normalizedEmail)
           ) {
             // Persistent elevation: if an existing user is in MANAGER_EMAILS but not a manager yet,
             // elevate them now. This keeps MANAGER_EMAILS as an allow-list for upgrades only.
-            console.log(
-              `[ROLE-ELEVATION] ${authUser.email} upgraded (was false)`
-            );
+            if (!elevationLoggedRef.current) {
+              console.log(`[ROLE-ELEVATION] email=${normalizedEmail} uid=${authUser.uid} elevated=true`);
+              elevationLoggedRef.current = true;
+            }
             isManager = true;
             await updateDoc(userDocRef, { isManager: true });
           }
@@ -176,13 +188,7 @@ const App: React.FC = () => {
 
         setUser(appUser);
       } else {
-        if (authUser) {
-          // Domain restriction: Only @priorityautomotive.com emails are allowed.
-          await signOut(auth);
-          alert(
-            "Access denied. Please use a '@priorityautomotive.com' email address."
-          );
-        }
+        // Not authenticated
         setUser(null);
       }
       setIsLoading(false);
@@ -382,8 +388,36 @@ const App: React.FC = () => {
     return <LoadingSpinner />;
   }
 
-  if (!user) {
+  if (!user && !accessDeniedEmail) {
     return <Login />;
+  }
+
+  if (accessDeniedEmail) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
+        <div className="max-w-md w-full bg-white border border-red-300 rounded-xl p-6 shadow">
+          <h1 className="text-xl font-bold text-red-700 mb-2">Access Denied</h1>
+          <p className="text-sm text-slate-700 mb-4">
+            The account <strong>{accessDeniedEmail}</strong> is not authorized for this application.
+            Please sign in with an <code>@priorityautomotive.com</code> email address.
+          </p>
+          <button
+            onClick={async () => {
+              await signOut(auth);
+              setAccessDeniedEmail(null);
+            }}
+            className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md shadow-sm transition-colors"
+          >
+            Sign Out
+          </button>
+          {import.meta.env.VITE_ALLOW_ANY_DOMAIN_FOR_DEV === "1" && (
+            <p className="mt-3 text-xs text-amber-600">
+              Dev override active (VITE_ALLOW_ANY_DOMAIN_FOR_DEV=1) — domain restriction relaxed.
+            </p>
+          )}
+        </div>
+      </div>
+    );
   }
 
   return (

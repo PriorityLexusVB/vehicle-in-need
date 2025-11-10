@@ -31,7 +31,8 @@ export interface Order {
   status: OrderStatus;
   options: string;
   notes?: string;
-  createdAt?: any; // Used for Firestore server-side ordering
+  // Firestore timestamp is represented differently across environments; use unknown to avoid 'any'.
+  createdAt?: unknown;
 }
 
 export interface AppUser {

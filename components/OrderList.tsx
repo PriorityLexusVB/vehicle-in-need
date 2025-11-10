@@ -61,7 +61,7 @@ const OrderList: React.FC<OrderListProps> = ({ orders, onUpdateStatus, onDeleteO
       'Deposit Amount', 'Status', 'Options', 'Notes'
     ];
 
-    const escapeCsvCell = (cellData: any): string => {
+    const escapeCsvCell = (cellData: unknown): string => {
       if (cellData === null || cellData === undefined) {
         return '';
       }
