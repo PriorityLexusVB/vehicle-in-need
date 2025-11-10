@@ -1,3 +1,6 @@
+<!-- markdownlint-disable MD013 -->
+<!-- Long lines intentional for detailed instructions, command examples, and comprehensive documentation -->
+
 # Coding Agent Prompt: Admin Hardening & Documentation Completion
 
 This file captures the full execution instructions for an automated coding agent to finalize remaining tasks for the **admin hardening & documentation** effort on branch `feat/admin-hardening-docs`.
