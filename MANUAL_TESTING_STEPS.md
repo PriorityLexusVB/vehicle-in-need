@@ -1,3 +1,6 @@
+<!-- markdownlint-disable MD013 -->
+<!-- Long lines intentional for command examples and detailed instructions -->
+
 # Manual Steps Required for Complete Testing
 
 This document outlines manual steps that need to be performed by the repository owner to complete Phase 10 (Automated Testing) requirements, since some tasks require production access and authenticated sessions.
@@ -89,7 +92,7 @@ To run the E2E tests, you need test accounts in Firebase:
 
 Update `e2e/manager-flow.spec.ts` to include authentication:
 
-**Option A: Use Playwright's authentication state**
+#### Option A: Use Playwright's authentication state
 
 Create a setup file `e2e/auth.setup.ts`:
 
@@ -137,7 +140,7 @@ export default defineConfig({
 });
 ```
 
-**Option B: Use Firebase Authentication Directly**
+#### Option B: Use Firebase Authentication Directly
 
 Add Firebase Admin SDK to your test setup and create custom tokens for testing.
 

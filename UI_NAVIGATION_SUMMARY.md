@@ -2,7 +2,7 @@
 
 ## Header Layout (Manager View)
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ Vehicle Order Tracker v{sha}                    [Active] [Settings] [↓] │
 │ Welcome, John Doe (Manager) [isManager: true]     Orders  ⚙️ User Mgmt  │
@@ -54,7 +54,7 @@
 
 **Manager Access:**
 
-```
+```text
 ┌────────────────────────────────────────────┐
 │ User Management                            │
 │                                            │
@@ -80,7 +80,7 @@
 
 ## Component Flow
 
-```
+```text
 index.tsx
   └─ <HashRouter>
        └─ <App>
@@ -99,7 +99,7 @@ index.tsx
 
 ## Authentication Flow
 
-```
+```text
 ┌─────────────┐
 │  Anonymous  │
 └──────┬──────┘
@@ -179,7 +179,7 @@ index.tsx
 
 ### Display Format
 
-```
+```text
 Vehicle Order Tracker v{commit-sha}
                       ↑
                       Hover shows:
@@ -188,7 +188,7 @@ Vehicle Order Tracker v{commit-sha}
 
 ### Data Flow
 
-```
+```text
 Docker Build Args:
   COMMIT_SHA=abc1234
   BUILD_TIME=2025-11-06T01:54:00Z

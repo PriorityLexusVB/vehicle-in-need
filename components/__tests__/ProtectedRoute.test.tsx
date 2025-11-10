@@ -21,7 +21,13 @@ describe('ProtectedRoute', () => {
 
   it('renders children when user is a manager', () => {
     render(
-      <MemoryRouter initialEntries={['/admin']}>
+      <MemoryRouter 
+        initialEntries={['/admin']}
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
         <Routes>
           <Route
             path="/admin"
@@ -41,7 +47,13 @@ describe('ProtectedRoute', () => {
 
   it('redirects to home when user is not a manager', () => {
     render(
-      <MemoryRouter initialEntries={['/admin']}>
+      <MemoryRouter 
+        initialEntries={['/admin']}
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
         <Routes>
           <Route
             path="/admin"
@@ -62,7 +74,13 @@ describe('ProtectedRoute', () => {
 
   it('redirects to home when user is null', () => {
     render(
-      <MemoryRouter initialEntries={['/admin']}>
+      <MemoryRouter 
+        initialEntries={['/admin']}
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
         <Routes>
           <Route
             path="/admin"
@@ -89,7 +107,13 @@ describe('ProtectedRoute', () => {
     } as AppUser;
 
     render(
-      <MemoryRouter initialEntries={['/admin']}>
+      <MemoryRouter 
+        initialEntries={['/admin']}
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
         <Routes>
           <Route
             path="/admin"

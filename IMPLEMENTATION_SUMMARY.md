@@ -1,3 +1,6 @@
+<!-- markdownlint-disable MD013 -->
+<!-- Long lines intentional for readability and code examples -->
+
 # Admin Route Navigation Implementation Summary
 
 ## Overview
@@ -236,7 +239,7 @@ The `npm ci` command in Docker may show "Exit handler never called!" error in so
 
 - Uses import.meta.env.VITE_APP_* values
 - Dockerfile exposes VITE_APP_* env vars
-- Shows v<short-sha> @ <build-time>
+- Shows `v{short-sha} @ {build-time}`
 
 ✅ **Production Sanity**
 
@@ -372,7 +375,7 @@ Added "Deployment Verification" section to README with:
 
 **Pre-deployment validation:**
 
-```
+```text
 ✅ All checks passed (0 errors, 2 warnings)
 ⚠️  Working directory has uncommitted changes (expected)
 ⚠️  Not on main branch (expected for feature branch)
@@ -380,7 +383,7 @@ Added "Deployment Verification" section to README with:
 
 **Post-deployment verification:**
 
-```
+```text
 ✅ All 25 tests passed
 - Health endpoint: ✅
 - Status endpoint: ✅
@@ -426,7 +429,7 @@ CodeQL scan found 2 alerts (both false positives):
 - Added clarifying comments to document this
 - **No actual security vulnerabilities introduced**
 
-### Files Modified
+### Files Modified (Phase 9)
 
 1. **New Files:**
    - `DEPLOYMENT_CHECKLIST.md` (408 lines)
@@ -438,7 +441,9 @@ CodeQL scan found 2 alerts (both false positives):
    - `server/index.cjs` - Enhanced status endpoint, fixed cache regex
    - `README.md` - Added deployment verification section
 
-**Total: 1,291 lines added**
+#### Lines Added
+
+Total: 1,291 lines added
 
 ### Next Steps for Production
 
@@ -467,7 +472,7 @@ All original requirements met:
 
 ## Phase 10: Automated Testing (Latest Session)
 
-### Problem Statement
+### Testing Requirements
 
 User requested inclusion of Phase 10 (Automated Testing) which was marked as "Optional but Recommended" in the original problem statement. This phase includes:
 
@@ -612,7 +617,7 @@ npm run verify:parity <production-url>
 
 **Unit Tests:**
 
-```
+```text
 ✓ components/__tests__/ProtectedRoute.test.tsx (4 tests)
 ✓ components/__tests__/VersionBadge.test.tsx (3 tests)
 ✓ components/__tests__/SettingsPage.test.tsx (8 tests)
@@ -680,7 +685,7 @@ Test Files  3 passed (3)
 
 **See `MANUAL_TESTING_STEPS.md` for detailed instructions.**
 
-### Benefits
+### Testing Benefits
 
 1. **Automated Quality Assurance** - 15 unit tests prevent regressions
 2. **Critical Component Coverage** - Tests for ProtectedRoute, SettingsPage, VersionBadge
