@@ -4,7 +4,8 @@
 substitutions:
   _REGION: us-west1
   _SERVICE: pre-order-dealer-exchange-tracker
-  _IMAGE_NAME: gcr.io/${PROJECT_ID}/${_SERVICE}
+  _ARTIFACT_REPO: vehicle-in-need
+  _IMAGE_NAME: us-west1-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REPO}/${_SERVICE}
 
 steps:
   # Step 1: Build the Docker image with build-time version info
