@@ -1,11 +1,21 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
+<<<<<<< HEAD
 import { onAuthStateChanged, signOut } from "firebase/auth";
+=======
+import {
+  onAuthStateChanged,
+  signOut,
+} from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
+>>>>>>> feat/admin-hardening-docs
 import {
   collection,
   query,
   orderBy,
+<<<<<<< HEAD
   where,
+=======
+>>>>>>> feat/admin-hardening-docs
   onSnapshot,
   doc,
   getDoc,
@@ -15,7 +25,11 @@ import {
   updateDoc,
   deleteDoc,
   Timestamp,
+<<<<<<< HEAD
 } from "firebase/firestore";
+=======
+} from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+>>>>>>> feat/admin-hardening-docs
 import { db, auth } from "./services/firebase";
 import { Order, OrderStatus, AppUser } from "./types";
 import { MANAGER_EMAILS, USERS_COLLECTION } from "./constants";
@@ -77,7 +91,11 @@ const App: React.FC = () => {
       try {
         if (authUser && authUser.email?.endsWith("@priorityautomotive.com")) {
           const userDocRef = doc(db, USERS_COLLECTION, authUser.uid);
+<<<<<<< HEAD
 
+=======
+          
+>>>>>>> feat/admin-hardening-docs
           console.log(
             "%c👤 Auth Flow - User Document Fetch",
             "color: #10b981; font-weight: bold;"
@@ -129,6 +147,7 @@ const App: React.FC = () => {
               displayName: authUser.displayName,
               isManager: isManager,
             };
+<<<<<<< HEAD
 
             try {
               await setDoc(userDocRef, appUser);
@@ -136,6 +155,12 @@ const App: React.FC = () => {
                 "Created new user document with isManager:",
                 isManager
               );
+=======
+            
+            try {
+              await setDoc(userDocRef, appUser);
+              console.log("Created new user document with isManager:", isManager);
+>>>>>>> feat/admin-hardening-docs
             } catch (firestoreError) {
               console.error(
                 "%c❌ Firestore Error - Failed to create user document",
@@ -150,18 +175,26 @@ const App: React.FC = () => {
             // Changes made via Settings page will persist because we read from Firestore, not MANAGER_EMAILS.
             const existingData = userDoc.data();
             let isManager = existingData.isManager;
+<<<<<<< HEAD
             console.log(
               "EXISTING USER - Firestore document data:",
               existingData
             );
+=======
+            console.log("EXISTING USER - Firestore document data:", existingData);
+>>>>>>> feat/admin-hardening-docs
             console.log("Fetched isManager from Firestore:", isManager);
 
             // One-time migration for older user documents that might not have the isManager field.
             // Checking for non-boolean handles undefined, null, and any incorrectly stored values.
             if (typeof isManager !== "boolean") {
+<<<<<<< HEAD
               isManager = MANAGER_EMAILS.includes(
                 authUser.email!.toLowerCase()
               );
+=======
+              isManager = MANAGER_EMAILS.includes(authUser.email!.toLowerCase());
+>>>>>>> feat/admin-hardening-docs
               console.log(
                 "MIGRATION - isManager was not boolean, setting to:",
                 isManager
@@ -186,9 +219,13 @@ const App: React.FC = () => {
               // Log only once per user to avoid duplicate logs on re-renders
               const elevationKey = `${authUser.uid}-elevation`;
               if (!loggedElevations.current.has(elevationKey)) {
+<<<<<<< HEAD
                 console.log(
                   `[ROLE-ELEVATION] email=${authUser.email} uid=${authUser.uid} elevated=true`
                 );
+=======
+                console.log(`[ROLE-ELEVATION] email=${authUser.email} uid=${authUser.uid} elevated=true`);
+>>>>>>> feat/admin-hardening-docs
                 loggedElevations.current.add(elevationKey);
               }
               isManager = true;
@@ -227,9 +264,13 @@ const App: React.FC = () => {
               "color: #8b5cf6; font-weight: bold;"
             );
             console.log(
+<<<<<<< HEAD
               `Will render admin navigation: ${
                 appUser.isManager ? "YES" : "NO"
               }`
+=======
+              `Will render admin navigation: ${appUser.isManager ? "YES" : "NO"}`
+>>>>>>> feat/admin-hardening-docs
             );
             if (appUser.isManager) {
               console.log("✓ Manager user should see:");
@@ -259,6 +300,11 @@ const App: React.FC = () => {
               "Access denied. Please use a '@priorityautomotive.com' email address."
             );
           }
+<<<<<<< HEAD
+=======
+          // Clear elevation tracking when user logs out
+          loggedElevations.current.clear();
+>>>>>>> feat/admin-hardening-docs
           setUser(null);
         }
       } catch (error) {
@@ -281,8 +327,13 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+<<<<<<< HEAD
     if (!user) {
       // If user is not logged in, reset state
+=======
+    if (!user?.isManager) {
+      // If user is not a manager, reset state outside the effect
+>>>>>>> feat/admin-hardening-docs
       Promise.resolve().then(() => {
         setOrders([]);
         setAllUsers([]);
@@ -296,6 +347,7 @@ const App: React.FC = () => {
       return;
     }
 
+<<<<<<< HEAD
     // Fetch orders based on user role
     const ordersQuery = user.isManager
       ? query(collection(db, "orders"), orderBy("createdAt", "desc"))
@@ -305,6 +357,13 @@ const App: React.FC = () => {
           orderBy("createdAt", "desc")
         );
 
+=======
+    // Fetch orders for managers
+    const ordersQuery = query(
+      collection(db, "orders"),
+      orderBy("createdAt", "desc")
+    );
+>>>>>>> feat/admin-hardening-docs
     const unsubscribeOrders = onSnapshot(
       ordersQuery,
       (querySnapshot) => {
@@ -317,7 +376,11 @@ const App: React.FC = () => {
         );
         setOrders(ordersData);
 
+<<<<<<< HEAD
         // Calculate stats (only for managers, but compute for all users for simplicity)
+=======
+        // Calculate stats
+>>>>>>> feat/admin-hardening-docs
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         const newStats = ordersData.reduce(
@@ -361,6 +424,7 @@ const App: React.FC = () => {
       }
     );
 
+<<<<<<< HEAD
     // Fetch all users (only for managers)
     let unsubscribeUsers: (() => void) | undefined;
     if (user.isManager) {
@@ -381,6 +445,25 @@ const App: React.FC = () => {
         }
       );
     }
+=======
+    // Fetch all users for managers
+    const usersQuery = query(
+      collection(db, USERS_COLLECTION),
+      orderBy("displayName", "asc")
+    );
+    const unsubscribeUsers = onSnapshot(
+      usersQuery,
+      (querySnapshot) => {
+        const usersData: AppUser[] = querySnapshot.docs.map(
+          (doc) => doc.data() as AppUser
+        );
+        setAllUsers(usersData);
+      },
+      (error) => {
+        console.error("Error fetching users from Firestore: ", error);
+      }
+    );
+>>>>>>> feat/admin-hardening-docs
 
     return () => {
       unsubscribeOrders?.();
@@ -401,8 +484,11 @@ const App: React.FC = () => {
         await addDoc(collection(db, "orders"), {
           ...orderPayload,
           createdAt: serverTimestamp(),
+<<<<<<< HEAD
           createdByUid: user?.uid,
           createdByEmail: user?.email,
+=======
+>>>>>>> feat/admin-hardening-docs
         });
         return true;
       } catch (error) {
@@ -411,7 +497,11 @@ const App: React.FC = () => {
         return false;
       }
     },
+<<<<<<< HEAD
     [user]
+=======
+    []
+>>>>>>> feat/admin-hardening-docs
   );
 
   const handleAddOrderAndCloseForm = useCallback(
@@ -562,7 +652,10 @@ const App: React.FC = () => {
                     orders={orders}
                     onUpdateStatus={handleUpdateOrderStatus}
                     onDeleteOrder={handleDeleteOrder}
+<<<<<<< HEAD
                     currentUser={user}
+=======
+>>>>>>> feat/admin-hardening-docs
                   />
                 </div>
               ) : (
@@ -576,7 +669,11 @@ const App: React.FC = () => {
                       dealer exchange request.
                     </p>
                   </div>
+<<<<<<< HEAD
                   <div className="flex justify-center mb-8">
+=======
+                  <div className="flex justify-center">
+>>>>>>> feat/admin-hardening-docs
                     <div className="w-full max-w-3xl">
                       <OrderForm
                         onAddOrder={handleAddOrder}
@@ -584,6 +681,7 @@ const App: React.FC = () => {
                       />
                     </div>
                   </div>
+<<<<<<< HEAD
                   <div className="mt-12">
                     <h2 className="text-2xl font-bold text-slate-800 mb-6">
                       Your Orders
@@ -595,6 +693,8 @@ const App: React.FC = () => {
                       currentUser={user}
                     />
                   </div>
+=======
+>>>>>>> feat/admin-hardening-docs
                 </div>
               )
             }

@@ -16,7 +16,11 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './vitest.setup.ts',
     css: true,
+<<<<<<< HEAD
     exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**', '**/tests/firestore-rules/**', '**/.{idea,git,cache,output,temp}/**'],
+=======
+    exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**', '**/.{idea,git,cache,output,temp}/**'],
+>>>>>>> feat/admin-hardening-docs
     // Allow .cjs test files for server tests
     include: ['**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     env: {

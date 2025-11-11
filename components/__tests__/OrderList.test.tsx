@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import OrderList from "../OrderList";
+<<<<<<< HEAD
 import { Order, OrderStatus, AppUser } from "../../types";
 
 describe("OrderList", () => {
@@ -12,6 +13,11 @@ describe("OrderList", () => {
     isManager: true,
   };
 
+=======
+import { Order, OrderStatus } from "../../types";
+
+describe("OrderList", () => {
+>>>>>>> feat/admin-hardening-docs
   const mockOrders: Order[] = [
     {
       id: "1",
@@ -64,7 +70,10 @@ describe("OrderList", () => {
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
+<<<<<<< HEAD
         currentUser={mockManagerUser}
+=======
+>>>>>>> feat/admin-hardening-docs
       />
     );
 
@@ -80,7 +89,10 @@ describe("OrderList", () => {
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
+<<<<<<< HEAD
         currentUser={mockManagerUser}
+=======
+>>>>>>> feat/admin-hardening-docs
       />
     );
 
@@ -99,7 +111,10 @@ describe("OrderList", () => {
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
+<<<<<<< HEAD
         currentUser={mockManagerUser}
+=======
+>>>>>>> feat/admin-hardening-docs
       />
     );
 
@@ -125,7 +140,10 @@ describe("OrderList", () => {
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
+<<<<<<< HEAD
         currentUser={mockManagerUser}
+=======
+>>>>>>> feat/admin-hardening-docs
       />
     );
 
@@ -145,7 +163,10 @@ describe("OrderList", () => {
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
+<<<<<<< HEAD
         currentUser={mockManagerUser}
+=======
+>>>>>>> feat/admin-hardening-docs
       />
     );
 
@@ -161,7 +182,10 @@ describe("OrderList", () => {
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
+<<<<<<< HEAD
         currentUser={mockManagerUser}
+=======
+>>>>>>> feat/admin-hardening-docs
       />
     );
 
@@ -184,7 +208,10 @@ describe("OrderList", () => {
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
+<<<<<<< HEAD
         currentUser={mockManagerUser}
+=======
+>>>>>>> feat/admin-hardening-docs
       />
     );
 
@@ -207,7 +234,10 @@ describe("OrderList", () => {
         orders={[]}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
+<<<<<<< HEAD
         currentUser={mockManagerUser}
+=======
+>>>>>>> feat/admin-hardening-docs
       />
     );
 

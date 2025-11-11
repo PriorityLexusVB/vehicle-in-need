@@ -23,6 +23,7 @@ View your app in AI Studio: [AI Studio App](https://ai.studio/apps/drive/1XrFhCI
 - 🔗 Deep linking support (e.g., `#settings` for direct access)
 - 🔒 **Secure architecture** with no client-side API keys
 
+<<<<<<< HEAD
 ## Role-Based Access Control
 
 The application provides distinct experiences for two user roles:
@@ -150,6 +151,8 @@ The script attempts to match orders to users by salesperson name and provides a 
 
 See the [full migration guide](docs/dev/order-owner-migration.md) for detailed workflow, troubleshooting, and manual remediation steps.
 
+=======
+>>>>>>> feat/admin-hardening-docs
 ## Architecture
 
 ### AI Email Generation - Dual Mode Support
@@ -684,6 +687,7 @@ See [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md) for comprehensive deplo
 
 The application includes automated tests to ensure code quality and functionality.
 
+<<<<<<< HEAD
 ### Firestore Rules Tests
 
 Security rules tests validate the Firestore security rules using the Firebase emulator:
@@ -705,6 +709,8 @@ npm run test:rules:watch    # Run in watch mode
 
 **Test files:** `tests/firestore-rules/**/*.test.ts`
 
+=======
+>>>>>>> feat/admin-hardening-docs
 ### Unit Tests
 
 Unit tests are written using Vitest and Testing Library. They cover critical components:
@@ -1014,6 +1020,7 @@ For comprehensive role UI documentation, see [docs/role-ui-examples.md](./docs/r
 
 ## Development Notes
 
+<<<<<<< HEAD
 ### Developer Documentation
 
 Comprehensive guides for development, testing, and Git workflows:
@@ -1022,6 +1029,8 @@ Comprehensive guides for development, testing, and Git workflows:
 - **[Order Owner Migration](docs/dev/order-owner-migration.md)** - Backfill legacy orders with owner information
 - **[Branching Policy](docs/dev/branching-policy.md)** - Git workflow, branch hygiene, and squash merge guidelines
 
+=======
+>>>>>>> feat/admin-hardening-docs
 ### Routing Structure
 
 The app uses React Router with HashRouter for client-side routing:
