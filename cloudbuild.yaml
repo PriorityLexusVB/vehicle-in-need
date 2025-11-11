@@ -43,9 +43,7 @@ steps:
       - --platform=managed
       - --allow-unauthenticated
       - --set-env-vars=NODE_ENV=production,APP_VERSION=${SHORT_SHA},BUILD_TIME=${BUILD_ID}
-      # After secrets are created in Secret Manager, uncomment and set:
-      # - --update-secrets=API_KEY=vehicle-in-need-gemini:latest
-
+      - --update-secrets=API_KEY=vehicle-in-need-gemini:latest   # <-- Added line
 images:
   - ${_IMAGE_NAME}:${SHORT_SHA}
   - ${_IMAGE_NAME}:latest
