@@ -224,6 +224,7 @@ This document provides a comprehensive checklist for deploying the Vehicle Order
 - [ ] Verify NO gear icon
 - [ ] Attempt direct navigation to `/#/admin`
 - [ ] Verify redirected back to `/#/`
+<<<<<<< HEAD
 - [ ] Verify "Submit a New Vehicle Request" heading visible
 - [ ] Verify order form is always visible
 - [ ] Verify "Your Orders" section visible below form
@@ -258,6 +259,8 @@ This document provides a comprehensive checklist for deploying the Vehicle Order
     - Collection: `orders`
     - Fields: `createdByUid` (Ascending), `createdAt` (Descending)
   - If missing, create the index following README instructions
+=======
+>>>>>>> feat/admin-hardening-docs
 
 #### AI Feature Test (Manager Only)
 

@@ -34,8 +34,11 @@ export interface Order {
   options: string;
   notes?: string;
   createdAt?: Timestamp; // Firestore server timestamp for ordering
+<<<<<<< HEAD
   createdByUid?: string; // UID of user who created the order
   createdByEmail?: string; // Email of user who created the order
+=======
+>>>>>>> feat/admin-hardening-docs
 }
 
 export interface AppUser {

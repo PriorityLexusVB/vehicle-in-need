@@ -10,8 +10,11 @@
     "server": "node server/index.cjs",
     "test": "vitest",
     "test:ui": "vitest --ui",
+<<<<<<< HEAD
     "test:rules": "firebase emulators:exec --only firestore 'vitest --config vitest.rules.config.ts --run'",
     "test:rules:watch": "firebase emulators:exec --only firestore 'vitest --config vitest.rules.config.ts'",
+=======
+>>>>>>> feat/admin-hardening-docs
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "lint": "eslint .",
@@ -28,15 +31,25 @@
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "firebase": "^12.5.0",
+<<<<<<< HEAD
     "firebase-admin": "^13.0.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^6.30.1",
+=======
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^6.30.1",
+    "firebase-admin": "^13.0.2",
+>>>>>>> feat/admin-hardening-docs
     "vite-plugin-node-polyfills": "^0.24.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+<<<<<<< HEAD
     "@firebase/rules-unit-testing": "^5.0.0",
+=======
+>>>>>>> feat/admin-hardening-docs
     "@playwright/test": "^1.56.1",
     "@tailwindcss/postcss": "^4.1.16",
     "@testing-library/jest-dom": "^6.9.1",
@@ -51,7 +64,10 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
+<<<<<<< HEAD
     "firebase-tools": "^14.24.2",
+=======
+>>>>>>> feat/admin-hardening-docs
     "globals": "^16.5.0",
     "jsdom": "^27.1.0",
     "markdownlint-cli2": "^0.18.1",
