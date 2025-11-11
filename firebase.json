@@ -10,6 +10,6 @@
       "enabled": true,
       "port": 4000
     }
-    "indexes": "firestore.indexes.json"
-  }
+  },
+  "indexes": "firestore.indexes.json"
 }

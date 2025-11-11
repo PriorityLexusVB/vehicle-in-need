@@ -40,7 +40,6 @@ describe('Firestore Security Rules - Users Collection', () => {
       
       await assertFails(
         setDoc(userRef, {
-          uid: 'user123',
           email: 'test@example.com',
           displayName: 'Test User',
           isManager: false,
@@ -84,7 +83,6 @@ describe('Firestore Security Rules - Users Collection', () => {
       
       await assertSucceeds(
         setDoc(userRef, {
-          uid: userId,
           email: 'user@example.com',
           displayName: 'Test User',
         })
@@ -100,7 +98,6 @@ describe('Firestore Security Rules - Users Collection', () => {
       
       await assertSucceeds(
         setDoc(userRef, {
-          uid: userId,
           email: 'user@example.com',
           displayName: 'Test User',
           isManager: false,
@@ -117,7 +114,6 @@ describe('Firestore Security Rules - Users Collection', () => {
       
       await assertFails(
         setDoc(userRef, {
-          uid: userId,
           email: 'user@example.com',
           displayName: 'Test User',
           isManager: true,
@@ -134,7 +130,6 @@ describe('Firestore Security Rules - Users Collection', () => {
       
       await assertFails(
         setDoc(userRef, {
-          uid: userId,
           email: 'different@example.com',
           displayName: 'Test User',
           isManager: false,
@@ -151,7 +146,6 @@ describe('Firestore Security Rules - Users Collection', () => {
       
       await assertFails(
         setDoc(otherUserRef, {
-          uid: 'otherUser',
           email: 'user@example.com',
           displayName: 'Other User',
           isManager: false,
@@ -168,7 +162,6 @@ describe('Firestore Security Rules - Users Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', userId), {
-          uid: userId,
           email: 'user@example.com',
           displayName: 'Test User',
           isManager: false,
@@ -192,7 +185,6 @@ describe('Firestore Security Rules - Users Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', otherUserId), {
-          uid: otherUserId,
           email: 'other@example.com',
           displayName: 'Other User',
           isManager: false,
@@ -216,13 +208,11 @@ describe('Firestore Security Rules - Users Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', managerId), {
-          uid: managerId,
           email: 'manager@example.com',
           displayName: 'Manager',
           isManager: true,
         });
         await setDoc(doc(adminDb, 'users', userId), {
-          uid: userId,
           email: 'user@example.com',
           displayName: 'User',
           isManager: false,
@@ -247,7 +237,6 @@ describe('Firestore Security Rules - Users Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', userId), {
-          uid: userId,
           email: 'user@example.com',
           displayName: 'Test User',
           isManager: false,
@@ -262,7 +251,6 @@ describe('Firestore Security Rules - Users Collection', () => {
       
       await assertSucceeds(
         updateDoc(userRef, {
-          uid: userId,
           email: 'user@example.com',
           displayName: 'Updated Name',
           isManager: false,
@@ -277,7 +265,6 @@ describe('Firestore Security Rules - Users Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', userId), {
-          uid: userId,
           email: 'user@example.com',
           displayName: 'Test User',
           isManager: false,
@@ -292,7 +279,6 @@ describe('Firestore Security Rules - Users Collection', () => {
       
       await assertFails(
         updateDoc(userRef, {
-          uid: userId,
           email: 'user@example.com',
           displayName: 'Test User',
           isManager: true,
@@ -307,7 +293,6 @@ describe('Firestore Security Rules - Users Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', userId), {
-          uid: userId,
           email: 'user@example.com',
           displayName: 'Test User',
           isManager: false,
@@ -322,7 +307,6 @@ describe('Firestore Security Rules - Users Collection', () => {
       
       await assertFails(
         updateDoc(userRef, {
-          uid: userId,
           email: 'newemail@example.com',
           displayName: 'Test User',
           isManager: false,
@@ -338,13 +322,11 @@ describe('Firestore Security Rules - Users Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', managerId), {
-          uid: managerId,
           email: 'manager@example.com',
           displayName: 'Manager',
           isManager: true,
         });
         await setDoc(doc(adminDb, 'users', userId), {
-          uid: userId,
           email: 'user@example.com',
           displayName: 'User',
           isManager: false,
@@ -359,7 +341,6 @@ describe('Firestore Security Rules - Users Collection', () => {
       
       await assertSucceeds(
         updateDoc(userRef, {
-          uid: userId,
           email: 'user@example.com',
           displayName: 'User',
           isManager: true,
@@ -374,7 +355,6 @@ describe('Firestore Security Rules - Users Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', managerId), {
-          uid: managerId,
           email: 'manager@example.com',
           displayName: 'Manager',
           isManager: true,
@@ -389,7 +369,6 @@ describe('Firestore Security Rules - Users Collection', () => {
       
       await assertFails(
         updateDoc(managerRef, {
-          uid: managerId,
           email: 'manager@example.com',
           displayName: 'Manager',
           isManager: false,
@@ -406,7 +385,6 @@ describe('Firestore Security Rules - Users Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', userId), {
-          uid: userId,
           email: 'user@example.com',
           displayName: 'Test User',
           isManager: false,
@@ -430,13 +408,11 @@ describe('Firestore Security Rules - Users Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', managerId), {
-          uid: managerId,
           email: 'manager@example.com',
           displayName: 'Manager',
           isManager: true,
         });
         await setDoc(doc(adminDb, 'users', userId), {
-          uid: userId,
           email: 'user@example.com',
           displayName: 'User',
           isManager: false,
