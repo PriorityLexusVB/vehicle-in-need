@@ -71,7 +71,16 @@ Fields:
   - createdAt (Descending)
 ```
 
-**To create the index:**
+**The index is defined in `firestore.indexes.json`** and can be deployed using Firebase CLI.
+
+**To deploy the index:**
+
+```bash
+# Deploy Firestore indexes
+firebase deploy --only firestore:indexes --project vehicles-in-need
+```
+
+#### Alternative: Create via Firebase Console
 
 1. In Firebase Console, go to Firestore Database → Indexes
 2. Click "Create Index"
@@ -80,11 +89,13 @@ Fields:
 5. Add field: `createdAt` (Descending)
 6. Click "Create Index"
 
-Or run a query in your app and follow the Firebase Console link in the error message.
+**Or follow the console link:** When you run a query requiring this index, Firebase will show an error with a direct link to create it in the console.
 
 ### Verifying Roles Locally
 
-#### Using Firebase Emulator
+For comprehensive role testing using Firebase Emulator, see **[Emulator Role Testing Guide](docs/dev/emulator-role-testing.md)**.
+
+#### Quick Start
 
 1. Start the Firebase Emulator:
 
@@ -101,33 +112,43 @@ Or run a query in your app and follow the Firebase Console link in the error mes
 
 3. Create test users with custom tokens:
 
-   **Non-manager user:**
+   **Manager user (rob.brasco at priorityautomotive.com):**
+
+   ```bash
+   node scripts/auth-impersonate.mjs --email rob.brasco@priorityautomotive.com --manager
+   ```
+
+   **Non-manager user (ron.jordan at priorityautomotive.com):**
 
    ```bash
    node scripts/auth-impersonate.mjs --email ron.jordan@priorityautomotive.com --non-manager
    ```
 
-   **Manager user:**
-
-   ```bash
-   node scripts/auth-impersonate.mjs --email manager@priorityautomotive.com --manager
-   ```
-
 4. Copy the generated token and use `signInWithCustomToken()` in the browser console
+
+See the [full guide](docs/dev/emulator-role-testing.md) for detailed instructions, expected behaviors, and troubleshooting.
 
 #### Migration Script for Legacy Orders
 
-For existing orders without owner information:
+For existing orders without owner information, see **[Order Owner Migration Guide](docs/dev/order-owner-migration.md)**.
+
+##### Migration Quick Reference
 
 ```bash
-# Dry run to preview changes
+# Dry run to preview changes (recommended first step)
 node scripts/migrations/backfill-order-owners.mjs --project vehicles-in-need --dry-run
 
-# Apply changes
+# Apply changes (only after reviewing dry-run output)
 node scripts/migrations/backfill-order-owners.mjs --project vehicles-in-need --apply
 ```
 
-The script attempts to match orders to users by salesperson name and provides a report of matched and unmatched orders.
+The script attempts to match orders to users by salesperson name and provides a detailed report of:
+
+- Matched orders (with confidence levels)
+- Unmatched orders requiring manual review
+- Suggested remediation steps for unmatched orders
+
+See the [full migration guide](docs/dev/order-owner-migration.md) for detailed workflow, troubleshooting, and manual remediation steps.
 
 ## Architecture
 
@@ -971,6 +992,14 @@ pnpm run seed:managers:dry-run -- --emails manager@priorityautomotive.com
 For comprehensive role UI documentation, see [docs/role-ui-examples.md](./docs/role-ui-examples.md).
 
 ## Development Notes
+
+### Developer Documentation
+
+Comprehensive guides for development, testing, and Git workflows:
+
+- **[Emulator Role Testing](docs/dev/emulator-role-testing.md)** - Test role-based access control using Firebase Emulator Suite
+- **[Order Owner Migration](docs/dev/order-owner-migration.md)** - Backfill legacy orders with owner information
+- **[Branching Policy](docs/dev/branching-policy.md)** - Git workflow, branch hygiene, and squash merge guidelines
 
 ### Routing Structure
 
