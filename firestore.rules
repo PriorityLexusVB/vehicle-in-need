@@ -40,7 +40,7 @@ service cloud.firestore {
           !('isManager' in request.resource.data)
           || request.resource.data.isManager == false
         )
-        // Allowed keys (adjust if you store more fields)
+        // Allowed keys - only displayName, email, and isManager permitted
         && request.resource.data.keys().hasOnly(['displayName', 'email', 'isManager'])
         // Email must match auth token (ensures integrity)
         && request.resource.data.email == request.auth.token.email
