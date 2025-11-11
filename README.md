@@ -684,6 +684,27 @@ See [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md) for comprehensive deplo
 
 The application includes automated tests to ensure code quality and functionality.
 
+### Firestore Rules Tests
+
+Security rules tests validate the Firestore security rules using the Firebase emulator:
+
+- **User creation** - Self-escalation prevention, email validation
+- **User access** - Read permissions, role-based access
+- **User updates** - Role and email immutability
+- **Order creation** - Ownership enforcement, required fields
+- **Order access** - Manager vs. owner permissions
+- **Order updates** - Field immutability, manager privileges
+- **Order deletion** - Manager-only deletion
+
+**Run rules tests:**
+
+```bash
+npm run test:rules          # Run tests once
+npm run test:rules:watch    # Run in watch mode
+```
+
+**Test files:** `tests/firestore-rules/**/*.test.ts`
+
 ### Unit Tests
 
 Unit tests are written using Vitest and Testing Library. They cover critical components:

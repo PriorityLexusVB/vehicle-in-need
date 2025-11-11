@@ -1,0 +1,41 @@
+name: Firestore Rules Tests
+
+on:
+  push:
+    branches: [main, work]
+  pull_request:
+    branches: [main, work]
+
+permissions:
+  contents: read
+
+jobs:
+  rules-tests:
+    name: Firestore Security Rules Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      
+      - name: Cache Firebase Emulators
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-${{ runner.os }}-${{ hashFiles('**/firebase.json') }}
+          restore-keys: |
+            firebase-emulators-${{ runner.os }}-
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Download and warm Firebase Emulator
+        run: |
+          # Download emulator before network restrictions (if any)
+          npx firebase setup:emulators:firestore
+      
+      - name: Run Firestore rules tests
+        run: npm run test:rules

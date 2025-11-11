@@ -80,7 +80,6 @@ describe('Firestore Security Rules - Orders Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', 'user123'), {
-          uid: 'user123',
           email: 'user@example.com',
           displayName: 'Test User',
           isManager: false,
@@ -217,19 +216,16 @@ describe('Firestore Security Rules - Orders Collection', () => {
         
         // Create users
         await setDoc(doc(adminDb, 'users', 'user123'), {
-          uid: 'user123',
           email: 'user@example.com',
           displayName: 'Test User',
           isManager: false,
         });
         await setDoc(doc(adminDb, 'users', 'otherUser'), {
-          uid: 'otherUser',
           email: 'other@example.com',
           displayName: 'Other User',
           isManager: false,
         });
         await setDoc(doc(adminDb, 'users', 'manager123'), {
-          uid: 'manager123',
           email: 'manager@example.com',
           displayName: 'Manager',
           isManager: true,
@@ -295,13 +291,11 @@ describe('Firestore Security Rules - Orders Collection', () => {
         
         // Create users
         await setDoc(doc(adminDb, 'users', 'user123'), {
-          uid: 'user123',
           email: 'user@example.com',
           displayName: 'Test User',
           isManager: false,
         });
         await setDoc(doc(adminDb, 'users', 'manager123'), {
-          uid: 'manager123',
           email: 'manager@example.com',
           displayName: 'Manager',
           isManager: true,
@@ -413,7 +407,6 @@ describe('Firestore Security Rules - Orders Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', 'otherUser'), {
-          uid: 'otherUser',
           email: 'other@example.com',
           displayName: 'Other User',
           isManager: false,
@@ -441,13 +434,11 @@ describe('Firestore Security Rules - Orders Collection', () => {
         const adminDb = context.firestore();
         
         await setDoc(doc(adminDb, 'users', 'user123'), {
-          uid: 'user123',
           email: 'user@example.com',
           displayName: 'Test User',
           isManager: false,
         });
         await setDoc(doc(adminDb, 'users', 'manager123'), {
-          uid: 'manager123',
           email: 'manager@example.com',
           displayName: 'Manager',
           isManager: true,
@@ -486,7 +477,6 @@ describe('Firestore Security Rules - Orders Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', 'otherUser'), {
-          uid: 'otherUser',
           email: 'other@example.com',
           displayName: 'Other User',
           isManager: false,
