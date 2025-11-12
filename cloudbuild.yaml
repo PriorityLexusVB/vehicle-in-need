@@ -6,8 +6,22 @@ substitutions:
   _IMAGE_NAME: us-west1-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REPO}/${_SERVICE}
 
 steps:
+  # Guard: Fail fast if merge conflict markers are present
+  - name: gcr.io/cloud-builders/gcloud
+    id: check-conflicts
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        if grep -r '<<<<<<< \|=======$\|>>>>>>> ' --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --include="*.html" --exclude-dir=node_modules .; then
+          echo "ERROR: Git merge conflict markers found in source code!"
+          exit 1
+        fi
+        echo "✓ No conflict markers detected"
+
   - name: gcr.io/cloud-builders/docker
     id: build-image
+    waitFor: ['check-conflicts']
     args:
       - build
       - --build-arg

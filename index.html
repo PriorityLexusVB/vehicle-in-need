@@ -6,7 +6,6 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pre-Order & Dealer Exchange Tracker</title>
-<<<<<<< HEAD
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -15,32 +14,12 @@
     />
     <!-- Import map removed: rely entirely on Vite-bundled dependencies to avoid module MIME issues -->
   </head>
-=======
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script type="importmap">
-{
-  "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "firebase/app": "https://aistudiocdn.com/firebase@^10.12.3/firebase-app.js",
-    "firebase/auth": "https://aistudiocdn.com/firebase@^10.12.3/firebase-auth.js",
-    "firebase/firestore": "https://aistudiocdn.com/firebase@^10.12.3/firebase-firestore.js",
-    "firebase/": "https://aistudiocdn.com/firebase@^12.5.0/"
-  }
-}
-</script>
-</head>
->>>>>>> feat/admin-hardening-docs
   <body class="bg-slate-100 text-slate-800">
     <div id="root"></div>
     <script>
       // One-time cleanup of legacy service workers
       // This runs once to clear any stale service worker registrations
       // that might be causing cache issues
-<<<<<<< HEAD
       (function () {
         var SW_CLEANUP_KEY = "sw_cleanup_v1_done";
         if (
@@ -67,29 +46,9 @@
               }
               localStorage.setItem(SW_CLEANUP_KEY, "true");
             });
-=======
-      (function() {
-        var SW_CLEANUP_KEY = 'sw_cleanup_v1_done';
-        if ('serviceWorker' in navigator && !localStorage.getItem(SW_CLEANUP_KEY)) {
-          navigator.serviceWorker.getRegistrations().then(function(registrations) {
-            if (registrations.length > 0) {
-              console.log('Performing one-time cleanup of ' + registrations.length + ' service worker(s)');
-              registrations.forEach(function(registration) {
-                registration.unregister().then(function() {
-                  console.log('Unregistered legacy service worker:', registration.scope);
-                });
-              });
-            }
-            localStorage.setItem(SW_CLEANUP_KEY, 'true');
-          });
->>>>>>> feat/admin-hardening-docs
         }
       })();
     </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
-<<<<<<< HEAD
 </html>
-=======
-</html>
->>>>>>> feat/admin-hardening-docs

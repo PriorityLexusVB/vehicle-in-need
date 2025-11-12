@@ -1,10 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-<<<<<<< HEAD
 import { Order, OrderStatus, AppUser } from '../types';
-=======
-import { Order, OrderStatus } from '../types';
->>>>>>> feat/admin-hardening-docs
 import OrderCard from './OrderCard';
 import { STATUS_OPTIONS } from '../constants';
 import { DownloadIcon } from './icons/DownloadIcon';
@@ -13,16 +9,10 @@ interface OrderListProps {
   orders: Order[];
   onUpdateStatus: (orderId: string, status: OrderStatus) => void;
   onDeleteOrder: (orderId: string) => void;
-<<<<<<< HEAD
   currentUser?: AppUser | null;
 }
 
 const OrderList: React.FC<OrderListProps> = ({ orders, onUpdateStatus, onDeleteOrder, currentUser }) => {
-=======
-}
-
-const OrderList: React.FC<OrderListProps> = ({ orders, onUpdateStatus, onDeleteOrder }) => {
->>>>>>> feat/admin-hardening-docs
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [activeTab, setActiveTab] = useState<'active' | 'delivered'>('active');
@@ -217,10 +207,7 @@ const OrderList: React.FC<OrderListProps> = ({ orders, onUpdateStatus, onDeleteO
               order={order} 
               onUpdateStatus={onUpdateStatus}
               onDeleteOrder={onDeleteOrder}
-<<<<<<< HEAD
               currentUser={currentUser}
-=======
->>>>>>> feat/admin-hardening-docs
             />
           ))
         ) : (
@@ -241,5 +228,6 @@ const OrderList: React.FC<OrderListProps> = ({ orders, onUpdateStatus, onDeleteO
     </div>
   );
 };
+
 
 export default OrderList;

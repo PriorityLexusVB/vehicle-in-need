@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "prebuild": "node -e \"const{execSync}=require('child_process');try{execSync('find . -name node_modules -prune -o -type f \\\\( -name \\\"*.ts\\\" -o -name \\\"*.tsx\\\" -o -name \\\"*.js\\\" -o -name \\\"*.jsx\\\" -o -name \\\"*.html\\\" \\\\) -exec grep -l \\\"<<<<<<< \\\\|=======\\\\|>>>>>>> \\\" {} + 2>/dev/null',{encoding:'utf8',stdio:'pipe'});console.error('❌ ERROR: Git merge conflict markers found in source code!');process.exit(1)}catch(e){if(e.stdout){console.error('❌ ERROR: Conflict markers in:',e.stdout);process.exit(1)}console.log('✓ No conflict markers detected')}\"",
     "build": "vite build",
     "preview": "vite preview",
     "start": "node server/index.cjs",

@@ -3,13 +3,11 @@
 interface ImportMetaEnv {
   readonly VITE_APP_COMMIT_SHA: string;
   readonly VITE_APP_BUILD_TIME: string;
-  readonly VITE_GEMINI_API_KEY?: string;
 }
 
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
-<<<<<<< HEAD
 
 // Vite PWA virtual module type shim
 declare module "virtual:pwa-register/react" {
@@ -27,5 +25,3 @@ declare module "virtual:pwa-register/react" {
     updateServiceWorker: (reloadPage?: boolean) => Promise<void>;
   };
 }
-=======
->>>>>>> feat/admin-hardening-docs
