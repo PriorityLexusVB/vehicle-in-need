@@ -9,7 +9,6 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
-<<<<<<< HEAD
 
 // Vite PWA virtual module type shim
 declare module "virtual:pwa-register/react" {
@@ -27,5 +26,3 @@ declare module "virtual:pwa-register/react" {
     updateServiceWorker: (reloadPage?: boolean) => Promise<void>;
   };
 }
-=======
->>>>>>> feat/admin-hardening-docs
