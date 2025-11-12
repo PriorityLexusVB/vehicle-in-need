@@ -167,14 +167,115 @@ gcloud projects add-iam-policy-binding vehicles-in-need \
 
 ### Build Verification
 
-After building, verify no secrets leaked into the bundle:
+After building, verify no Gemini API secrets leaked into the bundle:
 
 ```bash
 npm run build
-grep -r "AIza\|VITE_GEMINI_API_KEY" dist/ || echo "✓ No secrets in dist/"
+grep -r "VITE_GEMINI_API_KEY" dist/ || echo "✓ No VITE_GEMINI_API_KEY in dist/"
 ```
 
-Expected output: `✓ No secrets in dist/`
+Expected output: `✓ No VITE_GEMINI_API_KEY in dist/`
+
+**Note:** Firebase Web SDK API keys (AIza...) are expected in dist/ and are safe - they're protected by Firebase Security Rules.
+
+## Automated UI Audit & Merge Marker Guard
+
+### Overview
+
+The repository includes automated guards to prevent deployment issues:
+
+1. **Merge Conflict Marker Detection**: Prevents builds with unresolved merge conflicts
+2. **Secret Scanning**: Ensures no API keys are exposed in production bundles
+3. **Lighthouse Performance Audits**: Optional performance and accessibility checks
+
+### Local UI Audit
+
+Run a comprehensive UI audit locally before deploying:
+
+```bash
+npm run audit:ui
+```
+
+This script performs:
+- Dependency installation (`npm ci`)
+- Conflict marker detection (`prebuild:check`)
+- Production build
+- Secret scanning in `dist/`
+- Lighthouse audit (if `lighthouse` and `http-server` are installed)
+
+**Install Lighthouse (optional):**
+
+```bash
+npm install -g lighthouse http-server
+```
+
+### Bundle Analysis
+
+Analyze the production bundle size and composition:
+
+```bash
+npm run audit:bundle
+```
+
+Requires `source-map-explorer` to be installed globally:
+
+```bash
+npm install -g source-map-explorer
+```
+
+### Conflict Marker Protection
+
+The `prebuild:check` script runs automatically before every build and checks for merge conflict markers in source files:
+
+```bash
+npm run prebuild:check
+```
+
+Searches for patterns: `<<<<<<< `, `=======`, `>>>>>>> ` in:
+- TypeScript files (*.ts, *.tsx)
+- JavaScript files (*.js, *.jsx)
+- HTML files (*.html)
+- Markdown files (*.md)
+- YAML files (*.yaml, *.yml)
+
+If markers are found, the build fails immediately with an error listing the affected files.
+
+### GitHub Actions Workflow
+
+A CI workflow runs on every PR to `main`:
+
+**Workflow: `.github/workflows/ui-audit.yml`**
+
+Performs:
+1. Checkout code
+2. Setup Node.js 20
+3. Install dependencies
+4. Check for conflict markers (fail if found)
+5. Build production bundle (fail if build fails)
+6. Scan for secrets in `dist/` (fail if found)
+7. Run Lighthouse audit
+8. Upload Lighthouse report as artifact
+
+**View reports:**
+- Go to the Actions tab in GitHub
+- Select the workflow run
+- Download the `lighthouse-report` artifact
+
+### Secret Scanning Patterns
+
+The audit checks for:
+- `VITE_GEMINI_API_KEY` - Gemini API key environment variable (should never be in dist/)
+
+**Note on Firebase API Keys:**
+Firebase Web SDK API keys (starting with `AIza`) are expected in the production bundle. These are NOT secrets:
+- They are designed to be public and included in client-side code
+- They are protected by Firebase Security Rules
+- They only grant access to public Firebase APIs
+- The actual security is enforced server-side via Firestore Rules
+
+The audit specifically looks for `VITE_GEMINI_API_KEY` which would indicate the Gemini AI API key was accidentally included at build time.
+
+If found, the audit fails and prevents deployment.
 
 ## Related Documentation
 

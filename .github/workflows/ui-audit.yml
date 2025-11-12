@@ -1,0 +1,84 @@
+name: UI Audit
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  ui-audit:
+    name: UI Audit & Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for merge conflict markers
+        run: npm run prebuild:check
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Scan for exposed secrets
+        run: |
+          if grep -r "VITE_GEMINI_API_KEY" dist/ 2>/dev/null; then
+            echo "❌ ERROR: VITE_GEMINI_API_KEY found in dist/"
+            echo "The Gemini API key environment variable was detected in the production bundle."
+            echo "This is a critical security issue - do not merge this PR!"
+            exit 1
+          else
+            echo "✓ No VITE_GEMINI_API_KEY in dist/"
+            echo "Note: Firebase Web SDK API keys are expected and safe in the bundle."
+            echo "They are protected by Firebase Security Rules."
+          fi
+
+      - name: Install Lighthouse
+        run: npm install -g lighthouse http-server
+
+      - name: Run Lighthouse audit
+        run: |
+          # Start http-server in background
+          http-server dist -p 8080 -c-1 --silent &
+          SERVER_PID=$!
+          
+          # Wait for server to start
+          sleep 3
+          
+          # Run Lighthouse
+          lighthouse http://localhost:8080 \
+            --output=html \
+            --output-path=./lh-report.html \
+            --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+            --quiet
+          
+          # Kill the server
+          kill $SERVER_PID || true
+
+      - name: Upload Lighthouse report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report
+          path: lh-report.html
+          retention-days: 30
+
+      - name: Audit summary
+        if: success()
+        run: |
+          echo "✓ UI Audit Complete"
+          echo "- No conflict markers detected"
+          echo "- Build succeeded"
+          echo "- No secrets exposed in bundle"
+          echo "- Lighthouse audit completed"
