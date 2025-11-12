@@ -345,3 +345,4 @@ The following automated guards are in place to prevent issues:
 - [DEV_NOTES.md](./docs/DEV_NOTES.md) - Secret management and local development
 - [DOCKER_BUILD_NOTES.md](./DOCKER_BUILD_NOTES.md) - Docker build troubleshooting
 - [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md) - Deployment procedures
+
