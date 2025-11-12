@@ -2,15 +2,13 @@
 # Stage 1: Build the application
 FROM node:20-alpine AS builder
 
-# Set build arguments for version info
+# Set build arguments for version info (no API keys)
 ARG COMMIT_SHA=unknown
 ARG BUILD_TIME=unknown
-ARG VITE_GEMINI_API_KEY
 
 # Expose as environment variables for Vite to access during build
 ENV VITE_APP_COMMIT_SHA=$COMMIT_SHA
 ENV VITE_APP_BUILD_TIME=$BUILD_TIME
-ENV VITE_GEMINI_API_KEY=$VITE_GEMINI_API_KEY
 
 # Set working directory
 WORKDIR /app
@@ -33,6 +31,9 @@ RUN npm run build
 
 # Stage 2: Production runtime with Node.js
 FROM node:20-alpine
+
+# Set NODE_ENV to production
+ENV NODE_ENV=production
 
 # Set working directory
 WORKDIR /app
