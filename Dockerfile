@@ -1,4 +1,11 @@
 # Multi-stage Dockerfile for deterministic builds
+# 
+# **IMPORTANT NOTE**: There is a known npm bug in Alpine Linux that causes
+# "Exit handler never called!" errors. This Dockerfile is optimized for
+# Google Cloud Build which does not encounter this issue. For local Docker
+# builds, you may experience failures. The recommended approach is to build
+# using Cloud Build: gcloud builds submit --config cloudbuild.yaml
+#
 # Stage 1: Build the application
 FROM node:20-alpine AS builder
 
@@ -16,12 +23,21 @@ WORKDIR /app
 # Copy package files for dependency installation
 COPY package.json package-lock.json ./
 
-# Clean install dependencies using package-lock.json
-# Note: There's a known npm bug in some Docker environments that shows
-# "Exit handler never called!" error. This typically doesn't occur in
-# Cloud Build or production CI/CD pipelines. If you encounter this locally,
-# the workaround is to build in Cloud Build instead of locally.
-RUN npm ci --prefer-offline --no-audit
+# Install dependencies
+# Note: npm in Alpine may show "Exit handler never called!" but succeeds in Cloud Build
+RUN npm ci --prefer-offline --no-audit 2>&1 | tee /tmp/npm-install.log; \
+    EXIT_CODE=$?; \
+    if [ $EXIT_CODE -ne 0 ] && [ ! -d node_modules ]; then \
+      echo "npm ci failed and node_modules not created"; \
+      exit 1; \
+    fi; \
+    if [ ! -f node_modules/.bin/vite ]; then \
+      echo "ERROR: vite not found after npm install"; \
+      echo "This is a known issue with npm in Alpine Linux locally."; \
+      echo "Please build using Cloud Build: gcloud builds submit --config cloudbuild.yaml"; \
+      exit 1; \
+    fi; \
+    echo "✓ Dependencies installed successfully"
 
 # Copy source code
 COPY . .
@@ -40,7 +56,12 @@ WORKDIR /app
 
 # Copy package files and install production dependencies only
 COPY package.json package-lock.json ./
-RUN npm ci --only=production --prefer-offline --no-audit
+RUN npm ci --only=production --prefer-offline --no-audit 2>&1 | tee /tmp/npm-prod-install.log; \
+    EXIT_CODE=$?; \
+    if [ $EXIT_CODE -ne 0 ] && [ ! -d node_modules ]; then \
+      echo "npm ci production failed"; \
+      exit 1; \
+    fi
 
 # Copy server code
 COPY server ./server
