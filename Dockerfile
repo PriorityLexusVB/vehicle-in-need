@@ -42,6 +42,9 @@ RUN npm ci --prefer-offline --no-audit 2>&1 | tee /tmp/npm-install.log; \
 # Copy source code
 COPY . .
 
+# Run prebuild check for conflict markers (fail fast if present)
+RUN npm run prebuild
+
 # Build the application with version info
 RUN npm run build
 
