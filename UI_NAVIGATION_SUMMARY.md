@@ -1,9 +1,6 @@
-<<<<<<< HEAD
 <!-- markdownlint-disable MD013 -->
 <!-- Long lines intentional for UI descriptions and formatting consistency -->
 
-=======
->>>>>>> feat/admin-hardening-docs
 # UI Navigation Summary
 
 ## Header Layout (Manager View)

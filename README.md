@@ -23,7 +23,6 @@ View your app in AI Studio: [AI Studio App](https://ai.studio/apps/drive/1XrFhCI
 - 🔗 Deep linking support (e.g., `#settings` for direct access)
 - 🔒 **Secure architecture** with no client-side API keys
 
-<<<<<<< HEAD
 ## Role-Based Access Control
 
 The application provides distinct experiences for two user roles:
@@ -151,8 +150,6 @@ The script attempts to match orders to users by salesperson name and provides a 
 
 See the [full migration guide](docs/dev/order-owner-migration.md) for detailed workflow, troubleshooting, and manual remediation steps.
 
-=======
->>>>>>> feat/admin-hardening-docs
 ## Architecture
 
 ### AI Email Generation - Dual Mode Support
@@ -394,6 +391,29 @@ When deploying to Google Cloud Run:
    - Provides health check at `/health` for Cloud Run
 
 **Recommended:** Use server-side Vertex AI proxy for production (no API key needed). The client-side option is available for development/testing.
+
+### Selecting the Correct Container Image
+
+When deploying or updating the Cloud Run service via the Cloud Console, ensure you select the correct image from Artifact Registry:
+
+**✅ Correct image path:**
+```
+us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:<TAG>
+```
+
+**❌ Avoid legacy path:**
+```
+us-west1-docker.pkg.dev/gen-lang-client-0615287333/cloud-run-source-deploy/...
+```
+
+The `cloud-run-source-deploy` directory contains deprecated images from legacy deployments. Always use the main repository path for current deployments.
+
+**Finding the correct image:**
+1. In Cloud Run console, click "Edit & Deploy New Revision"
+2. Select "Container Image URL"
+3. Click "Select" to browse Artifact Registry
+4. Navigate to: `gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker`
+5. Choose the desired tag (typically the latest commit SHA)
 
 ### Environment Variables (Optional)
 
@@ -687,7 +707,6 @@ See [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md) for comprehensive deplo
 
 The application includes automated tests to ensure code quality and functionality.
 
-<<<<<<< HEAD
 ### Firestore Rules Tests
 
 Security rules tests validate the Firestore security rules using the Firebase emulator:
@@ -709,8 +728,6 @@ npm run test:rules:watch    # Run in watch mode
 
 **Test files:** `tests/firestore-rules/**/*.test.ts`
 
-=======
->>>>>>> feat/admin-hardening-docs
 ### Unit Tests
 
 Unit tests are written using Vitest and Testing Library. They cover critical components:
@@ -853,6 +870,35 @@ npm run test:e2e
 - `npm run lint:fix` - Auto-fix ESLint issues where possible
 - `npm run lint:md` - Run markdownlint on all markdown files
 - `npm run lint:md:fix` - Auto-fix markdown formatting issues
+
+### UI Audit & Security Workflow
+
+The repository includes an automated UI audit workflow (`.github/workflows/ui-audit.yml`) that runs on every PR to `main`:
+
+**Checks performed:**
+- ✅ Merge conflict marker detection (prevents builds with unresolved conflicts)
+- ✅ Production build verification
+- ✅ Secret scanning (ensures no API keys in `dist/`)
+- ✅ Lighthouse performance and accessibility audit
+
+**Run locally:**
+
+```bash
+# Full UI audit (includes secret scan + optional Lighthouse)
+npm run audit:ui
+
+# Or individual checks
+npm run prebuild:check  # Check for conflict markers
+npm run build           # Build production bundle
+npm run audit:bundle    # Analyze bundle size (requires source-map-explorer)
+```
+
+**View Lighthouse reports:**
+1. Go to Actions tab in GitHub
+2. Select a UI Audit workflow run
+3. Download the `lighthouse-report` artifact
+
+For more details, see [docs/DEV_NOTES.md](./docs/DEV_NOTES.md#automated-ui-audit--merge-marker-guard).
 
 **Testing with data-testid:**
 
@@ -1020,7 +1066,6 @@ For comprehensive role UI documentation, see [docs/role-ui-examples.md](./docs/r
 
 ## Development Notes
 
-<<<<<<< HEAD
 ### Developer Documentation
 
 Comprehensive guides for development, testing, and Git workflows:
@@ -1029,8 +1074,6 @@ Comprehensive guides for development, testing, and Git workflows:
 - **[Order Owner Migration](docs/dev/order-owner-migration.md)** - Backfill legacy orders with owner information
 - **[Branching Policy](docs/dev/branching-policy.md)** - Git workflow, branch hygiene, and squash merge guidelines
 
-=======
->>>>>>> feat/admin-hardening-docs
 ### Routing Structure
 
 The app uses React Router with HashRouter for client-side routing:
