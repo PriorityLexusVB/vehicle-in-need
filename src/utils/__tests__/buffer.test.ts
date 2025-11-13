@@ -4,6 +4,7 @@ describe("Buffer polyfill", () => {
   it("exists on global and can encode/decode", () => {
     // Ensure global Buffer is available in the test environment
     // @ts-expect-error - Buffer is injected by polyfill in Vitest
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const B: typeof Buffer | undefined = (globalThis as any).Buffer;
     expect(B).toBeDefined();
 
