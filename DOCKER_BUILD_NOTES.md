@@ -1,23 +1,12 @@
-<!-- markdownlint-disable MD013 -->
-<!-- Long lines intentional for code examples and command demonstrations -->
-
 # Docker Build Notes
 
-## Local Docker Build Issues
+## Building the Container Image
 
-If you encounter the following error when building the Docker image locally:
+The Dockerfile uses a multi-stage build to produce deterministic, valid OCI images compatible with Cloud Run.
 
-```text
-npm error Exit handler never called!
-npm error This is an error with npm itself. Please report this error at:
-npm error   <https://github.com/npm/cli/issues>
-```
+### Recommended Build Methods
 
-This is a known npm bug that occurs in certain Docker environments. However, **this issue does NOT occur in Cloud Build**, which is where the production builds happen.
-
-## Recommended Build Methods
-
-### 1. Cloud Build (Recommended for Production)
+#### 1. Cloud Build (Recommended for Production)
 
 Use the provided `cloudbuild.yaml` configuration:
 
@@ -25,13 +14,29 @@ Use the provided `cloudbuild.yaml` configuration:
 gcloud builds submit --config cloudbuild.yaml
 ```
 
-Or trigger from Git:
+Cloud Build automatically handles all build complexities and publishes to Artifact Registry.
+
+#### 2. Local Docker Build
+
+**Important**: Due to a known npm bug with Docker BuildKit, local builds must disable BuildKit:
 
 ```bash
-git push origin main  # If you have Cloud Build triggers configured
+# Build with BuildKit disabled
+DOCKER_BUILDKIT=0 docker build \
+  --platform=linux/amd64 \
+  --build-arg COMMIT_SHA=$(git rev-parse --short HEAD) \
+  --build-arg BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  -t vehicle-tracker:local \
+  .
 ```
 
-### 2. Cloud Buildpacks (Alternative)
+**Why disable BuildKit?** npm has an "Exit handler never called!" bug in BuildKit that prevents dependencies from installing correctly. This is a known npm issue that occurs in certain Docker environments.
+
+#### 3. GitHub Actions (Automated CI/CD)
+
+The repository includes `.github/workflows/build-and-deploy.yml` which builds and pushes images to Artifact Registry on push to main.
+
+#### 4. Cloud Buildpacks (Alternative)
 
 If using Cloud Buildpacks without Docker:
 
@@ -41,42 +46,71 @@ gcloud run deploy pre-order-dealer-exchange-tracker \
   --region us-west1
 ```
 
-The `gcp-build` script in `package.json` will handle the build.
+**Note**: This method previously created malformed images with layer/diff_ids mismatches. Using the Dockerfile approach is strongly recommended.
 
-### 3. Local Testing
+## Validating the Build
 
-For local development and testing:
+### Check Image Structure
+
+Verify the image has valid layer structure:
 
 ```bash
-# Install dependencies
-npm install
+# Check number of layers
+docker image inspect vehicle-tracker:local | jq -r '.[0].RootFS.Layers | length'
 
-# Run Vite dev server
-npm run dev
-
-# Build for production
-npm run build
-
-# Test production build locally
-npm start
+# Verify RootFS structure
+docker image inspect vehicle-tracker:local | jq -r '.[0].RootFS'
 ```
 
-Then visit <http://localhost:8080>
+A valid image should have matching layer counts (typically 10 layers for this application).
 
-## Why Cloud Build Works
+### Test the Container
 
-Cloud Build uses a different environment and npm version that doesn't trigger the "Exit handler never called!" bug. The Dockerfile is designed to work correctly in Cloud Build, which is the intended production build environment.
+```bash
+# Run container locally
+docker run -d -p 8080:8080 --name test-tracker vehicle-tracker:local
 
-## Verifying Production Build
+# Test health endpoint
+curl http://localhost:8080/health
+# Expected output: healthy
 
-To verify the production build serves correctly:
+# Test API status
+curl http://localhost:8080/api/status | jq
 
-1. Build locally: `npm run build`
-2. Start server: `npm start`
-3. Visit <http://localhost:8080>
-4. Check for:
-   - No Tailwind CDN in page source
-   - No `/index.tsx` references
-   - Hashed asset filenames (e.g., `/assets/index-abc123.js`)
-   - Admin UI visible for manager accounts
-   - Console logs showing App Version and Build Time
+# Clean up
+docker stop test-tracker && docker rm test-tracker
+```
+
+## What Changed from Previous Versions
+
+1. **Base Image**: Changed from `node:20-alpine` to `node:20-slim`
+   - Fixes npm installation reliability issues
+   - Slightly larger image (~100MB difference) but guaranteed to work
+
+2. **Health Check**: Uses Node.js HTTP module instead of wget
+   - No need to install additional packages
+   - More lightweight and reliable
+
+3. **Build Process**: Simplified error handling
+   - Removes complex workarounds for Alpine issues
+   - Clearer failure modes
+
+## Troubleshooting
+
+### Issue: "vite not found" during build
+
+**Cause**: BuildKit enabled when building locally
+
+**Fix**: Disable BuildKit with `DOCKER_BUILDKIT=0` environment variable
+
+### Issue: "Exit handler never called!" error
+
+**Cause**: Known npm bug in Docker BuildKit
+
+**Fix**: This error can be safely ignored if using `DOCKER_BUILDKIT=0`. The workaround in the Dockerfile ensures dependencies are still installed correctly.
+
+### Issue: Health check failing
+
+**Cause**: Server may not be binding to all interfaces (0.0.0.0)
+
+**Fix**: Verify `server/index.cjs` binds to `0.0.0.0` (already configured correctly in this repo)

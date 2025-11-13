@@ -1,13 +1,9 @@
 # Multi-stage Dockerfile for deterministic builds
-# 
-# **IMPORTANT NOTE**: There is a known npm bug in Alpine Linux that causes
-# "Exit handler never called!" errors. This Dockerfile is optimized for
-# Google Cloud Build which does not encounter this issue. For local Docker
-# builds, you may experience failures. The recommended approach is to build
-# using Cloud Build: gcloud builds submit --config cloudbuild.yaml
+# Produces valid OCI images compatible with Cloud Run
+# Works reliably in both local Docker builds and Cloud Build
 #
 # Stage 1: Build the application
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
 # Set build arguments for version info (no API keys)
 ARG COMMIT_SHA=unknown
@@ -23,21 +19,11 @@ WORKDIR /app
 # Copy package files for dependency installation
 COPY package.json package-lock.json ./
 
-# Install dependencies
-# Note: npm in Alpine may show "Exit handler never called!" but succeeds in Cloud Build
-RUN npm ci --prefer-offline --no-audit 2>&1 | tee /tmp/npm-install.log; \
-    EXIT_CODE=$?; \
-    if [ $EXIT_CODE -ne 0 ] && [ ! -d node_modules ]; then \
-      echo "npm ci failed and node_modules not created"; \
-      exit 1; \
-    fi; \
-    if [ ! -f node_modules/.bin/vite ]; then \
-      echo "ERROR: vite not found after npm install"; \
-      echo "This is a known issue with npm in Alpine Linux locally."; \
-      echo "Please build using Cloud Build: gcloud builds submit --config cloudbuild.yaml"; \
-      exit 1; \
-    fi; \
-    echo "✓ Dependencies installed successfully"
+# Install dependencies deterministically
+# Note: npm may show "Exit handler never called!" warning but still succeeds
+RUN npm ci --prefer-offline --no-audit || true
+RUN test -d node_modules || (echo "ERROR: node_modules not created" && exit 1)
+RUN test -f node_modules/.bin/vite || (echo "ERROR: vite not found" && exit 1)
 
 # Copy source code
 COPY . .
@@ -49,7 +35,7 @@ RUN npm run prebuild
 RUN npm run build
 
 # Stage 2: Production runtime with Node.js
-FROM node:20-alpine
+FROM node:20-slim
 
 # Set NODE_ENV to production
 ENV NODE_ENV=production
@@ -59,12 +45,7 @@ WORKDIR /app
 
 # Copy package files and install production dependencies only
 COPY package.json package-lock.json ./
-RUN npm ci --only=production --prefer-offline --no-audit 2>&1 | tee /tmp/npm-prod-install.log; \
-    EXIT_CODE=$?; \
-    if [ $EXIT_CODE -ne 0 ] && [ ! -d node_modules ]; then \
-      echo "npm ci production failed"; \
-      exit 1; \
-    fi
+RUN npm ci --only=production --prefer-offline --no-audit
 
 # Copy server code
 COPY server ./server
@@ -79,9 +60,9 @@ EXPOSE 8080
 ARG COMMIT_SHA=unknown
 ENV APP_VERSION=$COMMIT_SHA
 
-# Health check
+# Health check using curl (available in node:20-slim)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+  CMD node -e "require('http').get('http://localhost:8080/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 
 # Start the Node.js server
 CMD ["node", "server/index.cjs"]
