@@ -1,11 +1,11 @@
 # Multi-stage Dockerfile for Cloud Build
 # Produces valid OCI images with proper layer/diff_ids alignment
 #
-# Uses node:20-slim for better npm reliability compared to Alpine.
-# Optimized for Google Cloud Build environment.
+# This Dockerfile is optimized for Google Cloud Build environment.
+# Local Docker builds may encounter npm issues - use Cloud Build for production.
 #
 # Stage 1: Build the application
-FROM node:20-slim AS builder
+FROM node:20-alpine AS builder
 
 # Set build arguments for version info (no API keys)
 ARG COMMIT_SHA=unknown
@@ -36,7 +36,7 @@ RUN npm run prebuild
 RUN npm run build
 
 # Stage 2: Production runtime with Node.js
-FROM node:20-slim
+FROM node:20-alpine
 
 # Set NODE_ENV to production
 ENV NODE_ENV=production
@@ -63,9 +63,9 @@ EXPOSE 8080
 ARG COMMIT_SHA=unknown
 ENV APP_VERSION=$COMMIT_SHA
 
-# Health check using curl (available in node:20-slim)
+# Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:8080/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 
 # Start the Node.js server
 CMD ["node", "server/index.cjs"]
