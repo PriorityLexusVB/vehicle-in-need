@@ -26,7 +26,7 @@ Trivy runs automatically on every build in the `build-and-deploy.yml` workflow:
 
 ```yaml
 - name: Run Trivy vulnerability scanner
-  uses: aquasecurity/trivy-action@master
+  uses: aquasecurity/trivy-action@0.28.0
   with:
     image-ref: ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.sha_short }}
     format: 'sarif'
@@ -221,7 +221,7 @@ To make the build fail on critical vulnerabilities, update `.github/workflows/bu
 
 ```yaml
 - name: Run Trivy vulnerability scanner
-  uses: aquasecurity/trivy-action@master
+  uses: aquasecurity/trivy-action@0.28.0
   with:
     image-ref: ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.sha_short }}
     format: 'sarif'

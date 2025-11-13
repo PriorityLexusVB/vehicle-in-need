@@ -131,7 +131,7 @@ jobs:
           exit 1
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           image-ref: ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.sha_short }}
           format: 'sarif'
@@ -147,14 +147,14 @@ jobs:
           category: 'container-security'
 
       - name: Run Trivy vulnerability scanner (table output)
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           image-ref: ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.sha_short }}
           format: 'table'
           severity: 'CRITICAL,HIGH,MEDIUM'
 
       - name: Generate SBOM with Syft
-        uses: anchore/sbom-action@v0
+        uses: anchore/sbom-action@v0.17.2
         with:
           image: ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.sha_short }}
           format: 'spdx-json'
