@@ -22,7 +22,9 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 # Install dependencies (optimized for Cloud Build)
-RUN npm ci --prefer-offline --no-audit 2>&1 || npm install --prefer-offline --no-audit
+RUN set -ex && \
+    (npm ci --prefer-offline --no-audit 2>&1 && echo "✓ npm ci succeeded") || \
+    (echo "⚠ npm ci failed, trying npm install..." && npm install --prefer-offline --no-audit && echo "✓ npm install succeeded")
 
 # Copy source code
 COPY . .
@@ -31,7 +33,7 @@ COPY . .
 RUN npm run prebuild
 
 # Build the application with version info
-RUN npm run build 2>&1 || /app/node_modules/.bin/vite build
+RUN npm run build
 
 # Stage 2: Production runtime with Node.js
 FROM node:20-alpine
@@ -44,7 +46,9 @@ WORKDIR /app
 
 # Copy package files and install production dependencies only
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --prefer-offline --no-audit 2>&1 || npm install --omit=dev --prefer-offline --no-audit
+RUN set -ex && \
+    (npm ci --omit=dev --prefer-offline --no-audit 2>&1 && echo "✓ npm ci succeeded") || \
+    (echo "⚠ npm ci failed, trying npm install..." && npm install --omit=dev --prefer-offline --no-audit && echo "✓ npm install succeeded")
 
 # Copy server code
 COPY server ./server
