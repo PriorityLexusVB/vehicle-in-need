@@ -1,6 +1,8 @@
-# Multi-stage Dockerfile for deterministic builds
-# Produces valid OCI images compatible with Cloud Run
-# Works reliably in both local Docker builds and Cloud Build
+# Multi-stage Dockerfile for Cloud Build
+# Produces valid OCI images with proper layer/diff_ids alignment
+#
+# Uses node:20-slim for better npm reliability compared to Alpine.
+# Optimized for Google Cloud Build environment.
 #
 # Stage 1: Build the application
 FROM node:20-slim AS builder
@@ -19,11 +21,10 @@ WORKDIR /app
 # Copy package files for dependency installation
 COPY package.json package-lock.json ./
 
-# Install dependencies deterministically
-# Note: npm may show "Exit handler never called!" warning but still succeeds
-RUN npm ci --prefer-offline --no-audit || true
-RUN test -d node_modules || (echo "ERROR: node_modules not created" && exit 1)
-RUN test -f node_modules/.bin/vite || (echo "ERROR: vite not found" && exit 1)
+# Install dependencies (optimized for Cloud Build)
+RUN set -ex && \
+    (npm ci --prefer-offline --no-audit 2>&1 && echo "✓ npm ci succeeded") || \
+    (echo "⚠ npm ci failed, trying npm install..." && npm install --prefer-offline --no-audit && echo "✓ npm install succeeded")
 
 # Copy source code
 COPY . .
@@ -45,7 +46,9 @@ WORKDIR /app
 
 # Copy package files and install production dependencies only
 COPY package.json package-lock.json ./
-RUN npm ci --only=production --prefer-offline --no-audit
+RUN set -ex && \
+    (npm ci --omit=dev --prefer-offline --no-audit 2>&1 && echo "✓ npm ci succeeded") || \
+    (echo "⚠ npm ci failed, trying npm install..." && npm install --omit=dev --prefer-offline --no-audit && echo "✓ npm install succeeded")
 
 # Copy server code
 COPY server ./server
