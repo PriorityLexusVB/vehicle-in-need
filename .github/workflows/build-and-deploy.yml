@@ -37,6 +37,7 @@ env:
 permissions:
   contents: read
   id-token: write  # Required for Workload Identity Federation
+  security-events: write  # Required for uploading Trivy SARIF results
 
 jobs:
   build-and-push:
@@ -129,6 +130,51 @@ jobs:
           docker rm test-container || true
           exit 1
 
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.sha_short }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'  # Don't fail the build, just report
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+          category: 'container-security'
+
+      - name: Run Trivy vulnerability scanner (table output)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.sha_short }}
+          format: 'table'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Generate SBOM with Syft
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.sha_short }}
+          format: 'spdx-json'
+          output-file: 'sbom.spdx.json'
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ steps.meta.outputs.sha_short }}
+          path: sbom.spdx.json
+          retention-days: 90
+
+      - name: Scan SBOM with Grype
+        uses: anchore/scan-action@v4
+        id: grype-scan
+        with:
+          sbom: 'sbom.spdx.json'
+          fail-build: false
+          severity-cutoff: high
+
       - name: Push image to Artifact Registry
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
@@ -166,6 +212,12 @@ jobs:
           echo "- **Commit SHA**: ${{ steps.meta.outputs.sha_short }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Build Time**: ${{ steps.meta.outputs.build_time }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Image**: \`${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.sha_short }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Security Scanning" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trivy Scan**: Completed (check Security tab for details)" >> $GITHUB_STEP_SUMMARY
+          echo "- **SBOM**: Generated and uploaded as artifact" >> $GITHUB_STEP_SUMMARY
+          echo "- **Grype Scan**: Completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           
           if [ "${{ github.event_name }}" == "push" ] && [ "${{ github.ref }}" == "refs/heads/main" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY

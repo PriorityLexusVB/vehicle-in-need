@@ -9,16 +9,21 @@ The application uses a multi-stage Dockerfile that produces valid OCI images com
 ## Architecture
 
 ```
-Source Code → Docker Build → Artifact Registry → Cloud Run
-                    ↓
-              Validation (layer structure, health check)
+Source Code → Docker Build → Security Scanning → Artifact Registry → Cloud Run
+                     ↓              ↓
+               Validation     (Trivy, SBOM, Grype)
+             (layer structure,
+              health check)
 ```
 
 **Key Components:**
 - **Dockerfile**: Multi-stage build using `node:20-slim`
-- **GitHub Actions**: Automated build and push on commits to main
+- **GitHub Actions**: Automated build, security scanning, and push on commits to main
 - **Cloud Build**: Alternative build method using `cloudbuild.yaml`
 - **Artifact Registry**: `us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker`
+- **Security Scanning**: Trivy vulnerability scanning, Syft SBOM generation, Grype analysis
+
+> **Note**: For detailed information about security scanning, see [SECURITY_SCANNING.md](./SECURITY_SCANNING.md)
 
 ## Building the Container
 
@@ -40,9 +45,11 @@ GCP_SA_KEY: <service account JSON key>
 ```
 
 **Workflow Behavior:**
-- **On PRs**: Builds and validates image (does not push)
-- **On push to main**: Builds, validates, and pushes to Artifact Registry
+- **On PRs**: Builds, validates, and runs security scans (does not push)
+- **On push to main**: Builds, validates, runs security scans, and pushes to Artifact Registry
 - **Tags**: Creates both `:latest` and `:COMMIT_SHA` tags
+- **Security**: Runs Trivy vulnerability scanning, generates SBOM with Syft, and runs Grype analysis
+- **Artifacts**: Uploads SBOM as build artifact (retained for 90 days)
 
 See `.github/workflows/build-and-deploy.yml` for details.
 

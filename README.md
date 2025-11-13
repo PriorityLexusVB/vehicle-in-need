@@ -947,6 +947,56 @@ Manager/user role tests are skipped until an authentication harness is implement
 - Add visual regression testing
 - Implement quality gate summary artifact (JSON/markdown report)
 
+### Container Security Scanning
+
+The container build pipeline (`.github/workflows/build-and-deploy.yml`) includes comprehensive security scanning:
+
+**Security Tools:**
+
+- **Trivy** - Vulnerability scanner for OS packages and application dependencies
+  - Scans for CRITICAL and HIGH severity CVEs
+  - Results uploaded to GitHub Security tab
+  - Provides table output in workflow logs
+  
+- **Syft** - Generates Software Bill of Materials (SBOM)
+  - SPDX JSON format
+  - Uploaded as build artifact (90-day retention)
+  - Provides complete dependency inventory
+  
+- **Grype** - Vulnerability scanner that analyzes the SBOM
+  - Cross-references multiple vulnerability databases
+  - Fast scanning performance
+  - Non-blocking (reports but doesn't fail builds)
+
+**Security Workflow:**
+
+```
+Build → Test → Trivy Scan → SBOM Generation → Grype Scan → Push (if main)
+                    ↓            ↓                ↓
+              GitHub Security  Artifact       Workflow Logs
+```
+
+**View Security Results:**
+
+1. **GitHub Security Tab**: Navigate to Security → Code scanning alerts → Filter by "container-security"
+2. **Workflow Artifacts**: Download SBOM from Actions tab → Workflow run → Artifacts
+3. **Workflow Logs**: View detailed scan results in the build logs
+
+**Local Security Scanning:**
+
+```bash
+# Install tools (macOS/Linux)
+brew install trivy syft grype
+
+# Build and scan image
+docker build -t myimage:test .
+trivy image myimage:test
+syft myimage:test -o spdx-json > sbom.json
+grype sbom:sbom.json
+```
+
+For detailed information about security scanning, see [SECURITY_SCANNING.md](./SECURITY_SCANNING.md).
+
 ## Manager Features
 
 Users designated as managers can:
