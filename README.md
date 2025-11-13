@@ -397,23 +397,56 @@ When deploying to Google Cloud Run:
 When deploying or updating the Cloud Run service via the Cloud Console, ensure you select the correct image from Artifact Registry:
 
 **✅ Correct image path:**
-```
+
+```text
 us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:<TAG>
 ```
 
 **❌ Avoid legacy path:**
-```
+
+```text
 us-west1-docker.pkg.dev/gen-lang-client-0615287333/cloud-run-source-deploy/...
 ```
 
 The `cloud-run-source-deploy` directory contains deprecated images from legacy deployments. Always use the main repository path for current deployments.
 
+**Note:** Previous deployments using `gcloud run deploy --source` may have created invalid OCI images (manifest layer/diff_ids mismatch). The new deployment pipeline ensures proper image structure.
+
 **Finding the correct image:**
+
 1. In Cloud Run console, click "Edit & Deploy New Revision"
 2. Select "Container Image URL"
 3. Click "Select" to browse Artifact Registry
 4. Navigate to: `gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker`
 5. Choose the desired tag (typically the latest commit SHA)
+
+### Automated CI/CD with GitHub Actions
+
+The repository includes a GitHub Actions workflow (`.github/workflows/build-and-deploy.yml`) that automates container builds:
+
+**On push to main:**
+
+- Validates build configuration
+- Builds Docker image via Cloud Build
+- Pushes to Artifact Registry with git SHA tag
+- Validates image structure
+- Generates deployment command
+
+**On pull requests:**
+
+- Validates build configuration only (no build/push)
+
+**Manual deployment:**
+
+- Use workflow_dispatch to build and optionally deploy
+
+**Prerequisites:**
+
+- Configure GitHub secrets for Workload Identity Federation:
+  - `GCP_WORKLOAD_IDENTITY_PROVIDER`
+  - `GCP_SERVICE_ACCOUNT`
+
+See [DOCKER_BUILD_NOTES.md](./DOCKER_BUILD_NOTES.md) for detailed build and deployment procedures.
 
 ### Environment Variables (Optional)
 

@@ -6,7 +6,8 @@
 ## Cloud Run Deployment Fix
 
 **Issue**: Previous Cloud Run deployment failed with error:
-```
+
+```text
 got 1 Manifest.Layers vs 0 ConfigFile.RootFS.DiffIDs
 ```
 
@@ -25,7 +26,8 @@ The primary build pipeline is automated via GitHub Actions:
 - **Manual deployment**: Use workflow_dispatch with `deploy: true` to deploy after build
 
 Image location:
-```
+
+```text
 us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:<sha>
 ```
 
@@ -38,6 +40,7 @@ gcloud builds submit --config cloudbuild.yaml
 ```
 
 This will:
+
 1. Check for merge conflict markers
 2. Build the Docker image with proper build args
 3. Push to Artifact Registry with SHA tag and `latest` tag
@@ -129,7 +132,8 @@ To verify the production build serves correctly:
 
 **Symptom**: Cloud Run deployment fails with layer/diff_ids error
 
-**Solution**: 
+**Solution**:
+
 1. Don't use `gcloud run deploy --source` (creates ephemeral images)
 2. Always build via Cloud Build (`cloudbuild.yaml`) or GitHub Actions workflow
 3. Deploy using explicit `--image` flag with Artifact Registry path
@@ -137,18 +141,21 @@ To verify the production build serves correctly:
 ### Build succeeds but deployment fails
 
 **Check**:
+
 1. Verify image exists in Artifact Registry: `gcloud artifacts docker images list us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need`
-2. Inspect image structure: `docker inspect <image>` 
+2. Inspect image structure: `docker inspect <image>`
 3. Check Cloud Run logs for startup errors
 
 ### Need to rollback deployment
 
 List previous revisions:
+
 ```bash
 gcloud run revisions list --service=pre-order-dealer-exchange-tracker --region=us-west1
 ```
 
 Roll back to previous revision:
+
 ```bash
 gcloud run services update-traffic pre-order-dealer-exchange-tracker \
   --region=us-west1 \
