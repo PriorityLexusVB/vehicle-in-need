@@ -1,3 +1,6 @@
+<!-- markdownlint-disable MD013 -->
+<!-- Long lines intentional for command examples, URLs, and comprehensive deployment instructions -->
+
 # Vehicle-In-Need — Cloud Run Container Deploy Runbook
 
 This app deploys to Cloud Run via Cloud Build using the Dockerfile in the repo. Static assets are built into the image; no GCS volumes are mounted at runtime.
@@ -191,6 +194,60 @@ gcloud builds submit \
   --project=gen-lang-client-0615287333 \
   --region=us-west1
 ```
+
+### Manual Image Selection via Cloud Console
+
+When deploying or updating the Cloud Run service via the Cloud Console, ensure you select the correct image from Artifact Registry:
+
+**✅ Correct image path:**
+
+```
+us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:<TAG>
+```
+
+**❌ Avoid legacy path:**
+
+```
+us-west1-docker.pkg.dev/gen-lang-client-0615287333/cloud-run-source-deploy/...
+```
+
+**Why this matters:** The `cloud-run-source-deploy` directory contains deprecated images from legacy deployments. Always use the main repository path (`vehicle-in-need/pre-order-dealer-exchange-tracker`) for current deployments.
+
+**Finding the correct image in Cloud Console:**
+
+1. In Cloud Run console, click "Edit & Deploy New Revision"
+2. Select "Container Image URL"
+3. Click "Select" to browse Artifact Registry
+4. Navigate to: `gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker`
+5. Choose the desired tag (typically the latest commit SHA or use `latest`)
+
+**Verify secret injection after manual deployment:**
+
+After deploying manually via the console, verify that secrets are properly configured:
+
+```bash
+# Check that secrets are injected via Secret Manager (not plaintext)
+gcloud run services describe pre-order-dealer-exchange-tracker \
+  --region=us-west1 \
+  --project=gen-lang-client-0615287333 \
+  --format='json(spec.template.spec.containers[0].env)'
+```
+
+**Expected output:** You should see `valueSource.secretKeyRef` for the `API_KEY` environment variable, NOT plaintext values:
+
+```json
+{
+  "name": "API_KEY",
+  "valueFrom": {
+    "secretKeyRef": {
+      "key": "latest",
+      "name": "vehicle-in-need-gemini"
+    }
+  }
+}
+```
+
+If you see plaintext values instead of `secretKeyRef`, the secrets are not properly configured and should be updated using the `--update-secrets` flag.
 
 ### Deploying with Secret Manager Integration
 
