@@ -1,8 +1,8 @@
 # Multi-stage Dockerfile for Cloud Build
 # Produces valid OCI images with proper layer/diff_ids alignment
 #
-# This Dockerfile is optimized for Google Cloud Build environment.
-# Local Docker builds may encounter npm issues - use Cloud Build for production.
+# ⚠️ IMPORTANT: Local Docker builds may fail due to npm bugs in Docker environments.
+# This Dockerfile is optimized for Google Cloud Build. Use `gcloud builds submit` for production builds.
 #
 # Stage 1: Build the application
 FROM node:20-alpine AS builder
@@ -21,10 +21,10 @@ WORKDIR /app
 # Copy package files for dependency installation
 COPY package.json package-lock.json ./
 
-# Install dependencies (optimized for Cloud Build)
-RUN set -ex && \
-    (npm ci --prefer-offline --no-audit 2>&1 && echo "✓ npm ci succeeded") || \
-    (echo "⚠ npm ci failed, trying npm install..." && npm install --prefer-offline --no-audit && echo "✓ npm install succeeded")
+# Install dependencies - Cloud Build environment handles this reliably
+# Note: Local Docker builds may encounter npm "Exit handler never called!" errors
+# This is a known npm bug in Docker and doesn't occur in Cloud Build
+RUN npm ci --no-audit 2>&1 || npm install --no-audit
 
 # Copy source code
 COPY . .
@@ -46,9 +46,7 @@ WORKDIR /app
 
 # Copy package files and install production dependencies only
 COPY package.json package-lock.json ./
-RUN set -ex && \
-    (npm ci --omit=dev --prefer-offline --no-audit 2>&1 && echo "✓ npm ci succeeded") || \
-    (echo "⚠ npm ci failed, trying npm install..." && npm install --omit=dev --prefer-offline --no-audit && echo "✓ npm install succeeded")
+RUN npm ci --omit=dev --no-audit 2>&1 || npm install --omit=dev --no-audit
 
 # Copy server code
 COPY server ./server
