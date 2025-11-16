@@ -121,6 +121,39 @@ describe('OrderForm', () => {
     expect(locateButton).toHaveClass('bg-sky-600');
   });
 
+  it('displays helper text hints for critical fields', () => {
+    render(<OrderForm onAddOrder={mockOnAddOrder} currentUser={mockUser} />);
+    
+    // Check for hint text on Model #
+    expect(screen.getByText(/4-character code, e\.g\., 350H/i)).toBeInTheDocument();
+    
+    // Check for hint text on Exterior Color
+    expect(screen.getByText(/4-character code, e\.g\., 01UL/i)).toBeInTheDocument();
+    
+    // Check for hint text on Interior Color
+    expect(screen.getByText(/4-character code, e\.g\., LA40/i)).toBeInTheDocument();
+    
+    // Check for hint text on Options
+    expect(screen.getByText(/key packages and accessories/i)).toBeInTheDocument();
+  });
+
+  it('hides hint text when error is shown', async () => {
+    const user = userEvent.setup();
+    render(<OrderForm onAddOrder={mockOnAddOrder} currentUser={mockUser} />);
+    
+    // Try to submit without filling Model #
+    const submitButton = screen.getByRole('button', { name: /add order/i });
+    await user.click(submitButton);
+    
+    // Error should be shown
+    expect(screen.getByText(/model # is required/i)).toBeInTheDocument();
+    
+    // Hint should not be visible when error is present
+    const hints = screen.queryAllByText(/4-character code, e\.g\., 350H/i);
+    // This will find none since error takes precedence
+    expect(hints.length).toBe(0);
+  });
+
   it.skip('handles submission errors gracefully', async () => {
     const user = userEvent.setup();
     mockOnAddOrder.mockResolvedValue(false);
