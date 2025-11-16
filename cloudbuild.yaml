@@ -2,7 +2,6 @@
 substitutions:
   _REGION: us-west1
   _SERVICE: pre-order-dealer-exchange-tracker
-  _IMAGE_NAME: us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${_SERVICE}
 
 steps:
   # Guard: Fail fast if merge conflict markers are present
@@ -28,20 +27,24 @@ steps:
       - --build-arg
       - BUILD_TIME=${BUILD_ID}
       - -t
-      - ${_IMAGE_NAME}:${SHORT_SHA}
+      - us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${_SERVICE}:${SHORT_SHA}
       - -t
-      - ${_IMAGE_NAME}:latest
+      - us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${_SERVICE}:latest
       - .
 
   - name: gcr.io/cloud-builders/docker
     id: push-image
     waitFor: ['build-image']
-    args: ['push', '${_IMAGE_NAME}:${SHORT_SHA}']
+    args:
+      - push
+      - us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${_SERVICE}:${SHORT_SHA}
 
   - name: gcr.io/cloud-builders/docker
     id: push-latest
     waitFor: ['build-image']
-    args: ['push', '${_IMAGE_NAME}:latest']
+    args:
+      - push
+      - us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${_SERVICE}:latest
 
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
     id: deploy-cloud-run
@@ -51,15 +54,15 @@ steps:
       - run
       - deploy
       - ${_SERVICE}
-      - --image=${_IMAGE_NAME}:${SHORT_SHA}
+      - --image=us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${_SERVICE}:${SHORT_SHA}
       - --region=${_REGION}
       - --platform=managed
       - --allow-unauthenticated
       - --set-env-vars=NODE_ENV=production,APP_VERSION=${SHORT_SHA},BUILD_TIME=${BUILD_ID}
       - --update-secrets=API_KEY=vehicle-in-need-gemini:latest   # <-- Added line
 images:
-  - ${_IMAGE_NAME}:${SHORT_SHA}
-  - ${_IMAGE_NAME}:latest
+  - us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${_SERVICE}:${SHORT_SHA}
+  - us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${_SERVICE}:latest
 
 timeout: 1200s
 options:
