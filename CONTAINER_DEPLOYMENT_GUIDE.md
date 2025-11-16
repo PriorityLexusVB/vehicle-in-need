@@ -1,36 +1,44 @@
 # Container Build and Deployment Guide
 
-This document provides comprehensive instructions for building and deploying the Vehicle Order Tracker application to Cloud Run.
+This document provides comprehensive instructions for building and deploying
+the Vehicle Order Tracker application to Cloud Run.
 
 ## Overview
 
-The application uses a multi-stage Dockerfile that produces valid OCI images compatible with Cloud Run. Images are built and stored in Google Artifact Registry for reliable, reproducible deployments.
+The application uses a multi-stage Dockerfile that produces valid OCI images
+compatible with Cloud Run. Images are built and stored in Google Artifact
+Registry for reliable, reproducible deployments.
 
 ## Architecture
 
-```
+```text
 Source Code → Docker Build → Artifact Registry → Cloud Run
                     ↓
               Validation (layer structure, health check)
 ```
 
 **Key Components:**
+
 - **Dockerfile**: Multi-stage build using `node:20-slim`
 - **GitHub Actions**: Automated build and push on commits to main
 - **Cloud Build**: Alternative build method using `cloudbuild.yaml`
-- **Artifact Registry**: `us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker`
+- **Artifact Registry**:
+  `us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker`
 
 ## Building the Container
 
 ### Option 1: GitHub Actions (Recommended for CI/CD)
 
-The repository includes a GitHub Actions workflow that automatically builds and pushes images on every commit to main.
+The repository includes a GitHub Actions workflow that automatically builds and
+pushes images on every commit to main.
 
 **Setup Requirements:**
+
 1. Configure GCP authentication in GitHub repository settings
 2. Add required secrets (see below)
 
 **GitHub Secrets Required:**
+
 ```yaml
 GCP_WORKLOAD_IDENTITY_PROVIDER: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER
 GCP_SERVICE_ACCOUNT: github-actions@PROJECT_ID.iam.gserviceaccount.com
@@ -40,6 +48,7 @@ GCP_SA_KEY: <service account JSON key>
 ```
 
 **Workflow Behavior:**
+
 - **On PRs**: Builds and validates image (does not push)
 - **On push to main**: Builds, validates, and pushes to Artifact Registry
 - **Tags**: Creates both `:latest` and `:COMMIT_SHA` tags
@@ -62,6 +71,7 @@ gcloud builds log BUILD_ID --stream
 ```
 
 **Benefits:**
+
 - No local Docker setup required
 - Automatic authentication to Artifact Registry
 - Build logs stored in Cloud Logging
@@ -94,7 +104,9 @@ docker stop test-tracker && docker rm test-tracker
 ```
 
 **Why `DOCKER_BUILDKIT=0`?**  
-npm has a known "Exit handler never called!" bug in Docker BuildKit that prevents reliable dependency installation. Cloud Build doesn't use BuildKit, so this workaround is only needed for local builds.
+npm has a known "Exit handler never called!" bug in Docker BuildKit that
+prevents reliable dependency installation. Cloud Build doesn't use BuildKit, so
+this workaround is only needed for local builds.
 
 ## Image Validation
 
@@ -111,6 +123,7 @@ docker image inspect IMAGE_NAME | jq -r '.[0].RootFS'
 ```
 
 **Expected Output:**
+
 ```json
 {
   "Type": "layers",
@@ -147,6 +160,7 @@ docker stop test && docker rm test
 ### Prerequisites
 
 1. **Artifact Registry Repository**: Must exist
+
    ```bash
    gcloud artifacts repositories create vehicle-in-need \
      --repository-format=docker \
@@ -166,7 +180,8 @@ After building and pushing an image:
 ```bash
 # Deploy specific version (recommended)
 gcloud run deploy pre-order-dealer-exchange-tracker \
-  --image us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:COMMIT_SHA \
+  --image
+    us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:COMMIT_SHA \
   --region us-west1 \
   --platform managed \
   --allow-unauthenticated \
@@ -174,7 +189,8 @@ gcloud run deploy pre-order-dealer-exchange-tracker \
 
 # Or deploy latest (use with caution in production)
 gcloud run deploy pre-order-dealer-exchange-tracker \
-  --image us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:latest \
+  --image
+    us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:latest \
   --region us-west1 \
   --platform managed \
   --allow-unauthenticated
@@ -258,14 +274,17 @@ gcloud run revisions delete REVISION_NAME \
 ### Issue: Image layer/diff_ids mismatch
 
 **Symptoms:**
+
 - Error: "got X Manifest.Layers vs Y ConfigFile.RootFS.DiffIDs"
 - Cloud Run deployment fails with image validation error
 
 **Cause:**
+
 - Using `gcloud run deploy --source` (buildpacks)
 - Malformed image from cloud-run-source-deploy registry
 
 **Solution:**
+
 1. Build from Dockerfile (this repo's approach)
 2. Validate image structure before deploying
 3. Use stable Artifact Registry location
@@ -273,13 +292,16 @@ gcloud run revisions delete REVISION_NAME \
 ### Issue: npm "Exit handler never called!" error
 
 **Symptoms:**
+
 - Local Docker build fails during `npm ci`
 - vite not found after npm install
 
 **Cause:**
+
 - npm bug in Docker BuildKit
 
 **Solution:**
+
 ```bash
 # Build with BuildKit disabled
 DOCKER_BUILDKIT=0 docker build ...
@@ -290,10 +312,12 @@ Cloud Build doesn't use BuildKit, so this only affects local builds.
 ### Issue: Container fails health check
 
 **Symptoms:**
+
 - Cloud Run shows "Container failed to start"
 - Health endpoint not responding
 
 **Checklist:**
+
 1. Verify server binds to `0.0.0.0:${PORT}` (not `localhost`)
 2. Check `server/index.cjs` for correct PORT env var usage
 3. Verify dist/ files copied to image correctly
@@ -302,10 +326,12 @@ Cloud Build doesn't use BuildKit, so this only affects local builds.
 ### Issue: Secrets not available in Cloud Run
 
 **Symptoms:**
+
 - API errors related to missing credentials
 - Vertex AI authentication failures
 
 **Solution:**
+
 ```bash
 # Mount secret from Secret Manager
 gcloud run deploy pre-order-dealer-exchange-tracker \
@@ -359,14 +385,19 @@ gcloud logging tail "resource.type=cloud_run_revision"
 
 ## Related Documentation
 
-- [DOCKER_BUILD_NOTES.md](./DOCKER_BUILD_NOTES.md) - Detailed build notes and troubleshooting
-- [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md) - Comprehensive deployment checklist
+- [DOCKER_BUILD_NOTES.md](./DOCKER_BUILD_NOTES.md) - Detailed build notes and
+  troubleshooting
+- [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md) - Comprehensive
+  deployment checklist
 - [cloudbuild.yaml](./cloudbuild.yaml) - Cloud Build configuration
-- [.github/workflows/build-and-deploy.yml](./.github/workflows/build-and-deploy.yml) - GitHub Actions workflow
+-
+[.github/workflows/build-and-deploy.yml](./.github/workflows/build-and-deploy.yml) - GitHub Actions workflow
 
 ## Support
 
 For issues or questions:
+
 1. Check troubleshooting section above
-2. Review [GitHub Issues](https://github.com/PriorityLexusVB/vehicle-in-need/issues)
-3. Consult Cloud Run documentation: https://cloud.google.com/run/docs
+2. Review [GitHub
+  Issues](https://github.com/PriorityLexusVB/vehicle-in-need/issues)
+3. Consult Cloud Run documentation: <https://cloud.google.com/run/docs>

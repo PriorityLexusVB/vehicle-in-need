@@ -154,6 +154,7 @@ gcloud builds triggers create github \
 ```
 
 Or create via Cloud Console:
+
 1. Go to Cloud Build > Triggers
 2. Click "Create Trigger"
 3. Connect to GitHub repository `PriorityLexusVB/vehicle-in-need`
@@ -201,13 +202,13 @@ When deploying or updating the Cloud Run service via the Cloud Console, ensure y
 
 **✅ Correct image path:**
 
-```
+```text
 us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:<TAG>
 ```
 
 **❌ Avoid legacy path:**
 
-```
+```text
 us-west1-docker.pkg.dev/gen-lang-client-0615287333/cloud-run-source-deploy/...
 ```
 
@@ -440,7 +441,8 @@ If the client needs to make AI API calls:
 
 **Issue**: Service fails health checks
 
-**Solution**: 
+**Solution**:
+
 - Check logs: `gcloud run services logs read pre-order-dealer-exchange-tracker`
 - Verify port 8080 is exposed in Dockerfile
 - Verify server listens on `process.env.PORT`
@@ -451,6 +453,7 @@ If the client needs to make AI API calls:
 **Issue**: "Failed to mount GCS volume"
 
 **Solution**: Remove GCS Fuse volumes from service configuration:
+
 ```bash
 gcloud run services update pre-order-dealer-exchange-tracker \
   --clear-volumes \
@@ -462,7 +465,8 @@ gcloud run services update pre-order-dealer-exchange-tracker \
 
 **Issue**: Environment variables not set
 
-**Solution**: 
+**Solution**:
+
 - Check if secrets are properly configured in Secret Manager
 - Verify Cloud Run SA has `roles/secretmanager.secretAccessor`
 - Use `--update-secrets` in deploy command
