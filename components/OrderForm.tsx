@@ -35,10 +35,11 @@ const getInitialFormState = (currentUser?: AppUser | null) => ({
   notes: '',
 });
 
-const FormField: React.FC<{label: string, id: string, error?: string, children: React.ReactNode}> = ({ label, id, error, children }) => (
+const FormField: React.FC<{label: string, id: string, error?: string, hint?: string, children: React.ReactNode}> = ({ label, id, error, hint, children }) => (
     <div>
         <label htmlFor={id} className="block text-sm font-medium text-slate-700">{label}</label>
         <div className="mt-1">{children}</div>
+        {hint && !error && <p className="mt-1 text-xs text-slate-400">{hint}</p>}
         {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </div>
 );
@@ -172,14 +173,14 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
                     </FormField>
                 </div>
             </div>
-             <FormField label="Model #* (4 chars max)" id="modelNumber" error={errors.modelNumber}>
+             <FormField label="Model #* (4 chars max)" id="modelNumber" error={errors.modelNumber} hint="4-character code, e.g., 350H">
                 <input type="text" id="modelNumber" name="modelNumber" value={formState.modelNumber} onChange={handleChange} maxLength={4} className={inputClass('modelNumber')} />
             </FormField>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField label="Exterior Color #*" id="color" error={errors.color}>
+                <FormField label="Exterior Color #*" id="color" error={errors.color} hint="4-character code, e.g., 01UL">
                     <input type="text" id="color" name="color" value={formState.color} onChange={handleChange} maxLength={4} className={inputClass('color')} />
                 </FormField>
-                <FormField label="Interior Color #*" id="interiorColor" error={errors.interiorColor}>
+                <FormField label="Interior Color #*" id="interiorColor" error={errors.interiorColor} hint="4-character code, e.g., LA40">
                     <input type="text" id="interiorColor" name="interiorColor" value={formState.interiorColor} onChange={handleChange} maxLength={4} className={inputClass('interiorColor')} />
                 </FormField>
             </div>
@@ -233,7 +234,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
                     ))}
                 </div>
             </div>
-            <FormField label="Options*" id="options" error={errors.options}>
+            <FormField label="Options*" id="options" error={errors.options} hint="Key packages and accessories">
                 <textarea id="options" name="options" rows={3} value={formState.options} onChange={handleChange} className={inputClass('options')}></textarea>
             </FormField>
              <FormField label="Internal Notes" id="notes">
