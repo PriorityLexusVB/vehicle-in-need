@@ -34,6 +34,75 @@ Using `gcloud run deploy --source` creates corrupted images with invalid OCI met
 
 ---
 
+## Service Account Setup and Permissions
+
+### Cloud Build Service Account
+
+The Cloud Build service account needs proper permissions to deploy to Cloud Run and access secrets.
+
+**Service Account Email:**
+```
+<PROJECT_NUMBER>@cloudbuild.gserviceaccount.com
+```
+
+For project `gen-lang-client-0615287333`, find your project number:
+```bash
+gcloud projects describe gen-lang-client-0615287333 --format='value(projectNumber)'
+```
+
+**Required Roles:**
+
+1. **Cloud Run Admin** - to deploy services:
+   ```bash
+   gcloud projects add-iam-policy-binding gen-lang-client-0615287333 \
+     --member="serviceAccount:<PROJECT_NUMBER>@cloudbuild.gserviceaccount.com" \
+     --role="roles/run.admin"
+   ```
+
+2. **Service Account User** - to deploy as the runtime service account:
+   ```bash
+   gcloud iam service-accounts add-iam-policy-binding \
+     <PROJECT_NUMBER>-compute@developer.gserviceaccount.com \
+     --member="serviceAccount:<PROJECT_NUMBER>@cloudbuild.gserviceaccount.com" \
+     --role="roles/iam.serviceAccountUser"
+   ```
+
+3. **Secret Manager Secret Accessor** - to access API keys:
+   ```bash
+   gcloud secrets add-iam-policy-binding vehicle-in-need-gemini \
+     --member="serviceAccount:<PROJECT_NUMBER>@cloudbuild.gserviceaccount.com" \
+     --role="roles/secretmanager.secretAccessor"
+   ```
+
+**Verification:**
+```bash
+# Check Cloud Build SA permissions
+gcloud projects get-iam-policy gen-lang-client-0615287333 \
+  --flatten="bindings[].members" \
+  --filter="bindings.members:<PROJECT_NUMBER>@cloudbuild.gserviceaccount.com"
+
+# Check secret access
+gcloud secrets get-iam-policy vehicle-in-need-gemini
+```
+
+### Cloud Run Runtime Service Account
+
+The Cloud Run service runs as the default compute service account, which needs:
+
+1. **Secret Manager Secret Accessor** - to access secrets at runtime:
+   ```bash
+   gcloud secrets add-iam-policy-binding vehicle-in-need-gemini \
+     --member="serviceAccount:<PROJECT_NUMBER>-compute@developer.gserviceaccount.com" \
+     --role="roles/secretmanager.secretAccessor"
+   ```
+
+**Note:** This permission was likely already granted during initial service setup. Verify with:
+```bash
+gcloud secrets get-iam-policy vehicle-in-need-gemini
+```
+
+---
+
 ## Deployment Process
 
 ### Option 1: Automated Deployment via GitHub Actions (Recommended)
@@ -83,17 +152,22 @@ Using `gcloud run deploy --source` creates corrupted images with invalid OCI met
    # Should show no uncommitted changes
    ```
 
-3. **Get current commit SHA**:
+3. **Get current commit SHA or create a manual tag**:
    ```bash
+   # Option A: Use current commit SHA (recommended for git commits)
    export SHORT_SHA=$(git rev-parse --short=7 HEAD)
-   echo "Building and deploying SHA: $SHORT_SHA"
+   
+   # Option B: Use manual tag (recommended for testing/manual deploys)
+   export SHORT_SHA=manual-$(date +%Y%m%d-%H%M)
+   
+   echo "Building and deploying with tag: $SHORT_SHA"
    ```
 
 4. **Submit build to Cloud Build**:
    ```bash
    gcloud builds submit \
      --config cloudbuild.yaml \
-     --substitutions=SHORT_SHA=${SHORT_SHA},_REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,_ARTIFACT_REPO=vehicle-in-need
+     --substitutions SHORT_SHA=${SHORT_SHA},_REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker
    ```
 
    This will:
@@ -114,7 +188,54 @@ Using `gcloud run deploy --source` creates corrupted images with invalid OCI met
      --format='value(status.url)'
    ```
 
-### Option 3: Deploy Existing Image (No Rebuild)
+### Option 3: Manual Docker Build and Push (Advanced)
+
+**Use this for local testing or when Cloud Build is unavailable:**
+
+⚠️ **Note:** Local Docker builds may encounter npm errors. Use Cloud Build (Option 2) for production.
+
+1. **Set up variables**:
+   ```bash
+   export PROJECT_ID=gen-lang-client-0615287333
+   export REGION=us-west1
+   export SERVICE=pre-order-dealer-exchange-tracker
+   export TAG=manual-$(date +%Y%m%d-%H%M)
+   export IMAGE=us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${SERVICE}:${TAG}
+   ```
+
+2. **Authenticate Docker with Artifact Registry**:
+   ```bash
+   gcloud auth configure-docker us-west1-docker.pkg.dev
+   ```
+
+3. **Build image locally**:
+   ```bash
+   docker build \
+     --build-arg COMMIT_SHA=${TAG} \
+     --build-arg BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+     -t ${IMAGE} \
+     -t us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${SERVICE}:latest \
+     .
+   ```
+
+4. **Push to Artifact Registry**:
+   ```bash
+   docker push ${IMAGE}
+   docker push us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${SERVICE}:latest
+   ```
+
+5. **Deploy to Cloud Run**:
+   ```bash
+   gcloud run deploy ${SERVICE} \
+     --image=${IMAGE} \
+     --region=${REGION} \
+     --platform=managed \
+     --allow-unauthenticated \
+     --set-env-vars=NODE_ENV=production,APP_VERSION=${TAG},BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+     --update-secrets=API_KEY=vehicle-in-need-gemini:latest
+   ```
+
+### Option 4: Deploy Existing Image (No Rebuild)
 
 **Use this to deploy an image that's already in Artifact Registry:**
 
@@ -249,6 +370,80 @@ git commit -m "Resolve merge conflicts"
 1. DO NOT use `--source` deployment method
 2. Rebuild using Cloud Build (Option 2 above)
 3. Deploy with explicit `--image` flag
+
+### Recovering from Corrupted `cloud-run-source-deploy` Deployment
+
+**Symptom:** Service shows deployment type as `cloud-run-source-deploy` instead of `Container image`, or has OCI layer mismatch errors.
+
+**Cause:** The service was deployed using `gcloud run deploy --source`, which creates corrupted images with invalid OCI metadata.
+
+**Solution - Complete Service Recreation:**
+
+1. **List and save current environment variables and secrets**:
+   ```bash
+   gcloud run services describe pre-order-dealer-exchange-tracker \
+     --region=us-west1 \
+     --format='yaml(spec.template.spec.containers[0].env)' > /tmp/service-env.yaml
+   
+   gcloud run services describe pre-order-dealer-exchange-tracker \
+     --region=us-west1 \
+     --format='yaml(spec.template.spec.containers[0].env)' | grep -A 1 'secretKeyRef'
+   ```
+
+2. **Delete the corrupted service**:
+   ```bash
+   gcloud run services delete pre-order-dealer-exchange-tracker \
+     --region=us-west1 \
+     --quiet
+   ```
+
+3. **Verify a clean Docker image exists in Artifact Registry**:
+   ```bash
+   gcloud artifacts docker images list \
+     us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker \
+     --limit=5
+   ```
+
+4. **If no clean image exists, build one**:
+   ```bash
+   # Use Option 2 (Cloud Build) or Option 3 (Manual Docker build)
+   export SHORT_SHA=manual-$(date +%Y%m%d-%H%M)
+   gcloud builds submit \
+     --config cloudbuild.yaml \
+     --substitutions SHORT_SHA=${SHORT_SHA},_REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker
+   ```
+
+5. **Deploy from clean image**:
+   ```bash
+   export SHORT_SHA=<tag-from-step-3-or-4>
+   
+   gcloud run deploy pre-order-dealer-exchange-tracker \
+     --image=us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:${SHORT_SHA} \
+     --region=us-west1 \
+     --platform=managed \
+     --allow-unauthenticated \
+     --set-env-vars=NODE_ENV=production,APP_VERSION=${SHORT_SHA},BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+     --update-secrets=API_KEY=vehicle-in-need-gemini:latest
+   ```
+
+6. **Verify the deployment type**:
+   ```bash
+   gcloud run services describe pre-order-dealer-exchange-tracker \
+     --region=us-west1 \
+     --format='value(metadata.labels)'
+   ```
+   
+   Should show deployment type as `Container image`, NOT `cloud-run-source-deploy`.
+
+7. **Test the service**:
+   ```bash
+   SERVICE_URL=$(gcloud run services describe pre-order-dealer-exchange-tracker \
+     --region=us-west1 \
+     --format='value(status.url)')
+   
+   curl -f "${SERVICE_URL}/health"
+   curl -s "${SERVICE_URL}/api/status" | jq '.'
+   ```
 
 ### Image Not Found in Artifact Registry
 

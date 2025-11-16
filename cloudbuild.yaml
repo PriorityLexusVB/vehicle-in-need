@@ -1,7 +1,24 @@
 # Build and deploy container image to Cloud Run via Artifact Registry (us-west1)
+#
+# Usage:
+#   1. CI/CD (GitHub Actions or Cloud Build triggers):
+#      - SHORT_SHA is automatically provided by Cloud Build
+#      - Uses commit SHA as image tag
+#
+#   2. Manual builds:
+#      gcloud builds submit --config cloudbuild.yaml \
+#        --substitutions _REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=manual-$(date +%Y%m%d-%H%M)
+#
+# Service Account Requirements:
+#   The Cloud Build service account needs:
+#   - roles/run.admin (to deploy Cloud Run services)
+#   - roles/iam.serviceAccountUser (on the runtime service account)
+#   - roles/secretmanager.secretAccessor (for vehicle-in-need-gemini secret)
+#
 substitutions:
   _REGION: us-west1
   _SERVICE: pre-order-dealer-exchange-tracker
+  # SHORT_SHA: provided by Cloud Build triggers or must be passed manually
 
 steps:
   # Guard: Fail fast if merge conflict markers are present
