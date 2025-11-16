@@ -24,6 +24,7 @@ COPY package.json package-lock.json ./
 # Install dependencies - Cloud Build environment handles this reliably
 # Note: Local Docker builds may encounter npm "Exit handler never called!" errors
 # This is a known npm bug in Docker and doesn't occur in Cloud Build
+# The fallback to `npm install` ensures build completes if npm ci encounters the bug
 RUN npm ci --no-audit 2>&1 || npm install --no-audit
 
 # Copy source code
@@ -46,6 +47,7 @@ WORKDIR /app
 
 # Copy package files and install production dependencies only
 COPY package.json package-lock.json ./
+# Prefer npm ci for reproducible builds; fallback handles potential npm bug in Docker
 RUN npm ci --omit=dev --no-audit 2>&1 || npm install --omit=dev --no-audit
 
 # Copy server code
