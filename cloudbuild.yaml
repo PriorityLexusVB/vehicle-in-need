@@ -10,10 +10,14 @@
 #        --substitutions _REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=manual-$(date +%Y%m%d-%H%M)
 #
 # Service Account Requirements:
-#   The Cloud Build service account needs:
+#   The Cloud Build service account (cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com) needs:
 #   - roles/run.admin (to deploy Cloud Run services)
-#   - roles/iam.serviceAccountUser (on the runtime service account)
-#   - roles/secretmanager.secretAccessor (for vehicle-in-need-gemini secret)
+#   - roles/iam.serviceAccountUser (on pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com)
+#   - roles/artifactregistry.writer (to push images)
+#   
+#   The Cloud Run runtime service account (pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com) needs:
+#   - roles/logging.logWriter (for Cloud Logging)
+#   - roles/secretmanager.secretAccessor (for vehicle-in-need-gemini secret at runtime)
 #
 substitutions:
   _REGION: us-west1
@@ -75,8 +79,9 @@ steps:
       - --region=${_REGION}
       - --platform=managed
       - --allow-unauthenticated
+      - --service-account=pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com
       - --set-env-vars=NODE_ENV=production,APP_VERSION=${SHORT_SHA},BUILD_TIME=${BUILD_ID}
-      - --update-secrets=API_KEY=vehicle-in-need-gemini:latest   # <-- Added line
+      - --update-secrets=API_KEY=vehicle-in-need-gemini:latest
 images:
   - us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${_SERVICE}:${SHORT_SHA}
   - us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${_SERVICE}:latest

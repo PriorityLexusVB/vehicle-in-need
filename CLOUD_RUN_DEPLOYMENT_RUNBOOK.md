@@ -36,68 +36,130 @@ Using `gcloud run deploy --source` creates corrupted images with invalid OCI met
 
 ## Service Account Setup and Permissions
 
-### Cloud Build Service Account
+This project uses a **least-privilege IAM architecture** with dedicated service accounts:
 
-The Cloud Build service account needs proper permissions to deploy to Cloud Run and access secrets.
+- **Cloud Build SA:** `cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com` - used to build and deploy
+- **Cloud Run Runtime SA:** `pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com` - used at runtime
+- **Default Compute SA:** `842946218691-compute@developer.gserviceaccount.com` - **should not be used** (de-privileged)
 
-**Service Account Email:**
-```
-<PROJECT_NUMBER>@cloudbuild.gserviceaccount.com
-```
+### Quick Setup
 
-For project `gen-lang-client-0615287333`, find your project number:
+Use the provided IAM setup script to configure all required permissions:
+
 ```bash
-gcloud projects describe gen-lang-client-0615287333 --format='value(projectNumber)'
+# Review the changes (dry-run mode)
+./scripts/setup-iam-permissions.sh
+
+# Apply the IAM configuration
+./scripts/setup-iam-permissions.sh --execute
 ```
 
-**Required Roles:**
+The script will configure:
+1. Cloud Build SA with minimal deploy permissions
+2. Runtime SA with only application-required roles
+3. Instructions for de-privileging the default compute SA
 
-1. **Cloud Run Admin** - to deploy services:
-   ```bash
-   gcloud projects add-iam-policy-binding gen-lang-client-0615287333 \
-     --member="serviceAccount:<PROJECT_NUMBER>@cloudbuild.gserviceaccount.com" \
-     --role="roles/run.admin"
-   ```
+### Manual Configuration
 
-2. **Service Account User** - to deploy as the runtime service account:
-   ```bash
-   gcloud iam service-accounts add-iam-policy-binding \
-     <PROJECT_NUMBER>-compute@developer.gserviceaccount.com \
-     --member="serviceAccount:<PROJECT_NUMBER>@cloudbuild.gserviceaccount.com" \
-     --role="roles/iam.serviceAccountUser"
-   ```
+If you prefer to configure IAM permissions manually, follow these steps:
 
-3. **Secret Manager Secret Accessor** - to access API keys:
-   ```bash
-   gcloud secrets add-iam-policy-binding vehicle-in-need-gemini \
-     --member="serviceAccount:<PROJECT_NUMBER>@cloudbuild.gserviceaccount.com" \
-     --role="roles/secretmanager.secretAccessor"
-   ```
+#### 1. Cloud Build Service Account
 
-**Verification:**
+**Service Account:** `cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com`
+
+This account needs permissions to build images and deploy to Cloud Run:
+
+```bash
+# Grant Cloud Run Admin
+gcloud projects add-iam-policy-binding gen-lang-client-0615287333 \
+  --member="serviceAccount:cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com" \
+  --role="roles/run.admin"
+
+# Grant Artifact Registry Writer
+gcloud projects add-iam-policy-binding gen-lang-client-0615287333 \
+  --member="serviceAccount:cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com" \
+  --role="roles/artifactregistry.writer"
+
+# Grant Cloud Build Builds Editor
+gcloud projects add-iam-policy-binding gen-lang-client-0615287333 \
+  --member="serviceAccount:cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com" \
+  --role="roles/cloudbuild.builds.editor"
+
+# Grant permission to impersonate the runtime SA
+gcloud iam service-accounts add-iam-policy-binding \
+  pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com \
+  --member="serviceAccount:cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com" \
+  --role="roles/iam.serviceAccountUser" \
+  --project=gen-lang-client-0615287333
+```
+
+#### 2. Cloud Run Runtime Service Account
+
+**Service Account:** `pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com`
+
+This account is used by the Cloud Run service at runtime and needs:
+
+```bash
+# Grant Log Writer (for Cloud Logging)
+gcloud projects add-iam-policy-binding gen-lang-client-0615287333 \
+  --member="serviceAccount:pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com" \
+  --role="roles/logging.logWriter"
+
+# Grant Secret Manager Secret Accessor (for runtime secrets)
+gcloud secrets add-iam-policy-binding vehicle-in-need-gemini \
+  --member="serviceAccount:pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor" \
+  --project=gen-lang-client-0615287333
+```
+
+**Note:** Add additional roles based on your application needs (e.g., Firestore, Pub/Sub).
+
+#### 3. Default Compute Engine Service Account (De-privilege)
+
+**Service Account:** `842946218691-compute@developer.gserviceaccount.com`
+
+⚠️ **This account should NOT be used for Cloud Run services.** Remove unnecessary roles:
+
+```bash
+# First, check current roles
+gcloud projects get-iam-policy gen-lang-client-0615287333 \
+  --flatten="bindings[].members" \
+  --filter="bindings.members:842946218691-compute@developer.gserviceaccount.com"
+
+# Remove overly broad roles (if present)
+# WARNING: Only run these if you're certain no other services depend on these roles
+# gcloud projects remove-iam-policy-binding gen-lang-client-0615287333 \
+#   --member="serviceAccount:842946218691-compute@developer.gserviceaccount.com" \
+#   --role="roles/editor"
+# 
+# gcloud projects remove-iam-policy-binding gen-lang-client-0615287333 \
+#   --member="serviceAccount:842946218691-compute@developer.gserviceaccount.com" \
+#   --role="roles/run.admin"
+```
+
+### Verification
+
+After setup, verify the IAM configuration:
+
 ```bash
 # Check Cloud Build SA permissions
 gcloud projects get-iam-policy gen-lang-client-0615287333 \
   --flatten="bindings[].members" \
-  --filter="bindings.members:<PROJECT_NUMBER>@cloudbuild.gserviceaccount.com"
+  --filter="bindings.members:cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com" \
+  --format="table(bindings.role)"
+
+# Check Runtime SA permissions
+gcloud projects get-iam-policy gen-lang-client-0615287333 \
+  --flatten="bindings[].members" \
+  --filter="bindings.members:pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com" \
+  --format="table(bindings.role)"
+
+# Verify impersonation permission
+gcloud iam service-accounts get-iam-policy \
+  pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com \
+  --project=gen-lang-client-0615287333
 
 # Check secret access
-gcloud secrets get-iam-policy vehicle-in-need-gemini
-```
-
-### Cloud Run Runtime Service Account
-
-The Cloud Run service runs as the default compute service account, which needs:
-
-1. **Secret Manager Secret Accessor** - to access secrets at runtime:
-   ```bash
-   gcloud secrets add-iam-policy-binding vehicle-in-need-gemini \
-     --member="serviceAccount:<PROJECT_NUMBER>-compute@developer.gserviceaccount.com" \
-     --role="roles/secretmanager.secretAccessor"
-   ```
-
-**Note:** This permission was likely already granted during initial service setup. Verify with:
-```bash
 gcloud secrets get-iam-policy vehicle-in-need-gemini
 ```
 
@@ -133,6 +195,7 @@ gcloud secrets get-iam-policy vehicle-in-need-gemini
      --region=us-west1 \
      --platform=managed \
      --allow-unauthenticated \
+     --service-account=pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com \
      --set-env-vars=NODE_ENV=production,APP_VERSION=${SHORT_SHA},BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
      --update-secrets=API_KEY=vehicle-in-need-gemini:latest
    ```
