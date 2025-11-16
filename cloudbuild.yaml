@@ -2,8 +2,7 @@
 substitutions:
   _REGION: us-west1
   _SERVICE: pre-order-dealer-exchange-tracker
-  _ARTIFACT_REPO: vehicle-in-need
-  _IMAGE_NAME: us-west1-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REPO}/${_SERVICE}
+  _IMAGE_NAME: us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${_SERVICE}
 
 steps:
   # Guard: Fail fast if merge conflict markers are present
