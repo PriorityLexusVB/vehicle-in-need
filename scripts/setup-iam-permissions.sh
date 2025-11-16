@@ -75,9 +75,10 @@ Prerequisites:
   - gcloud CLI installed and authenticated
 
 The script will:
+  0. Verify service accounts exist (create runtime SA if missing)
   1. Grant minimal permissions to cloud-build-deployer SA
   2. Grant runtime permissions to pre-order-dealer-exchange-860 SA
-  3. Remove overly broad permissions from the default compute SA
+  3. Display commands to remove overly broad permissions from default compute SA
 
 EOF
   exit 0
@@ -106,6 +107,73 @@ run_cmd() {
   fi
   echo ""
 }
+
+# Function to check if service account exists
+check_sa_exists() {
+  local sa_email=$1
+  if [ "$DRY_RUN" = false ]; then
+    if gcloud iam service-accounts describe "$sa_email" --project="$PROJECT_ID" >/dev/null 2>&1; then
+      return 0
+    else
+      return 1
+    fi
+  else
+    # In dry-run mode, just note that we would check
+    return 0
+  fi
+}
+
+# ============================================================================
+# STEP 0: Verify Service Accounts Exist
+# ============================================================================
+echo -e "${BLUE}[STEP 0] Verify Service Accounts${NC}"
+echo ""
+
+echo "0.1. List existing service accounts:"
+if [ "$DRY_RUN" = false ]; then
+  echo -e "${BLUE}→ gcloud iam service-accounts list --project=${PROJECT_ID} --format='table(email,displayName)'${NC}"
+  gcloud iam service-accounts list --project="${PROJECT_ID}" --format='table(email,displayName)'
+  echo ""
+else
+  echo -e "${BLUE}→ gcloud iam service-accounts list --project=${PROJECT_ID} --format='table(email,displayName)'${NC}"
+  echo ""
+fi
+
+echo "0.2. Check Cloud Build SA exists:"
+if [ "$DRY_RUN" = false ]; then
+  if check_sa_exists "${CLOUD_BUILD_SA}"; then
+    echo -e "${GREEN}✓ Cloud Build SA exists: ${CLOUD_BUILD_SA}${NC}"
+  else
+    echo -e "${RED}✗ Cloud Build SA NOT found: ${CLOUD_BUILD_SA}${NC}"
+    echo -e "${RED}  Please create this service account before running this script.${NC}"
+    exit 1
+  fi
+else
+  echo -e "${BLUE}→ gcloud iam service-accounts describe ${CLOUD_BUILD_SA} --project=${PROJECT_ID}${NC}"
+  echo -e "${YELLOW}  (Would verify Cloud Build SA exists)${NC}"
+fi
+echo ""
+
+echo "0.3. Check Runtime SA exists (create if missing):"
+if [ "$DRY_RUN" = false ]; then
+  if check_sa_exists "${RUNTIME_SA}"; then
+    echo -e "${GREEN}✓ Runtime SA exists: ${RUNTIME_SA}${NC}"
+  else
+    echo -e "${YELLOW}⚠ Runtime SA NOT found, creating it...${NC}"
+    echo -e "${BLUE}→ gcloud iam service-accounts create pre-order-dealer-exchange-860 --project=${PROJECT_ID} --display-name='Pre-order Dealer Exchange Runtime'${NC}"
+    gcloud iam service-accounts create pre-order-dealer-exchange-860 \
+      --project="${PROJECT_ID}" \
+      --display-name="Pre-order Dealer Exchange Runtime" \
+      --description="Runtime service account for pre-order-dealer-exchange-tracker Cloud Run service"
+    echo -e "${GREEN}✓ Runtime SA created${NC}"
+  fi
+else
+  echo -e "${BLUE}→ gcloud iam service-accounts describe ${RUNTIME_SA} --project=${PROJECT_ID}${NC}"
+  echo -e "${YELLOW}  (Would check if Runtime SA exists, create if missing)${NC}"
+  echo -e "${BLUE}→ gcloud iam service-accounts create pre-order-dealer-exchange-860 --project=${PROJECT_ID} --display-name='Pre-order Dealer Exchange Runtime'${NC}"
+  echo -e "${YELLOW}  (Would create Runtime SA if it doesn't exist)${NC}"
+fi
+echo ""
 
 # ============================================================================
 # STEP 1: Grant permissions to Cloud Build SA
