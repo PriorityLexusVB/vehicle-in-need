@@ -20,10 +20,12 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-6">
             <div>
-              <h1 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight">
-                Vehicle Order Tracker
-                <VersionBadge />
-              </h1>
+              <Link to="/" className="inline-block">
+                <h1 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight hover:text-sky-700 transition-colors">
+                  Vehicle Order Tracker
+                  <VersionBadge />
+                </h1>
+              </Link>
               <p className="text-sm text-slate-500 hidden sm:block">
                   Welcome, {user.displayName || user.email} {user.isManager && '(Manager)'}
                   <span className='ml-2 font-mono text-xs text-sky-700'>[isManager: {user.isManager.toString()}]</span>

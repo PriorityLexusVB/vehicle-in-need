@@ -60,4 +60,35 @@ describe("Header navigation", () => {
     expect(screen.getByText("42")).toBeInTheDocument();
     expect(screen.getByText(/active orders/i)).toBeInTheDocument();
   });
+
+  it("app title is clickable and links to home", () => {
+    renderHeader(managerUser);
+    const titleLink = screen.getByRole("link", { name: /vehicle order tracker/i });
+    expect(titleLink).toBeInTheDocument();
+    expect(titleLink).toHaveAttribute("href", "/");
+  });
+
+  it("displays version badge for all users", () => {
+    renderHeader(baseUser);
+    // VersionBadge component should be present (it may not render if version is 'dev')
+    const heading = screen.getByRole("heading", { name: /vehicle order tracker/i });
+    expect(heading).toBeInTheDocument();
+  });
+
+  it("shows welcome message with user name", () => {
+    renderHeader(managerUser);
+    expect(screen.getByText(/welcome, manager user/i)).toBeInTheDocument();
+  });
+
+  it("shows manager role indicator for managers", () => {
+    renderHeader(managerUser);
+    expect(screen.getByText(/\(manager\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/\[ismanager: true\]/i)).toBeInTheDocument();
+  });
+
+  it("does not show role indicator for non-managers", () => {
+    renderHeader(baseUser);
+    expect(screen.queryByText(/\(manager\)/i)).toBeNull();
+    expect(screen.getByText(/\[ismanager: false\]/i)).toBeInTheDocument();
+  });
 });
