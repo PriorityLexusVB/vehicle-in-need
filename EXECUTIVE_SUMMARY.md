@@ -165,18 +165,28 @@ The following require GCP credentials (not available to agent):
 
 ## Recommendations
 
+### ⚠️ CRITICAL: Deployment Best Practices
+
+**NEVER use `gcloud run deploy --source`** - it creates corrupted images in ephemeral registries.
+
+**ALWAYS follow this process:**
+1. Build using Cloud Build (via GitHub Actions or manually)
+2. Deploy using explicit `--image` flag pointing to Artifact Registry
+3. See [CLOUD_RUN_DEPLOYMENT_RUNBOOK.md](./CLOUD_RUN_DEPLOYMENT_RUNBOOK.md) for complete instructions
+
 ### Immediate (User Action Required)
 1. Create GitHub issue using provided template
 2. Run `gcloud builds submit --config cloudbuild.yaml`
-3. Deploy new image to Cloud Run
+3. Deploy new image to Cloud Run with explicit `--image` flag
 4. Verify deployment with health checks
 
 ### Long-term
-1. Never use `gcloud run deploy --source` for production
+1. **Never use `gcloud run deploy --source`** for production
 2. Always build via Cloud Build or GitHub Actions
 3. Validate images after building (check layer count > 0)
 4. Use commit SHA tags for traceability
 5. Avoid ephemeral `cloud-run-source-deploy` registry
+6. Refer to deployment runbook for all future deploys
 
 ---
 
