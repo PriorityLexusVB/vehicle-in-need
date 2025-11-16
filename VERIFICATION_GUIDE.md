@@ -97,7 +97,8 @@ gcloud builds submit \
   .
 ```
 
-**Expected Result:** 
+**Expected Result:**
+
 - Build completes successfully
 - Conflict marker check passes
 - Docker image builds without errors
@@ -133,7 +134,8 @@ gcloud artifacts docker images list \
   --format='table(image,tags,updateTime)'
 ```
 
-**Expected Result:** 
+**Expected Result:**
+
 - Image with `latest` tag
 - Image with short SHA tag (e.g., `abc1234`)
 - Recent update time
@@ -159,6 +161,7 @@ gcloud run services describe pre-order-dealer-exchange-tracker \
 ```
 
 **Expected Result:** Output should show `valueFrom.secretKeyRef` with:
+
 ```json
 {
   "name": "API_KEY",
@@ -242,6 +245,7 @@ gcloud projects get-iam-policy gen-lang-client-0615287333 \
 ```
 
 **Expected Roles:**
+
 - `roles/secretmanager.secretAccessor` (to access secrets)
 - `roles/aiplatform.user` (to use Vertex AI)
 
@@ -293,6 +297,7 @@ After running all commands, create a summary report with:
 ### Build Fails with "Exit handler never called!"
 
 **Solution:** This is expected locally with Alpine Linux. Use Cloud Build instead:
+
 ```bash
 gcloud builds submit --config=cloudbuild.yaml
 ```
@@ -300,11 +305,13 @@ gcloud builds submit --config=cloudbuild.yaml
 ### Health Check Fails
 
 **Possible Causes:**
+
 - Service not fully deployed
 - Incorrect region
 - Network/firewall issues
 
 **Solution:** Check service logs:
+
 ```bash
 gcloud run services logs read pre-order-dealer-exchange-tracker \
   --region=us-west1 \
@@ -315,6 +322,7 @@ gcloud run services logs read pre-order-dealer-exchange-tracker \
 ### AI Endpoint Returns 503
 
 **Possible Causes:**
+
 - Vertex AI not initialized
 - Missing IAM permissions
 - Invalid secret
@@ -345,4 +353,3 @@ The following automated guards are in place to prevent issues:
 - [DEV_NOTES.md](./docs/DEV_NOTES.md) - Secret management and local development
 - [DOCKER_BUILD_NOTES.md](./DOCKER_BUILD_NOTES.md) - Docker build troubleshooting
 - [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md) - Deployment procedures
-

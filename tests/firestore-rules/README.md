@@ -46,7 +46,7 @@ Tests security rules for user documents:
 - ✅ **Unauthenticated Access**: Denies all operations
 - ✅ **Self-Escalation Prevention**: Users cannot grant themselves manager role on creation
 - ✅ **Read Access**: Users can read their own document; managers can read any
-- ✅ **Update Protection**: 
+- ✅ **Update Protection**:
   - Users cannot change their own `isManager` field
   - Email addresses are immutable
   - Managers can update other users but not their own `isManager`
@@ -58,7 +58,7 @@ Tests security rules for order documents:
 
 - ✅ **Unauthenticated Access**: Denies all operations
 - ✅ **Ownership Enforcement**: Orders must include correct `createdByUid`, `createdByEmail`, and `createdAt`
-- ✅ **Read Access**: 
+- ✅ **Read Access**:
   - Owners can read their own orders
   - Non-owners cannot read other users' orders
   - Managers can read all orders

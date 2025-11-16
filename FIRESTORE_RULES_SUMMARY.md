@@ -9,21 +9,25 @@ This document summarizes the implementation of hardened Firestore security rules
 ### 1. Users Collection Security
 
 #### Self-Escalation Prevention
+
 - **Problem**: Users could potentially grant themselves manager privileges on account creation
 - **Solution**: Rules explicitly deny setting `isManager: true` on user document creation
 - **Rule**: `!('isManager' in request.resource.data) || request.resource.data.isManager == false`
 
 #### Email Integrity
+
 - **Problem**: Users could set arbitrary email addresses not matching their authentication
 - **Solution**: Email must match the auth token email
 - **Rule**: `request.resource.data.email == request.auth.token.email`
 
 #### Role Immutability Protection
+
 - **Problem**: Users could modify their own manager role after creation
 - **Solution**: Users cannot change their own `isManager` field; only managers can change other users' roles
 - **Rule**: `isOwner(userId) && request.resource.data.isManager == resource.data.isManager`
 
 #### Manager Self-Demotion Prevention
+
 - **Problem**: Managers could accidentally or maliciously demote themselves
 - **Solution**: Managers can update other users but not their own `isManager` field
 - **Rule**: `(isManager() && !isOwner(userId))`
@@ -31,19 +35,22 @@ This document summarizes the implementation of hardened Firestore security rules
 ### 2. Orders Collection Security
 
 #### Ownership Enforcement
+
 - **Problem**: Orders could be created without proper ownership tracking
 - **Solution**: All orders must include `createdByUid`, `createdByEmail`, and `createdAt`
-- **Rules**: 
+- **Rules**:
   - `request.resource.data.keys().hasAll(['createdByUid', 'createdByEmail', 'createdAt'])`
   - `request.resource.data.createdByUid == request.auth.uid`
   - `request.resource.data.createdByEmail == request.auth.token.email`
 
 #### Role-Based Read Access
+
 - **Problem**: Non-managers could potentially read all orders
 - **Solution**: Non-managers can only read their own orders; managers can read all
 - **Rule**: `isManager() || isOrderOwner()`
 
 #### Ownership Immutability
+
 - **Problem**: Users could change order ownership after creation
 - **Solution**: Ownership fields (`createdByUid`, `createdByEmail`) are immutable
 - **Rules**:
@@ -51,11 +58,13 @@ This document summarizes the implementation of hardened Firestore security rules
   - `request.resource.data.createdByEmail == resource.data.createdByEmail`
 
 #### Controlled Updates
+
 - **Problem**: Non-managers could modify any field in their orders
 - **Solution**: Owners can only update allowed fields (status, notes); managers have full access
 - **Rule**: `request.resource.data.keys().hasOnly(resource.data.keys())`
 
 #### Manager-Only Deletion
+
 - **Problem**: Users could delete their own orders
 - **Solution**: Only managers can delete orders
 - **Rule**: `allow delete: if isManager()`
@@ -64,13 +73,15 @@ This document summarizes the implementation of hardened Firestore security rules
 
 ### Users Collection Tests (19 tests)
 
-#### Unauthenticated Access (4 tests)
+#### Unauthenticated Access - Users (4 tests)
+
 - ✅ Deny unauthenticated user creating a user document
 - ✅ Deny unauthenticated user reading a user document
 - ✅ Deny unauthenticated user updating a user document
 - ✅ Deny unauthenticated user deleting a user document
 
 #### User Creation - Self-Escalation Prevention (5 tests)
+
 - ✅ Allow user to create their own document with isManager omitted
 - ✅ Allow user to create their own document with isManager: false
 - ✅ Deny user creating their own document with isManager: true
@@ -78,11 +89,13 @@ This document summarizes the implementation of hardened Firestore security rules
 - ✅ Deny user creating another user's document
 
 #### User Read Access (3 tests)
+
 - ✅ Allow user to read their own document
 - ✅ Deny user reading another user's document
 - ✅ Allow manager to read any user document
 
 #### User Update - Role and Email Protection (5 tests)
+
 - ✅ Allow user to update their own displayName
 - ✅ Deny user changing their own isManager field
 - ✅ Deny user changing their email
@@ -90,18 +103,21 @@ This document summarizes the implementation of hardened Firestore security rules
 - ✅ Deny manager changing their own isManager field
 
 #### User Deletion (2 tests)
+
 - ✅ Deny user deleting their own document
 - ✅ Deny manager deleting any user document
 
 ### Orders Collection Tests (23 tests)
 
-#### Unauthenticated Access (4 tests)
+#### Unauthenticated Access - Orders (4 tests)
+
 - ✅ Deny unauthenticated user creating an order
 - ✅ Deny unauthenticated user reading an order
 - ✅ Deny unauthenticated user updating an order
 - ✅ Deny unauthenticated user deleting an order
 
 #### Order Creation - Ownership Enforcement (7 tests)
+
 - ✅ Allow authenticated user to create order with correct ownership fields
 - ✅ Deny order creation with missing createdByUid
 - ✅ Deny order creation with missing createdByEmail
@@ -111,11 +127,13 @@ This document summarizes the implementation of hardened Firestore security rules
 - ✅ Deny order creation with invalid status
 
 #### Order Read Access (3 tests)
+
 - ✅ Allow owner to read their own order
 - ✅ Deny owner reading another user's order
 - ✅ Allow manager to read any order
 
 #### Order Update - Ownership and Field Protection (6 tests)
+
 - ✅ Allow manager to update any order
 - ✅ Allow owner to update allowed fields (status, notes)
 - ✅ Deny owner changing createdByUid
@@ -124,6 +142,7 @@ This document summarizes the implementation of hardened Firestore security rules
 - ✅ Deny non-owner updating another user's order
 
 #### Order Deletion (3 tests)
+
 - ✅ Allow manager to delete any order
 - ✅ Deny owner deleting their own order
 - ✅ Deny non-manager deleting any order
@@ -131,6 +150,7 @@ This document summarizes the implementation of hardened Firestore security rules
 ## Application Code Alignment
 
 ### Order Creation (App.tsx)
+
 The application code already correctly implements the required ownership fields:
 
 ```typescript
@@ -143,6 +163,7 @@ await addDoc(collection(db, "orders"), {
 ```
 
 ### User Creation (App.tsx)
+
 User documents are created with proper field validation:
 
 ```typescript
@@ -160,6 +181,7 @@ await setDoc(userDocRef, appUser);
 ## Files Modified/Created
 
 ### New Files
+
 1. `firestore.rules` - Security rules for Users and Orders collections
 2. `firebase.json` - Firebase configuration with emulator settings
 3. `.firebaserc` - Firebase project configuration
@@ -169,6 +191,7 @@ await setDoc(userDocRef, appUser);
 7. `vitest.rules.config.ts` - Vitest configuration for rules tests
 
 ### Modified Files
+
 1. `package.json` - Added test:rules scripts and dependencies
 2. `vitest.config.ts` - Excluded rules tests from regular test runs
 3. `package-lock.json` - Updated with new dependencies
@@ -181,12 +204,14 @@ await setDoc(userDocRef, appUser);
 ## Running Tests
 
 ### Regular Application Tests
+
 ```bash
 npm test                    # Run in watch mode
 npm test -- --run          # Run once
 ```
 
 ### Firestore Rules Tests
+
 ```bash
 npm run test:rules         # Run once (with emulator)
 npm run test:rules:watch   # Run in watch mode
@@ -222,6 +247,7 @@ npm run test:rules:watch   # Run in watch mode
 ## Support
 
 For questions or issues with the security rules:
+
 1. Review test cases in `tests/firestore-rules/`
-2. Check Firebase documentation: https://firebase.google.com/docs/firestore/security/get-started
+2. Check Firebase documentation: <https://firebase.google.com/docs/firestore/security/get-started>
 3. Contact the development team

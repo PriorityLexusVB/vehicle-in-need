@@ -19,6 +19,7 @@ Using `gcloud run deploy --source` creates corrupted images with invalid OCI met
 ## Prerequisites
 
 1. **GCP Authentication**
+
    ```bash
    gcloud auth login
    gcloud config set project gen-lang-client-0615287333
@@ -41,11 +42,13 @@ Using `gcloud run deploy --source` creates corrupted images with invalid OCI met
 The Cloud Build service account needs proper permissions to deploy to Cloud Run and access secrets.
 
 **Service Account Email:**
-```
+
+```text
 <PROJECT_NUMBER>@cloudbuild.gserviceaccount.com
 ```
 
 For project `gen-lang-client-0615287333`, find your project number:
+
 ```bash
 gcloud projects describe gen-lang-client-0615287333 --format='value(projectNumber)'
 ```
@@ -53,6 +56,7 @@ gcloud projects describe gen-lang-client-0615287333 --format='value(projectNumbe
 **Required Roles:**
 
 1. **Cloud Run Admin** - to deploy services:
+
    ```bash
    gcloud projects add-iam-policy-binding gen-lang-client-0615287333 \
      --member="serviceAccount:<PROJECT_NUMBER>@cloudbuild.gserviceaccount.com" \
@@ -60,6 +64,7 @@ gcloud projects describe gen-lang-client-0615287333 --format='value(projectNumbe
    ```
 
 2. **Service Account User** - to deploy as the runtime service account:
+
    ```bash
    gcloud iam service-accounts add-iam-policy-binding \
      <PROJECT_NUMBER>-compute@developer.gserviceaccount.com \
@@ -68,6 +73,7 @@ gcloud projects describe gen-lang-client-0615287333 --format='value(projectNumbe
    ```
 
 3. **Secret Manager Secret Accessor** - to access API keys:
+
    ```bash
    gcloud secrets add-iam-policy-binding vehicle-in-need-gemini \
      --member="serviceAccount:<PROJECT_NUMBER>@cloudbuild.gserviceaccount.com" \
@@ -75,6 +81,7 @@ gcloud projects describe gen-lang-client-0615287333 --format='value(projectNumbe
    ```
 
 **Verification:**
+
 ```bash
 # Check Cloud Build SA permissions
 gcloud projects get-iam-policy gen-lang-client-0615287333 \
@@ -90,6 +97,7 @@ gcloud secrets get-iam-policy vehicle-in-need-gemini
 The Cloud Run service runs as the default compute service account, which needs:
 
 1. **Secret Manager Secret Accessor** - to access secrets at runtime:
+
    ```bash
    gcloud secrets add-iam-policy-binding vehicle-in-need-gemini \
      --member="serviceAccount:<PROJECT_NUMBER>-compute@developer.gserviceaccount.com" \
@@ -97,6 +105,7 @@ The Cloud Run service runs as the default compute service account, which needs:
    ```
 
 **Note:** This permission was likely already granted during initial service setup. Verify with:
+
 ```bash
 gcloud secrets get-iam-policy vehicle-in-need-gemini
 ```
@@ -110,21 +119,24 @@ gcloud secrets get-iam-policy vehicle-in-need-gemini
 **For most deployments, use the automated GitHub Actions workflow:**
 
 1. **Push to main branch** (if code changes are on main):
+
    ```bash
    git checkout main
    git pull origin main
    git push origin main
    ```
+
    - This automatically triggers the build-and-deploy workflow
    - Builds image and pushes to Artifact Registry
    - Does NOT auto-deploy to Cloud Run (requires manual step)
 
 2. **Check build status**:
-   - Go to: https://github.com/PriorityLexusVB/vehicle-in-need/actions
+   - Go to: <https://github.com/PriorityLexusVB/vehicle-in-need/actions>
    - Wait for "Build and Push Container" workflow to complete
    - Verify image was pushed to Artifact Registry
 
 3. **Deploy manually** (copy SHA from GitHub Actions output):
+
    ```bash
    export SHORT_SHA=<commit-sha-from-github>
    
@@ -142,17 +154,20 @@ gcloud secrets get-iam-policy vehicle-in-need-gemini
 **Use this when GitHub Actions is not available or for testing:**
 
 1. **Navigate to repository**:
+
    ```bash
    cd /path/to/vehicle-in-need
    ```
 
 2. **Ensure clean working directory**:
+
    ```bash
    git status
    # Should show no uncommitted changes
    ```
 
 3. **Get current commit SHA or create a manual tag**:
+
    ```bash
    # Option A: Use current commit SHA (recommended for git commits)
    export SHORT_SHA=$(git rev-parse --short=7 HEAD)
@@ -164,6 +179,7 @@ gcloud secrets get-iam-policy vehicle-in-need-gemini
    ```
 
 4. **Submit build to Cloud Build**:
+
    ```bash
    gcloud builds submit \
      --config cloudbuild.yaml \
@@ -178,10 +194,11 @@ gcloud secrets get-iam-policy vehicle-in-need-gemini
 
 5. **Monitor build progress**:
    - Cloud Build will stream logs to your terminal
-   - You can also check: https://console.cloud.google.com/cloud-build/builds
+   - You can also check: <https://console.cloud.google.com/cloud-build/builds>
    - Wait for "SUCCESS" status
 
 6. **Verify deployment** (automatically deployed by cloudbuild.yaml step 5):
+
    ```bash
    gcloud run services describe pre-order-dealer-exchange-tracker \
      --region=us-west1 \
@@ -195,6 +212,7 @@ gcloud secrets get-iam-policy vehicle-in-need-gemini
 ⚠️ **Note:** Local Docker builds may encounter npm errors. Use Cloud Build (Option 2) for production.
 
 1. **Set up variables**:
+
    ```bash
    export PROJECT_ID=gen-lang-client-0615287333
    export REGION=us-west1
@@ -204,11 +222,13 @@ gcloud secrets get-iam-policy vehicle-in-need-gemini
    ```
 
 2. **Authenticate Docker with Artifact Registry**:
+
    ```bash
    gcloud auth configure-docker us-west1-docker.pkg.dev
    ```
 
 3. **Build image locally**:
+
    ```bash
    docker build \
      --build-arg COMMIT_SHA=${TAG} \
@@ -219,12 +239,14 @@ gcloud secrets get-iam-policy vehicle-in-need-gemini
    ```
 
 4. **Push to Artifact Registry**:
+
    ```bash
    docker push ${IMAGE}
    docker push us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${SERVICE}:latest
    ```
 
 5. **Deploy to Cloud Run**:
+
    ```bash
    gcloud run deploy ${SERVICE} \
      --image=${IMAGE} \
@@ -240,6 +262,7 @@ gcloud secrets get-iam-policy vehicle-in-need-gemini
 **Use this to deploy an image that's already in Artifact Registry:**
 
 1. **List available images**:
+
    ```bash
    gcloud artifacts docker images list \
      us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker \
@@ -247,11 +270,13 @@ gcloud secrets get-iam-policy vehicle-in-need-gemini
    ```
 
 2. **Select image SHA** (or use `latest`):
+
    ```bash
    export SHORT_SHA=<sha-from-list>
    ```
 
 3. **Deploy**:
+
    ```bash
    gcloud run deploy pre-order-dealer-exchange-tracker \
      --image=us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:${SHORT_SHA} \
@@ -275,6 +300,7 @@ gcloud run services describe pre-order-dealer-exchange-tracker \
 ```
 
 **Expected output:**
+
 - `status.url`: Should show the service URL
 - `status.latestReadyRevisionName`: Should show the newly deployed revision
 - `status.conditions`: All conditions should have `status: "True"`
@@ -298,6 +324,7 @@ curl -s "${SERVICE_URL}/api/status" | jq '.'
 ```
 
 **Expected output:**
+
 ```json
 {
   "status": "healthy",
@@ -320,8 +347,9 @@ gcloud run services logs read pre-order-dealer-exchange-tracker \
 ```
 
 **Look for:**
+
 - Server startup message: "Vehicle Order Tracker Server"
-- "Running on: http://0.0.0.0:8080"
+- "Running on: <http://0.0.0.0:8080>"
 - No error messages
 
 ### 5. Test Application UI
@@ -340,6 +368,7 @@ gcloud run services logs read pre-order-dealer-exchange-tracker \
 **Symptom:** Cloud Build fails at check-conflicts step
 
 **Solution:**
+
 ```bash
 # Search for conflict markers
 grep -r '<<<<<<< \|=======$\|>>>>>>> ' \
@@ -356,6 +385,7 @@ git commit -m "Resolve merge conflicts"
 **Symptom:** Docker build step fails with npm errors
 
 **Solution:**
+
 - This is expected in local Docker builds (known npm bug)
 - Use Cloud Build instead - it works correctly
 - See [DOCKER_BUILD_NOTES.md](./DOCKER_BUILD_NOTES.md) for details
@@ -367,6 +397,7 @@ git commit -m "Resolve merge conflicts"
 **Cause:** Using `gcloud run deploy --source` or corrupted image
 
 **Solution:**
+
 1. DO NOT use `--source` deployment method
 2. Rebuild using Cloud Build (Option 2 above)
 3. Deploy with explicit `--image` flag
@@ -380,6 +411,7 @@ git commit -m "Resolve merge conflicts"
 **Solution - Complete Service Recreation:**
 
 1. **List and save current environment variables and secrets**:
+
    ```bash
    gcloud run services describe pre-order-dealer-exchange-tracker \
      --region=us-west1 \
@@ -391,6 +423,7 @@ git commit -m "Resolve merge conflicts"
    ```
 
 2. **Delete the corrupted service**:
+
    ```bash
    gcloud run services delete pre-order-dealer-exchange-tracker \
      --region=us-west1 \
@@ -398,6 +431,7 @@ git commit -m "Resolve merge conflicts"
    ```
 
 3. **Verify a clean Docker image exists in Artifact Registry**:
+
    ```bash
    gcloud artifacts docker images list \
      us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker \
@@ -405,6 +439,7 @@ git commit -m "Resolve merge conflicts"
    ```
 
 4. **If no clean image exists, build one**:
+
    ```bash
    # Use Option 2 (Cloud Build) or Option 3 (Manual Docker build)
    export SHORT_SHA=manual-$(date +%Y%m%d-%H%M)
@@ -414,6 +449,7 @@ git commit -m "Resolve merge conflicts"
    ```
 
 5. **Deploy from clean image**:
+
    ```bash
    export SHORT_SHA=<tag-from-step-3-or-4>
    
@@ -427,15 +463,17 @@ git commit -m "Resolve merge conflicts"
    ```
 
 6. **Verify the deployment type**:
+
    ```bash
    gcloud run services describe pre-order-dealer-exchange-tracker \
      --region=us-west1 \
      --format='value(metadata.labels)'
    ```
-   
+
    Should show deployment type as `Container image`, NOT `cloud-run-source-deploy`.
 
 7. **Test the service**:
+
    ```bash
    SERVICE_URL=$(gcloud run services describe pre-order-dealer-exchange-tracker \
      --region=us-west1 \
@@ -450,6 +488,7 @@ git commit -m "Resolve merge conflicts"
 **Symptom:** `gcloud run deploy` fails - image not found
 
 **Solution:**
+
 ```bash
 # Check if image exists
 gcloud artifacts docker images list \
@@ -464,6 +503,7 @@ gcloud builds submit --config cloudbuild.yaml
 **Symptom:** curl to /health endpoint times out or fails
 
 **Solution:**
+
 ```bash
 # Check recent logs
 gcloud run services logs read pre-order-dealer-exchange-tracker \
@@ -486,6 +526,7 @@ gcloud run services logs read pre-order-dealer-exchange-tracker \
 **If deployment fails and you need to rollback:**
 
 1. **List previous revisions**:
+
    ```bash
    gcloud run revisions list \
      --service=pre-order-dealer-exchange-tracker \
@@ -493,6 +534,7 @@ gcloud run services logs read pre-order-dealer-exchange-tracker \
    ```
 
 2. **Roll back to specific revision**:
+
    ```bash
    gcloud run services update-traffic pre-order-dealer-exchange-tracker \
      --region=us-west1 \
@@ -506,9 +548,11 @@ gcloud run services logs read pre-order-dealer-exchange-tracker \
 ### Secrets Management
 
 The service uses Google Secret Manager for sensitive data:
+
 - `API_KEY`: Gemini/Vertex AI API key (stored as `vehicle-in-need-gemini`)
 
 **To update secret:**
+
 ```bash
 # View current secret versions
 gcloud secrets versions list vehicle-in-need-gemini
@@ -523,11 +567,13 @@ gcloud run services update pre-order-dealer-exchange-tracker --region=us-west1
 ### Public Access
 
 The service is configured with `--allow-unauthenticated` because:
+
 - It's a public-facing application
 - Authentication is handled at application level (Firebase Auth)
 - API endpoints validate requests internally
 
 **To restrict access** (if needed):
+
 ```bash
 gcloud run services remove-iam-policy-binding pre-order-dealer-exchange-tracker \
   --region=us-west1 \
@@ -540,6 +586,7 @@ gcloud run services remove-iam-policy-binding pre-order-dealer-exchange-tracker 
 ## Quick Reference Commands
 
 ### Get Service URL
+
 ```bash
 gcloud run services describe pre-order-dealer-exchange-tracker \
   --region=us-west1 \
@@ -547,6 +594,7 @@ gcloud run services describe pre-order-dealer-exchange-tracker \
 ```
 
 ### View Recent Logs
+
 ```bash
 gcloud run services logs read pre-order-dealer-exchange-tracker \
   --region=us-west1 \
@@ -555,6 +603,7 @@ gcloud run services logs read pre-order-dealer-exchange-tracker \
 ```
 
 ### Check Build History
+
 ```bash
 gcloud builds list \
   --filter="source.repoSource.repoName=vehicle-in-need" \
@@ -562,6 +611,7 @@ gcloud builds list \
 ```
 
 ### Inspect Image
+
 ```bash
 docker pull us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:latest
 docker inspect us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:latest | jq '.[0].RootFS.Layers'
@@ -582,7 +632,8 @@ docker inspect us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-nee
 ## Support
 
 For issues or questions:
+
 1. Check [CONTAINER_IMAGE_ISSUES.md](./CONTAINER_IMAGE_ISSUES.md) for known issues
-2. Review Cloud Build logs: https://console.cloud.google.com/cloud-build/builds
-3. Review Cloud Run logs: https://console.cloud.google.com/run
+2. Review Cloud Build logs: <https://console.cloud.google.com/cloud-build/builds>
+3. Review Cloud Run logs: <https://console.cloud.google.com/run>
 4. Create GitHub issue with details and error messages

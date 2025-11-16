@@ -37,6 +37,7 @@ Expected output should show `valueSource.secretKeyRef` instead of plaintext valu
 For local development with actual AI features:
 
 1. Install and authenticate with gcloud:
+
    ```bash
    gcloud auth application-default login
    gcloud config set project vehicles-in-need
@@ -45,6 +46,7 @@ For local development with actual AI features:
 2. Ensure you have Vertex AI API enabled and proper IAM permissions
 
 3. Run the development server:
+
    ```bash
    npm run dev
    npm run server  # In a separate terminal
@@ -55,6 +57,7 @@ For local development with actual AI features:
 If you don't need AI features locally:
 
 1. Set environment variable to disable Vertex AI:
+
    ```bash
    export DISABLE_VERTEX_AI=true
    npm run server
@@ -64,7 +67,7 @@ If you don't need AI features locally:
 
 ### Architecture
 
-```
+```text
 ┌─────────────┐
 │   Browser   │
 │   (Client)  │
@@ -111,11 +114,13 @@ If you don't need AI features locally:
 To rotate the API key:
 
 1. Create a new version of the secret in Secret Manager:
+
    ```bash
    echo -n "NEW_API_KEY_HERE" | gcloud secrets versions add vehicle-in-need-gemini --data-file=-
    ```
 
 2. Redeploy the Cloud Run service (it automatically picks up the `:latest` version):
+
    ```bash
    gcloud builds submit --config cloudbuild.yaml
    ```
@@ -149,6 +154,7 @@ curl -X POST http://localhost:8080/api/generate-email \
 **Cause**: Vertex AI is not initialized or credentials are missing
 
 **Solutions**:
+
 1. Check Application Default Credentials: `gcloud auth application-default print-access-token`
 2. Verify project: `gcloud config get-value project`
 3. Enable Vertex AI API: `gcloud services enable aiplatform.googleapis.com`
@@ -159,6 +165,7 @@ curl -X POST http://localhost:8080/api/generate-email \
 **Cause**: IAM permissions issue
 
 **Solution**: Grant the Cloud Run service account the required role:
+
 ```bash
 gcloud projects add-iam-policy-binding vehicles-in-need \
   --member="serviceAccount:SERVICE_ACCOUNT_EMAIL" \
@@ -180,7 +187,7 @@ Expected output: `✓ No VITE_GEMINI_API_KEY in dist/`
 
 ## Automated UI Audit & Merge Marker Guard
 
-### Overview
+### Overview (Automated Guards)
 
 The repository includes automated guards to prevent deployment issues:
 
@@ -197,6 +204,7 @@ npm run audit:ui
 ```
 
 This script performs:
+
 - Dependency installation (`npm ci`)
 - Conflict marker detection (`prebuild:check`)
 - Production build
@@ -223,20 +231,22 @@ Requires `source-map-explorer` to be installed globally:
 npm install -g source-map-explorer
 ```
 
-### Conflict Marker Protection
+### Conflict Marker Protection (Pre-Build Check)
 
-The `prebuild:check` script runs automatically before every build and checks for merge conflict markers in source files:
+The `prebuild:check` script runs automatically before every build and
+checks for merge conflict markers in source files:
 
 ```bash
 npm run prebuild:check
 ```
 
-Searches for patterns: `<<<<<<< `, `=======`, `>>>>>>> ` in:
-- TypeScript files (*.ts, *.tsx)
-- JavaScript files (*.js, *.jsx)
+Searches for patterns: `<<<<<<<`, `=======`, `>>>>>>>` in:
+
+- TypeScript files (*.ts,*.tsx)
+- JavaScript files (*.js,*.jsx)
 - HTML files (*.html)
 - Markdown files (*.md)
-- YAML files (*.yaml, *.yml)
+- YAML files (*.yaml,*.yml)
 
 If markers are found, the build fails immediately with an error listing the affected files.
 
@@ -247,6 +257,7 @@ A CI workflow runs on every PR to `main`:
 **Workflow: `.github/workflows/ui-audit.yml`**
 
 Performs:
+
 1. Checkout code
 2. Setup Node.js 20
 3. Install dependencies
@@ -257,6 +268,7 @@ Performs:
 8. Upload Lighthouse report as artifact
 
 **View reports:**
+
 - Go to the Actions tab in GitHub
 - Select the workflow run
 - Download the `lighthouse-report` artifact
@@ -264,10 +276,12 @@ Performs:
 ### Secret Scanning Patterns
 
 The audit checks for:
+
 - `VITE_GEMINI_API_KEY` - Gemini API key environment variable (should never be in dist/)
 
 **Note on Firebase API Keys:**
 Firebase Web SDK API keys (starting with `AIza`) are expected in the production bundle. These are NOT secrets:
+
 - They are designed to be public and included in client-side code
 - They are protected by Firebase Security Rules
 - They only grant access to public Firebase APIs

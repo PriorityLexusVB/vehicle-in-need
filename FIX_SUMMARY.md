@@ -1,26 +1,32 @@
 # Fix Summary: Cloud Run Deployment (Layer/Diff_IDs Mismatch)
 
 ## Issue
+
 Cloud Run deployment failed with the following error:
-```
+
+```text
 Error: got 1 Manifest.Layers vs 0 ConfigFile.RootFS.DiffIDs
 ```
 
 **Failed Image Location:**
-```
+
+```text
 us-west1-docker.pkg.dev/gen-lang-client-0615287333/cloud-run-source-deploy/vehicle-in-need/pre-order-dealer-exchange-tracker@sha256:ef4ee520c...
 ```
 
 ## Root Cause
 
 ### Primary Issue
+
 The deployment was using `gcloud run deploy --source` which:
+
 1. Uses Cloud Buildpacks to automatically containerize the application
 2. Creates images in an ephemeral `cloud-run-source-deploy` registry path
 3. Can produce malformed OCI images with structural inconsistencies
 4. Specifically: manifest layer count doesn't match the config rootfs.diff_ids count
 
 ### Contributing Factor
+
 The existing Dockerfile used `node:20-alpine` which has a known npm bug ("Exit handler never called!") that causes unreliable builds in certain environments, particularly with Docker BuildKit.
 
 ## Solution Implemented
@@ -28,12 +34,14 @@ The existing Dockerfile used `node:20-alpine` which has a known npm bug ("Exit h
 ### 1. Fixed Dockerfile (3 files changed, 265 insertions, 74 deletions)
 
 **Changes:**
+
 - Replaced `node:20-alpine` with `node:20-slim` for reliable npm installations
 - Removed Alpine-specific workarounds and error handling
 - Simplified health check using Node.js HTTP module (no wget/apt-get needed)
 - Added validation steps to ensure dependencies install correctly
 
 **Result:**
+
 - Produces valid OCI images with proper layer structure
 - Works reliably in both Cloud Build and local Docker (with DOCKER_BUILDKIT=0)
 - Tested locally: 10 layers, proper RootFS structure, health check passes
@@ -43,6 +51,7 @@ The existing Dockerfile used `node:20-alpine` which has a known npm bug ("Exit h
 **File:** `.github/workflows/build-and-deploy.yml`
 
 **Features:**
+
 - Automatically builds containers on push to main
 - Validates image structure (checks layer count > 0)
 - Tests container startup and health endpoint
@@ -51,17 +60,20 @@ The existing Dockerfile used `node:20-alpine` which has a known npm bug ("Exit h
 - Only pushes on main branch (PRs just build and test)
 
 **Image Location:**
-```
+
+```text
 us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:COMMIT_SHA
 ```
 
 ### 3. Updated Documentation
 
 **Files:**
+
 - `DOCKER_BUILD_NOTES.md` - Updated build instructions
 - `CONTAINER_DEPLOYMENT_GUIDE.md` - New comprehensive deployment guide
 
 **Coverage:**
+
 - Multiple build methods (GitHub Actions, Cloud Build, local Docker)
 - Image validation procedures
 - Deployment instructions
@@ -71,6 +83,7 @@ us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dea
 ## Validation
 
 ### Local Build Test
+
 ```bash
 $ DOCKER_BUILDKIT=0 docker build --platform=linux/amd64 -t test-vehicle-tracker:local .
 Successfully built 6c61ba2d84f3
@@ -84,7 +97,8 @@ healthy ✓
 ```
 
 ### Test Suite
-```
+
+```text
 ✓ Linting: passed
 ✓ Unit tests: 50 passed, 4 skipped
 ✓ Security scan: No vulnerabilities found
@@ -93,12 +107,14 @@ healthy ✓
 ## Before vs After
 
 ### Before
-```
+
+```text
 Source → gcloud run deploy --source → Buildpacks → cloud-run-source-deploy → ❌ Malformed Image
 ```
 
 ### After
-```
+
+```text
 Source → Dockerfile → Docker Build → Artifact Registry → ✅ Valid OCI Image → Cloud Run
          ↓
      GitHub Actions (automated)
@@ -109,17 +125,20 @@ Source → Dockerfile → Docker Build → Artifact Registry → ✅ Valid OCI I
 ## Deployment Instructions
 
 ### Quick Start (Using Cloud Build)
+
 ```bash
 gcloud builds submit --config cloudbuild.yaml
 ```
 
 ### Using GitHub Actions
+
 1. Configure GCP authentication (Workload Identity Federation or service account key)
 2. Push to main branch
 3. Workflow automatically builds and pushes
 4. Deploy using outputted command
 
 ### Manual Deploy
+
 ```bash
 gcloud run deploy pre-order-dealer-exchange-tracker \
   --image us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:COMMIT_SHA \
@@ -146,6 +165,7 @@ gcloud run deploy pre-order-dealer-exchange-tracker \
 ## Rollback Plan
 
 If issues occur:
+
 ```bash
 # List revisions
 gcloud run revisions list --service=pre-order-dealer-exchange-tracker --region=us-west1
@@ -159,6 +179,7 @@ gcloud run services update-traffic pre-order-dealer-exchange-tracker \
 ## Prevention
 
 To avoid this issue in the future:
+
 1. ✅ Always build from Dockerfile (not `--source`)
 2. ✅ Use stable Artifact Registry location
 3. ✅ Validate images before deployment (layer count check)

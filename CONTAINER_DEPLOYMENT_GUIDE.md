@@ -8,13 +8,14 @@ The application uses a multi-stage Dockerfile that produces valid OCI images com
 
 ## Architecture
 
-```
+```text
 Source Code → Docker Build → Artifact Registry → Cloud Run
                     ↓
               Validation (layer structure, health check)
 ```
 
 **Key Components:**
+
 - **Dockerfile**: Multi-stage build using `node:20-slim`
 - **GitHub Actions**: Automated build and push on commits to main
 - **Cloud Build**: Alternative build method using `cloudbuild.yaml`
@@ -27,10 +28,12 @@ Source Code → Docker Build → Artifact Registry → Cloud Run
 The repository includes a GitHub Actions workflow that automatically builds and pushes images on every commit to main.
 
 **Setup Requirements:**
+
 1. Configure GCP authentication in GitHub repository settings
 2. Add required secrets (see below)
 
 **GitHub Secrets Required:**
+
 ```yaml
 GCP_WORKLOAD_IDENTITY_PROVIDER: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER
 GCP_SERVICE_ACCOUNT: github-actions@PROJECT_ID.iam.gserviceaccount.com
@@ -40,6 +43,7 @@ GCP_SA_KEY: <service account JSON key>
 ```
 
 **Workflow Behavior:**
+
 - **On PRs**: Builds and validates image (does not push)
 - **On push to main**: Builds, validates, and pushes to Artifact Registry
 - **Tags**: Creates both `:latest` and `:COMMIT_SHA` tags
@@ -62,6 +66,7 @@ gcloud builds log BUILD_ID --stream
 ```
 
 **Benefits:**
+
 - No local Docker setup required
 - Automatic authentication to Artifact Registry
 - Build logs stored in Cloud Logging
@@ -111,6 +116,7 @@ docker image inspect IMAGE_NAME | jq -r '.[0].RootFS'
 ```
 
 **Expected Output:**
+
 ```json
 {
   "Type": "layers",
@@ -147,6 +153,7 @@ docker stop test && docker rm test
 ### Prerequisites
 
 1. **Artifact Registry Repository**: Must exist
+
    ```bash
    gcloud artifacts repositories create vehicle-in-need \
      --repository-format=docker \
@@ -258,14 +265,17 @@ gcloud run revisions delete REVISION_NAME \
 ### Issue: Image layer/diff_ids mismatch
 
 **Symptoms:**
+
 - Error: "got X Manifest.Layers vs Y ConfigFile.RootFS.DiffIDs"
 - Cloud Run deployment fails with image validation error
 
 **Cause:**
+
 - Using `gcloud run deploy --source` (buildpacks)
 - Malformed image from cloud-run-source-deploy registry
 
 **Solution:**
+
 1. Build from Dockerfile (this repo's approach)
 2. Validate image structure before deploying
 3. Use stable Artifact Registry location
@@ -273,13 +283,16 @@ gcloud run revisions delete REVISION_NAME \
 ### Issue: npm "Exit handler never called!" error
 
 **Symptoms:**
+
 - Local Docker build fails during `npm ci`
 - vite not found after npm install
 
 **Cause:**
+
 - npm bug in Docker BuildKit
 
 **Solution:**
+
 ```bash
 # Build with BuildKit disabled
 DOCKER_BUILDKIT=0 docker build ...
@@ -290,10 +303,12 @@ Cloud Build doesn't use BuildKit, so this only affects local builds.
 ### Issue: Container fails health check
 
 **Symptoms:**
+
 - Cloud Run shows "Container failed to start"
 - Health endpoint not responding
 
 **Checklist:**
+
 1. Verify server binds to `0.0.0.0:${PORT}` (not `localhost`)
 2. Check `server/index.cjs` for correct PORT env var usage
 3. Verify dist/ files copied to image correctly
@@ -302,10 +317,12 @@ Cloud Build doesn't use BuildKit, so this only affects local builds.
 ### Issue: Secrets not available in Cloud Run
 
 **Symptoms:**
+
 - API errors related to missing credentials
 - Vertex AI authentication failures
 
 **Solution:**
+
 ```bash
 # Mount secret from Secret Manager
 gcloud run deploy pre-order-dealer-exchange-tracker \
@@ -367,6 +384,7 @@ gcloud logging tail "resource.type=cloud_run_revision"
 ## Support
 
 For issues or questions:
+
 1. Check troubleshooting section above
 2. Review [GitHub Issues](https://github.com/PriorityLexusVB/vehicle-in-need/issues)
-3. Consult Cloud Run documentation: https://cloud.google.com/run/docs
+3. Consult Cloud Run documentation: <https://cloud.google.com/run/docs>

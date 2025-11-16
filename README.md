@@ -909,6 +909,7 @@ npm run test:e2e
 The repository includes an automated UI audit workflow (`.github/workflows/ui-audit.yml`) that runs on every PR to `main`:
 
 **Checks performed:**
+
 - ✅ Merge conflict marker detection (prevents builds with unresolved conflicts)
 - ✅ Production build verification
 - ✅ Secret scanning (ensures no API keys in `dist/`)
@@ -927,6 +928,7 @@ npm run audit:bundle    # Analyze bundle size (requires source-map-explorer)
 ```
 
 **View Lighthouse reports:**
+
 1. Go to Actions tab in GitHub
 2. Select a UI Audit workflow run
 3. Download the `lighthouse-report` artifact

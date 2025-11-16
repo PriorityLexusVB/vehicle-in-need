@@ -15,13 +15,16 @@ The Cloud Run deployment diagnosis could not proceed beyond initial environment 
 ## 2. ROOT CAUSE & FIX APPLIED
 
 ### Original Error (from problem context)
+
 - **Error**: `PERMISSION_DENIED: Permission 'iam.serviceaccounts.actAs' denied on service account pre-order-dealer-exchange--860@gen-lang-client-0615287333.iam.gserviceaccount.com`
 - **Authenticated as**: `cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com`
 
 ### Attempted Fix
+
 **NO FIX APPLIED** - Cannot proceed without gcloud authentication.
 
 The intended fix was to:
+
 1. Grant `roles/iam.serviceAccountUser` role on `pre-order-dealer-exchange--860@gen-lang-client-0615287333.iam.gserviceaccount.com` to `cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com`
 2. Grant `roles/run.admin` role at project level to `cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com`
 
@@ -30,26 +33,31 @@ The intended fix was to:
 ## 3. STEP-BY-STEP EXECUTION LOG (CONDENSED)
 
 ### **S1.1** - Verify gcloud project
+
 - **Command**: `gcloud config get-value project`
 - **Exit Code**: 0
 - **Result**: Project was unset (returned `(unset)`)
 
 ### **S1.2** - Set the correct project
+
 - **Command**: `gcloud config set project gen-lang-client-0615287333`
 - **Exit Code**: 0
 - **Result**: Success - "Updated property [core/project]."
 
 ### **S1.1 (re-run)** - Re-verify gcloud project
+
 - **Command**: `gcloud config get-value project`
 - **Exit Code**: 0
 - **Result**: Success - returned `gen-lang-client-0615287333`
 
 ### **S2.1** - List service accounts
+
 - **Command**: `gcloud iam service-accounts list --project=gen-lang-client-0615287333`
 - **Exit Code**: 1 ❌ **FAILED**
 - **Error**: `You do not currently have an active account selected.`
 - **Full stderr**:
-  ```
+
+  ```text
   ERROR: (gcloud.iam.service-accounts.list) You do not currently have an active account selected.
   Please run:
 
@@ -65,6 +73,7 @@ The intended fix was to:
   ```
 
 ### **Authentication Check**
+
 - **Command**: `gcloud auth list`
 - **Exit Code**: 0
 - **Result**: `No credentialed accounts.`
@@ -78,6 +87,7 @@ The intended fix was to:
 **NOT AVAILABLE** - Unable to query Cloud Run service due to authentication failure.
 
 Expected checks (not performed):
+
 - Service name: `pre-order-dealer-exchange-tracker`
 - Region: `us-west1`
 - Latest revision: UNKNOWN
@@ -92,6 +102,7 @@ Expected checks (not performed):
 **NOT PERFORMED** - Cannot retrieve service URL without authentication.
 
 Expected checks:
+
 - HTTP status from `/health`: N/A
 - HTTP status from `/`: N/A
 - Response body: N/A
@@ -103,6 +114,7 @@ Expected checks:
 **NOT AVAILABLE** - Unable to query Firestore due to authentication failure.
 
 Expected checks (not performed):
+
 - Firestore database mode: UNKNOWN
 - Location: UNKNOWN
 - List operations: N/A
@@ -113,7 +125,8 @@ Expected checks (not performed):
 
 **NOT AVAILABLE** - Unable to query IAM policies due to authentication failure.
 
-### Expected IAM Changes (not applied):
+### Expected IAM Changes (not applied)
+
 1. **On runtime service account** (`pre-order-dealer-exchange--860@gen-lang-client-0615287333.iam.gserviceaccount.com`):
    - Should grant `roles/iam.serviceAccountUser` to `cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com`
 
@@ -127,26 +140,29 @@ Expected checks (not performed):
 ### IMMEDIATE ACTIONS REQUIRED
 
 1. **Authenticate gcloud CLI**
-   
+
    The agent environment does not have Google Cloud credentials configured. To proceed with diagnosis and fix, one of the following must be done:
 
    **Option A - Service Account Key Authentication** (for automation):
+
    ```bash
    gcloud auth activate-service-account --key-file=/path/to/service-account-key.json
    ```
 
    **Option B - User Account Authentication** (interactive):
+
    ```bash
    gcloud auth login
    ```
 
    **Option C - Application Default Credentials**:
+
    ```bash
    gcloud auth application-default login
    ```
 
 2. **Required Permissions for Executing Account**
-   
+
    The account used to authenticate must have sufficient permissions to:
    - List and describe service accounts (`iam.serviceAccounts.list`, `iam.serviceAccounts.get`)
    - Modify IAM policies on service accounts (`iam.serviceAccounts.setIamPolicy`)
@@ -161,7 +177,7 @@ Expected checks (not performed):
    - Custom role with specific permissions listed above
 
 3. **Alternative Execution Environments**
-   
+
    Consider executing this diagnosis from:
    - **Cloud Shell** (pre-authenticated with user credentials)
    - **Cloud Build** (using service account authentication)
