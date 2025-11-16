@@ -1,6 +1,7 @@
 # UI/UX Matrix - Manager vs Non-Manager
 
-This document provides a clear comparison of the user interface and available actions between Manager and Non-Manager users.
+This document provides a clear comparison of the user interface and available
+actions between Manager and Non-Manager users.
 
 ## Quick Reference Matrix
 
@@ -37,7 +38,8 @@ This document provides a clear comparison of the user interface and available ac
 ### Header Component
 
 #### Manager View
-```
+
+```text
 ┌──────────────────────────────────────────────────────────────────┐
 │ Vehicle Order Tracker v{sha}        [42 Active] ⚙️  Sign Out     │
 │ Welcome, John Doe (Manager) [isManager: true]     Orders          │
@@ -48,7 +50,8 @@ This document provides a clear comparison of the user interface and available ac
 ```
 
 #### Non-Manager View
-```
+
+```text
 ┌──────────────────────────────────────────────────────────────────┐
 │ Vehicle Order Tracker v{sha}                          Sign Out   │
 │ Welcome, Jane Smith [isManager: false]                           │
@@ -58,17 +61,18 @@ This document provides a clear comparison of the user interface and available ac
 ### Dashboard Route (`/`)
 
 #### Manager Dashboard
+
 - **Top Section**: DashboardStats cards showing:
   - Total Active Orders
   - Awaiting Action
   - Ready for Delivery
   - Delivered (Last 30d)
 
-- **Toolbar**: 
+- **Toolbar**:
   - Left: "All Orders" heading
   - Right: "Add New Order" button (toggles OrderForm)
 
-- **OrderForm**: 
+- **OrderForm**:
   - Hidden by default
   - Shows when "Add New Order" clicked
   - Closes automatically on successful submit
@@ -81,11 +85,13 @@ This document provides a clear comparison of the user interface and available ac
   - Delete functionality
 
 #### Non-Manager Dashboard
+
 - **Top Section**: Hero heading
   - Title: "Submit a New Vehicle Request"
-  - Subtitle: "Fill out the form below to create a new pre-order or dealer exchange request."
+  - Subtitle: "Fill out the form below to create a new pre-order or dealer
+  exchange request."
 
-- **OrderForm**: 
+- **OrderForm**:
   - Always visible (centered, max-width)
   - All sections visible and editable
   - Does NOT close on submit (stays open for next submission)
@@ -136,6 +142,7 @@ All sections are identical for both managers and non-managers:
 ### OrderList Component
 
 #### Shared Features (Both Roles)
+
 - **Tabs**: Active Orders / Delivered History
 - **Search**: By Customer Name, Deal #, Stock #, or VIN
 - **Status Filters**: All Active + individual status pills (Active tab only)
@@ -143,12 +150,14 @@ All sections are identical for both managers and non-managers:
 - **Empty States**: Context-specific messages
 
 #### Manager-Only Features
+
 - Change status dropdown on each active order
 - "Mark as Received" button
 - "Mark as Delivered" button
 - Delete button with confirmation
 
 #### Non-Manager Restrictions
+
 - Status displayed as read-only text
 - No change status controls
 - No delete buttons
@@ -158,6 +167,7 @@ All sections are identical for both managers and non-managers:
 ### Admin Route (`/admin`)
 
 #### Manager Access
+
 - Full access to User Management page
 - Can view all users
 - Can toggle `isManager` for other users
@@ -165,6 +175,7 @@ All sections are identical for both managers and non-managers:
 - Helper text explains functionality
 
 #### Non-Manager Access
+
 - ProtectedRoute redirects to `/`
 - No error message shown
 - Navigation elements not visible in header
@@ -173,6 +184,7 @@ All sections are identical for both managers and non-managers:
 ## Accessibility Features
 
 ### All Users
+
 - ✅ Semantic HTML elements
 - ✅ Proper heading hierarchy
 - ✅ Form labels with `htmlFor` matching input `id`
@@ -182,17 +194,20 @@ All sections are identical for both managers and non-managers:
 - ✅ Role and aria-label on button groups
 
 ### Manager-Specific
+
 - ✅ Gear icon has `aria-label="User Management"`
 - ✅ Status dropdown has proper label
 - ✅ Delete button has descriptive text + icon
 
 ### Non-Manager Specific
+
 - ✅ Screen reader announces read-only status
 - ✅ Disabled controls have proper ARIA states
 
 ## Field Validation
 
-All required fields show inline error messages in red below the input when validation fails:
+All required fields show inline error messages in red below the input when
+validation fails:
 
 - Salesperson is required
 - Manager is required
@@ -206,36 +221,53 @@ All required fields show inline error messages in red below the input when valid
 - MSRP is required (must be valid number)
 - Deposit Amount is required (must be valid number)
 
-Optional numeric fields (Selling Price, Gross) still validate that if provided, they must be valid numbers.
+Optional numeric fields (Selling Price, Gross) still validate that if provided,
+they must be valid numbers.
 
 ## Design Decisions
 
 ### Why Delivered/Received Excluded from Status Buttons?
+
 These are terminal states managed through dedicated action buttons:
+
 - "Mark as Received" - transitions from any active status
 - "Mark as Delivered" - only available after "Received"
 
-This workflow prevents accidental status changes and enforces the order lifecycle.
+This workflow prevents accidental status changes and enforces the order
+lifecycle.
 
 ### Why Non-Managers Can Generate AI Emails?
-While non-managers cannot manage orders, they may need to communicate with customers. The AI email feature is a convenience tool that doesn't grant any order management privileges.
+
+While non-managers cannot manage orders, they may need to communicate with
+customers. The AI email feature is a convenience tool that doesn't grant any
+order management privileges.
 
 ### Why Form Stays Open for Non-Managers?
-Non-managers typically submit multiple orders in a session. Keeping the form visible reduces clicks and streamlines their primary workflow.
+
+Non-managers typically submit multiple orders in a session. Keeping the form
+visible reduces clicks and streamlines their primary workflow.
 
 ### Why Managers See Form Toggle?
-Managers need to toggle between order management and order creation. The dashboard is their primary workspace for viewing all orders, so the form is secondary.
+
+Managers need to toggle between order management and order creation. The
+dashboard is their primary workspace for viewing all orders, so the form is
+secondary.
 
 ### Why Status Filters Only on Active Tab?
-Delivered orders don't need status filtering - they're all in the same "Delivered" state. The filter is designed to help managers prioritize active work.
+
+Delivered orders don't need status filtering - they're all in the same
+"Delivered" state. The filter is designed to help managers prioritize active
+work.
 
 ## Color Scheme
 
 ### Primary Colors
+
 - **Sky Blue** (`sky-500/600/700`): Primary actions, active states, links
 - **Slate** (`slate-200/300/500/600/800`): Neutral UI, borders, text
 
 ### Status Colors
+
 - **Amber** (`amber-100/600/700`): Awaiting action, warnings
 - **Green** (`green-100/600/700`): Delivered, success states
 - **Blue** (`blue-600/700`): Received, info states
@@ -243,6 +275,7 @@ Delivered orders don't need status filtering - they're all in the same "Delivere
 - **Red** (`red-500/600/800`): Errors, delete actions
 
 ### Background Colors
+
 - **White**: Cards, forms, inputs
 - **Slate-50**: Section backgrounds, read-only displays
 - **Slate-100**: Page background
@@ -264,12 +297,14 @@ Delivered orders don't need status filtering - they're all in the same "Delivere
 ## Navigation Patterns
 
 ### Manager Navigation
+
 1. **Pill Nav** - Always visible, active state indicated
 2. **Gear Icon** - Quick access to admin
 3. **App Title** - Clickable, returns to dashboard
 4. **Browser Back/Forward** - Works correctly with React Router
 
 ### Non-Manager Navigation
+
 1. **App Title** - Clickable, returns to dashboard
 2. **No admin controls visible**
 3. **Browser Back/Forward** - Limited to home page
@@ -277,11 +312,13 @@ Delivered orders don't need status filtering - they're all in the same "Delivere
 ## Security Considerations
 
 ### Frontend Restrictions
+
 - Admin UI hidden from non-managers
 - ProtectedRoute enforces role-based access
 - Action buttons conditionally rendered
 
 ### Backend Security (Firestore)
+
 - Firestore rules enforce server-side authorization
 - Frontend restrictions are UX convenience only
 - All mutations validated at database level

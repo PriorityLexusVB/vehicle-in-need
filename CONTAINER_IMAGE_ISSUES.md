@@ -2,21 +2,27 @@
 
 ## ⚠️ CRITICAL: DO NOT USE `gcloud run deploy --source`
 
-**This service MUST be deployed using pre-built Docker images from Artifact Registry.**
+**This service MUST be deployed using pre-built Docker images from
+Artifact Registry.**
 
-Using `gcloud run deploy --source` creates corrupted images in the ephemeral `cloud-run-source-deploy` registry with mismatched OCI metadata, causing deployment failures.
+Using `gcloud run deploy --source` creates corrupted images in the
+ephemeral `cloud-run-source-deploy` registry with mismatched OCI metadata,
+causing deployment failures.
 
 ### Correct Deployment Process
 
 1. **Build via Cloud Build** (automated in GitHub Actions or manual):
+
    ```bash
    gcloud builds submit --config cloudbuild.yaml
    ```
 
 2. **Deploy using explicit image reference**:
+
    ```bash
    gcloud run deploy pre-order-dealer-exchange-tracker \
-     --image us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:$SHORT_SHA \
+     --image us-west1-docker.pkg.dev/gen-lang-client-0615287333/\
+vehicle-in-need/pre-order-dealer-exchange-tracker:$SHORT_SHA \
      --region us-west1 \
      --platform managed \
      --allow-unauthenticated \
@@ -26,68 +32,90 @@ Using `gcloud run deploy --source` creates corrupted images in the ephemeral `cl
 
 Replace `$SHORT_SHA` with the actual git commit SHA from your build.
 
-**See [CLOUD_RUN_DEPLOYMENT_RUNBOOK.md](./CLOUD_RUN_DEPLOYMENT_RUNBOOK.md) for complete deployment instructions.**
+**See [CLOUD_RUN_DEPLOYMENT_RUNBOOK.md](./CLOUD_RUN_DEPLOYMENT_RUNBOOK.md)
+for complete deployment instructions.**
 
 ---
 
 ## Issue Summary
 
-This document describes the container image issues discovered during Cloud Run deployment and their solutions.
+This document describes the container image issues discovered during Cloud
+Run deployment and their solutions.
 
 ## Issue 1: IAM Permission Denied (RESOLVED)
 
-### Error
-```
-PERMISSION_DENIED: Permission 'iam.serviceaccounts.actAs' denied on service account 
-pre-order-dealer-exchange--860@gen-lang-client-0615287333.iam.gserviceaccount.com
+### Error (Issue 2)
+
+```text
+PERMISSION_DENIED: Permission 'iam.serviceaccounts.actAs' denied on
+service account 
+pre-order-dealer-exchange--860@gen-lang-client-0615287333.\
+iam.gserviceaccount.com
 ```
 
-### Root Cause
-The Cloud Build deployer service account (`cloud-build-deployer@...`) lacked permission to impersonate the runtime service account.
+### Root Cause (Issue 2)
+
+The Cloud Build deployer service account (`cloud-build-deployer@...`)
+lacked permission to impersonate the runtime service account.
 
 ### Solution (Applied in PR #72)
+
 1. Granted `roles/iam.serviceAccountUser` on the runtime service account
 2. Granted `roles/run.admin` at project level to cloud-build-deployer
 
-### Status
+### Status (Issue 2)
+
 ✅ **RESOLVED** - IAM permissions have been correctly configured.
 
 ---
 
 ## Issue 2: Container Image Metadata Error (ACTIVE)
 
-### Error
-```
-ERROR: (gcloud.run.deploy) Container import failed: failed to fetch metadata from the registry for image 
-"us-west1-docker.pkg.dev/gen-lang-client-0615287333/cloud-run-source-deploy/vehicle-in-need/
-pre-order-dealer-exchange-tracker@sha256:ef4ee520c841748b96f7a31f8df10b9f63b84d38b02213f4e84a117d0214281b"
+### Error (Issue 2)
+
+```text
+ERROR: (gcloud.run.deploy) Container import failed: failed to fetch
+metadata from the registry for image 
+"us-west1-docker.pkg.dev/gen-lang-client-0615287333/\
+cloud-run-source-deploy/vehicle-in-need/
+pre-order-dealer-exchange-tracker@sha256:\
+ef4ee520c841748b96f7a31f8df10b9f63b84d38b02213f4e84a117d0214281b"
 
 Details: got 1 Manifest.Layers vs 0 ConfigFile.RootFS.DiffIDs
 ```
 
-### Root Cause
-The image in the `cloud-run-source-deploy` registry path is corrupted with mismatched OCI image structure:
+### Root Cause (Corrupted Image)
+
+The image in the `cloud-run-source-deploy` registry path is corrupted
+with mismatched OCI image structure:
+
 - Manifest reports 1 layer
 - Config reports 0 diff_ids
 - This indicates the image was not built properly
 
 ### Analysis
+
 1. **Source Deploy Issue**: The image was likely created using `gcloud run deploy --source` which uses Cloud Buildpacks
 2. **Ephemeral Registry**: The `cloud-run-source-deploy` path is an ephemeral location, not recommended for production
 3. **Build Method**: Need to use proper Docker build process via `cloudbuild.yaml` or GitHub Actions
 
 ### Solution
+
 **DO NOT use the corrupted image**. Instead:
 
 1. **Build via Cloud Build** (Recommended):
+
    ```bash
    gcloud builds submit --config cloudbuild.yaml
    ```
 
-2. **Deploy using proper Artifact Registry path**:
+2. **Deploy using proper Artifact Registry path (not
+   cloud-run-source-deploy)**:
+
    ```bash
    gcloud run deploy pre-order-dealer-exchange-tracker \
-     --image us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:COMMIT_SHA \
+     --image us-west1-docker.pkg.dev/gen-lang-client-0615287333/\
+vehicle-in-need/pre-order-dealer-exchange-tracker:COMMIT_SHA \
      --region us-west1 \
      --platform managed \
      --allow-unauthenticated \
@@ -95,22 +123,26 @@ The image in the `cloud-run-source-deploy` registry path is corrupted with misma
      --update-secrets=API_KEY=vehicle-in-need-gemini:latest
    ```
 
-### Status
+### Status (Issue 2)
+
 ⚠️ **ACTIVE** - Awaiting new build from Cloud Build to replace corrupted image.
 
 ---
 
 ## Issue 3: Local Docker Build Fails (npm Bug)
 
-### Error
-```
+### Error (Issue 3)
+
+```text
 npm error Exit handler never called!
 npm error This is an error with npm itself. Please report this error at:
 npm error   <https://github.com/npm/cli/issues>
 ```
 
-### Root Cause
+### Root Cause (Issue 3)
+
 This is a known npm bug that occurs in Docker environments, particularly with:
+
 - Node Alpine images  
 - Node Slim images
 - Local Docker builds
@@ -119,14 +151,17 @@ This is a known npm bug that occurs in Docker environments, particularly with:
 The bug causes npm to crash before completing dependency installation, even though it may report success.
 
 ### Why It Doesn't Affect Cloud Build
+
 Cloud Build uses a different execution environment with different npm versions and configurations that don't trigger this bug.
 
 ### Solution for Development
+
 **Do NOT attempt local Docker builds for production.**
 
 Instead, use these methods:
 
 1. **Local Development** (without Docker):
+
    ```bash
    npm install
    npm run dev      # Development server
@@ -135,6 +170,7 @@ Instead, use these methods:
    ```
 
 2. **Production Builds** (Cloud Build):
+
    ```bash
    gcloud builds submit --config cloudbuild.yaml
    ```
@@ -145,7 +181,8 @@ Instead, use these methods:
    - Validates image structure
    - Pushes to Artifact Registry
 
-### Status
+### Status (Issue 3)
+
 📝 **DOCUMENTED** - This is expected behavior. Use Cloud Build for container builds.
 
 ---
@@ -153,9 +190,11 @@ Instead, use these methods:
 ## Dockerfile Multi-Stage Build Review
 
 ### Current Structure
+
 The Dockerfile uses a multi-stage build:
 
-**Stage 1: Builder**
+#### Stage 1: Builder
+
 ```dockerfile
 FROM node:20-alpine AS builder
 - Install all dependencies (including devDependencies)
@@ -164,7 +203,8 @@ FROM node:20-alpine AS builder
 - Run vite build
 ```
 
-**Stage 2: Runtime**
+#### Stage 2: Runtime
+
 ```dockerfile
 FROM node:20-alpine
 - Install production dependencies only (--omit=dev)
@@ -177,6 +217,7 @@ FROM node:20-alpine
 ### Build Process Validation
 
 The multi-stage build is correctly structured:
+
 1. ✅ Separate build and runtime stages
 2. ✅ Proper dependency separation (dev vs prod)
 3. ✅ Conflict marker checking before build
@@ -184,6 +225,7 @@ The multi-stage build is correctly structured:
 5. ✅ Build args for version info
 
 ### Issues Found
+
 1. ❌ Local builds fail due to npm bug (documented above)
 2. ✅ Cloud Build works correctly
 3. ✅ Multi-stage structure produces valid OCI images when built in Cloud Build
@@ -193,6 +235,7 @@ The multi-stage build is correctly structured:
 ## cloudbuild.yaml Review
 
 ### Current Configuration
+
 ```yaml
 steps:
   1. check-conflicts    - Validates no merge conflict markers in code
@@ -203,14 +246,17 @@ steps:
 ```
 
 ### Validation
+
 ✅ **CORRECT** - The cloudbuild.yaml is properly configured:
+
 - Validates source code before building
 - Builds with proper build args
 - Tags with both SHA and latest
 - Deploys with environment variables and secrets
 - Uses correct Artifact Registry path
 
-### Status
+### Status (Dockerfile Review)
+
 ✅ **VALIDATED** - No changes needed to cloudbuild.yaml
 
 ---
@@ -220,6 +266,7 @@ steps:
 ### Immediate Actions
 
 1. **Clean and Rebuild Image**
+
    ```bash
    # From local machine or Cloud Shell
    cd /path/to/vehicle-in-need
@@ -227,6 +274,7 @@ steps:
    ```
 
 2. **Verify Image Structure**
+
    ```bash
    # Pull the newly built image
    docker pull us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:latest
@@ -239,6 +287,7 @@ steps:
    ```
 
 3. **Deploy New Image**
+
    ```bash
    gcloud run deploy pre-order-dealer-exchange-tracker \
      --image us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:latest \
@@ -267,6 +316,7 @@ Going forward:
 ## Additional Diagnostics
 
 ### Check Current Deployment Status
+
 ```bash
 gcloud run services describe pre-order-dealer-exchange-tracker \
   --region us-west1 \
@@ -274,12 +324,14 @@ gcloud run services describe pre-order-dealer-exchange-tracker \
 ```
 
 ### List Available Images
+
 ```bash
 gcloud artifacts docker images list \
   us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker
 ```
 
 ### View Build History
+
 ```bash
 gcloud builds list --limit=10
 ```
