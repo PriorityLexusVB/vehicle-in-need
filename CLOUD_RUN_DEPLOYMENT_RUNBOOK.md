@@ -10,7 +10,9 @@
 
 **This service MUST be deployed using pre-built Docker images.**
 
-Using `gcloud run deploy --source` creates corrupted images with invalid OCI metadata (mismatched manifest layers and config diff_ids), causing deployment failures.
+Using `gcloud run deploy --source` creates corrupted images with invalid OCI
+metadata (mismatched manifest layers and config diff_ids), causing deployment
+failures.
 
 **ALWAYS use the process documented below.**
 
@@ -39,7 +41,8 @@ Using `gcloud run deploy --source` creates corrupted images with invalid OCI met
 
 ### Cloud Build Service Account
 
-The Cloud Build service account needs proper permissions to deploy to Cloud Run and access secrets.
+The Cloud Build service account needs proper permissions to deploy to Cloud Run
+and access secrets.
 
 **Service Account Email:**
 
@@ -104,7 +107,8 @@ The Cloud Run service runs as the default compute service account, which needs:
      --role="roles/secretmanager.secretAccessor"
    ```
 
-**Note:** This permission was likely already granted during initial service setup. Verify with:
+**Note:** This permission was likely already granted during initial service
+setup. Verify with:
 
 ```bash
 gcloud secrets get-iam-policy vehicle-in-need-gemini
@@ -209,7 +213,8 @@ gcloud secrets get-iam-policy vehicle-in-need-gemini
 
 **Use this for local testing or when Cloud Build is unavailable:**
 
-⚠️ **Note:** Local Docker builds may encounter npm errors. Use Cloud Build (Option 2) for production.
+⚠️ **Note:** Local Docker builds may encounter npm errors. Use Cloud Build
+(Option 2) for production.
 
 1. **Set up variables**:
 
@@ -253,7 +258,8 @@ gcloud secrets get-iam-policy vehicle-in-need-gemini
      --region=${REGION} \
      --platform=managed \
      --allow-unauthenticated \
-     --set-env-vars=NODE_ENV=production,APP_VERSION=${TAG},BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+     --set-env-vars=NODE_ENV=production,APP_VERSION=${TAG},BUILD_TIME=$(date -u
+       +%Y-%m-%dT%H:%M:%SZ) \
      --update-secrets=API_KEY=vehicle-in-need-gemini:latest
    ```
 
@@ -404,9 +410,11 @@ git commit -m "Resolve merge conflicts"
 
 ### Recovering from Corrupted `cloud-run-source-deploy` Deployment
 
-**Symptom:** Service shows deployment type as `cloud-run-source-deploy` instead of `Container image`, or has OCI layer mismatch errors.
+**Symptom:** Service shows deployment type as `cloud-run-source-deploy` instead
+of `Container image`, or has OCI layer mismatch errors.
 
-**Cause:** The service was deployed using `gcloud run deploy --source`, which creates corrupted images with invalid OCI metadata.
+**Cause:** The service was deployed using `gcloud run deploy --source`, which
+creates corrupted images with invalid OCI metadata.
 
 **Solution - Complete Service Recreation:**
 
@@ -470,7 +478,8 @@ git commit -m "Resolve merge conflicts"
      --format='value(metadata.labels)'
    ```
 
-   Should show deployment type as `Container image`, NOT `cloud-run-source-deploy`.
+   Should show deployment type as `Container image`, NOT
+   `cloud-run-source-deploy`.
 
 7. **Test the service**:
 
@@ -558,7 +567,8 @@ The service uses Google Secret Manager for sensitive data:
 gcloud secrets versions list vehicle-in-need-gemini
 
 # Add new version
-echo -n "NEW_API_KEY_VALUE" | gcloud secrets versions add vehicle-in-need-gemini --data-file=-
+echo -n "NEW_API_KEY_VALUE" |
+gcloud secrets versions add vehicle-in-need-gemini --data-file=-
 
 # Redeploy service to use new version (uses :latest by default)
 gcloud run services update pre-order-dealer-exchange-tracker --region=us-west1
@@ -614,18 +624,21 @@ gcloud builds list \
 
 ```bash
 docker pull us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:latest
-docker inspect us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:latest | jq '.[0].RootFS.Layers'
+docker inspect
+us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:latest | jq '.[0].RootFS.Layers'
 ```
 
 ---
 
 ## Related Documentation
 
-- [CONTAINER_IMAGE_ISSUES.md](./CONTAINER_IMAGE_ISSUES.md) - Container image troubleshooting
+- [CONTAINER_IMAGE_ISSUES.md](./CONTAINER_IMAGE_ISSUES.md) - Container image
+  troubleshooting
 - [DOCKER_BUILD_NOTES.md](./DOCKER_BUILD_NOTES.md) - Docker build instructions
 - [cloudbuild.yaml](./cloudbuild.yaml) - Cloud Build configuration
 - [Dockerfile](./Dockerfile) - Container definition
-- [.github/workflows/build-and-deploy.yml](./.github/workflows/build-and-deploy.yml) - GitHub Actions workflow
+-
+[.github/workflows/build-and-deploy.yml](./.github/workflows/build-and-deploy.yml) - GitHub Actions workflow
 
 ---
 
@@ -633,7 +646,9 @@ docker inspect us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-nee
 
 For issues or questions:
 
-1. Check [CONTAINER_IMAGE_ISSUES.md](./CONTAINER_IMAGE_ISSUES.md) for known issues
-2. Review Cloud Build logs: <https://console.cloud.google.com/cloud-build/builds>
+1. Check [CONTAINER_IMAGE_ISSUES.md](./CONTAINER_IMAGE_ISSUES.md) for known
+  issues
+2. Review Cloud Build logs:
+  <https://console.cloud.google.com/cloud-build/builds>
 3. Review Cloud Run logs: <https://console.cloud.google.com/run>
 4. Create GitHub issue with details and error messages

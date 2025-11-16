@@ -14,7 +14,8 @@
 
 **Service Account Key Received**: ✅  
 
-- Service account: `cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com`
+- Service account:
+  `cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com`
 - Key saved to: `/tmp/sa-key.json`
 - Key format: Valid JSON with private key
 
@@ -54,7 +55,8 @@ PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
 This prevents:
 
 - DNS resolution of any external hostnames
-- HTTPS connections to Google Cloud APIs (oauth2.googleapis.com, cloudresourcemanager.googleapis.com, etc.)
+- HTTPS connections to Google Cloud APIs (oauth2.googleapis.com,
+  cloudresourcemanager.googleapis.com, etc.)
 - Authentication token refresh
 - Any gcloud command that requires API calls
 
@@ -95,7 +97,8 @@ This prevents:
 
 ## REMAINING STEPS (CANNOT EXECUTE)
 
-Due to network connectivity failure, the following diagnostic and remediation steps cannot be executed:
+Due to network connectivity failure, the following diagnostic and remediation
+steps cannot be executed:
 
 - ❌ S2.1 - List service accounts
 - ❌ S2.2 - Describe runtime service account  
@@ -120,7 +123,8 @@ Due to network connectivity failure, the following diagnostic and remediation st
 
 ## ALTERNATIVES FOR EXECUTION
 
-Since this agent environment lacks network connectivity, the diagnostic workflow must be executed elsewhere:
+Since this agent environment lacks network connectivity, the diagnostic
+workflow must be executed elsewhere:
 
 ### Option 1: Google Cloud Shell (RECOMMENDED)
 
@@ -158,7 +162,9 @@ gcloud builds triggers run 2255ad51-5b30-4724-89f9-d98b3c3b1dc5 --branch=main
 
 ### Option 2: GitHub Actions Workflow
 
-The existing `.github/workflows/build-and-deploy.yml` already has proper authentication via workload identity federation. The IAM fixes above should resolve the deployment failure.
+The existing `.github/workflows/build-and-deploy.yml` already has proper
+authentication via workload identity federation. The IAM fixes above should
+resolve the deployment failure.
 
 ### Option 3: Local Machine with Authenticated gcloud
 
@@ -178,18 +184,22 @@ gcloud config set project gen-lang-client-0615287333
 
 ### 1. HIGH-LEVEL RESULT
 
-❌ **EXECUTION BLOCKED** - The agent environment lacks network connectivity to Google Cloud APIs. Service account key was provided successfully, but authentication cannot complete without network access.
+❌ **EXECUTION BLOCKED** - The agent environment lacks network connectivity to
+Google Cloud APIs. Service account key was provided successfully, but
+authentication cannot complete without network access.
 
 ### 2. ROOT CAUSE & FIX
 
-**Original Issue**: Missing `iam.serviceaccounts.actAs` permission for Cloud Build deployer.
+**Original Issue**: Missing `iam.serviceaccounts.actAs` permission for Cloud
+Build deployer.
 
 **Required IAM Changes** (not applied due to network limitation):
 
 1. Grant `roles/iam.serviceAccountUser` on runtime SA to Cloud Build deployer
 2. Grant `roles/run.admin` at project level to Cloud Build deployer
 
-**Current Blocker**: Agent environment has no network connectivity (DNS, HTTPS, ICMP all fail).
+**Current Blocker**: Agent environment has no network connectivity (DNS, HTTPS,
+ICMP all fail).
 
 ### 3. CLOUD RUN STATUS
 
@@ -209,15 +219,18 @@ gcloud config set project gen-lang-client-0615287333
 
 ### 7. NEXT ACTIONS / RECOMMENDATIONS
 
-**IMMEDIATE ACTION**: Execute the diagnostic workflow from an environment with network connectivity:
+**IMMEDIATE ACTION**: Execute the diagnostic workflow from an environment with
+network connectivity:
 
 - **Cloud Shell** (recommended - already authenticated)
 - **GitHub Actions** (via workload identity)
 - **Local machine** with authenticated gcloud
 
-**Complete Command Sequence** is provided in "Option 1: Google Cloud Shell" above.
+**Complete Command Sequence** is provided in "Option 1: Google Cloud Shell"
+above.
 
-Once IAM permissions are granted, re-trigger the Cloud Build and verify the deployment succeeds.
+Once IAM permissions are granted, re-trigger the Cloud Build and verify the
+deployment succeeds.
 
 ---
 
@@ -232,4 +245,5 @@ Once IAM permissions are granted, re-trigger the Cloud Build and verify the depl
 
 ---
 
-**Conclusion**: The task cannot be completed in this environment. Execute from Cloud Shell or another networked environment using the commands provided above.
+**Conclusion**: The task cannot be completed in this environment. Execute from
+Cloud Shell or another networked environment using the commands provided above.

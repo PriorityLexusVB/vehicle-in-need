@@ -27,7 +27,9 @@ The deployment was using `gcloud run deploy --source` which:
 
 ### Contributing Factor
 
-The existing Dockerfile used `node:20-alpine` which has a known npm bug ("Exit handler never called!") that causes unreliable builds in certain environments, particularly with Docker BuildKit.
+The existing Dockerfile used `node:20-alpine` which has a known npm bug
+("Exit handler never called!") that causes unreliable builds in certain
+environments, particularly with Docker BuildKit.
 
 ## Solution Implemented
 
@@ -85,7 +87,8 @@ us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dea
 ### Local Build Test
 
 ```bash
-$ DOCKER_BUILDKIT=0 docker build --platform=linux/amd64 -t test-vehicle-tracker:local .
+$ DOCKER_BUILDKIT=0 docker build --platform=linux/amd64 \
+    -t test-vehicle-tracker:local .
 Successfully built 6c61ba2d84f3
 
 $ docker image inspect test-vehicle-tracker:local | jq -r '.[0].RootFS.Layers | length'
@@ -109,13 +112,15 @@ healthy ✓
 ### Before
 
 ```text
-Source → gcloud run deploy --source → Buildpacks → cloud-run-source-deploy → ❌ Malformed Image
+Source → gcloud run deploy --source → Buildpacks →
+cloud-run-source-deploy → ❌ Malformed Image
 ```
 
 ### After
 
 ```text
-Source → Dockerfile → Docker Build → Artifact Registry → ✅ Valid OCI Image → Cloud Run
+Source → Dockerfile → Docker Build → Artifact Registry →
+✅ Valid OCI Image → Cloud Run
          ↓
      GitHub Actions (automated)
          ↓
@@ -132,7 +137,8 @@ gcloud builds submit --config cloudbuild.yaml
 
 ### Using GitHub Actions
 
-1. Configure GCP authentication (Workload Identity Federation or service account key)
+1. Configure GCP authentication (Workload Identity Federation or service
+   account key)
 2. Push to main branch
 3. Workflow automatically builds and pushes
 4. Deploy using outputted command
@@ -141,7 +147,8 @@ gcloud builds submit --config cloudbuild.yaml
 
 ```bash
 gcloud run deploy pre-order-dealer-exchange-tracker \
-  --image us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:COMMIT_SHA \
+  --image us-west1-docker.pkg.dev/gen-lang-client-0615287333/\
+vehicle-in-need/pre-order-dealer-exchange-tracker:COMMIT_SHA \
   --region us-west1 \
   --platform managed \
   --allow-unauthenticated
@@ -156,9 +163,11 @@ gcloud run deploy pre-order-dealer-exchange-tracker \
 
 ## Why This Fixes the Issue
 
-1. **Proper OCI Structure**: Building from Dockerfile ensures standard Docker layer creation
+1. **Proper OCI Structure**: Building from Dockerfile ensures standard
+   Docker layer creation
 2. **Validation**: Workflow validates image structure before pushing
-3. **Stable Location**: Uses Artifact Registry (not ephemeral cloud-run-source-deploy)
+3. **Stable Location**: Uses Artifact Registry (not ephemeral
+   cloud-run-source-deploy)
 4. **Version Control**: Git SHA tagging enables traceability and rollback
 5. **Reproducibility**: Deterministic builds with locked dependencies
 

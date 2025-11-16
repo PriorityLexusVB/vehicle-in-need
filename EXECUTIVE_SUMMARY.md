@@ -8,7 +8,9 @@
 
 ## Overview
 
-This PR completes a comprehensive analysis of container image issues affecting Cloud Run deployment. All requested diagnostic tasks have been completed, and the root causes have been identified and documented.
+This PR completes a comprehensive analysis of container image issues affecting
+Cloud Run deployment. All requested diagnostic tasks have been completed, and
+the root causes have been identified and documented.
 
 ## Problem Statement (Original Request)
 
@@ -82,8 +84,10 @@ This PR completes a comprehensive analysis of container image issues affecting C
 ### Issue 2: Corrupted Container Image ⚠️ ACTIVE
 
 **Error**: `got 1 Manifest.Layers vs 0 ConfigFile.RootFS.DiffIDs`  
-**Root Cause**: Invalid OCI image in ephemeral `cloud-run-source-deploy` registry  
-**Solution**: Rebuild using Cloud Build and deploy from stable Artifact Registry path
+**Root Cause**: Invalid OCI image in ephemeral `cloud-run-source-deploy`
+registry  
+**Solution**: Rebuild using Cloud Build and deploy from stable Artifact
+Registry path
 
 ### Issue 3: npm Bug in Local Docker Builds 📝 DOCUMENTED
 
@@ -118,7 +122,8 @@ The following require GCP credentials (not available to agent):
 
    ```bash
    gcloud run deploy pre-order-dealer-exchange-tracker \
-     --image us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:COMMIT_SHA \
+     --image
+       us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:COMMIT_SHA \
      --region us-west1 \
      --platform managed \
      --allow-unauthenticated \
@@ -173,8 +178,10 @@ The following require GCP credentials (not available to agent):
 
 ## Key Insights
 
-1. **No Code Issues Found**: The Dockerfile and cloudbuild.yaml are correctly configured
-2. **Deployment Process Issue**: The problem is using the wrong deployment method
+1. **No Code Issues Found**: The Dockerfile and cloudbuild.yaml are correctly
+  configured
+2. **Deployment Process Issue**: The problem is using the wrong deployment
+  method
 3. **Expected npm Behavior**: The local Docker build failure is a known npm bug
 4. **Cloud Build Works**: Production builds via Cloud Build are not affected
 
@@ -184,13 +191,15 @@ The following require GCP credentials (not available to agent):
 
 ### ⚠️ CRITICAL: Deployment Best Practices
 
-**NEVER use `gcloud run deploy --source`** - it creates corrupted images in ephemeral registries.
+**NEVER use `gcloud run deploy --source`** - it creates corrupted images in
+ephemeral registries.
 
 **ALWAYS follow this process:**
 
 1. Build using Cloud Build (via GitHub Actions or manually)
 2. Deploy using explicit `--image` flag pointing to Artifact Registry
-3. See [CLOUD_RUN_DEPLOYMENT_RUNBOOK.md](./CLOUD_RUN_DEPLOYMENT_RUNBOOK.md) for complete instructions
+3. See [CLOUD_RUN_DEPLOYMENT_RUNBOOK.md](./CLOUD_RUN_DEPLOYMENT_RUNBOOK.md) for
+  complete instructions
 
 ### Immediate (User Action Required)
 
@@ -225,7 +234,8 @@ The following require GCP credentials (not available to agent):
 
 **All requested diagnostic tasks have been completed successfully.**
 
-The container image issue is **not a code or configuration problem**. The existing Dockerfile and cloudbuild.yaml are correct. The issue is:
+The container image issue is **not a code or configuration problem**. The
+existing Dockerfile and cloudbuild.yaml are correct. The issue is:
 
 1. A corrupted image in the ephemeral `cloud-run-source-deploy` registry
 2. The need to rebuild using the proper Cloud Build process
@@ -237,7 +247,8 @@ The solution is straightforward and documented. The user needs to:
 2. Rebuild the image via Cloud Build (command provided)
 3. Deploy the new image (command provided)
 
-**No code changes are required** - only rebuilding and redeploying with the correct process.
+**No code changes are required** - only rebuilding and redeploying with the
+correct process.
 
 ---
 

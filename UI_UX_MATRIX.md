@@ -1,6 +1,7 @@
 # UI/UX Matrix - Manager vs Non-Manager
 
-This document provides a clear comparison of the user interface and available actions between Manager and Non-Manager users.
+This document provides a clear comparison of the user interface and available
+actions between Manager and Non-Manager users.
 
 ## Quick Reference Matrix
 
@@ -87,7 +88,8 @@ This document provides a clear comparison of the user interface and available ac
 
 - **Top Section**: Hero heading
   - Title: "Submit a New Vehicle Request"
-  - Subtitle: "Fill out the form below to create a new pre-order or dealer exchange request."
+  - Subtitle: "Fill out the form below to create a new pre-order or dealer
+  exchange request."
 
 - **OrderForm**:
   - Always visible (centered, max-width)
@@ -204,7 +206,8 @@ All sections are identical for both managers and non-managers:
 
 ## Field Validation
 
-All required fields show inline error messages in red below the input when validation fails:
+All required fields show inline error messages in red below the input when
+validation fails:
 
 - Salesperson is required
 - Manager is required
@@ -218,7 +221,8 @@ All required fields show inline error messages in red below the input when valid
 - MSRP is required (must be valid number)
 - Deposit Amount is required (must be valid number)
 
-Optional numeric fields (Selling Price, Gross) still validate that if provided, they must be valid numbers.
+Optional numeric fields (Selling Price, Gross) still validate that if provided,
+they must be valid numbers.
 
 ## Design Decisions
 
@@ -229,23 +233,31 @@ These are terminal states managed through dedicated action buttons:
 - "Mark as Received" - transitions from any active status
 - "Mark as Delivered" - only available after "Received"
 
-This workflow prevents accidental status changes and enforces the order lifecycle.
+This workflow prevents accidental status changes and enforces the order
+lifecycle.
 
 ### Why Non-Managers Can Generate AI Emails?
 
-While non-managers cannot manage orders, they may need to communicate with customers. The AI email feature is a convenience tool that doesn't grant any order management privileges.
+While non-managers cannot manage orders, they may need to communicate with
+customers. The AI email feature is a convenience tool that doesn't grant any
+order management privileges.
 
 ### Why Form Stays Open for Non-Managers?
 
-Non-managers typically submit multiple orders in a session. Keeping the form visible reduces clicks and streamlines their primary workflow.
+Non-managers typically submit multiple orders in a session. Keeping the form
+visible reduces clicks and streamlines their primary workflow.
 
 ### Why Managers See Form Toggle?
 
-Managers need to toggle between order management and order creation. The dashboard is their primary workspace for viewing all orders, so the form is secondary.
+Managers need to toggle between order management and order creation. The
+dashboard is their primary workspace for viewing all orders, so the form is
+secondary.
 
 ### Why Status Filters Only on Active Tab?
 
-Delivered orders don't need status filtering - they're all in the same "Delivered" state. The filter is designed to help managers prioritize active work.
+Delivered orders don't need status filtering - they're all in the same
+"Delivered" state. The filter is designed to help managers prioritize active
+work.
 
 ## Color Scheme
 

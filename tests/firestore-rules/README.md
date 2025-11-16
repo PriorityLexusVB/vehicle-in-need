@@ -1,6 +1,7 @@
 # Firestore Security Rules Tests
 
-This directory contains comprehensive tests for Firestore security rules that enforce access control and data integrity.
+This directory contains comprehensive tests for Firestore security rules that
+enforce access control and data integrity.
 
 ## Prerequisites
 
@@ -12,7 +13,9 @@ This directory contains comprehensive tests for Firestore security rules that en
 
 ### First Time Setup
 
-The tests use the Firebase Firestore Emulator, which will be automatically downloaded on first run (approximately 40-50 MB). The emulator is cached in `~/.cache/firebase/emulators/`.
+The tests use the Firebase Firestore Emulator, which will be automatically
+downloaded on first run (approximately 40-50 MB). The emulator is cached in
+`~/.cache/firebase/emulators/`.
 
 ### Run Tests
 
@@ -44,7 +47,8 @@ For CI/CD pipelines, consider caching the emulator directory to speed up builds:
 Tests security rules for user documents:
 
 - ✅ **Unauthenticated Access**: Denies all operations
-- ✅ **Self-Escalation Prevention**: Users cannot grant themselves manager role on creation
+- ✅ **Self-Escalation Prevention**: Users cannot grant themselves manager role
+  on creation
 - ✅ **Read Access**: Users can read their own document; managers can read any
 - ✅ **Update Protection**:
   - Users cannot change their own `isManager` field
@@ -57,7 +61,8 @@ Tests security rules for user documents:
 Tests security rules for order documents:
 
 - ✅ **Unauthenticated Access**: Denies all operations
-- ✅ **Ownership Enforcement**: Orders must include correct `createdByUid`, `createdByEmail`, and `createdAt`
+- ✅ **Ownership Enforcement**: Orders must include correct `createdByUid`,
+  `createdByEmail`, and `createdAt`
 - ✅ **Read Access**:
   - Owners can read their own orders
   - Non-owners cannot read other users' orders
@@ -74,7 +79,8 @@ Tests security rules for order documents:
 
 If the emulator fails to download due to network restrictions:
 
-1. Download manually from [Firebase Emulator Suite](https://firebase.google.com/docs/emulator-suite/install_and_configure)
+1. Download manually from [Firebase Emulator
+  Suite](https://firebase.google.com/docs/emulator-suite/install_and_configure)
 2. Place the JAR file in `~/.cache/firebase/emulators/`
 3. Run tests again
 
@@ -109,7 +115,8 @@ If tests timeout, increase the timeout in `vitest.rules.config.ts`:
 
 ## Integration with CI
 
-The tests are designed to run in CI environments. Make sure your CI configuration:
+The tests are designed to run in CI environments. Make sure your CI
+configuration:
 
 1. Has Java 11+ installed
 2. Can access the internet to download the emulator (on first run)

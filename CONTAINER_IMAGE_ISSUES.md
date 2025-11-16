@@ -2,9 +2,12 @@
 
 ## ⚠️ CRITICAL: DO NOT USE `gcloud run deploy --source`
 
-**This service MUST be deployed using pre-built Docker images from Artifact Registry.**
+**This service MUST be deployed using pre-built Docker images from
+Artifact Registry.**
 
-Using `gcloud run deploy --source` creates corrupted images in the ephemeral `cloud-run-source-deploy` registry with mismatched OCI metadata, causing deployment failures.
+Using `gcloud run deploy --source` creates corrupted images in the
+ephemeral `cloud-run-source-deploy` registry with mismatched OCI metadata,
+causing deployment failures.
 
 ### Correct Deployment Process
 
@@ -18,7 +21,8 @@ Using `gcloud run deploy --source` creates corrupted images in the ephemeral `cl
 
    ```bash
    gcloud run deploy pre-order-dealer-exchange-tracker \
-     --image us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:$SHORT_SHA \
+     --image us-west1-docker.pkg.dev/gen-lang-client-0615287333/\
+vehicle-in-need/pre-order-dealer-exchange-tracker:$SHORT_SHA \
      --region us-west1 \
      --platform managed \
      --allow-unauthenticated \
@@ -28,33 +32,38 @@ Using `gcloud run deploy --source` creates corrupted images in the ephemeral `cl
 
 Replace `$SHORT_SHA` with the actual git commit SHA from your build.
 
-**See [CLOUD_RUN_DEPLOYMENT_RUNBOOK.md](./CLOUD_RUN_DEPLOYMENT_RUNBOOK.md) for complete deployment instructions.**
+**See [CLOUD_RUN_DEPLOYMENT_RUNBOOK.md](./CLOUD_RUN_DEPLOYMENT_RUNBOOK.md)
+for complete deployment instructions.**
 
 ---
 
 ## Issue Summary
 
-This document describes the container image issues discovered during Cloud Run deployment and their solutions.
+This document describes the container image issues discovered during Cloud
+Run deployment and their solutions.
 
 ## Issue 1: IAM Permission Denied (RESOLVED)
 
-### Error
+### Error (Issue 2)
 
 ```text
-PERMISSION_DENIED: Permission 'iam.serviceaccounts.actAs' denied on service account 
-pre-order-dealer-exchange--860@gen-lang-client-0615287333.iam.gserviceaccount.com
+PERMISSION_DENIED: Permission 'iam.serviceaccounts.actAs' denied on
+service account 
+pre-order-dealer-exchange--860@gen-lang-client-0615287333.\
+iam.gserviceaccount.com
 ```
 
-### Root Cause
+### Root Cause (Issue 2)
 
-The Cloud Build deployer service account (`cloud-build-deployer@...`) lacked permission to impersonate the runtime service account.
+The Cloud Build deployer service account (`cloud-build-deployer@...`)
+lacked permission to impersonate the runtime service account.
 
 ### Solution (Applied in PR #72)
 
 1. Granted `roles/iam.serviceAccountUser` on the runtime service account
 2. Granted `roles/run.admin` at project level to cloud-build-deployer
 
-### Status
+### Status (Issue 2)
 
 ✅ **RESOLVED** - IAM permissions have been correctly configured.
 
@@ -65,9 +74,12 @@ The Cloud Build deployer service account (`cloud-build-deployer@...`) lacked per
 ### Error (Issue 2)
 
 ```text
-ERROR: (gcloud.run.deploy) Container import failed: failed to fetch metadata from the registry for image 
-"us-west1-docker.pkg.dev/gen-lang-client-0615287333/cloud-run-source-deploy/vehicle-in-need/
-pre-order-dealer-exchange-tracker@sha256:ef4ee520c841748b96f7a31f8df10b9f63b84d38b02213f4e84a117d0214281b"
+ERROR: (gcloud.run.deploy) Container import failed: failed to fetch
+metadata from the registry for image 
+"us-west1-docker.pkg.dev/gen-lang-client-0615287333/\
+cloud-run-source-deploy/vehicle-in-need/
+pre-order-dealer-exchange-tracker@sha256:\
+ef4ee520c841748b96f7a31f8df10b9f63b84d38b02213f4e84a117d0214281b"
 
 Details: got 1 Manifest.Layers vs 0 ConfigFile.RootFS.DiffIDs
 ```
@@ -96,17 +108,20 @@ The image in the `cloud-run-source-deploy` registry path is corrupted with misma
    gcloud builds submit --config cloudbuild.yaml
    ```
 
-2. **Deploy using proper Artifact Registry path**:
+2. **Deploy using proper Artifact Registry path (not
+   cloud-run-source-deploy)**:
 
    ```bash
    gcloud run deploy pre-order-dealer-exchange-tracker \
-     --image us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:COMMIT_SHA \
+     --image us-west1-docker.pkg.dev/gen-lang-client-0615287333/\
+vehicle-in-need/pre-order-dealer-exchange-tracker:COMMIT_SHA \
      --region us-west1 \
      --platform managed \
      --allow-unauthenticated \
      --set-env-vars=NODE_ENV=production,APP_VERSION=COMMIT_SHA \
      --update-secrets=API_KEY=vehicle-in-need-gemini:latest
    ```
+
 ### Status (Issue 2)
 
 ⚠️ **ACTIVE** - Awaiting new build from Cloud Build to replace corrupted image.
@@ -177,7 +192,7 @@ Instead, use these methods:
 
 The Dockerfile uses a multi-stage build:
 
-**Stage 1: Builder**
+#### Stage 1: Builder
 
 ```dockerfile
 FROM node:20-alpine AS builder
@@ -187,7 +202,7 @@ FROM node:20-alpine AS builder
 - Run vite build
 ```
 
-**Stage 2: Runtime**
+#### Stage 2: Runtime
 
 ```dockerfile
 FROM node:20-alpine

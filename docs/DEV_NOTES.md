@@ -4,7 +4,8 @@
 
 ### Overview
 
-This application uses **server-side only** AI integration via Google Cloud Vertex AI. API keys are **never exposed** to the client browser.
+This application uses **server-side only** AI integration via Google Cloud
+Vertex AI. API keys are **never exposed** to the client browser.
 
 ### Production Deployment (Cloud Run)
 
@@ -12,10 +13,14 @@ This application uses **server-side only** AI integration via Google Cloud Verte
 
 The application uses Google Cloud Secret Manager for secure API key storage:
 
-1. **Secret Storage**: The Gemini API key is stored in Secret Manager as `vehicle-in-need-gemini:latest`
-2. **Secret Injection**: Cloud Run automatically injects the secret at runtime via the `--update-secrets` flag in `cloudbuild.yaml`
-3. **Access Pattern**: The Node.js server accesses the key via `process.env.API_KEY`
-4. **Security**: The key is never written to disk or exposed in environment variables visible to the client
+1. **Secret Storage**: The Gemini API key is stored in Secret Manager as
+  `vehicle-in-need-gemini:latest`
+2. **Secret Injection**: Cloud Run automatically injects the secret at runtime
+  via the `--update-secrets` flag in `cloudbuild.yaml`
+3. **Access Pattern**: The Node.js server accesses the key via
+  `process.env.API_KEY`
+4. **Security**: The key is never written to disk or exposed in environment
+variables visible to the client
 
 #### Verification
 
@@ -28,7 +33,8 @@ gcloud run services describe pre-order-dealer-exchange-tracker \
   --format="value(spec.template.spec.containers[0].env)"
 ```
 
-Expected output should show `valueSource.secretKeyRef` instead of plaintext values.
+Expected output should show `valueSource.secretKeyRef` instead of plaintext
+values.
 
 ### Local Development
 
@@ -95,19 +101,23 @@ If you don't need AI features locally:
 
 ### Key Files
 
-- **`server/aiProxy.cjs`**: AI proxy that uses Vertex AI SDK with Application Default Credentials
-- **`services/geminiService.ts`**: Client-side service that calls the server proxy (no API key)
+- **`server/aiProxy.cjs`**: AI proxy that uses Vertex AI SDK with Application
+  Default Credentials
+- **`services/geminiService.ts`**: Client-side service that calls the server
+  proxy (no API key)
 - **`Dockerfile`**: Multi-stage build that excludes API keys from the image
 - **`cloudbuild.yaml`**: Cloud Build configuration with secret injection
 
 ### Security Best Practices
 
 1. ✅ **Server-Side Only**: All AI API calls go through the server
-2. ✅ **No Client Exposure**: API keys never appear in client-side code or bundles
+2. ✅ **No Client Exposure**: API keys never appear in client-side code or
+  bundles
 3. ✅ **Secret Manager**: Production uses Google Cloud Secret Manager
 4. ✅ **ADC for Local**: Local development uses Application Default Credentials
 5. ✅ **No Hardcoded Keys**: No API keys committed to the repository
-6. ✅ **Build-time Protection**: Dockerfile doesn't accept API key build arguments
+6. ✅ **Build-time Protection**: Dockerfile doesn't accept API key build
+arguments
 
 ### Rotating Secrets
 
@@ -119,7 +129,8 @@ To rotate the API key:
    echo -n "NEW_API_KEY_HERE" | gcloud secrets versions add vehicle-in-need-gemini --data-file=-
    ```
 
-2. Redeploy the Cloud Run service (it automatically picks up the `:latest` version):
+2. Redeploy the Cloud Run service (it automatically picks up the `:latest`
+  version):
 
    ```bash
    gcloud builds submit --config cloudbuild.yaml
@@ -129,8 +140,10 @@ To rotate the API key:
 
 To prevent accidental deployment of files with merge conflict markers:
 
-- **Prebuild Check**: The `prebuild` script in `package.json` runs before every build
-- **Cloud Build Guard**: The first step in `cloudbuild.yaml` checks for conflict markers
+- **Prebuild Check**: The `prebuild` script in `package.json` runs before every
+  build
+- **Cloud Build Guard**: The first step in `cloudbuild.yaml` checks for
+  conflict markers
 - **Fail Fast**: Build fails immediately if markers are detected
 
 ### Testing
@@ -155,7 +168,8 @@ curl -X POST http://localhost:8080/api/generate-email \
 
 **Solutions**:
 
-1. Check Application Default Credentials: `gcloud auth application-default print-access-token`
+1. Check Application Default Credentials: `gcloud auth application-default
+  print-access-token`
 2. Verify project: `gcloud config get-value project`
 3. Enable Vertex AI API: `gcloud services enable aiplatform.googleapis.com`
 4. Check IAM permissions: User/service account needs `aiplatform.user` role
@@ -183,7 +197,8 @@ grep -r "VITE_GEMINI_API_KEY" dist/ || echo "✓ No VITE_GEMINI_API_KEY in dist/
 
 Expected output: `✓ No VITE_GEMINI_API_KEY in dist/`
 
-**Note:** Firebase Web SDK API keys (AIza...) are expected in dist/ and are safe - they're protected by Firebase Security Rules.
+**Note:** Firebase Web SDK API keys (AIza...) are expected in dist/ and are
+safe - they're protected by Firebase Security Rules.
 
 ## Automated UI Audit & Merge Marker Guard
 
@@ -191,9 +206,11 @@ Expected output: `✓ No VITE_GEMINI_API_KEY in dist/`
 
 The repository includes automated guards to prevent deployment issues:
 
-1. **Merge Conflict Marker Detection**: Prevents builds with unresolved merge conflicts
+1. **Merge Conflict Marker Detection**: Prevents builds with unresolved merge
+  conflicts
 2. **Secret Scanning**: Ensures no API keys are exposed in production bundles
-3. **Lighthouse Performance Audits**: Optional performance and accessibility checks
+3. **Lighthouse Performance Audits**: Optional performance and accessibility
+  checks
 
 ### Local UI Audit
 
@@ -248,7 +265,8 @@ Searches for patterns: `<<<<<<<`, `=======`, `>>>>>>>` in:
 - Markdown files (*.md)
 - YAML files (*.yaml,*.yml)
 
-If markers are found, the build fails immediately with an error listing the affected files.
+If markers are found, the build fails immediately with an error listing the
+affected files.
 
 ### GitHub Actions Workflow
 
@@ -277,17 +295,20 @@ Performs:
 
 The audit checks for:
 
-- `VITE_GEMINI_API_KEY` - Gemini API key environment variable (should never be in dist/)
+- `VITE_GEMINI_API_KEY` - Gemini API key environment variable (should never be
+  in dist/)
 
 **Note on Firebase API Keys:**
-Firebase Web SDK API keys (starting with `AIza`) are expected in the production bundle. These are NOT secrets:
+Firebase Web SDK API keys (starting with `AIza`) are expected in the production
+bundle. These are NOT secrets:
 
 - They are designed to be public and included in client-side code
 - They are protected by Firebase Security Rules
 - They only grant access to public Firebase APIs
 - The actual security is enforced server-side via Firestore Rules
 
-The audit specifically looks for `VITE_GEMINI_API_KEY` which would indicate the Gemini AI API key was accidentally included at build time.
+The audit specifically looks for `VITE_GEMINI_API_KEY` which would indicate the
+Gemini AI API key was accidentally included at build time.
 
 If found, the audit fails and prevents deployment.
 

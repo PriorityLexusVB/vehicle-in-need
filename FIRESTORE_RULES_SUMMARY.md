@@ -2,7 +2,10 @@
 
 ## Overview
 
-This document summarizes the implementation of hardened Firestore security rules for the vehicle-in-need application. The implementation prevents privilege escalation, enforces order ownership, and ensures proper access control.
+This document summarizes the implementation of hardened Firestore security
+rules for the vehicle-in-need application. The implementation prevents
+privilege escalation, enforces order ownership, and ensures proper access
+control.
 
 ## Security Enhancements
 
@@ -10,26 +13,33 @@ This document summarizes the implementation of hardened Firestore security rules
 
 #### Self-Escalation Prevention
 
-- **Problem**: Users could potentially grant themselves manager privileges on account creation
-- **Solution**: Rules explicitly deny setting `isManager: true` on user document creation
-- **Rule**: `!('isManager' in request.resource.data) || request.resource.data.isManager == false`
+- **Problem**: Users could potentially grant themselves manager privileges on
+  account creation
+- **Solution**: Rules explicitly deny setting `isManager: true` on user
+  document creation
+- **Rule**: `!('isManager' in request.resource.data) ||
+  request.resource.data.isManager == false`
 
 #### Email Integrity
 
-- **Problem**: Users could set arbitrary email addresses not matching their authentication
+- **Problem**: Users could set arbitrary email addresses not matching their
+  authentication
 - **Solution**: Email must match the auth token email
 - **Rule**: `request.resource.data.email == request.auth.token.email`
 
 #### Role Immutability Protection
 
 - **Problem**: Users could modify their own manager role after creation
-- **Solution**: Users cannot change their own `isManager` field; only managers can change other users' roles
-- **Rule**: `isOwner(userId) && request.resource.data.isManager == resource.data.isManager`
+- **Solution**: Users cannot change their own `isManager` field; only managers
+  can change other users' roles
+- **Rule**: `isOwner(userId) && request.resource.data.isManager ==
+  resource.data.isManager`
 
 #### Manager Self-Demotion Prevention
 
 - **Problem**: Managers could accidentally or maliciously demote themselves
-- **Solution**: Managers can update other users but not their own `isManager` field
+- **Solution**: Managers can update other users but not their own `isManager`
+  field
 - **Rule**: `(isManager() && !isOwner(userId))`
 
 ### 2. Orders Collection Security
@@ -37,22 +47,26 @@ This document summarizes the implementation of hardened Firestore security rules
 #### Ownership Enforcement
 
 - **Problem**: Orders could be created without proper ownership tracking
-- **Solution**: All orders must include `createdByUid`, `createdByEmail`, and `createdAt`
+- **Solution**: All orders must include `createdByUid`, `createdByEmail`, and
+  `createdAt`
 - **Rules**:
-  - `request.resource.data.keys().hasAll(['createdByUid', 'createdByEmail', 'createdAt'])`
+  - `request.resource.data.keys().hasAll(['createdByUid', 'createdByEmail',
+  'createdAt'])`
   - `request.resource.data.createdByUid == request.auth.uid`
   - `request.resource.data.createdByEmail == request.auth.token.email`
 
 #### Role-Based Read Access
 
 - **Problem**: Non-managers could potentially read all orders
-- **Solution**: Non-managers can only read their own orders; managers can read all
+- **Solution**: Non-managers can only read their own orders; managers can read
+  all
 - **Rule**: `isManager() || isOrderOwner()`
 
 #### Ownership Immutability
 
 - **Problem**: Users could change order ownership after creation
-- **Solution**: Ownership fields (`createdByUid`, `createdByEmail`) are immutable
+- **Solution**: Ownership fields (`createdByUid`, `createdByEmail`) are
+  immutable
 - **Rules**:
   - `request.resource.data.createdByUid == resource.data.createdByUid`
   - `request.resource.data.createdByEmail == resource.data.createdByEmail`
@@ -60,7 +74,8 @@ This document summarizes the implementation of hardened Firestore security rules
 #### Controlled Updates
 
 - **Problem**: Non-managers could modify any field in their orders
-- **Solution**: Owners can only update allowed fields (status, notes); managers have full access
+- **Solution**: Owners can only update allowed fields (status, notes); managers
+  have full access
 - **Rule**: `request.resource.data.keys().hasOnly(resource.data.keys())`
 
 #### Manager-Only Deletion
@@ -176,7 +191,9 @@ const appUser: AppUser = {
 await setDoc(userDocRef, appUser);
 ```
 
-**Note**: The initial seeding uses `MANAGER_EMAILS` constant, but the security rules prevent client-side self-escalation. Manager role can only be granted server-side or by other managers through the Settings page.
+**Note**: The initial seeding uses `MANAGER_EMAILS` constant, but the security
+rules prevent client-side self-escalation. Manager role can only be granted
+server-side or by other managers through the Settings page.
 
 ## Files Modified/Created
 
@@ -217,7 +234,8 @@ npm run test:rules         # Run once (with emulator)
 npm run test:rules:watch   # Run in watch mode
 ```
 
-**Note**: Rules tests require Java 11+ and internet access for initial emulator download.
+**Note**: Rules tests require Java 11+ and internet access for initial emulator
+download.
 
 ## Deployment Checklist
 
@@ -238,16 +256,20 @@ npm run test:rules:watch   # Run in watch mode
 
 ## Future Enhancements
 
-1. **Custom Claims**: Consider migrating `isManager` to Firebase Auth custom claims for better performance
-2. **Field-Level Validation**: Add more granular validation for order fields (e.g., price ranges, VIN format)
+1. **Custom Claims**: Consider migrating `isManager` to Firebase Auth custom
+  claims for better performance
+2. **Field-Level Validation**: Add more granular validation for order fields
+  (e.g., price ranges, VIN format)
 3. **Rate Limiting**: Implement read/write rate limits to prevent abuse
 4. **Audit Logging**: Add server-side logging for sensitive operations
-5. **Role Hierarchy**: Consider implementing more granular roles (e.g., supervisor, admin)
+5. **Role Hierarchy**: Consider implementing more granular roles (e.g.,
+supervisor, admin)
 
 ## Support
 
 For questions or issues with the security rules:
 
 1. Review test cases in `tests/firestore-rules/`
-2. Check Firebase documentation: <https://firebase.google.com/docs/firestore/security/get-started>
+2. Check Firebase documentation:
+  <https://firebase.google.com/docs/firestore/security/get-started>
 3. Contact the development team

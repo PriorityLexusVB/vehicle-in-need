@@ -1,17 +1,20 @@
 # Container Image Build and Deployment Issues
 
-**Note**: This is a template for creating a GitHub issue. Copy the content below to create the issue.
+**Note**: This is a template for creating a GitHub issue. Copy the content
+below to create the issue.
 
 ---
 
 ## Problem Summary
 
-Cloud Run deployment is failing due to a corrupted container image in the ephemeral `cloud-run-source-deploy` registry path.
+Cloud Run deployment is failing due to a corrupted container image in the
+ephemeral `cloud-run-source-deploy` registry path.
 
 ## Error Message
 
 ```text
-ERROR: (gcloud.run.deploy) Container import failed: failed to fetch metadata from the registry for image 
+ERROR: (gcloud.run.deploy) Container import failed: failed to fetch metadata
+from the registry for image 
 "us-west1-docker.pkg.dev/gen-lang-client-0615287333/cloud-run-source-deploy/vehicle-in-need/
 pre-order-dealer-exchange-tracker@sha256:ef4ee520c841748b96f7a31f8df10b9f63b84d38b02213f4e84a117d0214281b"
 
@@ -24,7 +27,8 @@ The container image has an invalid OCI structure:
 
 - **Manifest**: Reports 1 layer
 - **Config**: Reports 0 diff_ids
-- **Location**: Ephemeral `cloud-run-source-deploy` registry (not recommended for production)
+- **Location**: Ephemeral `cloud-run-source-deploy` registry (not recommended
+  for production)
 
 This corruption likely occurred when using `gcloud run deploy --source` which:
 
@@ -52,7 +56,8 @@ This corruption likely occurred when using `gcloud run deploy --source` which:
 
    ```bash
    gcloud run deploy pre-order-dealer-exchange-tracker \
-     --image us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:COMMIT_SHA \
+     --image
+       us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:COMMIT_SHA \
      --region us-west1 \
      --platform managed \
      --allow-unauthenticated \
@@ -76,8 +81,10 @@ This corruption likely occurred when using `gcloud run deploy --source` which:
 
 ## Related Issues
 
-- IAM permission issue was resolved in PR #72 (granting `roles/iam.serviceAccountUser` and `roles/run.admin`)
-- Local Docker builds may encounter npm "Exit handler never called!" bug (documented in DOCKER_BUILD_NOTES.md)
+- IAM permission issue was resolved in PR #72 (granting
+  `roles/iam.serviceAccountUser` and `roles/run.admin`)
+- Local Docker builds may encounter npm "Exit handler never called!" bug
+  (documented in DOCKER_BUILD_NOTES.md)
   - This is a known npm issue in Docker environments
   - Does not affect Cloud Build
   - Use Cloud Build for production container builds
@@ -129,7 +136,8 @@ After rebuilding the image, verify:
 - **Project**: gen-lang-client-0615287333
 - **Service**: pre-order-dealer-exchange-tracker
 - **Region**: us-west1
-- **Artifact Registry**: `us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need`
+- **Artifact Registry**:
+  `us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need`
 - **Related PRs**: #72, #67, #68, #70
 
 ## Suggested Labels
