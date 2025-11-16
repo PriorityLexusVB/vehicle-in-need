@@ -66,19 +66,19 @@ This prevents:
 
 ### STEP 1 – Project Configuration ✅
 
-**S1.1 - Verify gcloud project**
+#### S1.1 - Verify gcloud project
 
 - Command: `gcloud config get-value project`
 - Exit Code: 0
 - Result: `(unset)`
 
-**S1.2 - Set project**
+#### S1.2 - Set project
 
 - Command: `gcloud config set project gen-lang-client-0615287333`
 - Exit Code: 0
 - Result: ✅ `Updated property [core/project].`
 
-**S1.1 (re-run) - Confirm project**
+#### S1.1 (re-run) - Confirm project
 
 - Command: `gcloud config get-value project`
 - Exit Code: 0
@@ -86,7 +86,7 @@ This prevents:
 
 ### STEP 2 – Authentication ❌ BLOCKED
 
-**S2.0 - Authenticate with service account**
+#### S2.0 - Authenticate with service account
 
 - Command: `gcloud auth activate-service-account --key-file=/tmp/sa-key.json`
 - Exit Code: 1

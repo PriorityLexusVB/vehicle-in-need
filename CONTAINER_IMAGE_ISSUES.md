@@ -84,9 +84,10 @@ ef4ee520c841748b96f7a31f8df10b9f63b84d38b02213f4e84a117d0214281b"
 Details: got 1 Manifest.Layers vs 0 ConfigFile.RootFS.DiffIDs
 ```
 
-### Root Cause (Issue 2)
+### Root Cause (Corrupted Image)
 
-The image in the `cloud-run-source-deploy` registry path is corrupted with mismatched OCI image structure:
+The image in the `cloud-run-source-deploy` registry path is corrupted
+with mismatched OCI image structure:
 
 - Manifest reports 1 layer
 - Config reports 0 diff_ids

@@ -6,7 +6,7 @@ Generated: 2025-11-15T22:29:17.305Z
 
 ## 1. HIGH-LEVEL RESULT
 
-**EXECUTION HALTED - AUTHENTICATION FAILURE**
+### EXECUTION HALTED - AUTHENTICATION FAILURE
 
 The Cloud Run deployment diagnosis could not proceed beyond initial environment
 checks. The gcloud CLI is not authenticated with any Google Cloud credentials,

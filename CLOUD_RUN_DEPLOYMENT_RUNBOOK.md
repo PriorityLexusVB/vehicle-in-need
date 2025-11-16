@@ -103,7 +103,8 @@ The Cloud Run service runs as the default compute service account, which needs:
 
    ```bash
    gcloud secrets add-iam-policy-binding vehicle-in-need-gemini \
-     --member="serviceAccount:<PROJECT_NUMBER>-compute@developer.gserviceaccount.com" \
+     --member="serviceAccount:<PROJECT_NUMBER>-compute@developer.\
+gserviceaccount.com" \
      --role="roles/secretmanager.secretAccessor"
    ```
 
