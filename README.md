@@ -350,10 +350,28 @@ Then open [`http://localhost:8080`](http://localhost:8080) in your browser.
 
 When deploying to Google Cloud Run:
 
+#### ⚠️ IAM Permissions Required
+
+Before deploying, ensure proper IAM permissions are configured. If you encounter:
+```
+ERROR: Permission 'iam.serviceaccounts.actAs' denied
+```
+
+**Quick Fix**: See [QUICK_IAM_FIX.md](./QUICK_IAM_FIX.md) for 5-minute solution.
+
+**Detailed Guides**:
+- [IAM_FIX_EXECUTION_GUIDE.md](./IAM_FIX_EXECUTION_GUIDE.md) - Complete walkthrough
+- [IAM_FIX_CHECKLIST.md](./IAM_FIX_CHECKLIST.md) - Execution checklist
+- [IAM_CONFIGURATION_SUMMARY.md](./IAM_CONFIGURATION_SUMMARY.md) - Full IAM architecture
+- [scripts/setup-iam-permissions.sh](./scripts/setup-iam-permissions.sh) - Automated setup script
+
+#### Deployment Steps
+
 1. **Ensure your service account has required roles:**
 
    - `Vertex AI User` - for calling Gemini models via server-side proxy
    - `Service Account Token Creator` (if needed for service-to-service calls)
+   - See IAM guides above for complete permissions setup
 
 2. **Deploy with Cloud Build (server-side mode - recommended):**
 
