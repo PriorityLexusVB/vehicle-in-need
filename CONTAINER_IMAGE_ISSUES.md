@@ -1,5 +1,35 @@
 # Container Image Issues and Solutions
 
+## ⚠️ CRITICAL: DO NOT USE `gcloud run deploy --source`
+
+**This service MUST be deployed using pre-built Docker images from Artifact Registry.**
+
+Using `gcloud run deploy --source` creates corrupted images in the ephemeral `cloud-run-source-deploy` registry with mismatched OCI metadata, causing deployment failures.
+
+### Correct Deployment Process
+
+1. **Build via Cloud Build** (automated in GitHub Actions or manual):
+   ```bash
+   gcloud builds submit --config cloudbuild.yaml
+   ```
+
+2. **Deploy using explicit image reference**:
+   ```bash
+   gcloud run deploy pre-order-dealer-exchange-tracker \
+     --image us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:$SHORT_SHA \
+     --region us-west1 \
+     --platform managed \
+     --allow-unauthenticated \
+     --set-env-vars=NODE_ENV=production,APP_VERSION=$SHORT_SHA \
+     --update-secrets=API_KEY=vehicle-in-need-gemini:latest
+   ```
+
+Replace `$SHORT_SHA` with the actual git commit SHA from your build.
+
+**See [CLOUD_RUN_DEPLOYMENT_RUNBOOK.md](./CLOUD_RUN_DEPLOYMENT_RUNBOOK.md) for complete deployment instructions.**
+
+---
+
 ## Issue Summary
 
 This document describes the container image issues discovered during Cloud Run deployment and their solutions.
