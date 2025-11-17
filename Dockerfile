@@ -36,6 +36,18 @@ RUN npm run prebuild
 # Build the application with version info
 RUN npm run build
 
+# CRITICAL: Verify CSS was generated (fail fast if missing)
+RUN CSS_COUNT=$(find dist/assets -name "*.css" -type f | wc -l) && \
+    if [ "$CSS_COUNT" -eq 0 ]; then \
+      echo "❌ FATAL: No CSS files found in dist/assets/ after build!"; \
+      echo "This indicates Tailwind CSS compilation failed."; \
+      ls -lah dist/ || echo "dist/ directory does not exist"; \
+      ls -lah dist/assets/ || echo "dist/assets/ directory does not exist"; \
+      exit 1; \
+    fi && \
+    echo "✅ CSS verification passed: $CSS_COUNT CSS file(s) found" && \
+    ls -lh dist/assets/*.css
+
 # Stage 2: Production runtime with Node.js
 FROM node:20-alpine
 
@@ -55,6 +67,18 @@ COPY server ./server
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
+
+# CRITICAL: Verify CSS files were copied to runtime image (fail fast if missing)
+RUN CSS_COUNT=$(find dist/assets -name "*.css" -type f 2>/dev/null | wc -l) && \
+    if [ "$CSS_COUNT" -eq 0 ]; then \
+      echo "❌ FATAL: No CSS files found in runtime image at dist/assets/!"; \
+      echo "CSS was built but not copied from builder stage."; \
+      ls -lah dist/ || echo "dist/ directory does not exist"; \
+      ls -lah dist/assets/ || echo "dist/assets/ directory does not exist"; \
+      exit 1; \
+    fi && \
+    echo "✅ Runtime CSS verification passed: $CSS_COUNT CSS file(s) present" && \
+    ls -lh dist/assets/*.css
 
 # Expose port 8080
 EXPOSE 8080
