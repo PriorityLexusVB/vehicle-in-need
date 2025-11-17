@@ -14,14 +14,6 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Manager check based on Firestore user document.
-    // (You can later migrate this to custom claims if desired.)
-    function isManagerDoc(userDoc) {
-      return userDoc != null 
-        && 'isManager' in userDoc 
-        && userDoc.isManager == true;
-    }
-
     function isManager() {
       // Try to use custom claim first (if available), fall back to Firestore document
       return isSignedIn() && (
@@ -29,7 +21,7 @@ service cloud.firestore {
         ||
         (
           exists(/databases/$(database)/documents/users/$(request.auth.uid))
-          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isManager', false) == true
+          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isManager == true
         )  // Firestore document (fallback)
       );
     }
@@ -62,14 +54,10 @@ service cloud.firestore {
         && (!('isManager' in request.resource.data) || isBool(request.resource.data.isManager));
 
       // READ: User can read self; managers can read anyone.
-      // Note: Temporarily keeping only the self-read rule to avoid circular dependency
-      // with get() calls in isManager(). The manager read capability is handled
-      // differently - managers can read users when directly accessing them, but
-      // get() calls from other collections only work with the simple isOwner rule.
+      // Note: Manager read for other users is intentionally omitted to avoid circular
+      // dependency with get() calls from other collections. This is a permanent
+      // architectural trade-off unless custom claims are used for the isManager role.
       allow read: if isOwner(userId);
-      // TODO: Find a way to allow managers to read all users without causing
-      // circular dependency in get() calls from other collections
-      // allow read: if isManager();
 
       // UPDATE:
       // - Manager can update other users (including changing isManager).
