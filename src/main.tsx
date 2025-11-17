@@ -122,9 +122,56 @@ function logBundleInfo() {
         console.warn('  1. CSS file contains Tailwind utility classes');
         console.warn('  2. PostCSS processed @tailwind directives');
         console.warn('  3. Tailwind content paths match component files');
+        
+        // Show user-facing warning banner for CSS failure
+        showCSSWarningBanner();
       }
     }, 100); // Small delay to ensure CSS is fully applied
   }
+}
+
+// Show a warning banner when CSS fails to load properly
+function showCSSWarningBanner() {
+  const banner = document.createElement('div');
+  banner.id = 'css-warning-banner';
+  banner.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: #f59e0b;
+    color: white;
+    padding: 12px 16px;
+    text-align: center;
+    font-family: sans-serif;
+    font-size: 14px;
+    z-index: 10000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  `;
+  banner.innerHTML = `
+    <strong>⚠️ Styles Not Loading</strong> - 
+    The page may not display correctly. 
+    <button onclick="location.reload()" style="
+      background: white;
+      color: #f59e0b;
+      border: none;
+      padding: 4px 12px;
+      margin-left: 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    ">Reload Page</button>
+    <button onclick="document.getElementById('css-warning-banner').remove()" style="
+      background: transparent;
+      color: white;
+      border: 1px solid white;
+      padding: 4px 12px;
+      margin-left: 8px;
+      border-radius: 4px;
+      cursor: pointer;
+    ">Dismiss</button>
+  `;
+  document.body.prepend(banner);
 }
 
 // Initialize app

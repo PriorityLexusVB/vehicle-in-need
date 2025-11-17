@@ -82,6 +82,86 @@ steps:
       - --service-account=pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com
       - --set-env-vars=NODE_ENV=production,APP_VERSION=${SHORT_SHA},BUILD_TIME=${BUILD_ID}
       - --update-secrets=API_KEY=vehicle-in-need-gemini:latest
+
+  # CRITICAL: Verify CSS is accessible after deployment
+  - name: gcr.io/cloud-builders/curl
+    id: verify-css-deployed
+    waitFor: ['deploy-cloud-run']
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -e
+        echo "🔍 Verifying CSS deployment..."
+        
+        # Get the service URL
+        SERVICE_URL=$(gcloud run services describe ${_SERVICE} \
+          --region=${_REGION} \
+          --format='value(status.url)')
+        
+        echo "Service URL: $SERVICE_URL"
+        
+        # Wait for service to be ready
+        echo "Waiting 10 seconds for service to stabilize..."
+        sleep 10
+        
+        # Fetch index.html and extract CSS filename
+        echo "Fetching index.html..."
+        HTML_CONTENT=$(curl -sS "$SERVICE_URL/" || echo "")
+        
+        if [ -z "$HTML_CONTENT" ]; then
+          echo "❌ ERROR: Could not fetch index.html from $SERVICE_URL"
+          exit 1
+        fi
+        
+        # Extract CSS filename from HTML
+        CSS_HREF=$(echo "$HTML_CONTENT" | grep -o '/assets/index-[^"]*\.css' | head -n 1 || echo "")
+        
+        if [ -z "$CSS_HREF" ]; then
+          echo "❌ ERROR: No CSS file referenced in index.html!"
+          echo "HTML content preview:"
+          echo "$HTML_CONTENT" | head -30
+          exit 1
+        fi
+        
+        echo "Found CSS reference: $CSS_HREF"
+        CSS_URL="$SERVICE_URL$CSS_HREF"
+        
+        # Verify CSS file is accessible
+        echo "Verifying CSS file is accessible: $CSS_URL"
+        HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}" "$CSS_URL")
+        
+        if [ "$HTTP_STATUS" != "200" ]; then
+          echo "❌ ERROR: CSS file returned HTTP $HTTP_STATUS"
+          echo "CSS URL: $CSS_URL"
+          exit 1
+        fi
+        
+        # Verify CSS content is not empty and contains Tailwind
+        CSS_CONTENT=$(curl -sS "$CSS_URL")
+        CSS_SIZE=$(echo -n "$CSS_CONTENT" | wc -c)
+        
+        if [ "$CSS_SIZE" -lt 1000 ]; then
+          echo "❌ ERROR: CSS file is too small ($CSS_SIZE bytes)"
+          echo "Expected at least 1000 bytes"
+          exit 1
+        fi
+        
+        if ! echo "$CSS_CONTENT" | grep -q "tw-"; then
+          echo "❌ ERROR: CSS file does not contain Tailwind classes (tw- prefix)"
+          echo "CSS content preview:"
+          echo "$CSS_CONTENT" | head -20
+          exit 1
+        fi
+        
+        echo "✅ CSS verification passed!"
+        echo "   URL: $CSS_URL"
+        echo "   HTTP Status: $HTTP_STATUS"
+        echo "   Size: $CSS_SIZE bytes"
+        echo "   Contains Tailwind: YES"
+        echo ""
+        echo "🎉 Deployment verification complete - CSS is properly deployed!"
+
 images:
   - us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${_SERVICE}:${SHORT_SHA}
   - us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${_SERVICE}:latest

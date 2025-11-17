@@ -367,19 +367,40 @@ ERROR: Permission 'iam.serviceaccounts.actAs' denied
 
 #### Deployment Steps
 
-1. **Ensure your service account has required roles:**
+1. **Pre-deployment verification (recommended):**
+
+   Run the comprehensive CSS check before deploying:
+
+   ```bash
+   npm run predeploy
+   ```
+
+   This will:
+   - Build the application fresh
+   - Verify CSS files are generated
+   - Check Tailwind classes are present
+   - Test server startup
+   - Verify CSS is accessible via HTTP
+
+2. **Ensure your service account has required roles:**
 
    - `Vertex AI User` - for calling Gemini models via server-side proxy
    - `Service Account Token Creator` (if needed for service-to-service calls)
    - See IAM guides above for complete permissions setup
 
-2. **Deploy with Cloud Build (server-side mode - recommended):**
+3. **Deploy with Cloud Build (server-side mode - recommended):**
 
    ```bash
    gcloud builds submit --config cloudbuild.yaml
    ```
 
-3. **Deploy with client-side API key (optional):**
+   **Note:** The build now includes automatic CSS verification at multiple stages:
+   - ✅ Docker build-stage verification (fails if CSS not generated)
+   - ✅ Docker runtime-stage verification (fails if CSS not copied)
+   - ✅ Post-deployment HTTP check (fails if CSS not accessible)
+   - ✅ Server startup verification (crashes if CSS missing)
+
+4. **Deploy with client-side API key (optional):**
 
    Add to your `cloudbuild.yaml`:
 
@@ -605,6 +626,36 @@ The app uses Tailwind CSS via PostCSS (no CDN):
 - ✅ Faster initial load (no external script)
 - ✅ Tree-shaking removes unused Tailwind utilities
 - ✅ Consistent styling (no CDN version conflicts)
+
+### CSS Deployment Safeguards
+
+The project includes comprehensive safeguards to ensure CSS is correctly compiled, deployed, and served in production. These prevent the application from being deployed with missing or broken styles.
+
+**Multi-layer verification:**
+
+1. **Build time** - `postbuild` script verifies CSS after `npm run build`
+2. **Docker builder stage** - Fails if CSS not generated in container
+3. **Docker runtime stage** - Fails if CSS not copied to final image
+4. **Cloud Build deployment** - HTTP check verifies CSS is accessible
+5. **Server startup** - Node.js verifies CSS files exist before listening
+6. **Browser runtime** - Client-side warning if CSS fails to load
+
+**Quick verification:**
+
+```bash
+# Run all CSS checks before deploying
+npm run predeploy
+
+# Check CSS in existing build
+npm run verify:css
+```
+
+**Documentation:**
+- `TAILWIND_CSS_SAFEGUARDS.md` - Complete technical documentation
+- `DEPLOYMENT_QUICK_REFERENCE.md` - Quick deployment guide
+- `scripts/pre-deploy-css-check.sh` - Comprehensive pre-deployment checker
+
+**Result:** Successful deployment = Working CSS. It's impossible to deploy without properly functioning styles.
 
 ## Deployment Verification
 

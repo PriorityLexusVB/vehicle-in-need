@@ -5,11 +5,64 @@
 
 const express = require("express");
 const path = require("path");
+const fs = require("fs");
 const cors = require("cors");
 const aiProxyRouter = require("./aiProxy.cjs");
 
 const app = express();
 const PORT = process.env.PORT || 8080;
+
+// CRITICAL: Verify CSS files exist at startup (fail fast if missing)
+function verifyCSSFilesExist() {
+  const distPath = path.join(__dirname, "..", "dist");
+  const assetsPath = path.join(distPath, "assets");
+  
+  console.log("🔍 Verifying CSS files at startup...");
+  console.log(`   dist path: ${distPath}`);
+  console.log(`   assets path: ${assetsPath}`);
+  
+  // Check if dist directory exists
+  if (!fs.existsSync(distPath)) {
+    console.error("❌ FATAL: dist/ directory not found!");
+    console.error("   Expected at:", distPath);
+    process.exit(1);
+  }
+  
+  // Check if assets directory exists
+  if (!fs.existsSync(assetsPath)) {
+    console.error("❌ FATAL: dist/assets/ directory not found!");
+    console.error("   Expected at:", assetsPath);
+    console.error("   dist/ contents:", fs.readdirSync(distPath));
+    process.exit(1);
+  }
+  
+  // Check for CSS files
+  const files = fs.readdirSync(assetsPath);
+  const cssFiles = files.filter(f => f.endsWith('.css'));
+  
+  if (cssFiles.length === 0) {
+    console.error("❌ FATAL: No CSS files found in dist/assets/!");
+    console.error("   assets/ contents:", files);
+    console.error("");
+    console.error("This indicates the Docker image was built without CSS files.");
+    console.error("Check the Dockerfile build process and ensure:");
+    console.error("  1. npm run build completes successfully");
+    console.error("  2. Tailwind CSS is configured correctly");
+    console.error("  3. dist/assets/ is copied from builder stage");
+    process.exit(1);
+  }
+  
+  console.log(`✅ CSS verification passed: ${cssFiles.length} CSS file(s) found`);
+  cssFiles.forEach(file => {
+    const filePath = path.join(assetsPath, file);
+    const stats = fs.statSync(filePath);
+    console.log(`   - ${file} (${stats.size} bytes)`);
+  });
+  console.log("");
+}
+
+// Run CSS verification before starting server
+verifyCSSFilesExist();
 
 // Middleware
 app.use(cors());
