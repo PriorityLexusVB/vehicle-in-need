@@ -54,10 +54,8 @@ service cloud.firestore {
         && (!('isManager' in request.resource.data) || isBool(request.resource.data.isManager));
 
       // READ: User can read self; managers can read anyone.
-      // Note: Manager read for other users is intentionally omitted to avoid circular
-      // dependency with get() calls from other collections. This is a permanent
-      // architectural trade-off unless custom claims are used for the isManager role.
       allow read: if isOwner(userId);
+      allow read: if isManager();
 
       // UPDATE:
       // - Manager can update other users (including changing isManager).

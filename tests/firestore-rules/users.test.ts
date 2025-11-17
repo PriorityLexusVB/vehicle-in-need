@@ -2,35 +2,27 @@ import { describe, it, beforeAll, afterAll, beforeEach } from 'vitest';
 import {
   assertFails,
   assertSucceeds,
-  initializeTestEnvironment,
   RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
 import { setDoc, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
-import * as fs from 'fs';
-import * as path from 'path';
-
-const PROJECT_ID = 'test-firestore-rules';
-const RULES_PATH = path.join(__dirname, '../../firestore.rules');
+import { getTestEnv, clearTestData } from './test-env';
 
 let testEnv: RulesTestEnvironment;
 
 describe('Firestore Security Rules - Users Collection', () => {
   beforeAll(async () => {
-    // Initialize test environment with rules
-    testEnv = await initializeTestEnvironment({
-      projectId: PROJECT_ID,
-      firestore: {
-        rules: fs.readFileSync(RULES_PATH, 'utf8'),
-      },
-    });
+    // Use shared test environment
+    testEnv = await getTestEnv();
   });
 
   afterAll(async () => {
-    await testEnv.cleanup();
+    // Note: cleanup is handled globally after all test files complete
+    // to prevent premature shutdown
   });
 
   beforeEach(async () => {
-    await testEnv.clearFirestore();
+    // Use shared clear function to prevent race conditions
+    await clearTestData();
   });
 
   describe('Unauthenticated Access', () => {

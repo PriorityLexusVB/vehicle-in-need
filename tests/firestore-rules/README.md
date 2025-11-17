@@ -3,6 +3,26 @@
 This directory contains comprehensive tests for Firestore security rules that
 enforce access control and data integrity.
 
+## Architecture
+
+The tests use a **shared test environment** pattern to ensure stability and prevent race conditions:
+
+- **`test-env.ts`**: Singleton test environment shared across all test files
+- **`vitest.rules.config.ts`**: Configured for serial execution to prevent concurrent access issues
+- **`vitest.rules.teardown.ts`**: Global teardown to cleanup the test environment after all tests complete
+
+### Why Shared Environment?
+
+Previously, each test file created its own test environment, leading to:
+- Transaction lock timeouts when tests ran in parallel
+- Race conditions with concurrent `clearFirestore()` calls
+- Flaky, non-deterministic test behavior
+
+The shared environment ensures:
+- Only one test environment exists per test run
+- Tests run serially, not in parallel
+- Deterministic, reliable test execution
+
 ## Prerequisites
 
 - Node.js and npm installed
@@ -74,6 +94,17 @@ Tests security rules for order documents:
 - ✅ **Deletion**: Only managers can delete orders
 
 ## Troubleshooting
+
+### Transaction Lock Timeout
+
+If you see "Transaction lock timeout" errors:
+
+1. Ensure tests are configured to run serially (already set in `vitest.rules.config.ts`)
+2. Verify only one test environment is being created (use the shared `test-env.ts`)
+3. Check that `clearFirestore()` is called via the shared `clearTestData()` function
+
+The shared test environment pattern prevents these issues by ensuring serial execution
+and eliminating race conditions.
 
 ### Emulator Download Fails
 
