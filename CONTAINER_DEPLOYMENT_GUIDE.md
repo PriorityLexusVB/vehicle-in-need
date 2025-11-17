@@ -77,6 +77,38 @@ gcloud builds log BUILD_ID --stream
 - Build logs stored in Cloud Logging
 - Can trigger automatically on git push (configure Cloud Build triggers)
 
+#### Cloud Build Trigger Configuration
+
+If setting up automated triggers in Google Cloud Console:
+
+**Required Built-in Substitutions** (automatic):
+- `PROJECT_ID` - GCP project ID
+- `SHORT_SHA` - Short commit SHA (first 7 chars)
+- `BUILD_ID` - Unique build identifier
+
+**Optional Custom Substitutions** (must start with `_`):
+- `_REGION` - Deployment region (default: `us-west1`)
+- `_SERVICE` - Cloud Run service name (default: `pre-order-dealer-exchange-tracker`)
+
+**Example Trigger Configuration:**
+
+```yaml
+substitutions:
+  _REGION: us-west1
+  _SERVICE: pre-order-dealer-exchange-tracker
+```
+
+**⚠️ IMPORTANT: Do NOT add `SERVICE_URL` as a substitution!**
+
+`SERVICE_URL` is a bash variable computed at runtime within the build script. Adding it as a substitution will cause build failures:
+
+```
+Error: invalid value for 'build.substitutions': key in the template "SERVICE_URL" 
+is not a valid built-in substitution
+```
+
+See [CLOUD_BUILD_TRIGGER_FIX.md](./CLOUD_BUILD_TRIGGER_FIX.md) for detailed troubleshooting.
+
 ### Option 3: Local Docker Build
 
 For local testing and development:
