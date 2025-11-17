@@ -219,9 +219,12 @@ describe('Firestore Security Rules - Users Collection', () => {
         });
       });
 
-      // Test: Manager can read user's document
+      // Test: Manager can read user's document (using custom claim)
       const managerDb = testEnv
-        .authenticatedContext(managerId, { email: 'manager@example.com' })
+        .authenticatedContext(managerId, { 
+          email: 'manager@example.com',
+          isManager: true  // Custom claim
+        })
         .firestore();
       const userRef = doc(managerDb, 'users', userId);
       
@@ -333,9 +336,12 @@ describe('Firestore Security Rules - Users Collection', () => {
         });
       });
 
-      // Test: Manager can update user's isManager
+      // Test: Manager can update user's isManager (using custom claim)
       const managerDb = testEnv
-        .authenticatedContext(managerId, { email: 'manager@example.com' })
+        .authenticatedContext(managerId, { 
+          email: 'manager@example.com',
+          isManager: true  // Custom claim
+        })
         .firestore();
       const userRef = doc(managerDb, 'users', userId);
       

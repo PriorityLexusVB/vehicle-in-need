@@ -21,6 +21,7 @@ service cloud.firestore {
         ||
         (
           exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          && ('isManager' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data)
           && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isManager == true
         )  // Firestore document (fallback)
       );
@@ -53,18 +54,20 @@ service cloud.firestore {
         // If provided, isManager must be boolean
         && (!('isManager' in request.resource.data) || isBool(request.resource.data.isManager));
 
-      // READ: User can read self; managers can read anyone.
-      // Note: Manager read for other users is intentionally omitted to avoid circular
-      // dependency with get() calls from other collections. This is a permanent
-      // architectural trade-off unless custom claims are used for the isManager role.
-      allow read: if isOwner(userId);
+      // READ: User can read self; managers (with custom claims only) can read anyone.
+      // IMPORTANT: Manager read via Firestore document check is NOT supported here because
+      // it would create infinite recursion when get(/users/{uid}) is called from other rules.
+      // Managers MUST use custom claims for reading other users' documents.
+      allow read: if isOwner(userId)
+        || (isSignedIn() && ('isManager' in request.auth.token) && request.auth.token.isManager == true);
 
       // UPDATE:
       // - Manager can update other users (including changing isManager).
       // - User updating self cannot change isManager.
       // - Email is immutable; restrict key set to existing keys to avoid schema drift.
+      // NOTE: Manager check uses custom claims only to avoid reading the user doc during update.
       allow update: if (
-          (isManager() && !isOwner(userId))  // Manager editing another user
+          ((isSignedIn() && ('isManager' in request.auth.token) && request.auth.token.isManager == true) && !isOwner(userId))  // Manager editing another user
           ||
           (
             isOwner(userId) 
@@ -115,26 +118,28 @@ service cloud.firestore {
         && request.resource.data.status in ['Factory Order', 'Locate', 'Dealer Exchange', 'Received', 'Delivered'];
 
       // READ:
-      // Managers can read any order; non-managers only their own.
-      // Split into two rules to avoid circular dependency with get() in isManager()
+      // Owners can read their own orders.
+      // Managers can read any order.
       allow read: if isOrderOwner();
       allow read: if isManager();
 
       // UPDATE:
       // - Managers can update any order.
       // - Owners can update limited mutable fields (e.g. status, notes) without changing ownership.
-      // Split into two rules to avoid circular dependency with get() in isManager()
       allow update: if isManager();
       allow update: if isOrderOwner()
         // Ownership must remain unchanged
+        && ('createdByUid' in request.resource.data) && ('createdByUid' in resource.data)
         && request.resource.data.createdByUid == resource.data.createdByUid
+        && ('createdByEmail' in request.resource.data) && ('createdByEmail' in resource.data)
         && request.resource.data.createdByEmail == resource.data.createdByEmail
         // Restrict which keys owner may touch (cannot add/remove ownership fields or other protected fields)
         && request.resource.data.keys().hasOnly(resource.data.keys())
         // Optional: owners can only change these fields
+        && ('status' in request.resource.data)
         && request.resource.data.status in ['Factory Order', 'Locate', 'Dealer Exchange', 'Received', 'Delivered'];
 
-      // DELETE: Managers only (or disallow entirely if you prefer soft deletes).
+      // DELETE: Managers only.
       allow delete: if isManager();
     }
   }
