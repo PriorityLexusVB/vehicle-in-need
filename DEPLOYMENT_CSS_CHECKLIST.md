@@ -1,11 +1,13 @@
 # Deployment CSS Troubleshooting Checklist
 
 ## Problem
+
 Tailwind CSS styles not appearing in deployed Cloud Run application, causing UI to fall back to default browser styles (purple links, black borders).
 
 ## Root Cause Analysis
 
 The issue occurs when:
+
 1. CSS file is generated during build but not deployed
 2. Stale Docker image is deployed with old asset hashes
 3. Service worker or browser cache serves outdated bundles
@@ -14,11 +16,13 @@ The issue occurs when:
 ## Pre-Deployment Verification
 
 ### 1. Verify Local Build
+
 ```bash
 npm run build
 ```
 
 Expected output:
+
 ```
 dist/assets/index-<hash>.css    ~10 kB │ gzip: ~2 kB
 ```
@@ -26,6 +30,7 @@ dist/assets/index-<hash>.css    ~10 kB │ gzip: ~2 kB
 The `postbuild` script automatically verifies CSS presence.
 
 ### 2. Check CSS Content
+
 ```bash
 head -20 dist/assets/index-*.css
 ```
@@ -33,11 +38,13 @@ head -20 dist/assets/index-*.css
 Should see Tailwind utility classes starting with `tw-` or CSS custom properties like `--tw-rotate-x`.
 
 ### 3. Verify HTML References CSS
+
 ```bash
 grep "\.css" dist/index.html
 ```
 
 Should show:
+
 ```html
 <link rel="stylesheet" crossorigin href="/assets/index-<hash>.css">
 ```
@@ -45,16 +52,19 @@ Should show:
 ## Deployment Steps
 
 ### 1. Build Docker Image
+
 ```bash
 gcloud builds submit --config cloudbuild.yaml \
   --substitutions _REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=$(git rev-parse --short HEAD)
 ```
 
 The Dockerfile includes:
+
 - `RUN npm run build` in builder stage (includes CSS verification)
 - `COPY --from=builder /app/dist ./dist` to include assets
 
 ### 2. Verify Image Contains CSS
+
 ```bash
 # Get the latest image
 IMAGE="us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:latest"
@@ -64,6 +74,7 @@ docker run --rm -it $IMAGE sh -c "ls -lah /app/dist/assets/*.css"
 ```
 
 ### 3. Check Deployed Service
+
 After deployment completes:
 
 ```bash
@@ -80,6 +91,7 @@ Should return `HTTP/2 200` with `Content-Type: text/css`.
 ## Post-Deployment Verification
 
 ### 1. Browser DevTools Check
+
 1. Open the deployed app in browser
 2. Open DevTools → Network tab
 3. Hard refresh (Ctrl+Shift+R)
@@ -87,7 +99,9 @@ Should return `HTTP/2 200` with `Content-Type: text/css`.
 5. Verify you see `index-<hash>.css` with Status 200
 
 ### 2. Check Console Logs
+
 Look for:
+
 ```
 🚀 Application Bundle Info
 Version: <commit-sha>
@@ -97,51 +111,63 @@ Build Time: <build-id>
 If Version shows "unknown" or "dev", the build didn't inject version info correctly.
 
 ### 3. Verify Asset Hashes Match
+
 The CSS filename hash should match the JS filename hash pattern.
 
 Example:
+
 - ✅ GOOD: `index-DNzTS1Bl.css` and `index-CPSmv2js.js` (both recent)
 - ❌ BAD: `index-PBlrTBeX.css` and `index-CPSmv2js.js` (mismatched = stale)
 
 ## Common Issues & Solutions
 
 ### Issue 1: CSS File Not Generated
+
 **Symptoms**: No `*.css` files in `dist/assets/`
 
 **Solutions**:
+
 1. Check `postcss.config.js` has `@tailwindcss/postcss` plugin
 2. Verify `tailwind.config.js` content paths include all component files
 3. Ensure `src/index.css` imports Tailwind directives
 4. Check for PostCSS/Tailwind version conflicts
 
 ### Issue 2: CSS Not Copied to Docker Image
+
 **Symptoms**: Build succeeds but deployed app has no CSS
 
 **Solutions**:
+
 1. Verify Dockerfile builder stage runs `npm run build`
 2. Check `COPY --from=builder /app/dist ./dist` includes `/app/dist/assets`
 3. Don't add `dist/` to `.dockerignore`
 
 ### Issue 3: Stale Deployment
+
 **Symptoms**: Different asset hashes in deployed version vs local build
 
 **Solutions**:
+
 1. Deploy with new tag: `SHORT_SHA=$(date +%Y%m%d-%H%M%S)`
 2. Clear Cloud Run cache by deploying with `--no-traffic` then migrate traffic
 3. Force new image pull by updating Cloud Run revision
 
 ### Issue 4: Browser/Service Worker Cache
+
 **Symptoms**: CSS works in Incognito but not in normal browser
 
 **Solutions**:
+
 1. Hard refresh: Ctrl+Shift+R (Windows/Linux) or Cmd+Shift+R (Mac)
 2. Clear site data: DevTools → Application → Clear storage
 3. The app includes SW cleanup code in `index.html` and `src/main.tsx`
 
 ### Issue 5: Static File Serving Misconfigured
+
 **Symptoms**: CSS file exists but returns 404
 
 **Solutions**:
+
 1. Check `server/index.cjs` has `express.static(distPath)`
 2. Verify cache headers don't prevent asset loading
 3. Check nginx.conf if using nginx (not applicable for Node server)
@@ -149,7 +175,9 @@ Example:
 ## Monitoring & Logging
 
 ### Server-Side Logs
+
 Check Cloud Run logs for static file requests:
+
 ```bash
 gcloud logging read "resource.type=cloud_run_revision AND \
   resource.labels.service_name=pre-order-dealer-exchange-tracker" \
@@ -157,7 +185,9 @@ gcloud logging read "resource.type=cloud_run_revision AND \
 ```
 
 ### Client-Side Diagnostics
+
 Add to browser console:
+
 ```javascript
 // Check if CSS loaded
 const cssLinks = document.querySelectorAll('link[rel="stylesheet"]');
