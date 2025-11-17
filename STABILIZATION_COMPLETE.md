@@ -102,6 +102,7 @@ All tasks from the problem statement have been successfully completed. The vehic
 **Why**: This is intentionally disabled to avoid circular dependency issues with `get()` calls.
 
 **Impact**: Minimal - managers can still:
+
 - Read their own user document
 - Access user info through orders and other collections
 - Use server-side code (Cloud Functions) for admin operations
