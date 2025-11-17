@@ -67,9 +67,15 @@ service cloud.firestore {
           ||
           (
             isOwner(userId) 
-            && ('isManager' in request.resource.data) 
-            && ('isManager' in resource.data)
-            && request.resource.data.isManager == resource.data.isManager
+            && (
+              // isManager not in update, or it matches existing value
+              !('isManager' in request.resource.data)
+              || (
+                ('isManager' in resource.data) 
+                && ('isManager' in request.resource.data)
+                && request.resource.data.isManager == resource.data.isManager
+              )
+            )
           ) // Self without role change
         )
         // Keep email immutable
