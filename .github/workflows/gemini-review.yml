@@ -1,0 +1,113 @@
+name: Gemini code review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  gemini-review:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate diff for this PR
+        id: diff
+        run: |
+          # Fetch the base branch for the PR (e.g., main)
+          git fetch origin "${{ github.base_ref }}" --depth=1
+          git diff origin/${{ github.base_ref }}...HEAD > diff.patch
+          echo "diff_path=diff.patch" >> "$GITHUB_OUTPUT"
+
+      - name: Call Gemini API for review
+        id: gemini
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python - << 'PY'
+          import textwrap, json
+
+          diff = open("diff.patch", "r", encoding="utf-8").read()
+          # Trim if huge so we don't blow token limits
+          if len(diff) > 20000:
+              diff = diff[:20000] + "\n\n[diff truncated]"
+
+          prompt = textwrap.dedent(f"""
+          You are "Gemini Reviewer #1" for Rob.
+
+          Goal: Review this git diff and produce a structured report that another AI can consume.
+
+          For each issue you find:
+          - Give it an ID (G-1, G-2, …).
+          - Severity: blocker / high / medium / low / nit.
+          - Type: bug / reliability / CSS / shell / security / perf / style / docs.
+          - Location: file + line(s) or snippet.
+          - Description: what's wrong in plain language.
+          - Suggested fix: concrete guidance and, if possible, a small code snippet.
+
+          Also include:
+          - A SUMMARY section at the top.
+          - An optional POSITIVE NOTES section at the end.
+
+          DIFF:
+          {diff}
+          """)
+
+          payload = {
+              "contents": [
+                  {
+                      "role": "user",
+                      "parts": [{"text": prompt}]
+                  }
+              ]
+          }
+
+          with open("gemini_payload.json", "w", encoding="utf-8") as f:
+              json.dump(payload, f)
+          PY
+
+          # Call Gemini
+          RESPONSE=$(curl -s -X POST \
+            -H "Content-Type: application/json" \
+            -H "x-goog-api-key: $GEMINI_API_KEY" \
+            -d @gemini_payload.json \
+            "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent")
+
+          echo "$RESPONSE" > gemini_raw.json
+
+          # Extract plain text from the response
+          REVIEW_TEXT=$(python - << 'PY'
+          import json
+          data = json.load(open("gemini_raw.json", "r", encoding="utf-8"))
+          try:
+              text = data["candidates"][0]["content"]["parts"][0]["text"]
+          except Exception:
+              text = "Gemini did not return a review."
+          if len(text) > 12000:
+              text = text[:12000] + "\n\n[review truncated]"
+          print(text)
+          PY
+          )
+
+          {
+            echo "review<<EOF"
+            echo "$REVIEW_TEXT"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Comment Gemini review on PR
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            **GEMINI REVIEW**
+
+            ```text
+            ${{ steps.gemini.outputs.review }}
+            ```
