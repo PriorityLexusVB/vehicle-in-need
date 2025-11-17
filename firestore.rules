@@ -119,14 +119,14 @@ service cloud.firestore {
 
       // READ:
       // Owners can read their own orders.
-      // Managers can read any order.
+      // Managers (with custom claims) can read any order.
       allow read: if isOrderOwner();
-      allow read: if isManager();
+      allow read: if isSignedIn() && ('isManager' in request.auth.token) && request.auth.token.isManager == true;
 
       // UPDATE:
-      // - Managers can update any order.
+      // - Managers (with custom claims) can update any order.
       // - Owners can update limited mutable fields (e.g. status, notes) without changing ownership.
-      allow update: if isManager();
+      allow update: if isSignedIn() && ('isManager' in request.auth.token) && request.auth.token.isManager == true;
       allow update: if isOrderOwner()
         // Ownership must remain unchanged
         && ('createdByUid' in request.resource.data) && ('createdByUid' in resource.data)
@@ -139,8 +139,8 @@ service cloud.firestore {
         && ('status' in request.resource.data)
         && request.resource.data.status in ['Factory Order', 'Locate', 'Dealer Exchange', 'Received', 'Delivered'];
 
-      // DELETE: Managers only.
-      allow delete: if isManager();
+      // DELETE: Managers (with custom claims) only.
+      allow delete: if isSignedIn() && ('isManager' in request.auth.token) && request.auth.token.isManager == true;
     }
   }
 }
