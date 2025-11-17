@@ -9,6 +9,7 @@ The Cloud Build trigger `vehicle-in-need-deploy` fails with an error about an in
 `SERVICE_URL` is NOT a Cloud Build substitution variable. It is a bash variable used within the deployment verification script in `cloudbuild.yaml`.
 
 The `cloudbuild.yaml` file correctly uses `SERVICE_URL` as a bash variable:
+
 ```bash
 SERVICE_URL=$(gcloud run services describe ${_SERVICE} \
   --region=${_REGION} \
@@ -25,7 +26,7 @@ Only these substitution variables should be configured in the trigger:
 
 1. **`_REGION`** (optional, defaults to `us-west1`)
    - Example: `us-west1`, `us-central1`, etc.
-   
+
 2. **`_SERVICE`** (optional, defaults to `pre-order-dealer-exchange-tracker`)
    - Example: `pre-order-dealer-exchange-tracker`
 
@@ -35,6 +36,7 @@ Only these substitution variables should be configured in the trigger:
 ### Example Trigger Configuration
 
 **Correct:**
+
 ```yaml
 substitutions:
   _REGION: us-west1
@@ -42,6 +44,7 @@ substitutions:
 ```
 
 **Incorrect:**
+
 ```yaml
 substitutions:
   _REGION: us-west1
@@ -68,6 +71,7 @@ substitutions:
 ## Verification
 
 After fixing the trigger, test it by:
+
 ```bash
 gcloud builds submit --config cloudbuild.yaml \
   --substitutions _REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=test-$(date +%Y%m%d)

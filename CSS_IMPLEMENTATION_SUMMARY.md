@@ -1,7 +1,9 @@
 # CSS Loading Issue - Implementation Summary
 
 ## Issue Description
+
 The deployed Cloud Run application shows default browser styles (purple links, black borders) instead of Tailwind CSS, even though:
+
 - Local builds correctly generate CSS files
 - The build process completes successfully
 - All configuration files are correct
@@ -9,6 +11,7 @@ The deployed Cloud Run application shows default browser styles (purple links, b
 ## Investigation Results
 
 ### What's Working ✅
+
 1. **Build Process**: Vite correctly generates CSS
    - Output: `dist/assets/index-DNzTS1Bl.css` (9.91 kB)
    - Contains Tailwind v4 utility classes
@@ -27,14 +30,17 @@ The deployed Cloud Run application shows default browser styles (purple links, b
    - Dist folder copied to runtime image
 
 ### Root Cause ❌
+
 **The deployed version is serving a stale Docker image.**
 
 Evidence:
+
 - Console logs show: `index-PBlrTBeX.js` (old hash)
 - Local builds generate: `index-DlazGtSi.js` (new hash)
 - Asset hash mismatch = stale deployment
 
 Likely causes:
+
 1. Cloud Build used cached image tagged `:latest`
 2. Previous deployment failed but service kept running
 3. Docker layer cache served outdated build artifacts
@@ -42,9 +48,11 @@ Likely causes:
 ## Solution Implemented
 
 ### 1. Automatic CSS Verification (`scripts/verify-css-in-build.sh`)
+
 **Purpose**: Catch CSS issues before deployment
 
 **What it does**:
+
 - Runs automatically after every `npm run build` (postbuild script)
 - Validates CSS file exists in `dist/assets/`
 - Checks CSS contains Tailwind classes (not unprocessed directives)
@@ -52,15 +60,18 @@ Likely causes:
 - Fails build if any validation fails
 
 **Usage**:
+
 ```bash
 npm run build      # Automatically runs verification
 npm run verify:css # Run manually
 ```
 
 ### 2. Enhanced Browser Diagnostics (`src/main.tsx`)
+
 **Purpose**: Identify CSS loading issues in production
 
 **What it logs**:
+
 ```
 🚀 Application Bundle Info
 Version: <commit-sha>
@@ -73,14 +84,17 @@ Total CSS links: 1
 ```
 
 **Error detection**:
+
 - Reports which CSS files failed to load
 - Checks if Tailwind styles are applied to body
 - Provides actionable troubleshooting steps
 
 ### 3. Cache-Busting Meta Tags (`index.html`)
+
 **Purpose**: Prevent browsers/proxies from caching stale HTML
 
 **Added tags**:
+
 ```html
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
@@ -88,15 +102,18 @@ Total CSS links: 1
 ```
 
 ### 4. Remote Deployment Testing (`scripts/test-deployed-css.sh`)
+
 **Purpose**: Verify CSS availability on deployed service
 
 **What it tests**:
+
 - Fetches HTML from Cloud Run service
 - Extracts CSS references
 - Checks HTTP status for each CSS file
 - Verifies CSS content includes Tailwind classes
 
 **Usage**:
+
 ```bash
 SERVICE_URL=$(gcloud run services describe pre-order-dealer-exchange-tracker \
   --region=us-west1 --format='value(status.url)')
@@ -104,6 +121,7 @@ bash scripts/test-deployed-css.sh $SERVICE_URL
 ```
 
 ### 5. Comprehensive Documentation
+
 - **`DEPLOYMENT_CSS_CHECKLIST.md`**: Complete deployment guide
   - Pre-deployment verification
   - Deployment procedures
@@ -141,6 +159,7 @@ echo "Test URL: $SERVICE_URL"
 ## Verification Steps
 
 ### After Redeployment
+
 1. **Check Browser Console**:
    - Open deployed app
    - Look for "🚀 Application Bundle Info" log
@@ -171,6 +190,7 @@ Going forward, these safeguards prevent the issue:
 ## Technical Details
 
 ### Build Pipeline
+
 ```
 npm run build
   ↓
@@ -186,6 +206,7 @@ Cloud Run deployment
 ```
 
 ### CSS Processing Chain
+
 ```
 src/index.css (@tailwind directives)
   ↓
@@ -199,6 +220,7 @@ dist/assets/index-<hash>.css
 ```
 
 ### Asset Loading
+
 ```
 Browser requests index.html
   ↓
@@ -228,6 +250,7 @@ Styles applied to page
 **CodeQL Scan Result**: ✅ No vulnerabilities found
 
 All changes are diagnostic/tooling only:
+
 - No new dependencies added
 - No runtime security impact
 - Scripts are read-only operations
@@ -236,6 +259,7 @@ All changes are diagnostic/tooling only:
 ## Testing
 
 All changes tested locally:
+
 - ✅ Build completes successfully
 - ✅ CSS verification script works
 - ✅ Enhanced diagnostics appear in console

@@ -97,6 +97,7 @@ gcloud projects get-iam-policy gen-lang-client-0615287333 \
 ```
 
 **Expected roles:**
+
 - [ ] `roles/run.admin`
 - [ ] `roles/artifactregistry.writer`
 - [ ] `roles/cloudbuild.builds.editor`
@@ -110,6 +111,7 @@ gcloud projects get-iam-policy gen-lang-client-0615287333 \
 ```
 
 **Expected roles:**
+
 - [ ] `roles/logging.logWriter`
 
 ```bash
@@ -120,6 +122,7 @@ gcloud iam service-accounts get-iam-policy \
 ```
 
 **Expected output should contain:**
+
 - [ ] Binding with `role: roles/iam.serviceAccountUser`
 - [ ] Member: `serviceAccount:cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com`
 
@@ -129,6 +132,7 @@ gcloud secrets get-iam-policy vehicle-in-need-gemini --project=gen-lang-client-0
 ```
 
 **Expected output should contain:**
+
 - [ ] Runtime SA with `roles/secretmanager.secretAccessor`
 
 ## Phase 3: Update Cloud Build Trigger
@@ -140,6 +144,7 @@ gcloud secrets get-iam-policy vehicle-in-need-gemini --project=gen-lang-client-0
 3. Click "Edit"
 
 Verify:
+
 - [ ] **Repository:** `PriorityLexusVB/vehicle-in-need` (GitHub)
 - [ ] **Branch:** Configured to trigger on appropriate branch (e.g., `main` or `^copilot/.*`)
 - [ ] **Build configuration:** `cloudbuild.yaml`
@@ -159,9 +164,11 @@ Verify:
 ### 4.2 Trigger a Test Build
 
 Option A: Automatic trigger (if configured)
+
 - [ ] The merge should automatically trigger the Cloud Build
 
 Option B: Manual trigger
+
 ```bash
 cd /path/to/vehicle-in-need
 git checkout main  # or appropriate branch
@@ -179,6 +186,7 @@ gcloud builds submit \
 2. Find the latest build for `vehicle-in-need-deploy`
 
 Monitor each step:
+
 - [ ] **Step 1: check-conflicts** - Should pass (no merge conflicts)
 - [ ] **Step 2: build-image** - Should build the Docker image successfully
 - [ ] **Step 3: push-image** - Should push the image to Artifact Registry
@@ -186,6 +194,7 @@ Monitor each step:
 - [ ] **Step 5: deploy-cloud-run** - Should deploy to Cloud Run **without** `iam.serviceaccounts.actAs` error
 
 **Critical Success Criteria:**
+
 - [ ] Build completes with `SUCCESS` status
 - [ ] No `PERMISSION_DENIED` errors in step 5
 - [ ] No `iam.serviceaccounts.actAs` errors
@@ -215,6 +224,7 @@ gcloud run services describe pre-order-dealer-exchange-tracker \
 ```
 
 Review the output file and verify:
+
 - [ ] `spec.template.spec.serviceAccountName: pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com`
 - [ ] Latest image is deployed
 - [ ] Environment variables are correct
@@ -234,6 +244,7 @@ curl -v $SERVICE_URL/health
 ```
 
 **Expected:**
+
 - [ ] HTTP 200 OK response
 - [ ] Valid health check response
 
@@ -256,6 +267,7 @@ gcloud run services logs read pre-order-dealer-exchange-tracker \
 ```
 
 Verify:
+
 - [ ] No permission errors related to secrets
 - [ ] No IAM errors
 - [ ] Application starts successfully
@@ -318,6 +330,7 @@ gcloud run services list \
 ### 7.2 Create Summary Report
 
 Create a summary document with:
+
 - [ ] Before/after IAM bindings comparison
 - [ ] Screenshot or text of successful Cloud Build run
 - [ ] Confirmation that deployment error is resolved
@@ -344,16 +357,20 @@ gcloud projects get-iam-policy gen-lang-client-0615287333 \
 If the deployment fails or causes issues:
 
 ### Option 1: Revert Code Changes
+
 ```bash
 git revert <commit-sha>
 git push
 ```
 
 ### Option 2: Restore Previous IAM Bindings
+
 Use the "before" snapshots saved in Phase 1.2 to restore previous IAM configuration.
 
 ### Option 3: Emergency Deploy with Old Configuration
+
 Temporarily deploy without the service account flag:
+
 ```bash
 gcloud run deploy pre-order-dealer-exchange-tracker \
   --image=us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:latest \
@@ -373,6 +390,7 @@ When all checklist items are complete and verified:
 - [ ] Documentation is complete and accurate
 
 **Sign-off:**
+
 - Tester Name: ________________
 - Date: ________________
 - Build ID: ________________

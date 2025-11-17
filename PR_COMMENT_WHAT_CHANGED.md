@@ -17,6 +17,7 @@
 ### The Problem
 
 Cloud Build deployment was failing with:
+
 ```
 ERROR: (gcloud.run.deploy) PERMISSION_DENIED: Permission 'iam.serviceaccounts.actAs' denied 
 on service account pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com
@@ -37,6 +38,7 @@ Grant `roles/iam.serviceAccountUser` permission to the Cloud Build SA on the run
 ### 1. Service Account User Role (Critical - Fixes the Error)
 
 **Binding**:
+
 ```
 Service Account: pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com
 Member: serviceAccount:cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com
@@ -46,6 +48,7 @@ Role: roles/iam.serviceAccountUser
 **Purpose**: Allows Cloud Build to impersonate the runtime SA during deployment
 
 **Command**:
+
 ```bash
 gcloud iam service-accounts add-iam-policy-binding \
   pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com \
@@ -57,6 +60,7 @@ gcloud iam service-accounts add-iam-policy-binding \
 ### 2. Cloud Run Admin Role (If Not Already Granted)
 
 **Binding**:
+
 ```
 Project: gen-lang-client-0615287333
 Member: serviceAccount:cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com
@@ -66,6 +70,7 @@ Role: roles/run.admin
 **Purpose**: Allows Cloud Build to create and manage Cloud Run services
 
 **Command**:
+
 ```bash
 gcloud projects add-iam-policy-binding gen-lang-client-0615287333 \
   --member="serviceAccount:cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com" \
@@ -75,6 +80,7 @@ gcloud projects add-iam-policy-binding gen-lang-client-0615287333 \
 ### 3. Runtime Service Account Permissions
 
 **Bindings**:
+
 ```
 # Log Writer
 Project: gen-lang-client-0615287333
@@ -96,6 +102,7 @@ Role: roles/secretmanager.secretAccessor
 ### No Changes Required
 
 The `cloudbuild.yaml` file already has the correct configuration:
+
 - ✅ Line 82: Specifies `--service-account=pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com`
 - ✅ Line 78: Uses correct image path `us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/pre-order-dealer-exchange-tracker:${SHORT_SHA}`
 - ✅ Line 79: Deploys to region `us-west1`
@@ -139,6 +146,7 @@ gcloud builds submit --config cloudbuild.yaml \
 ### 2. Confirm All Steps Succeed
 
 Expected successful steps:
+
 - ✅ Check for conflict markers
 - ✅ Build Docker image
 - ✅ Push image to Artifact Registry (SHORT_SHA tag)
@@ -155,6 +163,7 @@ gcloud run services describe pre-order-dealer-exchange-tracker \
 ```
 
 Expected:
+
 - Service account: `pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com`
 - Status URL: Populated
 
@@ -177,19 +186,23 @@ curl -s "$SERVICE_URL/api/status" | jq '.'
 ## Documentation Provided
 
 ### Quick Start
+
 - **QUICK_IAM_FIX.md** - 5-minute quick fix with essential commands
 
 ### Complete Guides
+
 - **IAM_FIX_EXECUTION_GUIDE.md** - Comprehensive 7-step walkthrough
 - **IAM_FIX_CHECKLIST.md** - Execution tracking checklist
 
 ### Reference
+
 - **IAM_FIX_SUMMARY.md** - This summary document
 - **IAM_DOCUMENTATION_INDEX.md** - Navigation guide for all IAM docs
 - **IAM_CONFIGURATION_SUMMARY.md** - Full IAM architecture (existing)
 - **README.md** - Updated with IAM documentation links
 
 ### Tools
+
 - **scripts/setup-iam-permissions.sh** - Enhanced automated setup script
   - Added service account verification
   - Auto-creates runtime SA if missing
@@ -214,6 +227,7 @@ curl -s "$SERVICE_URL/api/status" | jq '.'
 Each service account has only the minimum permissions required:
 
 **Cloud Build SA**:
+
 - ✅ Can deploy Cloud Run services
 - ✅ Can push Docker images
 - ✅ Can impersonate specific runtime SA only
@@ -221,6 +235,7 @@ Each service account has only the minimum permissions required:
 - ❌ No Editor or Owner roles
 
 **Runtime SA**:
+
 - ✅ Can write logs
 - ✅ Can access specific API key secret
 - ❌ Cannot deploy services
@@ -230,6 +245,7 @@ Each service account has only the minimum permissions required:
 ### Audit Trail
 
 All actions are logged with the respective service account identity:
+
 - Deployment actions → Cloud Build SA
 - Runtime actions → Runtime SA
 
@@ -240,6 +256,7 @@ All actions are logged with the respective service account identity:
 After applying these IAM permissions, the latest Cloud Build run should show:
 
 **Build Steps**:
+
 1. ✅ check-conflicts - PASSED
 2. ✅ build-image - PASSED
 3. ✅ push-image - PASSED
@@ -247,6 +264,7 @@ After applying these IAM permissions, the latest Cloud Build run should show:
 5. ✅ deploy-cloud-run - **PASSED** (previously failed with actAs error)
 
 **Cloud Run Service**:
+
 - ✅ Service: `pre-order-dealer-exchange-tracker`
 - ✅ Region: `us-west1`
 - ✅ Runtime SA: `pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com`
@@ -286,16 +304,19 @@ After applying these IAM permissions, the latest Cloud Build run should show:
 1. **Wait for IAM propagation** (2-3 minutes)
 2. **Check for typos** in service account emails
 3. **Verify Cloud Build trigger** uses correct SA:
+
    ```bash
    gcloud builds triggers describe vehicle-in-need-deploy \
      --project=gen-lang-client-0615287333
    ```
-4. **Review Cloud Build logs**: https://console.cloud.google.com/cloud-build/builds
+
+4. **Review Cloud Build logs**: <https://console.cloud.google.com/cloud-build/builds>
 5. **Check troubleshooting section** in IAM_FIX_EXECUTION_GUIDE.md
 
 ### Documentation
 
 All IAM fix documentation is in the repository:
+
 - Start at: [IAM_DOCUMENTATION_INDEX.md](./IAM_DOCUMENTATION_INDEX.md)
 - Quick fix: [QUICK_IAM_FIX.md](./QUICK_IAM_FIX.md)
 - Full guide: [IAM_FIX_EXECUTION_GUIDE.md](./IAM_FIX_EXECUTION_GUIDE.md)

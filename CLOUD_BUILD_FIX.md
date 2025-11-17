@@ -12,6 +12,7 @@ is not a valid built-in substitution
 ## Root Cause
 
 The trigger defines a substitution variable named `SERVICE_URL`, but Google Cloud Build requires:
+
 - User-defined substitutions to start with an underscore (`_`)
 - Built-in substitutions to match documented names (e.g., `PROJECT_ID`, `SHORT_SHA`)
 

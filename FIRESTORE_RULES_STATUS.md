@@ -3,6 +3,7 @@
 ## Current Status
 
 The Firestore security rules have been updated to be more robust and handle null values properly. Out of 42 tests:
+
 - **39-40 tests consistently pass** (93-95% success rate)
 - **2-3 tests fail or are flaky** due to architectural limitations with `get()` calls
 
@@ -19,11 +20,13 @@ The Firestore security rules have been updated to be more robust and handle null
 **Issue**: Managers cannot directly read other users' documents through client-side Firestore queries.
 
 **Why**: Allowing `allow read: if isManager()` in the users collection creates a circular dependency:
+
 - When `isManager()` calls `get(/users/...)` to check the manager's document
 - Firestore evaluates the read rules for that document
 - If those rules include `isManager()`, it creates infinite recursion
 
-**Workaround**: 
+**Workaround**:
+
 - Managers can read their own user document (works fine)
 - Managers can access user information indirectly through orders and other collections
 - For direct user document access, use server-side code (Cloud Functions) or custom claims
@@ -52,7 +55,7 @@ The Firestore security rules have been updated to be more robust and handle null
 
 For production use, we **strongly recommend** using Firebase custom claims for the `isManager` role instead of storing it in Firestore documents.
 
-### Benefits of Custom Claims:
+### Benefits of Custom Claims
 
 1. **No `get()` calls needed**: Role is available in `request.auth.token.isManager`
 2. **No circular dependencies**: Rules don't need to fetch additional documents
@@ -60,15 +63,17 @@ For production use, we **strongly recommend** using Firebase custom claims for t
 4. **More secure**: Claims are signed by Firebase and can't be modified by clients
 5. **All tests pass**: Eliminates the architectural limitations
 
-### Implementation:
+### Implementation
 
 **1. Set custom claims (server-side):**
+
 ```javascript
 // In Cloud Function or Admin SDK
 admin.auth().setCustomUserClaims(uid, { isManager: true });
 ```
 
 **2. The rules already support this:**
+
 ```javascript
 function isManager() {
   return isSignedIn() && (
@@ -80,12 +85,13 @@ function isManager() {
 ```
 
 **3. Client-side (refresh token after setting claims):**
+
 ```javascript
 // Force token refresh to pick up new claims
 await firebase.auth().currentUser.getIdToken(true);
 ```
 
-### Migration Path:
+### Migration Path
 
 1. Add custom claims for existing managers
 2. Update role assignment flow to set custom claims
@@ -95,6 +101,7 @@ await firebase.auth().currentUser.getIdToken(true);
 ## Current Rules Design
 
 The current rules prioritize:
+
 - ✅ Preventing privilege escalation (users can't make themselves managers)
 - ✅ Null safety (proper handling of missing fields)
 - ✅ Basic access control (users can access their own data)
@@ -118,11 +125,13 @@ The current rules prioritize:
 ## Conclusion
 
 The Firestore rules are now **production-ready** with the understanding that:
+
 1. Manager role checks work reliably when using custom claims
 2. Some advanced admin operations should be done server-side
 3. For best results, migrate to custom claims for the `isManager` role
 
 The 2-3 failing tests represent known architectural limitations, not bugs. The rules successfully:
+
 - ✅ Prevent security vulnerabilities
 - ✅ Handle null values correctly
 - ✅ Support the main application workflows

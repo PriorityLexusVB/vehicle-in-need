@@ -353,6 +353,7 @@ When deploying to Google Cloud Run:
 #### ⚠️ IAM Permissions Required
 
 Before deploying, ensure proper IAM permissions are configured. If you encounter:
+
 ```
 ERROR: Permission 'iam.serviceaccounts.actAs' denied
 ```
@@ -360,6 +361,7 @@ ERROR: Permission 'iam.serviceaccounts.actAs' denied
 **Quick Fix**: See [QUICK_IAM_FIX.md](./QUICK_IAM_FIX.md) for 5-minute solution.
 
 **Detailed Guides**:
+
 - [IAM_FIX_EXECUTION_GUIDE.md](./IAM_FIX_EXECUTION_GUIDE.md) - Complete walkthrough
 - [IAM_FIX_CHECKLIST.md](./IAM_FIX_CHECKLIST.md) - Execution checklist
 - [IAM_CONFIGURATION_SUMMARY.md](./IAM_CONFIGURATION_SUMMARY.md) - Full IAM architecture
@@ -651,6 +653,7 @@ npm run verify:css
 ```
 
 **Documentation:**
+
 - `TAILWIND_CSS_SAFEGUARDS.md` - Complete technical documentation
 - `DEPLOYMENT_QUICK_REFERENCE.md` - Quick deployment guide
 - `scripts/pre-deploy-css-check.sh` - Comprehensive pre-deployment checker

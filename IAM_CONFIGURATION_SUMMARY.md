@@ -161,6 +161,7 @@ A setup script is provided at `scripts/setup-iam-permissions.sh` to automate the
 ```
 
 The script will:
+
 1. Grant all required permissions to the Cloud Build SA
 2. Grant all required permissions to the runtime SA
 3. Display commands to review and de-privilege the default compute SA
@@ -210,6 +211,7 @@ gcloud secrets get-iam-policy vehicle-in-need-gemini --project=gen-lang-client-0
 ### Error: Permission 'iam.serviceaccounts.actAs' denied
 
 **Symptom:** Cloud Build fails with:
+
 ```
 PERMISSION_DENIED: Permission 'iam.serviceaccounts.actAs' denied on service account
 ```
@@ -217,6 +219,7 @@ PERMISSION_DENIED: Permission 'iam.serviceaccounts.actAs' denied on service acco
 **Root Cause:** The Cloud Build SA lacks `roles/iam.serviceAccountUser` permission on the runtime SA.
 
 **Solution:**
+
 ```bash
 gcloud iam service-accounts add-iam-policy-binding \
   pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com \
@@ -230,6 +233,7 @@ gcloud iam service-accounts add-iam-policy-binding \
 **Symptom:** Cloud Build trigger fails with permission errors or uses the wrong service account.
 
 **Solution:** Verify the Cloud Build trigger configuration:
+
 1. Go to Cloud Console → Cloud Build → Triggers
 2. Find the `vehicle-in-need-deploy` trigger
 3. Edit the trigger
@@ -241,6 +245,7 @@ gcloud iam service-accounts add-iam-policy-binding \
 **Symptom:** The Cloud Run service is not using the dedicated runtime SA.
 
 **Solution:** Redeploy the service with the explicit `--service-account` flag:
+
 ```bash
 gcloud run deploy pre-order-dealer-exchange-tracker \
   --image=us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:latest \

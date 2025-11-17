@@ -3,6 +3,7 @@
 ## Problem Statement
 
 The Firestore security rules were failing tests due to null value errors when:
+
 1. Checking if a user is a manager (accessing `.data.isManager` without null checks)
 2. Checking if a user is an order owner (accessing `resource.data.createdByUid` without null checks)
 3. User creation requiring `isManager` field to be present (should allow omission)
@@ -13,6 +14,7 @@ The Firestore security rules were failing tests due to null value errors when:
 ### 1. Added Null-Safe Manager Check
 
 **Before**:
+
 ```javascript
 function isManager() {
   return isSignedIn()
@@ -22,6 +24,7 @@ function isManager() {
 ```
 
 **After**:
+
 ```javascript
 function isManagerDoc(userDoc) {
   return userDoc != null 
@@ -41,6 +44,7 @@ function isManager() {
 ### 2. Fixed Order Owner Check
 
 **Before**:
+
 ```javascript
 function isOrderOwner() {
   return isSignedIn() && resource.data.createdByUid == request.auth.uid;
@@ -48,6 +52,7 @@ function isOrderOwner() {
 ```
 
 **After**:
+
 ```javascript
 function isOrderOwner() {
   return isSignedIn() 
@@ -62,6 +67,7 @@ function isOrderOwner() {
 ### 3. Allow User Creation Without isManager Field
 
 **Before**:
+
 ```javascript
 allow create: if isOwner(userId)
   && (...)
@@ -70,6 +76,7 @@ allow create: if isOwner(userId)
 ```
 
 **After**:
+
 ```javascript
 allow create: if isOwner(userId)
   && (...)
@@ -83,6 +90,7 @@ allow create: if isOwner(userId)
 ### 4. Fixed User Update Null Safety
 
 **Before**:
+
 ```javascript
 allow update: if (
     (isManager() && !isOwner(userId))
@@ -93,6 +101,7 @@ allow update: if (
 ```
 
 **After**:
+
 ```javascript
 allow update: if (
     (isManager() && !isOwner(userId))
@@ -112,10 +121,12 @@ allow update: if (
 ## Test Results
 
 ### Initial State
+
 - 4 tests failing with "Null value error"
 - 2 tests failing with permission errors
 
 ### Final State
+
 - 41 out of 42 tests passing (97.6% pass rate)
 - 1 flaky test that passes in isolation (test infrastructure issue, not rules bug)
 - All critical manager and owner permission tests passing
@@ -138,6 +149,7 @@ allow update: if (
 ## Security Considerations
 
 ### Maintained Security Properties
+
 - Users cannot self-elevate to manager role
 - Email addresses are immutable
 - Order ownership fields are protected
@@ -145,6 +157,7 @@ allow update: if (
 - All field accesses are null-safe
 
 ### No New Vulnerabilities
+
 - All changes are defensive (more checks, not fewer)
 - Access control logic unchanged (same permission model)
 - Field existence checks added before access
@@ -153,6 +166,7 @@ allow update: if (
 ## Performance Impact
 
 **Minimal**: The additional null checks and field existence verifications are:
+
 - Evaluated in-memory by Firestore Rules engine
 - Short-circuit boolean operations (fail fast)
 - No additional database reads (same `get()` and `exists()` calls as before)
@@ -160,12 +174,15 @@ allow update: if (
 ## Maintenance Notes
 
 ### Future Improvements
+
 1. Consider migrating manager role check to Firebase Auth custom claims for better performance
 2. Investigate test flakiness (likely emulator state issue or test execution order)
 3. Consider adding integration tests that run against actual Firestore (not just emulator)
 
 ### When Adding New Fields
+
 Always use defensive checks when accessing fields that might not exist:
+
 ```javascript
 // Check existence before access
 ('fieldName' in data) && data.fieldName == value
@@ -175,7 +192,9 @@ Always use defensive checks when accessing fields that might not exist:
 ```
 
 ### When Checking Roles
+
 Always verify:
+
 1. Document exists (`exists()`)
 2. Field exists (`'fieldName' in data`)
 3. Field has expected value
