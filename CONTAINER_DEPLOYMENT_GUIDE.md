@@ -391,6 +391,7 @@ gcloud logging tail "resource.type=cloud_run_revision"
   deployment checklist
 - [cloudbuild.yaml](./cloudbuild.yaml) - Cloud Build configuration
 -
+
 [.github/workflows/build-and-deploy.yml](./.github/workflows/build-and-deploy.yml) - GitHub Actions workflow
 
 ## Support

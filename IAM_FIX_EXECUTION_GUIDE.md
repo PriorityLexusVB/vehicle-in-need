@@ -9,13 +9,16 @@
 ## Prerequisites
 
 **Environment**: This must be executed from a networked environment with GCP access:
+
 - Google Cloud Shell (recommended)
 - Local terminal with `gcloud` CLI authenticated
 
 **Required Permissions**:
+
 - Owner or Security Admin role on project `gen-lang-client-0615287333`
 
 **Authentication**:
+
 ```bash
 gcloud auth login
 gcloud config set project gen-lang-client-0615287333
@@ -91,6 +94,7 @@ gcloud iam service-accounts get-iam-policy \
 ```
 
 **Expected Output**: You should see a row with:
+
 - Role: `roles/iam.serviceAccountUser`
 - Member: `serviceAccount:cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com`
 
@@ -118,6 +122,7 @@ gcloud projects get-iam-policy gen-lang-client-0615287333 \
 ```
 
 **Expected Roles** (at minimum):
+
 - `roles/run.admin`
 - `roles/artifactregistry.writer` (should already exist)
 - `roles/cloudbuild.builds.editor` (should already exist)
@@ -161,6 +166,7 @@ gcloud secrets get-iam-policy vehicle-in-need-gemini \
 ```
 
 **Expected Runtime SA Permissions**:
+
 - Project-level: `roles/logging.logWriter`
 - Secret-level: `roles/secretmanager.secretAccessor` on `vehicle-in-need-gemini`
 
@@ -188,6 +194,7 @@ The `cloudbuild.yaml` file should already have the correct configuration. Verify
 ```
 
 **Key items to verify**:
+
 - ✅ `--service-account=pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com` is present
 - ✅ Region is `us-west1`
 - ✅ Image path uses `us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:${SHORT_SHA}`
@@ -231,6 +238,7 @@ gcloud builds submit \
 ### Expected Result
 
 The build should complete all steps successfully:
+
 1. ✅ Check for conflict markers
 2. ✅ Build Docker image
 3. ✅ Push image to Artifact Registry (both `SHORT_SHA` and `latest` tags)
@@ -251,6 +259,7 @@ gcloud run services describe pre-order-dealer-exchange-tracker \
 ```
 
 **Expected Output**:
+
 - `metadata.name`: `pre-order-dealer-exchange-tracker`
 - `status.url`: `https://pre-order-dealer-exchange-tracker-<hash>-uw.a.run.app`
 - `spec.template.spec.serviceAccountName`: `pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com`
@@ -278,6 +287,7 @@ curl -s "$SERVICE_URL/api/status" | jq '.'
 ```
 
 **Expected Output**:
+
 ```json
 {
   "status": "healthy",
@@ -300,19 +310,23 @@ After completing all steps, the IAM configuration should be:
 ### Cloud Build SA (`cloud-build-deployer@...`)
 
 **Project-Level Roles**:
+
 - `roles/run.admin` - Deploy Cloud Run services
 - `roles/artifactregistry.writer` - Push Docker images
 - `roles/cloudbuild.builds.editor` - Manage builds
 
 **Service Account-Level Binding**:
+
 - `roles/iam.serviceAccountUser` on `pre-order-dealer-exchange-860@...` - Deploy as runtime SA
 
 ### Runtime SA (`pre-order-dealer-exchange-860@...`)
 
 **Project-Level Roles**:
+
 - `roles/logging.logWriter` - Write logs to Cloud Logging
 
 **Secret-Level Bindings**:
+
 - `roles/secretmanager.secretAccessor` on `vehicle-in-need-gemini` - Access API key at runtime
 
 ---
@@ -321,7 +335,8 @@ After completing all steps, the IAM configuration should be:
 
 ### Error: Service Account Does Not Exist
 
-**Symptom**: 
+**Symptom**:
+
 ```
 ERROR: (gcloud.iam.service-accounts.add-iam-policy-binding) NOT_FOUND: Unknown service account
 ```
@@ -331,11 +346,13 @@ ERROR: (gcloud.iam.service-accounts.add-iam-policy-binding) NOT_FOUND: Unknown s
 ### Error: Permission Denied When Granting Roles
 
 **Symptom**:
+
 ```
 ERROR: (gcloud.projects.add-iam-policy-binding) PERMISSION_DENIED
 ```
 
 **Solution**: Ensure you have Owner or Security Admin role on the project:
+
 ```bash
 gcloud projects get-iam-policy gen-lang-client-0615287333 \
   --flatten="bindings[].members" \
@@ -347,11 +364,13 @@ gcloud projects get-iam-policy gen-lang-client-0615287333 \
 **Symptom**: Build continues to fail even after IAM permissions are granted
 
 **Possible Causes**:
+
 1. Typo in service account email in `cloudbuild.yaml`
 2. IAM changes not yet propagated (wait 1-2 minutes)
 3. Cloud Build trigger not using correct service account
 
 **Verification**:
+
 ```bash
 # Check Cloud Build trigger configuration
 gcloud builds triggers describe vehicle-in-need-deploy \

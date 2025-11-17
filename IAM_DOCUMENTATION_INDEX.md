@@ -7,6 +7,7 @@ This index helps you navigate the IAM-related documentation for the Cloud Run de
 ## 🚨 Having an IAM Error?
 
 If you're seeing this error:
+
 ```
 ERROR: Permission 'iam.serviceaccounts.actAs' denied
 ```
@@ -20,6 +21,7 @@ ERROR: Permission 'iam.serviceaccounts.actAs' denied
 ### For Quick Fix (5-10 minutes)
 
 **[QUICK_IAM_FIX.md](./QUICK_IAM_FIX.md)**
+
 - Copy-paste commands to fix the IAM error
 - TL;DR version with essential steps only
 - Verification commands included
@@ -28,6 +30,7 @@ ERROR: Permission 'iam.serviceaccounts.actAs' denied
 ### For Step-by-Step Execution (15-20 minutes)
 
 **[IAM_FIX_EXECUTION_GUIDE.md](./IAM_FIX_EXECUTION_GUIDE.md)**
+
 - Comprehensive 7-step walkthrough
 - Detailed explanations for each command
 - Troubleshooting section included
@@ -36,6 +39,7 @@ ERROR: Permission 'iam.serviceaccounts.actAs' denied
 ### For Tracking Your Progress
 
 **[IAM_FIX_CHECKLIST.md](./IAM_FIX_CHECKLIST.md)**
+
 - Printable checklist format
 - Pre-execution, execution, and post-execution sections
 - Checkbox format for tracking
@@ -45,6 +49,7 @@ ERROR: Permission 'iam.serviceaccounts.actAs' denied
 ### For Stakeholder Communication
 
 **[IAM_FIX_SUMMARY.md](./IAM_FIX_SUMMARY.md)**
+
 - Executive summary suitable for PR/issue comments
 - Problem statement and root cause analysis
 - Solution overview and deliverables
@@ -54,6 +59,7 @@ ERROR: Permission 'iam.serviceaccounts.actAs' denied
 ### For Understanding the Architecture
 
 **[IAM_CONFIGURATION_SUMMARY.md](./IAM_CONFIGURATION_SUMMARY.md)**
+
 - Complete IAM architecture documentation
 - All service accounts and their roles
 - Security best practices
@@ -80,6 +86,7 @@ ERROR: Permission 'iam.serviceaccounts.actAs' denied
 ```
 
 **Features**:
+
 - Verifies service accounts exist
 - Auto-creates runtime SA if missing
 - Grants all required permissions
@@ -194,12 +201,15 @@ Expected: Should show Cloud Build SA with `roles/iam.serviceAccountUser`
 ## ❓ Still Need Help?
 
 1. **Check troubleshooting** in [IAM_FIX_EXECUTION_GUIDE.md](./IAM_FIX_EXECUTION_GUIDE.md#troubleshooting)
-2. **Review Cloud Build logs**: https://console.cloud.google.com/cloud-build/builds
+2. **Review Cloud Build logs**: <https://console.cloud.google.com/cloud-build/builds>
 3. **Check service account exists**:
+
    ```bash
    gcloud iam service-accounts list --project=gen-lang-client-0615287333
    ```
+
 4. **Verify current permissions**:
+
    ```bash
    gcloud projects get-iam-policy gen-lang-client-0615287333 \
      --flatten="bindings[].members" \

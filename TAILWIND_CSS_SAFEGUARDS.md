@@ -20,6 +20,7 @@ The safeguards are implemented at multiple stages of the build and deployment pi
 ### 1. Build-Time Verification (Local & Docker)
 
 #### npm postbuild Script
+
 **File:** `package.json` → `scripts.postbuild`
 
 ```json
@@ -27,6 +28,7 @@ The safeguards are implemented at multiple stages of the build and deployment pi
 ```
 
 **What it does:**
+
 - Runs automatically after every `npm run build`
 - Verifies CSS files exist in `dist/assets/`
 - Checks CSS files are referenced in `index.html`
@@ -36,6 +38,7 @@ The safeguards are implemented at multiple stages of the build and deployment pi
 **Location of checks:** `scripts/verify-css-in-build.sh`
 
 #### Docker Build-Stage Verification
+
 **File:** `Dockerfile` (builder stage, line ~40)
 
 ```dockerfile
@@ -49,12 +52,14 @@ RUN CSS_COUNT=$(find dist/assets -name "*.css" -type f | wc -l) && \
 ```
 
 **What it does:**
+
 - Runs inside the Docker builder stage after `npm run build`
 - Verifies CSS files were generated in the Docker environment
 - Lists the CSS files found
 - **Aborts the Docker build** if no CSS files exist
 
 #### Docker Runtime-Stage Verification
+
 **File:** `Dockerfile` (runtime stage, line ~70)
 
 ```dockerfile
@@ -67,6 +72,7 @@ RUN CSS_COUNT=$(find dist/assets -name "*.css" -type f 2>/dev/null | wc -l) && \
 ```
 
 **What it does:**
+
 - Runs after copying `dist/` from builder to runtime image
 - Verifies CSS files were successfully copied
 - Lists the CSS files present in the runtime image
@@ -75,6 +81,7 @@ RUN CSS_COUNT=$(find dist/assets -name "*.css" -type f 2>/dev/null | wc -l) && \
 ### 2. Deployment-Time Verification (Cloud Build)
 
 #### Pre-Deployment Conflict Check
+
 **File:** `cloudbuild.yaml` (step: `check-conflicts`)
 
 ```yaml
@@ -91,11 +98,13 @@ RUN CSS_COUNT=$(find dist/assets -name "*.css" -type f 2>/dev/null | wc -l) && \
 ```
 
 **What it does:**
+
 - Runs before building the Docker image
 - Checks for unresolved merge conflicts
 - **Fails the build** if conflicts are found
 
 #### Post-Deployment CSS Accessibility Check
+
 **File:** `cloudbuild.yaml` (step: `verify-css-deployed`)
 
 ```yaml
@@ -129,6 +138,7 @@ RUN CSS_COUNT=$(find dist/assets -name "*.css" -type f 2>/dev/null | wc -l) && \
 ```
 
 **What it does:**
+
 - Runs after the Cloud Run deployment completes
 - Waits 10 seconds for service to stabilize
 - Fetches the deployed `index.html`
@@ -141,6 +151,7 @@ RUN CSS_COUNT=$(find dist/assets -name "*.css" -type f 2>/dev/null | wc -l) && \
 ### 3. Runtime Server Verification (Node.js)
 
 #### Server Startup CSS Check
+
 **File:** `server/index.cjs` (function: `verifyCSSFilesExist()`)
 
 ```javascript
@@ -176,6 +187,7 @@ verifyCSSFilesExist();
 ```
 
 **What it does:**
+
 - Runs immediately when the Node.js server starts (before listening on port 8080)
 - Checks that `dist/` directory exists
 - Checks that `dist/assets/` directory exists
@@ -188,6 +200,7 @@ verifyCSSFilesExist();
 ### 4. Client-Side Runtime Verification (Browser)
 
 #### Bundle Information Logging
+
 **File:** `src/main.tsx` (function: `logBundleInfo()`)
 
 ```typescript
@@ -219,6 +232,7 @@ function logBundleInfo() {
 ```
 
 **What it does:**
+
 - Runs when the app initializes in the browser
 - Logs the build version and timestamp
 - Checks all CSS `<link>` elements
@@ -226,6 +240,7 @@ function logBundleInfo() {
 - Provides diagnostic information if CSS fails
 
 #### Tailwind Application Check
+
 **File:** `src/main.tsx` (within `logBundleInfo()`)
 
 ```typescript
@@ -246,12 +261,14 @@ setTimeout(() => {
 ```
 
 **What it does:**
+
 - Waits 100ms for CSS to apply
 - Checks if the `<body>` element has the correct background color (`bg-slate-100`)
 - Logs success or warning
 - **Shows a warning banner** to the user if styles fail to apply
 
 #### User-Facing Warning Banner
+
 **File:** `src/main.tsx` (function: `showCSSWarningBanner()`)
 
 ```typescript
@@ -268,6 +285,7 @@ function showCSSWarningBanner() {
 ```
 
 **What it does:**
+
 - Creates a visible warning banner at the top of the page
 - Alerts users that styles are not loading correctly
 - Provides a "Reload Page" button to try again
@@ -290,6 +308,7 @@ function showCSSWarningBanner() {
 ## Testing the Safeguards
 
 ### Test 1: Missing CSS in Build
+
 ```bash
 # Temporarily break Tailwind config
 echo "export default {}" > tailwind.config.js
@@ -301,6 +320,7 @@ npm run build
 **Expected:** Build fails with "❌ ERROR: No CSS files found"
 
 ### Test 2: Missing CSS in Docker
+
 ```bash
 # Temporarily remove CSS from Docker copy
 # Comment out COPY dist in Dockerfile
@@ -312,6 +332,7 @@ docker build -t test-image .
 **Expected:** Docker build fails with "❌ FATAL: No CSS files found in runtime image"
 
 ### Test 3: CSS Not Accessible in Deployment
+
 ```bash
 # Deploy without CSS assets (hypothetically)
 # The verify-css-deployed step will catch it
@@ -321,6 +342,7 @@ gcloud builds submit --config cloudbuild.yaml ...
 **Expected:** Deployment fails at `verify-css-deployed` step
 
 ### Test 4: Server Startup Without CSS
+
 ```bash
 # Remove CSS from dist before starting server
 rm dist/assets/*.css
@@ -360,12 +382,14 @@ If you absolutely must disable a safeguard:
 ### "CSS verification passed" but styles still not working
 
 **Possible causes:**
+
 1. CSS file exists but is empty or malformed
 2. Tailwind's `content` paths don't match your component files
 3. PostCSS not processing `@tailwind` directives
 4. Browser cache showing old version
 
 **Solutions:**
+
 1. Check CSS file contents: `head -50 dist/assets/*.css`
 2. Verify `tailwind.config.js` content paths
 3. Verify `postcss.config.js` has `@tailwindcss/postcss`
@@ -382,6 +406,7 @@ If you absolutely must disable a safeguard:
 **Cause:** Service is not accessible or CSS file returns 404.
 
 **Solutions:**
+
 1. Check Cloud Run service is running: `gcloud run services describe <service>`
 2. Verify DNS/routing is working
 3. Check server logs for errors
@@ -401,6 +426,7 @@ If you absolutely must disable a safeguard:
 ## Conclusion
 
 These multi-layer safeguards ensure that:
+
 1. ✅ CSS is compiled correctly during build
 2. ✅ CSS is included in the Docker image
 3. ✅ CSS is accessible via HTTP after deployment

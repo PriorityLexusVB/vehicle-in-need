@@ -22,12 +22,14 @@ causing deployment failures.
    ```bash
    gcloud run deploy pre-order-dealer-exchange-tracker \
      --image us-west1-docker.pkg.dev/gen-lang-client-0615287333/\
+
 vehicle-in-need/pre-order-dealer-exchange-tracker:$SHORT_SHA \
      --region us-west1 \
      --platform managed \
      --allow-unauthenticated \
      --set-env-vars=NODE_ENV=production,APP_VERSION=$SHORT_SHA \
      --update-secrets=API_KEY=vehicle-in-need-gemini:latest
+
    ```
 
 Replace `$SHORT_SHA` with the actual git commit SHA from your build.
@@ -115,12 +117,14 @@ with mismatched OCI image structure:
    ```bash
    gcloud run deploy pre-order-dealer-exchange-tracker \
      --image us-west1-docker.pkg.dev/gen-lang-client-0615287333/\
+
 vehicle-in-need/pre-order-dealer-exchange-tracker:COMMIT_SHA \
      --region us-west1 \
      --platform managed \
      --allow-unauthenticated \
      --set-env-vars=NODE_ENV=production,APP_VERSION=COMMIT_SHA \
      --update-secrets=API_KEY=vehicle-in-need-gemini:latest
+
    ```
 
 ### Status (Issue 2)

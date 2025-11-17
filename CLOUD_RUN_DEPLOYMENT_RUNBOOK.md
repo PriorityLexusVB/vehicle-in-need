@@ -118,8 +118,10 @@ gcloud projects get-iam-policy gen-lang-client-0615287333 \
    ```bash
    gcloud secrets add-iam-policy-binding vehicle-in-need-gemini \
      --member="serviceAccount:<PROJECT_NUMBER>-compute@developer.\
+
 gserviceaccount.com" \
      --role="roles/secretmanager.secretAccessor"
+
    ```
 
 **Note:** This permission was likely already granted during initial service
@@ -672,6 +674,7 @@ us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dea
 - [cloudbuild.yaml](./cloudbuild.yaml) - Cloud Build configuration
 - [Dockerfile](./Dockerfile) - Container definition
 -
+
 [.github/workflows/build-and-deploy.yml](./.github/workflows/build-and-deploy.yml) - GitHub Actions workflow
 
 ---

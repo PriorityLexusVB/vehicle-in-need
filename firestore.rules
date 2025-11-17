@@ -14,18 +14,16 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Manager check based on Firestore user document.
-    // (You can later migrate this to custom claims if desired.)
-    function isManagerDoc(userDoc) {
-      return userDoc != null 
-        && 'isManager' in userDoc 
-        && userDoc.isManager == true;
-    }
-
     function isManager() {
-      return isSignedIn()
-        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        && isManagerDoc(get(/databases/$(database)/documents/users/$(request.auth.uid)).data);
+      // Try to use custom claim first (if available), fall back to Firestore document
+      return isSignedIn() && (
+        (('isManager' in request.auth.token) && request.auth.token.isManager == true)  // Custom claim (preferred)
+        ||
+        (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isManager == true
+        )  // Firestore document (fallback)
+      );
     }
 
     function isBool(v) {
@@ -56,7 +54,10 @@ service cloud.firestore {
         && (!('isManager' in request.resource.data) || isBool(request.resource.data.isManager));
 
       // READ: User can read self; managers can read anyone.
-      allow read: if isOwner(userId) || isManager();
+      // Note: Manager read for other users is intentionally omitted to avoid circular
+      // dependency with get() calls from other collections. This is a permanent
+      // architectural trade-off unless custom claims are used for the isManager role.
+      allow read: if isOwner(userId);
 
       // UPDATE:
       // - Manager can update other users (including changing isManager).
@@ -115,23 +116,23 @@ service cloud.firestore {
 
       // READ:
       // Managers can read any order; non-managers only their own.
-      allow read: if isManager() || isOrderOwner();
+      // Split into two rules to avoid circular dependency with get() in isManager()
+      allow read: if isOrderOwner();
+      allow read: if isManager();
 
       // UPDATE:
       // - Managers can update any order.
       // - Owners can update limited mutable fields (e.g. status, notes) without changing ownership.
-      allow update: if (
-          isManager()
-        ) || (
-          isOrderOwner()
-          // Ownership must remain unchanged
-          && request.resource.data.createdByUid == resource.data.createdByUid
-          && request.resource.data.createdByEmail == resource.data.createdByEmail
-          // Restrict which keys owner may touch (cannot add/remove ownership fields or other protected fields)
-          && request.resource.data.keys().hasOnly(resource.data.keys())
-          // Optional: owners can only change these fields
-          && request.resource.data.status in ['Factory Order', 'Locate', 'Dealer Exchange', 'Received', 'Delivered']
-        );
+      // Split into two rules to avoid circular dependency with get() in isManager()
+      allow update: if isManager();
+      allow update: if isOrderOwner()
+        // Ownership must remain unchanged
+        && request.resource.data.createdByUid == resource.data.createdByUid
+        && request.resource.data.createdByEmail == resource.data.createdByEmail
+        // Restrict which keys owner may touch (cannot add/remove ownership fields or other protected fields)
+        && request.resource.data.keys().hasOnly(resource.data.keys())
+        // Optional: owners can only change these fields
+        && request.resource.data.status in ['Factory Order', 'Locate', 'Dealer Exchange', 'Received', 'Delivered'];
 
       // DELETE: Managers only (or disallow entirely if you prefer soft deletes).
       allow delete: if isManager();

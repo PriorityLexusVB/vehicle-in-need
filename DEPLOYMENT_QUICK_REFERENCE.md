@@ -38,18 +38,21 @@ Step #3: 🎉 Deployment verification complete - CSS is properly deployed!
 The build will fail with clear error messages:
 
 **Missing CSS after build:**
+
 ```
 ❌ FATAL: No CSS files found in dist/assets/ after build!
 This indicates Tailwind CSS compilation failed.
 ```
 
 **CSS not copied to runtime:**
+
 ```
 ❌ FATAL: No CSS files found in runtime image at dist/assets/!
 CSS was built but not copied from builder stage.
 ```
 
 **CSS not accessible:**
+
 ```
 ❌ ERROR: CSS file returned HTTP 404
 CSS URL: https://your-service.run.app/assets/index-abc123.css
@@ -62,6 +65,7 @@ CSS URL: https://your-service.run.app/assets/index-abc123.css
 Open the deployed app and check the browser console:
 
 **Expected output:**
+
 ```
 🚀 Application Bundle Info
 Version: abc1234
@@ -77,6 +81,7 @@ Total CSS links: 1
 ### 2. Visual Check
 
 The app should have:
+
 - ✅ Slate gray background (not white)
 - ✅ Styled buttons with colors and shadows
 - ✅ Proper spacing and typography
@@ -85,6 +90,7 @@ The app should have:
 ### 3. Network Tab Check
 
 Open DevTools → Network tab:
+
 - Look for `index-*.css` file
 - Should show Status: 200
 - Size should be ~10KB
@@ -95,6 +101,7 @@ Open DevTools → Network tab:
 If CSS somehow fails to load in the browser, users will see:
 
 **Warning Banner:**
+
 ```
 ⚠️ Styles Not Loading - The page may not display correctly.
 [Reload Page] [Dismiss]
@@ -114,6 +121,7 @@ gcloud logging read "resource.type=cloud_run_revision AND \
 ```
 
 **Expected output:**
+
 ```
 🔍 Verifying CSS files at startup...
    dist path: /app/dist
@@ -123,6 +131,7 @@ gcloud logging read "resource.type=cloud_run_revision AND \
 ```
 
 **If server crashes:**
+
 ```
 ❌ FATAL: No CSS files found in dist/assets/!
 This indicates the Docker image was built without CSS files.
@@ -141,6 +150,7 @@ npm run build
 ```
 
 **Expected:** Build succeeds with postbuild verification:
+
 ```
 ✅ Found 1 CSS file(s): index-DNzTS1Bl.css (12K)
 ✅ CSS contains Tailwind utility classes
@@ -157,6 +167,7 @@ npm start
 ```
 
 **Expected:** Server starts with CSS verification:
+
 ```
 🔍 Verifying CSS files at startup...
 ✅ CSS verification passed: 1 CSS file(s) found
@@ -168,7 +179,7 @@ npm start
 ╚════════════════════════════════════════════════════╝
 ```
 
-Open http://localhost:8080 and verify styles are applied.
+Open <http://localhost:8080> and verify styles are applied.
 
 ### Docker Build Test
 
@@ -178,6 +189,7 @@ docker build --build-arg COMMIT_SHA=test --build-arg BUILD_TIME=test -t test-ima
 ```
 
 **Expected:** Build succeeds with verification messages:
+
 ```
 ✅ CSS verification passed: 1 CSS file(s) found
 dist/assets/index-abc123.css
@@ -204,6 +216,7 @@ curl -I http://localhost:8080/assets/index-*.css
 **Cause:** Tailwind CSS compilation failed.
 
 **Check:**
+
 1. Is `postcss.config.js` correct? Should have `@tailwindcss/postcss`
 2. Is `tailwind.config.js` correct? Check `content` paths
 3. Does `src/index.css` have `@tailwind` directives?
@@ -214,6 +227,7 @@ curl -I http://localhost:8080/assets/index-*.css
 **Cause:** CSS was built but not deployed or server not serving it.
 
 **Check:**
+
 1. Did the Docker build steps show CSS verification? ✅
 2. Is the server serving static files from `dist/`?
 3. Check Cloud Run logs for server errors
@@ -224,6 +238,7 @@ curl -I http://localhost:8080/assets/index-*.css
 **Cause:** Client-side issue preventing CSS from loading.
 
 **Check:**
+
 1. Hard refresh: Ctrl+Shift+R (Cmd+Shift+R on Mac)
 2. Check Network tab for CSS file status
 3. Check for CORS errors in console
@@ -235,6 +250,7 @@ curl -I http://localhost:8080/assets/index-*.css
 **Cause:** CSS files missing from Docker image.
 
 **Check:**
+
 1. Check Cloud Run logs: Look for "❌ FATAL: No CSS files found"
 2. Rebuild Docker image: `gcloud builds submit ...`
 3. Verify Dockerfile has `COPY --from=builder /app/dist ./dist`

@@ -166,9 +166,11 @@ curl -f "$SERVICE_URL/health"
 1. **Wait 1-2 minutes** for IAM changes to propagate
 2. **Check for typos** in service account emails
 3. **Verify Cloud Build trigger** uses `cloud-build-deployer` SA:
+
    ```bash
    gcloud builds triggers describe vehicle-in-need-deploy \
      --project=gen-lang-client-0615287333
    ```
-4. **Review Cloud Build logs**: https://console.cloud.google.com/cloud-build/builds
+
+4. **Review Cloud Build logs**: <https://console.cloud.google.com/cloud-build/builds>
 5. **Check the detailed guide**: [IAM_FIX_EXECUTION_GUIDE.md](./IAM_FIX_EXECUTION_GUIDE.md)
