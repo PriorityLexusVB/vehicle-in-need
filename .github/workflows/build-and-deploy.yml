@@ -109,7 +109,7 @@ jobs:
         run: |
           BUILD_ID=$(gcloud builds submit \
             --config cloudbuild.yaml \
-            --substitutions=SHORT_SHA=${{ github.sha }},_REGION=${{ env.GCP_REGION }},_SERVICE=${{ env.SERVICE_NAME }},_ARTIFACT_REPO=${{ env.ARTIFACT_REGISTRY }} \
+            --substitutions=SHORT_SHA=${{ github.sha }},_REGION=${{ env.GCP_REGION }},_SERVICE=${{ env.SERVICE_NAME }} \
             --format='value(id)')
           
           echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
