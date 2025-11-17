@@ -12,6 +12,7 @@
     "prebuild:check": "node scripts/check-conflicts.cjs",
     "prebuild": "npm run prebuild:check",
     "build": "vite build",
+    "postbuild": "bash scripts/verify-css-in-build.sh",
     "preview": "vite preview",
     "start": "node server/index.cjs",
     "server": "node server/index.cjs",

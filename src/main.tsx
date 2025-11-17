@@ -56,7 +56,7 @@ function setupMutationObserverGuard() {
   });
 }
 
-// Runtime diagnostics to detect stale bundle
+// Runtime diagnostics to detect stale bundle and CSS loading issues
 function logBundleInfo() {
   // @ts-expect-error - These are injected by Vite at build time
   const commitSha = typeof import.meta !== 'undefined' && import.meta.env?.VITE_APP_COMMIT_SHA;
@@ -73,6 +73,57 @@ function logBundleInfo() {
   if (!commitSha || commitSha === 'unknown' || commitSha === 'dev') {
     console.warn('%c⚠️ STALE_BUNDLE_DETECTED: Version information missing or invalid', 'color: #f59e0b; font-weight: bold;');
     console.warn('This may indicate an outdated deployment or build configuration issue.');
+  }
+
+  // Diagnostic: Check CSS loading
+  const cssLinks = document.querySelectorAll('link[rel="stylesheet"]');
+  console.log('%c📦 CSS Resources', 'color: #8b5cf6; font-weight: bold;');
+  console.log(`Total CSS links: ${cssLinks.length}`);
+  
+  if (cssLinks.length === 0) {
+    console.error('%c❌ NO CSS FILES LINKED', 'color: #ef4444; font-weight: bold;');
+    console.error('HTML build may be missing CSS references. Check Vite build output.');
+  } else {
+    cssLinks.forEach((link, index) => {
+      const href = (link as HTMLLinkElement).href;
+      const isLoaded = (link as HTMLLinkElement).sheet !== null;
+      const status = isLoaded ? '✅' : '❌';
+      console.log(`  ${status} [${index + 1}] ${href} - ${isLoaded ? 'Loaded' : 'Failed to load'}`);
+      
+      if (!isLoaded) {
+        console.error(`%c❌ CSS LOAD FAILURE: ${href}`, 'color: #ef4444; font-weight: bold;');
+        console.error('Possible causes:');
+        console.error('  1. File not deployed to server (check dist/assets/)');
+        console.error('  2. 404 error (check Network tab)');
+        console.error('  3. CORS or security policy blocking CSS');
+        console.error('  4. Stale service worker or browser cache');
+      }
+    });
+  }
+
+  // Check if Tailwind styles are applied
+  if (cssLinks.length > 0) {
+    setTimeout(() => {
+      const body = document.body;
+      const computedStyle = getComputedStyle(body);
+      const bgColor = computedStyle.backgroundColor;
+      
+      // Tailwind's slate-100 is rgb(241, 245, 249)
+      // If styles aren't applied, it will be default (white: rgb(255, 255, 255))
+      const isTailwindApplied = bgColor === 'rgb(241, 245, 249)' || bgColor === 'rgba(241, 245, 249, 1)';
+      
+      if (isTailwindApplied) {
+        console.log('%c✅ Tailwind styles applied successfully', 'color: #10b981; font-weight: bold;');
+      } else {
+        console.warn('%c⚠️ Tailwind styles NOT applied', 'color: #f59e0b; font-weight: bold;');
+        console.warn(`Expected bg-slate-100 (rgb(241, 245, 249)), got: ${bgColor}`);
+        console.warn('This indicates CSS file loaded but Tailwind classes are not working.');
+        console.warn('Check:');
+        console.warn('  1. CSS file contains Tailwind utility classes');
+        console.warn('  2. PostCSS processed @tailwind directives');
+        console.warn('  3. Tailwind content paths match component files');
+      }
+    }, 100); // Small delay to ensure CSS is fully applied
   }
 }
 
