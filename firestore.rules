@@ -15,16 +15,12 @@ service cloud.firestore {
     }
 
     function isManager() {
-      // Try to use custom claim first (if available), fall back to Firestore document
-      return isSignedIn() && (
-        (('isManager' in request.auth.token) && request.auth.token.isManager == true)  // Custom claim (preferred)
-        ||
-        (
-          exists(/databases/$(database)/documents/users/$(request.auth.uid))
-          && ('isManager' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data)
-          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isManager == true
-        )  // Firestore document (fallback)
-      );
+      // Manager status is determined by custom claims only to avoid circular dependencies.
+      // This function is kept for potential future use but is currently unused in the rules.
+      // All manager checks are inlined to use custom claims directly.
+      return isSignedIn() 
+        && ('isManager' in request.auth.token) 
+        && request.auth.token.isManager == true;
     }
 
     function isBool(v) {
@@ -129,14 +125,13 @@ service cloud.firestore {
       allow update: if isSignedIn() && ('isManager' in request.auth.token) && request.auth.token.isManager == true;
       allow update: if isOrderOwner()
         // Ownership must remain unchanged
-        && ('createdByUid' in request.resource.data) && ('createdByUid' in resource.data)
+        && ('createdByUid' in request.resource.data)
         && request.resource.data.createdByUid == resource.data.createdByUid
-        && ('createdByEmail' in request.resource.data) && ('createdByEmail' in resource.data)
+        && ('createdByEmail' in request.resource.data)
         && request.resource.data.createdByEmail == resource.data.createdByEmail
         // Restrict which keys owner may touch (cannot add/remove ownership fields or other protected fields)
         && request.resource.data.keys().hasOnly(resource.data.keys())
         // Optional: owners can only change these fields
-        && ('status' in request.resource.data)
         && request.resource.data.status in ['Factory Order', 'Locate', 'Dealer Exchange', 'Received', 'Delivered'];
 
       // DELETE: Managers (with custom claims) only.
