@@ -16,10 +16,16 @@ service cloud.firestore {
 
     // Manager check based on Firestore user document.
     // (You can later migrate this to custom claims if desired.)
+    function isManagerDoc(userDoc) {
+      return userDoc != null 
+        && 'isManager' in userDoc 
+        && userDoc.isManager == true;
+    }
+
     function isManager() {
       return isSignedIn()
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isManager == true;
+        && isManagerDoc(get(/databases/$(database)/documents/users/$(request.auth.uid)).data);
     }
 
     function isBool(v) {
@@ -41,6 +47,8 @@ service cloud.firestore {
           || request.resource.data.isManager == false
         )
         // Allowed keys - only displayName, email, and isManager permitted
+        // Use difference check: incoming keys must be subset of allowed keys
+        && request.resource.data.keys().hasAll(['displayName', 'email'])
         && request.resource.data.keys().hasOnly(['displayName', 'email', 'isManager'])
         // Email must match auth token (ensures integrity)
         && request.resource.data.email == request.auth.token.email
@@ -57,14 +65,19 @@ service cloud.firestore {
       allow update: if (
           (isManager() && !isOwner(userId))  // Manager editing another user
           ||
-          (isOwner(userId) && request.resource.data.isManager == resource.data.isManager) // Self without role change
+          (
+            isOwner(userId) 
+            && ('isManager' in request.resource.data) 
+            && ('isManager' in resource.data)
+            && request.resource.data.isManager == resource.data.isManager
+          ) // Self without role change
         )
         // Keep email immutable
         && request.resource.data.email == resource.data.email
         // Prevent adding arbitrary new keys (exact same set as before)
         && request.resource.data.keys().hasOnly(resource.data.keys())
-        // Role must stay a boolean
-        && isBool(resource.data.isManager);
+        // Role must stay a boolean if present
+        && (!('isManager' in resource.data) || isBool(resource.data.isManager));
 
       // DELETE: Blocked from client.
       allow delete: if false;
@@ -77,7 +90,10 @@ service cloud.firestore {
 
       // Helper: current order owner
       function isOrderOwner() {
-        return isSignedIn() && resource.data.createdByUid == request.auth.uid;
+        return isSignedIn() 
+          && resource != null 
+          && ('createdByUid' in resource.data) 
+          && resource.data.createdByUid == request.auth.uid;
       }
 
       // CREATE:
