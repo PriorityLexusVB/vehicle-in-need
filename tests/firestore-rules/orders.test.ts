@@ -5,7 +5,7 @@ import {
   RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
 import { setDoc, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { getTestEnv, cleanupTestEnv, clearTestData } from './test-env';
+import { getTestEnv, clearTestData } from './test-env';
 
 let testEnv: RulesTestEnvironment;
 
