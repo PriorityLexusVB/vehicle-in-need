@@ -18,12 +18,14 @@ This guide provides step-by-step instructions for operators to complete the depl
 
 **Action**: Merge the stabilization PR in GitHub
 
-**Verification**: 
+**Verification**:
+
 - All CI checks pass
 - All tests pass (58/58 unit tests, 42/42 Firestore rules tests)
 - Code review approved
 
 **Command**: Use GitHub UI or:
+
 ```bash
 gh pr merge <PR_NUMBER> --squash
 ```
@@ -38,7 +40,7 @@ gh pr merge <PR_NUMBER> --squash
 
 **Action**: Remove `SERVICE_URL` from trigger substitutions if present
 
-#### Steps:
+#### Steps
 
 1. Go to [Google Cloud Console > Cloud Build > Triggers](https://console.cloud.google.com/cloud-build/triggers)
 
@@ -53,7 +55,7 @@ gh pr merge <PR_NUMBER> --squash
 
 5. Click **Save**
 
-#### Verification:
+#### Verification
 
 Test the trigger configuration:
 
@@ -137,7 +139,7 @@ async function verifyManagerClaim(uid) {
 }
 ```
 
-#### Important Notes:
+#### Important Notes
 
 ⚠️ **Client Token Refresh Required**: After setting custom claims, users MUST refresh their auth token:
 
@@ -152,9 +154,10 @@ await firebase.auth().signOut();
 
 ⚠️ **Domain Restriction**: Only `@priorityautomotive.com` emails are allowed by the helper script.
 
-#### Verification:
+#### Verification
 
 1. Check that custom claim is set:
+
    ```javascript
    const user = await admin.auth().getUser(uid);
    console.log(user.customClaims); // Should show { isManager: true }
@@ -175,14 +178,14 @@ await firebase.auth().signOut();
 
 **Action**: Deploy the application to Cloud Run
 
-#### Command:
+#### Command
 
 ```bash
 gcloud builds submit --config cloudbuild.yaml \
   --substitutions _REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker
 ```
 
-#### What This Does:
+#### What This Does
 
 1. ✅ Checks for merge conflict markers
 2. 🏗️ Builds Docker container image
@@ -190,7 +193,7 @@ gcloud builds submit --config cloudbuild.yaml \
 4. 🚀 Deploys to Cloud Run service
 5. ✅ Verifies CSS files are accessible
 
-#### Expected Output:
+#### Expected Output
 
 ```
 ✓ No conflict markers detected
@@ -205,9 +208,10 @@ gcloud builds submit --config cloudbuild.yaml \
 🎉 Deployment verification complete!
 ```
 
-#### Verification:
+#### Verification
 
 1. Check Cloud Run service is running:
+
    ```bash
    gcloud run services describe pre-order-dealer-exchange-tracker \
      --region=us-west1 \
@@ -215,6 +219,7 @@ gcloud builds submit --config cloudbuild.yaml \
    ```
 
 2. Test the deployed application:
+
    ```bash
    # Get service URL
    SERVICE_URL=$(gcloud run services describe pre-order-dealer-exchange-tracker \
@@ -282,16 +287,19 @@ await admin.auth().setCustomUserClaims(uid, null);
 ### Issue: Manager operations fail with "PERMISSION_DENIED"
 
 **Symptoms**:
+
 - Managers cannot view all users
 - Managers cannot update orders
 - Firestore returns permission denied errors
 
-**Solution**: 
+**Solution**:
+
 1. Verify custom claim is set (Step 3)
 2. Ensure user has refreshed their auth token
 3. Check Firestore rules are deployed
 
 **Verification**:
+
 ```javascript
 // Check custom claim
 const user = await admin.auth().getUser(uid);
@@ -309,6 +317,7 @@ console.log(token.claims); // Should show { isManager: true }
 ### Issue: CSS not loading after deployment
 
 **Symptoms**:
+
 - Application appears unstyled
 - Browser console shows 404 errors for CSS files
 
@@ -319,6 +328,7 @@ console.log(token.claims); // Should show { isManager: true }
 3. Verify vite build includes CSS files
 
 **Manual Check**:
+
 ```bash
 # Test deployed CSS
 SERVICE_URL=$(gcloud run services describe pre-order-dealer-exchange-tracker \
@@ -369,9 +379,9 @@ If you encounter issues not covered in this guide:
 
 1. Check the troubleshooting section above
 2. Review the referenced documentation files
-3. Check Cloud Build logs: https://console.cloud.google.com/cloud-build/builds
-4. Check Cloud Run logs: https://console.cloud.google.com/run
-5. Check Firestore rules: https://console.firebase.google.com/
+3. Check Cloud Build logs: <https://console.cloud.google.com/cloud-build/builds>
+4. Check Cloud Run logs: <https://console.cloud.google.com/run>
+5. Check Firestore rules: <https://console.firebase.google.com/>
 
 ---
 

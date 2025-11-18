@@ -11,6 +11,7 @@ The Firestore security rules for this application require **custom claims** for 
 When using Firestore document reads (`get()`) to check manager status within security rules, circular dependencies can occur:
 
 **Example Problem:**
+
 1. User tries to update an order
 2. Order update rule calls `isManager()` to check if user is a manager
 3. `isManager()` calls `get(/users/{uid})` to read user's `isManager` field
@@ -34,34 +35,42 @@ get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isManager =
 ### User Collection (`/users/{userId}`)
 
 **Create:**
+
 - Users can create their own document
 - Cannot set `isManager: true` on themselves
 
 **Read:**
+
 - Users can read their own document
 - Managers (with custom claim) can read any user document
 
 **Update:**
+
 - Managers (with custom claim) can update other users, including changing `isManager`
 - Users can update themselves but cannot change `isManager` or `email`
 
 **Delete:**
+
 - Denied for all users
 
 ### Orders Collection (`/orders/{orderId}`)
 
 **Create:**
+
 - Authenticated users can create orders with correct ownership fields
 
 **Read:**
+
 - Owners can read their own orders
 - Managers (with custom claim) can read any order
 
 **Update:**
+
 - Managers (with custom claim) can update any order
 - Owners can update limited fields (`status`, `notes`) on their own orders
 
 **Delete:**
+
 - Managers (with custom claim) only
 
 ## Setting Custom Claims
@@ -93,11 +102,13 @@ const managerDb = testEnv
 ## Synchronizing Firestore and Custom Claims
 
 While security rules use custom claims, the application may still maintain `isManager` in Firestore documents for:
+
 - UI display
 - Query filtering
 - Historical record
 
 **Best Practice:**
+
 1. Store `isManager` in both Firestore and custom claims
 2. Use custom claims for security rule enforcement
 3. Use Firestore field for application logic and UI
@@ -108,6 +119,7 @@ While security rules use custom claims, the application may still maintain `isMa
 If migrating from Firestore-based manager checks:
 
 1. **Set custom claims** for all existing managers:
+
    ```javascript
    const managersSnapshot = await admin.firestore()
      .collection('users')
@@ -120,6 +132,7 @@ If migrating from Firestore-based manager checks:
    ```
 
 2. **Update client code** to refresh tokens after role changes:
+
    ```javascript
    // After updating user role in Firestore
    await admin.auth().setCustomUserClaims(uid, { isManager: newValue });
@@ -136,6 +149,7 @@ If migrating from Firestore-based manager checks:
 ### "RESOURCE_EXHAUSTED" Error
 
 **Symptom:**
+
 ```
 8 RESOURCE_EXHAUSTED: Received message larger than max (1697477237 vs 4194304)
 ```
@@ -151,6 +165,7 @@ If migrating from Firestore-based manager checks:
 **Cause:** Custom claim not set on user's auth token
 
 **Solution:**
+
 1. Verify custom claim is set: `admin.auth().getUser(uid).then(u => console.log(u.customClaims))`
 2. Ensure client refreshes token after claim changes
 3. Check that test contexts include `isManager: true` in auth object

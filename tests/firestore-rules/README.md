@@ -14,11 +14,13 @@ The tests use a **shared test environment** pattern to ensure stability and prev
 ### Why Shared Environment?
 
 Previously, each test file created its own test environment, leading to:
+
 - Transaction lock timeouts when tests ran in parallel
 - Race conditions with concurrent `clearFirestore()` calls
 - Flaky, non-deterministic test behavior
 
 The shared environment ensures:
+
 - Only one test environment exists per test run
 - Tests run serially, not in parallel
 - Deterministic, reliable test execution

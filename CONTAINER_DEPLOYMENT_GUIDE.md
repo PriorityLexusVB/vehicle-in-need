@@ -82,11 +82,13 @@ gcloud builds log BUILD_ID --stream
 If setting up automated triggers in Google Cloud Console:
 
 **Required Built-in Substitutions** (automatic):
+
 - `PROJECT_ID` - GCP project ID
 - `SHORT_SHA` - Short commit SHA (first 7 chars)
 - `BUILD_ID` - Unique build identifier
 
 **Optional Custom Substitutions** (must start with `_`):
+
 - `_REGION` - Deployment region (default: `us-west1`)
 - `_SERVICE` - Cloud Run service name (default: `pre-order-dealer-exchange-tracker`)
 
