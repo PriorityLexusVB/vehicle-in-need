@@ -28,6 +28,7 @@
     "lint:fix": "eslint . --fix",
     "lint:md": "markdownlint-cli2 \"**/*.md\" \"#node_modules\"",
     "lint:md:fix": "markdownlint-cli2 --fix \"**/*.md\" \"#node_modules\"",
+    "lint:cloudbuild": "bash scripts/check-cloudbuild-service-url.sh",
     "verify:parity": "node scripts/verify-deploy-parity.cjs",
     "verify:css": "bash scripts/verify-css-in-build.sh",
     "predeploy": "bash scripts/pre-deploy-css-check.sh",

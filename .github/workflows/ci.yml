@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   lint:
-    name: Lint (ESLint + Markdown)
+    name: Lint (ESLint + Markdown + Cloud Build)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,6 +24,8 @@ jobs:
         run: npm run lint
       - name: Run markdownlint
         run: npm run lint:md
+      - name: Check Cloud Build configuration
+        run: npm run lint:cloudbuild
 
   unit:
     name: Unit tests (Vitest)
