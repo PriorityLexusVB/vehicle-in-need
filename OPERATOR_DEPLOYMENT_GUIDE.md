@@ -86,19 +86,19 @@ gcloud auth application-default login
 
 # Dry run to preview changes
 node scripts/set-manager-custom-claims.mjs \
-  --project vehicle-in-need \
+  --project vehicles-in-need \
   --dry-run \
   --emails manager1@priorityautomotive.com,manager2@priorityautomotive.com
 
 # Apply changes
 node scripts/set-manager-custom-claims.mjs \
-  --project vehicle-in-need \
+  --project vehicles-in-need \
   --apply \
   --emails manager1@priorityautomotive.com,manager2@priorityautomotive.com
 
 # OR sync all existing managers from Firestore
 node scripts/set-manager-custom-claims.mjs \
-  --project vehicle-in-need \
+  --project vehicles-in-need \
   --apply \
   --sync-from-firestore
 ```
@@ -113,7 +113,7 @@ const admin = require('firebase-admin');
 // Initialize (if not already done)
 admin.initializeApp({
   credential: admin.credential.applicationDefault(),
-  projectId: 'vehicle-in-need'
+  projectId: 'vehicles-in-need'
 });
 
 // Set manager claim for a specific user

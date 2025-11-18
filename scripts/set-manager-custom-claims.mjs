@@ -5,13 +5,13 @@
  *
  * Usage examples:
  *   # Dry run (no changes)
- *   node scripts/set-manager-custom-claims.mjs --project vehicle-in-need --dry-run --emails manager@priorityautomotive.com
+ *   node scripts/set-manager-custom-claims.mjs --project vehicles-in-need --dry-run --emails manager@priorityautomotive.com
  *
  *   # Apply changes
- *   node scripts/set-manager-custom-claims.mjs --project vehicle-in-need --apply --emails manager1@priorityautomotive.com,manager2@priorityautomotive.com
+ *   node scripts/set-manager-custom-claims.mjs --project vehicles-in-need --apply --emails manager1@priorityautomotive.com,manager2@priorityautomotive.com
  *
  *   # Sync all existing managers from Firestore
- *   node scripts/set-manager-custom-claims.mjs --project vehicle-in-need --apply --sync-from-firestore
+ *   node scripts/set-manager-custom-claims.mjs --project vehicles-in-need --apply --sync-from-firestore
  *
  * Auth:
  * - Requires Application Default Credentials (ADC): `gcloud auth application-default login`
@@ -73,7 +73,7 @@ const args = parseArgs(process.argv);
 if (!args.project) {
   console.error("❌ Error: Missing --project <project-id>");
   console.error("\nUsage:");
-  console.error("  node scripts/set-manager-custom-claims.mjs --project vehicle-in-need --dry-run --emails manager@example.com");
+  console.error("  node scripts/set-manager-custom-claims.mjs --project vehicles-in-need --dry-run --emails manager@example.com");
   process.exit(2);
 }
 
