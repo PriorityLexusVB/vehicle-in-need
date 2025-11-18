@@ -262,7 +262,10 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should allow manager to read any order', async () => {
       const managerId = 'manager123';
       const managerDb = testEnv
-        .authenticatedContext(managerId, { email: 'manager@example.com' })
+        .authenticatedContext(managerId, { 
+          email: 'manager@example.com',
+          isManager: true  // Custom claim
+        })
         .firestore();
       
       // Manager can read user's order
@@ -307,7 +310,10 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should allow manager to update any order', async () => {
       const managerId = 'manager123';
       const managerDb = testEnv
-        .authenticatedContext(managerId, { email: 'manager@example.com' })
+        .authenticatedContext(managerId, { 
+          email: 'manager@example.com',
+          isManager: true  // Custom claim
+        })
         .firestore();
       const orderRef = doc(managerDb, 'orders', 'order123');
       
@@ -447,7 +453,10 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should allow manager to delete any order', async () => {
       const managerId = 'manager123';
       const managerDb = testEnv
-        .authenticatedContext(managerId, { email: 'manager@example.com' })
+        .authenticatedContext(managerId, { 
+          email: 'manager@example.com',
+          isManager: true  // Custom claim
+        })
         .firestore();
       const orderRef = doc(managerDb, 'orders', 'order123');
       
