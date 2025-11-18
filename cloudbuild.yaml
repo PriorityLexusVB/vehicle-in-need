@@ -9,6 +9,12 @@
 #      gcloud builds submit --config cloudbuild.yaml \
 #        --substitutions _REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=manual-$(date +%Y%m%d-%H%M)
 #
+# Custom Substitutions:
+#   _SERVICE_URL: (Optional) The Cloud Run service URL for verification.
+#                 If not provided, it will be dynamically retrieved after deployment.
+#                 Set this from Cloud Build trigger if you need to override the default behavior.
+#                 Example: _SERVICE_URL=https://your-service-url.run.app
+#
 # Service Account Requirements:
 #   The Cloud Build service account (cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com) needs:
 #   - roles/run.admin (to deploy Cloud Run services)
@@ -22,6 +28,7 @@
 substitutions:
   _REGION: us-west1
   _SERVICE: pre-order-dealer-exchange-tracker
+  _SERVICE_URL: ''  # Optional: Override service URL for verification (leave empty to auto-detect)
   # SHORT_SHA: provided by Cloud Build triggers or must be passed manually
 
 steps:
@@ -94,12 +101,16 @@ steps:
         set -e
         echo "🔍 Verifying CSS deployment..."
         
-        # Get the service URL
-        SERVICE_URL=$(gcloud run services describe ${_SERVICE} \
-          --region=${_REGION} \
-          --format='value(status.url)')
-        
-        echo "Service URL: $SERVICE_URL"
+        # Get the service URL (use substitution if provided, otherwise query Cloud Run)
+        if [ -n "${_SERVICE_URL}" ]; then
+          SERVICE_URL="${_SERVICE_URL}"
+          echo "Using provided service URL: $SERVICE_URL"
+        else
+          SERVICE_URL=$(gcloud run services describe ${_SERVICE} \
+            --region=${_REGION} \
+            --format='value(status.url)')
+          echo "Auto-detected service URL: $SERVICE_URL"
+        fi
         
         # Wait for service to be ready
         echo "Waiting 10 seconds for service to stabilize..."

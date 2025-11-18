@@ -36,9 +36,9 @@ gh pr merge <PR_NUMBER> --squash
 
 **Issue**: The Cloud Build trigger may have an invalid `SERVICE_URL` substitution variable configured.
 
-**Root Cause**: `SERVICE_URL` is a bash variable computed at runtime, not a Cloud Build substitution.
+**Root Cause**: Google Cloud Build requires custom substitution variables to start with an underscore (`_`). If `SERVICE_URL` was configured in the trigger, it must be renamed to `_SERVICE_URL` or removed.
 
-**Action**: Remove `SERVICE_URL` from trigger substitutions if present
+**Action**: Rename `SERVICE_URL` to `_SERVICE_URL` in trigger substitutions, or leave it empty (the service URL will be auto-detected)
 
 #### Steps
 
@@ -51,7 +51,8 @@ gh pr merge <PR_NUMBER> --squash
 4. In the **Substitution variables** section:
    - ✅ **Keep**: `_REGION` (e.g., `us-west1`)
    - ✅ **Keep**: `_SERVICE` (e.g., `pre-order-dealer-exchange-tracker`)
-   - ❌ **Remove**: `SERVICE_URL` (if present)
+   - ✅ **Optional**: `_SERVICE_URL` (e.g., `https://your-service.run.app`) - Only set if you need to override auto-detection
+   - ❌ **Remove**: `SERVICE_URL` (if present - this is invalid without underscore prefix)
 
 5. Click **Save**
 
@@ -64,7 +65,7 @@ gcloud builds submit --config cloudbuild.yaml \
   --substitutions _REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=test-$(date +%Y%m%d-%H%M)
 ```
 
-Should complete without errors about `SERVICE_URL`.
+Should complete without errors about `SERVICE_URL` or `_SERVICE_URL`.
 
 **Reference**: See [CLOUD_BUILD_TRIGGER_FIX.md](./CLOUD_BUILD_TRIGGER_FIX.md) for details.
 

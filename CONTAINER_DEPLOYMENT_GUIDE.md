@@ -98,18 +98,31 @@ If setting up automated triggers in Google Cloud Console:
 substitutions:
   _REGION: us-west1
   _SERVICE: pre-order-dealer-exchange-tracker
+  _SERVICE_URL: ''  # Optional: Leave empty for auto-detection or set to override
 ```
 
-**⚠️ IMPORTANT: Do NOT add `SERVICE_URL` as a substitution!**
+**⚠️ IMPORTANT: Custom substitutions must start with underscore (`_`)**
 
-`SERVICE_URL` is a bash variable computed at runtime within the build script. Adding it as a substitution will cause build failures:
+If you previously had `SERVICE_URL` configured (without underscore), it must be renamed to `_SERVICE_URL` or removed:
+
+```
+❌ SERVICE_URL: https://...   # INVALID - causes build failure
+✅ _SERVICE_URL: https://...  # VALID - custom substitution
+✅ (not set)                   # VALID - auto-detected during build
+```
+
+Build failures will occur if you use `SERVICE_URL` without the underscore prefix:
 
 ```
 Error: invalid value for 'build.substitutions': key in the template "SERVICE_URL" 
 is not a valid built-in substitution
 ```
 
-See [CLOUD_BUILD_TRIGGER_FIX.md](./CLOUD_BUILD_TRIGGER_FIX.md) for detailed troubleshooting.
+**When to use `_SERVICE_URL`:**
+- Leave empty (default): Service URL is automatically detected after deployment
+- Set explicitly: Only if you need to verify against a specific URL (e.g., testing)
+
+See [CLOUD_BUILD_FIX.md](./CLOUD_BUILD_FIX.md) for detailed troubleshooting.
 
 ### Option 3: Local Docker Build
 

@@ -20,27 +20,21 @@ The trigger defines a substitution variable named `SERVICE_URL`, but Google Clou
 
 ## Solution
 
-This is a **console-only fix** - no repository changes are needed.
+The `cloudbuild.yaml` file now supports `_SERVICE_URL` as an optional custom substitution variable. You have two options:
 
-### Option 1: Remove the Substitution (Recommended)
+### Option 1: Remove the Substitution (Simplest)
 
-The `SERVICE_URL` substitution appears to be unused. In `cloudbuild.yaml` line 98, the SERVICE_URL is retrieved dynamically during the build:
-
-```yaml
-SERVICE_URL=$(gcloud run services describe ${_SERVICE} \
-  --region=${_REGION} \
-  --format='value(status.url)')
-```
+The service URL is automatically detected during the build process. Simply remove `SERVICE_URL` from the trigger configuration.
 
 **Action**: Remove the `SERVICE_URL` substitution from the trigger configuration in Cloud Console.
 
-### Option 2: Rename the Substitution
+### Option 2: Rename to Use Custom Substitution (If Override Needed)
 
-If the substitution is needed for some other purpose:
+If you need to override the service URL (e.g., for testing against a specific environment):
 
 **Action**: Rename `SERVICE_URL` to `_SERVICE_URL` in the trigger configuration.
 
-If you rename it, also update any references in `cloudbuild.yaml` to use `${_SERVICE_URL}` instead.
+The build will use the provided `_SERVICE_URL` value, or auto-detect it if left empty.
 
 ## Steps to Fix (Console)
 
@@ -51,8 +45,8 @@ If you rename it, also update any references in `cloudbuild.yaml` to use `${_SER
 5. Scroll to **Substitution variables** section
 6. Find the `SERVICE_URL` entry
 7. Either:
-   - Click the delete/remove icon to remove it (recommended), OR
-   - Change the key from `SERVICE_URL` to `_SERVICE_URL`
+   - Click the delete/remove icon to remove it (simplest), OR
+   - Change the key from `SERVICE_URL` to `_SERVICE_URL` (if you need to override)
 8. Click **SAVE**
 
 ## Verification
@@ -64,11 +58,18 @@ gcloud builds submit --config cloudbuild.yaml \
   --substitutions _REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=test-$(date +%Y%m%d-%H%M)
 ```
 
+Or with custom service URL:
+
+```bash
+gcloud builds submit --config cloudbuild.yaml \
+  --substitutions _REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=test-$(date +%Y%m%d-%H%M),_SERVICE_URL=https://your-service.run.app
+```
+
 The build should proceed past the initial validation and begin executing steps.
 
 ## Related Files
 
-- `cloudbuild.yaml` - The Cloud Build configuration file
+- `cloudbuild.yaml` - The Cloud Build configuration file (now supports `_SERVICE_URL`)
 - This document - `CLOUD_BUILD_FIX.md`
 
 ## References
