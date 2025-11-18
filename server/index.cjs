@@ -14,6 +14,12 @@ const PORT = process.env.PORT || 8080;
 
 // CRITICAL: Verify CSS files exist at startup (fail fast if missing)
 function verifyCSSFilesExist() {
+  // Skip verification in test environment
+  if (process.env.NODE_ENV === 'test' || process.env.VITEST) {
+    console.log("⚠️  Skipping CSS verification (test environment)");
+    return;
+  }
+
   const distPath = path.join(__dirname, "..", "dist");
   const assetsPath = path.join(distPath, "assets");
   

@@ -1,0 +1,112 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schema/mcp-config.json",
+  "description": "Complete MCP Server Configuration for vehicle-in-need project",
+  "version": "1.0.0",
+  "mcpServers": {
+    "github": {
+      "command": "gh",
+      "args": ["mcp", "server"],
+      "description": "GitHub MCP server for interacting with GitHub repositories, issues, pull requests, and workflows. Requires GitHub CLI (gh) to be installed and authenticated.",
+      "env": {},
+      "capabilities": [
+        "repository_operations",
+        "issue_management",
+        "pull_request_management",
+        "workflow_operations",
+        "code_search"
+      ],
+      "setup": {
+        "install": "Visit https://cli.github.com/ to install gh CLI",
+        "authenticate": "Run 'gh auth login' to authenticate with GitHub"
+      }
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@microsoft/mcp-playwright", "stdio"],
+      "description": "Playwright MCP server for browser automation and testing. Provides capabilities for navigating web pages, taking screenshots, interacting with elements, and capturing console/network activity.",
+      "env": {},
+      "capabilities": [
+        "browser_navigation",
+        "element_interaction",
+        "screenshot_capture",
+        "console_logging",
+        "network_monitoring"
+      ],
+      "setup": {
+        "install": "Installed automatically via npx when server starts",
+        "browsers": "Browsers are installed automatically on first use"
+      }
+    },
+    "firebase-v5": {
+      "command": "node",
+      "args": ["./mcp/firebase-v5/index.mjs"],
+      "description": "Custom Firebase MCP server for interacting with Firebase services including Firestore, Authentication, and Admin SDK operations. Uses service account for authentication.",
+      "env": {
+        "FIREBASE_SERVICE_ACCOUNT_FILE": "/workspaces/vehicle-in-need/.secrets/vin-seeder.json",
+        "FIREBASE_PROJECT_ID": "vehicles-in-need"
+      },
+      "capabilities": [
+        "firestore_operations",
+        "user_management",
+        "custom_claims",
+        "data_seeding"
+      ],
+      "setup": {
+        "service_account": "Place service account JSON file at path specified in FIREBASE_SERVICE_ACCOUNT_FILE",
+        "project": "Ensure FIREBASE_PROJECT_ID matches your Firebase project"
+      },
+      "security": {
+        "note": "Service account credentials provide admin access - keep secure",
+        "recommended": "Use least-privilege service accounts in production"
+      }
+    }
+  },
+  "usage": {
+    "location": "This configuration should be placed in the Copilot coding agent settings under the MCP servers section",
+    "example_path": ".vscode/settings.json or IDE-specific MCP configuration",
+    "notes": [
+      "Each MCP server provides specialized tools and capabilities",
+      "Servers are invoked automatically by the coding agent when relevant tasks are detected",
+      "Environment variables must be configured before server startup",
+      "Service account files and credentials must be properly secured"
+    ]
+  },
+  "troubleshooting": {
+    "github": {
+      "common_issues": [
+        "GitHub CLI not installed - install from https://cli.github.com/",
+        "Not authenticated - run 'gh auth login'",
+        "Insufficient permissions - check token scopes"
+      ]
+    },
+    "playwright": {
+      "common_issues": [
+        "Browsers not installed - Playwright will auto-install on first use",
+        "Headless mode issues - check display configuration in codespaces/WSL",
+        "Permission errors - ensure user has access to browser binaries"
+      ]
+    },
+    "firebase-v5": {
+      "common_issues": [
+        "Service account file not found - verify path in FIREBASE_SERVICE_ACCOUNT_FILE",
+        "Invalid credentials - regenerate service account key from Firebase Console",
+        "Project ID mismatch - ensure FIREBASE_PROJECT_ID matches your project",
+        "Permission denied - verify service account has required IAM roles"
+      ]
+    }
+  },
+  "recommended_setup": {
+    "development": {
+      "enabled_servers": ["github", "playwright", "firebase-v5"],
+      "notes": "All servers enabled for full development capabilities"
+    },
+    "ci_cd": {
+      "enabled_servers": ["github"],
+      "notes": "Only GitHub server needed in CI/CD environments"
+    },
+    "production": {
+      "enabled_servers": [],
+      "notes": "MCP servers are development tools and should not be used in production deployments"
+    }
+  }
+}
