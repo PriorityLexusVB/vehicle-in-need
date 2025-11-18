@@ -4,10 +4,12 @@
 #   1. CI/CD (GitHub Actions or Cloud Build triggers):
 #      - SHORT_SHA is automatically provided by Cloud Build
 #      - Uses commit SHA as image tag
+#      - _SERVICE_URL should be set in the Cloud Build trigger configuration
+#        (Custom substitutions must start with underscore per Cloud Build requirements)
 #
 #   2. Manual builds:
 #      gcloud builds submit --config cloudbuild.yaml \
-#        --substitutions _REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=manual-$(date +%Y%m%d-%H%M)
+#        --substitutions _REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=manual-$(date +%Y%m%d-%H%M),_SERVICE_URL=https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app
 #
 # Service Account Requirements:
 #   The Cloud Build service account (cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com) needs:
@@ -22,6 +24,9 @@
 substitutions:
   _REGION: us-west1
   _SERVICE: pre-order-dealer-exchange-tracker
+  # _SERVICE_URL: The Cloud Run service URL. Should be configured in the Cloud Build trigger.
+  # Default value provided below for manual builds.
+  _SERVICE_URL: https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app
   # SHORT_SHA: provided by Cloud Build triggers or must be passed manually
 
 steps:

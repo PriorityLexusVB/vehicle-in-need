@@ -20,29 +20,25 @@ The trigger defines a substitution variable named `SERVICE_URL`, but Google Clou
 
 ## Solution
 
-This is a **console-only fix** - no repository changes are needed.
+### Repository Changes (COMPLETED)
 
-### Option 1: Remove the Substitution (Recommended)
+The repository has been updated to use the proper custom substitution `_SERVICE_URL`:
 
-The `SERVICE_URL` substitution appears to be unused. In `cloudbuild.yaml` line 98, the SERVICE_URL is retrieved dynamically during the build:
+1. **cloudbuild.yaml** now includes `_SERVICE_URL` in the substitutions block with a default value:
+   ```yaml
+   substitutions:
+     _REGION: us-west1
+     _SERVICE: pre-order-dealer-exchange-tracker
+     _SERVICE_URL: https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app
+   ```
 
-```yaml
-SERVICE_URL=$(gcloud run services describe ${_SERVICE} \
-  --region=${_REGION} \
-  --format='value(status.url)')
-```
+2. The documentation in `cloudbuild.yaml` has been updated to show the correct usage of `_SERVICE_URL`.
 
-**Action**: Remove the `SERVICE_URL` substitution from the trigger configuration in Cloud Console.
+### Cloud Build Trigger Configuration (ACTION REQUIRED)
 
-### Option 2: Rename the Substitution
+The Cloud Build trigger in Google Cloud Console must be updated to use `_SERVICE_URL` instead of `SERVICE_URL`.
 
-If the substitution is needed for some other purpose:
-
-**Action**: Rename `SERVICE_URL` to `_SERVICE_URL` in the trigger configuration.
-
-If you rename it, also update any references in `cloudbuild.yaml` to use `${_SERVICE_URL}` instead.
-
-## Steps to Fix (Console)
+#### Steps to Fix (Console)
 
 1. Navigate to: [Google Cloud Console → Cloud Build → Triggers](https://console.cloud.google.com/cloud-build/triggers)
 2. Select project: `Vehicle-In-Need` (or your project name)
@@ -50,10 +46,11 @@ If you rename it, also update any references in `cloudbuild.yaml` to use `${_SER
 4. Click **EDIT**
 5. Scroll to **Substitution variables** section
 6. Find the `SERVICE_URL` entry
-7. Either:
-   - Click the delete/remove icon to remove it (recommended), OR
-   - Change the key from `SERVICE_URL` to `_SERVICE_URL`
-8. Click **SAVE**
+7. Change the key from `SERVICE_URL` to `_SERVICE_URL`
+8. Set the value to: `https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app`
+9. Click **SAVE**
+
+**Note:** If the `SERVICE_URL` substitution is not actually used in your trigger configuration, you can remove it instead. The Cloud Build configuration now dynamically retrieves the service URL after deployment, so a static substitution may not be necessary unless you have specific needs.
 
 ## Verification
 
@@ -61,15 +58,15 @@ After making the change, trigger a build manually to verify it starts successful
 
 ```bash
 gcloud builds submit --config cloudbuild.yaml \
-  --substitutions _REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=test-$(date +%Y%m%d-%H%M)
+  --substitutions _REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=test-$(date +%Y%m%d-%H%M),_SERVICE_URL=https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app
 ```
 
 The build should proceed past the initial validation and begin executing steps.
 
 ## Related Files
 
-- `cloudbuild.yaml` - The Cloud Build configuration file
-- This document - `CLOUD_BUILD_FIX.md`
+- `cloudbuild.yaml` - The Cloud Build configuration file (UPDATED)
+- This document - `CLOUD_BUILD_FIX.md` (UPDATED)
 
 ## References
 
