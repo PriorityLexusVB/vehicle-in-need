@@ -806,6 +806,13 @@ If production is serving an outdated bundle:
 - **Cause:** Old build or source index.html has CDN script
 - **Fix:** Clear dist/, rebuild, redeploy
 
+### Problem: Cloud Build "SERVICE_URL" substitution error
+
+- **Error:** `invalid value for 'build.substitutions': key in the template "SERVICE_URL" is not a valid built-in substitution`
+- **Cause:** `SERVICE_URL` was incorrectly added as a Cloud Build substitution variable
+- **Fix:** See [CLOUD_BUILD_SERVICE_URL_FIX.md](./CLOUD_BUILD_SERVICE_URL_FIX.md) for detailed instructions
+- **Quick Fix:** Remove `SERVICE_URL` from the Cloud Build trigger's substitution variables in GCP Console
+
 See [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md) for comprehensive deployment procedures.
 
 ## Testing
