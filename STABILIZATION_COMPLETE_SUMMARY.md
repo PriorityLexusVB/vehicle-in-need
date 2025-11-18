@@ -17,15 +17,25 @@ Error: invalid value for 'build.substitutions': key in the template "SERVICE_URL
 is not a valid built-in substitution
 ```
 
-**Root Cause**: `SERVICE_URL` was incorrectly added as a Cloud Build substitution variable. It's actually a bash variable computed at runtime in the build script.
+**Problem**:
+
+```
+Error: invalid value for 'build.substitutions': key in the template "SERVICE_URL" 
+is not a valid built-in substitution
+```
+
+**Root Cause**: Google Cloud Build requires custom substitution variables to start with an underscore (`_`). If `SERVICE_URL` was configured without the underscore prefix, it causes build failures.
 
 **Solution**:
 
-- Documented correct trigger configuration in `CONTAINER_DEPLOYMENT_GUIDE.md`
-- Clarified that only `_REGION` and `_SERVICE` should be configured as substitutions
-- Referenced existing `CLOUD_BUILD_TRIGGER_FIX.md` for troubleshooting
+- Updated `cloudbuild.yaml` to support `_SERVICE_URL` as an optional custom substitution
+- Added logic to use provided `_SERVICE_URL` or auto-detect service URL if not set
+- Updated documentation in `CLOUD_BUILD_FIX.md`, `CONTAINER_DEPLOYMENT_GUIDE.md`, and `OPERATOR_DEPLOYMENT_GUIDE.md`
+- Operators must rename `SERVICE_URL` to `_SERVICE_URL` in trigger configuration, or remove it entirely (recommended)
 
-**Action Required**: Operator must remove `SERVICE_URL` from the Cloud Build trigger configuration in Google Cloud Console.
+**Action Required**: Operator must either:
+1. Remove `SERVICE_URL` from the Cloud Build trigger configuration (recommended - auto-detection will work), OR
+2. Rename `SERVICE_URL` to `_SERVICE_URL` in the trigger configuration
 
 ### 2. Firestore Rules Test Failures ✅
 
