@@ -18,6 +18,16 @@ if ! command -v gcloud &> /dev/null; then
     exit 1
 fi
 
+# Check if jq is installed
+if ! command -v jq &> /dev/null; then
+    echo "❌ ERROR: jq is not installed"
+    echo "   Install jq for JSON parsing:"
+    echo "   - Ubuntu/Debian: sudo apt-get install jq"
+    echo "   - macOS: brew install jq"
+    echo "   - Or visit: https://stedolan.github.io/jq/download/"
+    exit 1
+fi
+
 # Check authentication
 if ! gcloud auth list --filter=status:ACTIVE --format="value(account)" | grep -q .; then
     echo "❌ ERROR: Not authenticated to gcloud"
