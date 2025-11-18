@@ -2,7 +2,7 @@
 
 ## Issue
 
-The Cloud Build trigger `vehicle-in-need-deploy` is failing with the following error:
+The Cloud Build trigger `vehicle-in-need-deploy` was failing with the following error:
 
 ```
 invalid value for 'build.substitutions': key in the template "SERVICE_URL" 
@@ -11,62 +11,85 @@ is not a valid built-in substitution
 
 ## Root Cause
 
-The trigger defines a substitution variable named `SERVICE_URL`, but Google Cloud Build requires:
+The error occurred because `SERVICE_URL` was incorrectly configured as a Cloud Build substitution variable in the trigger configuration. However:
 
-- User-defined substitutions to start with an underscore (`_`)
-- Built-in substitutions to match documented names (e.g., `PROJECT_ID`, `SHORT_SHA`)
+1. **Cloud Build substitutions** must either:
+   - Be built-in variables (e.g., `PROJECT_ID`, `SHORT_SHA`, `BUILD_ID`), OR
+   - Start with an underscore (`_`) for custom variables (e.g., `_REGION`, `_SERVICE`)
 
-`SERVICE_URL` doesn't match either pattern, causing the build to fail before any steps run.
+2. **`SERVICE_URL` is NOT a substitution** - it's a bash variable dynamically generated at runtime within the `verify-css-deployed` step:
+   ```bash
+   SERVICE_URL=$(gcloud run services describe ${_SERVICE} \
+     --region=${_REGION} \
+     --format='value(status.url)')
+   ```
 
 ## Solution
 
 ### Repository Changes (COMPLETED)
 
-The repository has been updated to use the proper custom substitution `_SERVICE_URL`:
+The repository configuration has been updated:
 
-1. **cloudbuild.yaml** now includes `_SERVICE_URL` in the substitutions block with a default value:
+1. **cloudbuild.yaml** uses only valid substitutions:
    ```yaml
    substitutions:
      _REGION: us-west1
      _SERVICE: pre-order-dealer-exchange-tracker
-     _SERVICE_URL: https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app
    ```
 
-2. The documentation in `cloudbuild.yaml` has been updated to show the correct usage of `_SERVICE_URL`.
+2. The `SERVICE_URL` is correctly used as a bash variable (no underscore, not a substitution) that is dynamically retrieved after deployment.
+
+3. Documentation has been updated with clear inline comments explaining substitution requirements.
 
 ### Cloud Build Trigger Configuration (ACTION REQUIRED)
 
-The Cloud Build trigger in Google Cloud Console must be updated to use `_SERVICE_URL` instead of `SERVICE_URL`.
+The Cloud Build trigger in Google Cloud Console must be configured with only these substitution variables:
+
+#### Valid Substitutions for Trigger
+
+Configure these in the trigger's "Substitution variables" section:
+
+| Variable | Value | Required | Notes |
+|----------|-------|----------|-------|
+| `_REGION` | `us-west1` | Optional | Defaults to `us-west1` if not set |
+| `_SERVICE` | `pre-order-dealer-exchange-tracker` | Optional | Defaults to service name if not set |
+
+**DO NOT add** `SERVICE_URL` or `_SERVICE_URL` - these are not substitution variables.
 
 #### Steps to Fix (Console)
 
 1. Navigate to: [Google Cloud Console → Cloud Build → Triggers](https://console.cloud.google.com/cloud-build/triggers)
-2. Select project: `Vehicle-In-Need` (or your project name)
+2. Select project: `gen-lang-client-0615287333` (or your project)
 3. Find trigger: `vehicle-in-need-deploy`
 4. Click **EDIT**
 5. Scroll to **Substitution variables** section
-6. Find the `SERVICE_URL` entry
-7. Change the key from `SERVICE_URL` to `_SERVICE_URL`
-8. Set the value to: `https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app`
-9. Click **SAVE**
-
-**Note:** If the `SERVICE_URL` substitution is not actually used in your trigger configuration, you can remove it instead. The Cloud Build configuration now dynamically retrieves the service URL after deployment, so a static substitution may not be necessary unless you have specific needs.
+6. **Remove** any entry with key `SERVICE_URL` or `_SERVICE_URL` if present
+7. Ensure only `_REGION` and `_SERVICE` are defined (or leave empty to use defaults)
+8. Click **SAVE**
 
 ## Verification
 
-After making the change, trigger a build manually to verify it starts successfully:
+After making the change, trigger a build manually to verify:
 
 ```bash
 gcloud builds submit --config cloudbuild.yaml \
-  --substitutions _REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=test-$(date +%Y%m%d-%H%M),_SERVICE_URL=https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app
+  --substitutions _REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=test-$(date +%Y%m%d-%H%M)
 ```
 
-The build should proceed past the initial validation and begin executing steps.
+The build should proceed successfully without substitution errors.
+
+## Technical Details
+
+- **Custom substitution variables** must start with underscore (`_`)
+- **Built-in variables** (like `SHORT_SHA`, `PROJECT_ID`, `BUILD_ID`) don't need underscores
+- **Bash variables** used within build steps are NOT substitutions and should never be configured in the trigger
+- The `SERVICE_URL` is determined dynamically after the Cloud Run deployment completes
 
 ## Related Files
 
-- `cloudbuild.yaml` - The Cloud Build configuration file (UPDATED)
-- This document - `CLOUD_BUILD_FIX.md` (UPDATED)
+- `cloudbuild.yaml` - Cloud Build configuration (UPDATED)
+- `CLOUD_BUILD_TRIGGER_FIX.md` - Detailed trigger configuration guide
+- `CONTAINER_DEPLOYMENT_GUIDE.md` - General deployment documentation
 
 ## References
 
