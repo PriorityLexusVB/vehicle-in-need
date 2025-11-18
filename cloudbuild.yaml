@@ -1,15 +1,19 @@
 # Build and deploy container image to Cloud Run via Artifact Registry (us-west1)
 #
+# Cloud Build Substitution Variables:
+#   - Custom substitutions MUST start with underscore (_) per Cloud Build requirements
+#   - Built-in substitutions (PROJECT_ID, SHORT_SHA, BUILD_ID) do not need underscore
+#   - Keep trigger configuration in sync with these substitutions
+#
 # Usage:
 #   1. CI/CD (GitHub Actions or Cloud Build triggers):
 #      - SHORT_SHA is automatically provided by Cloud Build
 #      - Uses commit SHA as image tag
-#      - _SERVICE_URL should be set in the Cloud Build trigger configuration
-#        (Custom substitutions must start with underscore per Cloud Build requirements)
+#      - Configure trigger with: _REGION, _SERVICE (see substitutions block below)
 #
 #   2. Manual builds:
 #      gcloud builds submit --config cloudbuild.yaml \
-#        --substitutions _REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=manual-$(date +%Y%m%d-%H%M),_SERVICE_URL=https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app
+#        --substitutions _REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=manual-$(date +%Y%m%d-%H%M)
 #
 # Service Account Requirements:
 #   The Cloud Build service account (cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com) needs:
@@ -22,12 +26,16 @@
 #   - roles/secretmanager.secretAccessor (for vehicle-in-need-gemini secret at runtime)
 #
 substitutions:
+  # Custom substitutions (must start with underscore):
   _REGION: us-west1
   _SERVICE: pre-order-dealer-exchange-tracker
-  # _SERVICE_URL: The Cloud Run service URL. Should be configured in the Cloud Build trigger.
-  # Default value provided below for manual builds.
-  _SERVICE_URL: https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app
-  # SHORT_SHA: provided by Cloud Build triggers or must be passed manually
+  # Built-in substitutions (automatically provided by Cloud Build):
+  # - PROJECT_ID: GCP project ID
+  # - SHORT_SHA: Short commit SHA (7 chars) or manually specified
+  # - BUILD_ID: Unique build identifier
+  #
+  # Note: SERVICE_URL is NOT a substitution - it's dynamically retrieved at runtime
+  # in the verify-css-deployed step using gcloud commands
 
 steps:
   # Guard: Fail fast if merge conflict markers are present
