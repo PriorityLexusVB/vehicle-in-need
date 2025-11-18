@@ -393,7 +393,9 @@ ERROR: Permission 'iam.serviceaccounts.actAs' denied
 3. **Deploy with Cloud Build (server-side mode - recommended):**
 
    ```bash
-   gcloud builds submit --config cloudbuild.yaml
+   gcloud builds submit --config cloudbuild.yaml \
+     --project=gen-lang-client-0615287333 \
+     --substitutions=_REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=manual-$(date +%Y%m%d-%H%M)
    ```
 
    **Note:** The build now includes automatic CSS verification at multiple stages:
@@ -401,6 +403,13 @@ ERROR: Permission 'iam.serviceaccounts.actAs' denied
    - ✅ Docker runtime-stage verification (fails if CSS not copied)
    - ✅ Post-deployment HTTP check (fails if CSS not accessible)
    - ✅ Server startup verification (crashes if CSS missing)
+
+   **Canonical Deployment Flows:**
+   - **CI/CD (Recommended)**: Cloud Build trigger `vehicle-in-need-deploy` automatically builds and deploys on push to `main`
+   - **Manual**: Use the `gcloud builds submit` command above for testing or emergency deployments
+   - **Never use**: `SERVICE_URL` as a Cloud Build substitution variable (it's retrieved dynamically at runtime)
+   
+   See [GCP_MANUAL_CONFIGURATION_CHECKLIST.md](./GCP_MANUAL_CONFIGURATION_CHECKLIST.md) for complete Cloud Build trigger setup.
 
 4. **Deploy with client-side API key (optional):**
 
@@ -812,6 +821,8 @@ If production is serving an outdated bundle:
 - **Cause:** `SERVICE_URL` was incorrectly added as a Cloud Build substitution variable
 - **Fix:** See [CLOUD_BUILD_SERVICE_URL_FIX.md](./CLOUD_BUILD_SERVICE_URL_FIX.md) for detailed instructions
 - **Quick Fix:** Remove `SERVICE_URL` from the Cloud Build trigger's substitution variables in GCP Console
+- **Complete GCP Setup:** See [GCP_MANUAL_CONFIGURATION_CHECKLIST.md](./GCP_MANUAL_CONFIGURATION_CHECKLIST.md) for full IAM and trigger configuration
+- **Prevention:** Run `npm run lint:cloudbuild` to check for SERVICE_URL misuse (runs automatically in CI)
 
 See [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md) for comprehensive deployment procedures.
 
@@ -934,7 +945,7 @@ Automated tests run on every push and pull request to `main` via the GitHub Acti
 
 **Jobs:**
 
-- `lint` – Runs ESLint and markdownlint to enforce code quality and documentation standards
+- `lint` – Runs ESLint, markdownlint, and Cloud Build configuration checks to enforce code quality, documentation standards, and prevent SERVICE_URL substitution errors
 - `unit` – Installs dependencies and runs Vitest tests including frontend components and backend API tests (`npm test -- --run`)
 - `e2e` – After unit tests pass: installs Playwright browsers (with caching), builds the app, starts the server, checks `/health`, then runs Playwright tests
 
@@ -964,6 +975,7 @@ Playwright browser binaries are cached between CI runs to speed up workflow exec
 # Run linting
 npm run lint
 npm run lint:md
+npm run lint:cloudbuild
 
 # Run unit tests
 npm ci
@@ -982,6 +994,7 @@ npm run test:e2e
 - `npm run lint:fix` - Auto-fix ESLint issues where possible
 - `npm run lint:md` - Run markdownlint on all markdown files
 - `npm run lint:md:fix` - Auto-fix markdown formatting issues
+- `npm run lint:cloudbuild` - Check Cloud Build configuration (prevents SERVICE_URL substitution errors)
 
 ### UI Audit & Security Workflow
 

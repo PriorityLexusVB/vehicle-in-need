@@ -25,11 +25,17 @@
 - [ ] Wait for confirmation message
 
 ### Step 5: Verify the Fix
+
 - [ ] Run verification script:
   ```bash
   ./scripts/verify-cloud-build-config.sh
   ```
 - [ ] Expected output: `🎉 Cloud Build trigger configuration is valid!`
+- [ ] Run static analysis check:
+  ```bash
+  npm run lint:cloudbuild
+  ```
+- [ ] Expected output: `🎉 All checks passed!`
 
 ### Step 6: Test the Build (Optional)
 - [ ] Manual test build:
@@ -48,9 +54,11 @@
 
 ## Need Help?
 
-- **Detailed guide**: See `CLOUD_BUILD_SERVICE_URL_FIX.md`
-- **Troubleshooting**: See `README.md` troubleshooting section
-- **PR summary**: See `PR_SUMMARY_SERVICE_URL_FIX.md`
+- **Detailed guide**: See [CLOUD_BUILD_SERVICE_URL_FIX.md](./CLOUD_BUILD_SERVICE_URL_FIX.md)
+- **Complete GCP setup**: See [GCP_MANUAL_CONFIGURATION_CHECKLIST.md](./GCP_MANUAL_CONFIGURATION_CHECKLIST.md)
+- **Troubleshooting**: See [README.md](./README.md) troubleshooting section
+- **PR summary**: See [PR_SUMMARY_SERVICE_URL_FIX.md](./PR_SUMMARY_SERVICE_URL_FIX.md)
+- **Static guardrails**: Run `npm run lint:cloudbuild` to check configuration
 
 ## Questions?
 

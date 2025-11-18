@@ -2,7 +2,7 @@
 
 ## Overview
 
-This PR addresses the Cloud Build trigger failure caused by an incorrect `SERVICE_URL` substitution variable configuration.
+This PR comprehensively addresses the Cloud Build → Cloud Run deployment robustness, making the `SERVICE_URL` substitution error impossible to recur and ensuring the pipeline is stable, documented, and verifiable.
 
 ## Problem
 
