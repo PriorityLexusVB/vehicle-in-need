@@ -9,3 +9,6 @@ afterEach(() => {
 
 // Ensure server-side AI initialization is disabled during tests to avoid outbound calls
 process.env.DISABLE_VERTEX_AI = "true";
+
+// Skip CSS validation in server tests
+process.env.NODE_ENV = "test";
