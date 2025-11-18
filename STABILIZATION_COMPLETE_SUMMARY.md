@@ -17,13 +17,6 @@ Error: invalid value for 'build.substitutions': key in the template "SERVICE_URL
 is not a valid built-in substitution
 ```
 
-**Problem**:
-
-```
-Error: invalid value for 'build.substitutions': key in the template "SERVICE_URL" 
-is not a valid built-in substitution
-```
-
 **Root Cause**: Google Cloud Build requires custom substitution variables to start with an underscore (`_`). If `SERVICE_URL` was configured without the underscore prefix, it causes build failures.
 
 **Solution**:
