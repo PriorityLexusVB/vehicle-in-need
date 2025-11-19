@@ -29,7 +29,7 @@
     "lint:md": "markdownlint-cli2 \"**/*.md\" \"#node_modules\"",
     "lint:md:fix": "markdownlint-cli2 --fix \"**/*.md\" \"#node_modules\"",
     "lint:cloudbuild": "bash scripts/check-cloudbuild-service-url.sh",
-    "verify:parity": "node scripts/verify-deploy-parity.cjs",
+    "verify:parity": "node scripts/verify-deploy-parity.cjs https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/",
     "verify:css": "bash scripts/verify-css-in-build.sh",
     "predeploy": "bash scripts/pre-deploy-css-check.sh",
     "seed:managers:dry-run": "node scripts/seed-manager.mjs --project vehicles-in-need --dry-run",
