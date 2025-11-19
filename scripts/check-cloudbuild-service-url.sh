@@ -58,7 +58,7 @@ fi
 # Check for SERVICE_URL in --substitutions flags in scripts and workflows
 echo ""
 echo "Checking scripts and workflows for --substitutions=SERVICE_URL usage..."
-SCRIPT_FILES=$(find "$REPO_ROOT/scripts" "$REPO_ROOT/.github/workflows" -type f \( -name "*.sh" -o -name "*.bash" -o -name "*.yml" -o -name "*.yaml" \) 2>/dev/null || true)
+SCRIPT_FILES=$(find "$REPO_ROOT/scripts" "$REPO_ROOT/.github/workflows" -type f \( -name "*.sh" -o -name "*.bash" -o -name "*.yml" -o -name "*.yaml" -o -name "*.cjs" -o -name "*.mjs" \) 2>/dev/null || true)
 if [ -n "$SCRIPT_FILES" ]; then
     for script in $SCRIPT_FILES; do
         # Skip this check script itself
