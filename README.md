@@ -1381,3 +1381,22 @@ The Login screen in this app provides a helper UI and a deep link to the correct
 ### Node polyfills (crypto)
 
 This project uses `vite-plugin-node-polyfills` with `protocolImports: true` in both `vite.config.ts` and `vitest.config.ts` so that `crypto.getRandomValues` works in browser and tests. If you introduce code that relies on other Node globals, prefer web APIs or small shims rather than adding heavy polyfills.
+
+## Documentation
+
+### Quick Links
+
+- **[Deployment Guide](DEPLOYMENT_GUIDE.md)** - Complete deployment procedures and troubleshooting
+- **[Documentation Index](docs/INDEX.md)** - Full documentation directory
+- **[Operational Runbooks](docs/operations/)** - Cloud Build, Cloud Run, and deployment procedures
+
+### Documentation Structure
+
+The repository documentation is organized as follows:
+
+- **Root level**: `README.md` (this file) and `DEPLOYMENT_GUIDE.md`
+- **`docs/operations/`**: Current operational runbooks for Cloud Build, Cloud Run, and deployment
+- **`docs/`**: Development documentation (CI/CD, MCP, templates)
+- **`docs/archive/`**: Historical documentation from previous fixes (for reference only)
+
+For current deployment and troubleshooting information, always refer to the operational runbooks, not the archived documentation.
