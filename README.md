@@ -819,10 +819,13 @@ If production is serving an outdated bundle:
 
 - **Error:** `invalid value for 'build.substitutions': key in the template "SERVICE_URL" is not a valid built-in substitution`
 - **Cause:** `SERVICE_URL` was incorrectly added as a Cloud Build substitution variable
-- **Fix:** See [CLOUD_BUILD_SERVICE_URL_FIX.md](./CLOUD_BUILD_SERVICE_URL_FIX.md) for detailed instructions
+- **Operator Runbook:** See [CLOUD_BUILD_TRIGGER_RUNBOOK.md](./CLOUD_BUILD_TRIGGER_RUNBOOK.md) for step-by-step diagnosis and fix procedures
+- **Detailed Fix Guide:** See [CLOUD_BUILD_SERVICE_URL_FIX.md](./CLOUD_BUILD_SERVICE_URL_FIX.md) for comprehensive explanation
 - **Quick Fix:** Remove `SERVICE_URL` from the Cloud Build trigger's substitution variables in GCP Console
-- **Complete GCP Setup:** See [GCP_MANUAL_CONFIGURATION_CHECKLIST.md](./GCP_MANUAL_CONFIGURATION_CHECKLIST.md) for full IAM and trigger configuration
+- **List Triggers:** Run `npm run cloudbuild:list-triggers` to see all triggers and their substitutions
+- **Verify Trigger:** Run `npm run cloudbuild:verify-trigger` to check a specific trigger configuration
 - **Prevention:** Run `npm run lint:cloudbuild` to check for SERVICE_URL misuse (runs automatically in CI)
+- **Complete GCP Setup:** See [GCP_MANUAL_CONFIGURATION_CHECKLIST.md](./GCP_MANUAL_CONFIGURATION_CHECKLIST.md) for full IAM and trigger configuration
 
 See [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md) for comprehensive deployment procedures.
 
