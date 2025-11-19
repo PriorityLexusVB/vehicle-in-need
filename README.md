@@ -1386,6 +1386,8 @@ This project uses `vite-plugin-node-polyfills` with `protocolImports: true` in b
 
 ### Quick Links
 
+- **[Production Quick Reference](docs/PRODUCTION_QUICK_REFERENCE.md)** - Quick verification and deployment commands
+- **[CSS Execution Final](docs/CSS_EXECUTION_FINAL.md)** - Comprehensive production URL consistency verification
 - **[Deployment Guide](DEPLOYMENT_GUIDE.md)** - Complete deployment procedures and troubleshooting
 - **[Documentation Index](docs/INDEX.md)** - Full documentation directory
 - **[Operational Runbooks](docs/operations/)** - Cloud Build, Cloud Run, and deployment procedures
