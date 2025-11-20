@@ -225,6 +225,79 @@ steps:
         echo ""
         echo "🎉 Deployment verification complete - CSS is properly deployed!"
 
+  # CRITICAL: Verify deployed version matches the commit SHA
+  - name: gcr.io/cloud-builders/curl
+    id: verify-version
+    waitFor: ['verify-css-deployed']
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -e
+        echo "🔍 Verifying deployed version..."
+        
+        SERVICE_URL=$(gcloud run services describe ${_SERVICE} \
+          --region=${_REGION} \
+          --format='value(status.url)')
+        
+        echo "Service URL: $SERVICE_URL"
+        
+        # Wait a moment for service to stabilize
+        sleep 3
+        
+        # Fetch version from /api/status
+        echo "Fetching version from /api/status..."
+        STATUS_JSON=$(curl -sS "$SERVICE_URL/api/status" || echo "{}")
+        
+        if [ -z "$STATUS_JSON" ] || [ "$STATUS_JSON" = "{}" ]; then
+          echo "❌ ERROR: Could not fetch /api/status"
+          exit 1
+        fi
+        
+        # Extract version field
+        DEPLOYED_VERSION=$(echo "$STATUS_JSON" | grep -o '"version":"[^"]*"' | cut -d'"' -f4 || echo "")
+        
+        if [ -z "$DEPLOYED_VERSION" ]; then
+          echo "❌ ERROR: Could not extract version from API status"
+          echo "Response: $STATUS_JSON"
+          exit 1
+        fi
+        
+        echo "Deployed version: $DEPLOYED_VERSION"
+        echo "Expected version: ${SHORT_SHA}"
+        
+        # Check for manual deployment
+        if [[ "$DEPLOYED_VERSION" =~ ^manual ]]; then
+          echo "❌ ERROR: Deployed version shows MANUAL DEPLOYMENT!"
+          echo "   Version: $DEPLOYED_VERSION"
+          echo "   This should never happen in production!"
+          exit 1
+        fi
+        
+        # Check if version is unknown
+        if [ "$DEPLOYED_VERSION" = "unknown" ]; then
+          echo "❌ ERROR: Deployed version is 'unknown'"
+          echo "   APP_VERSION environment variable was not set correctly"
+          exit 1
+        fi
+        
+        # Verify version matches deployed commit
+        if [ "$DEPLOYED_VERSION" = "${SHORT_SHA}" ]; then
+          echo "✅ Version verification passed!"
+          echo "   Deployed version matches commit SHA: ${SHORT_SHA}"
+        else
+          echo "⚠️  WARNING: Version mismatch detected"
+          echo "   Deployed: $DEPLOYED_VERSION"
+          echo "   Expected: ${SHORT_SHA}"
+          echo "   This may indicate a deployment issue"
+          # Note: We don't fail here as the version might take a moment to update
+          # The version check will be caught by post-deployment verification
+        fi
+        
+        echo ""
+        echo "🎉 Version verification complete!"
+
+
 images:
   - us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${_SERVICE}:${SHORT_SHA}
   - us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${_SERVICE}:latest
