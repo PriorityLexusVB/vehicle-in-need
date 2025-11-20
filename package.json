@@ -31,6 +31,8 @@
     "lint:cloudbuild": "bash scripts/check-cloudbuild-service-url.sh",
     "cloudbuild:list-triggers": "bash scripts/list-cloud-build-triggers.sh",
     "cloudbuild:verify-trigger": "bash scripts/verify-cloud-build-config.sh",
+    "cloudbuild:diagnose": "bash scripts/diagnose-cloud-build-error.sh",
+    "cloudbuild:setup-iam": "bash scripts/setup-iam-permissions.sh",
     "verify:parity": "node scripts/verify-deploy-parity.cjs https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/",
     "verify:css": "bash scripts/verify-css-in-build.sh",
     "verify:production": "bash scripts/verify-production-state.sh",
