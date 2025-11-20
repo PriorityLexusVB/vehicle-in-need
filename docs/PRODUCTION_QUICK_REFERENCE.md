@@ -4,7 +4,17 @@ This document provides quick reference commands for verifying and managing the p
 
 ## Production URL
 
-**Primary Production**: `https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/`
+**Important**: Cloud Run URLs are dynamic and can change if the service is recreated.
+
+**To get the current production URL:**
+```bash
+gcloud run services describe pre-order-dealer-exchange-tracker \
+  --region=us-west1 \
+  --project=gen-lang-client-0615287333 \
+  --format='value(status.url)'
+```
+
+**Example URL**: `https://pre-order-dealer-exchange-tracker-rbnzfidp7q-uw.a.run.app`
 
 This URL is automatically updated when code is pushed to the `main` branch.
 

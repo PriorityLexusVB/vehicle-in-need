@@ -47,18 +47,37 @@
 
 ## Production URL Status
 
-### ❌ Production Service Not Accessible
+### ✅ Production Service Deployed and Accessible
 
-**URL Tested**: `https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app`
+**Actual Production URL** (as of 2025-11-20):
+```
+https://pre-order-dealer-exchange-tracker-rbnzfidp7q-uw.a.run.app
+```
 
-**Result**: DNS resolution failure (could not resolve host)
+**Note**: Cloud Run URLs are dynamic and contain a random identifier. The URL format is:
+```
+https://<service-name>-<random-id>-<region-code>.a.run.app
+```
 
-**Possible Reasons:**
-1. Cloud Run service not yet deployed
-2. Service exists but URL is different
-3. Service is private (requires authentication)
-4. DNS propagation delay
-5. Region/project mismatch
+**To always get the current URL:**
+```bash
+gcloud run services describe pre-order-dealer-exchange-tracker \
+  --region=us-west1 \
+  --project=gen-lang-client-0615287333 \
+  --format='value(status.url)'
+```
+
+### Verification Results
+
+**URL Tested**: Current production URL from Cloud Run service
+
+**Results**:
+- ✅ Service is deployed and accessible
+- ✅ CSS is properly compiled and accessible
+- ✅ Tailwind classes present
+- ⚠️ Version mismatch detected (production shows manual deployment)
+
+See `docs/PRODUCTION_URL_UPDATE.md` for details about the URL discovery process.
 
 ---
 
@@ -72,12 +91,14 @@ All repository-level checks passed:
 - Documentation comprehensive
 - Scripts and tooling in place
 
-### Production Verification: ⏸️ PENDING
+### Production Verification: ✅ COMPLETE
 
-Cannot verify production deployment until:
-1. Cloud Run service is deployed
-2. Production URL is accessible
-3. DNS resolution works
+Production deployment verified:
+1. ✅ Cloud Run service is deployed
+2. ✅ Production URL is accessible  
+3. ✅ CSS is compiled and loading correctly
+4. ✅ Tailwind classes present in CSS
+5. ⚠️ Version mismatch (needs redeployment from latest main)
 
 ---
 

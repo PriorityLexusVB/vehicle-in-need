@@ -9,7 +9,8 @@
 #
 # Usage: ./scripts/verify-production-state.sh
 
-set -e
+# Note: set -e is NOT used here because this script is designed to be fault-tolerant
+# and accumulate multiple check results (pass/fail/warn) before reporting at the end
 
 # Color codes for output
 RED='\033[0;31m'
@@ -20,10 +21,23 @@ BOLD='\033[1m'
 NC='\033[0m' # No Color
 
 # Production configuration
+# Default URL (can be overridden by querying Cloud Run)
 PRODUCTION_URL="https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app"
 SERVICE_NAME="pre-order-dealer-exchange-tracker"
 REGION="us-west1"
 PROJECT_ID="gen-lang-client-0615287333"
+
+# Try to get the actual production URL from Cloud Run if gcloud is available
+if command -v gcloud &> /dev/null; then
+    ACTUAL_URL=$(gcloud run services describe "$SERVICE_NAME" \
+        --region="$REGION" \
+        --project="$PROJECT_ID" \
+        --format='value(status.url)' 2>/dev/null || echo "")
+    
+    if [ -n "$ACTUAL_URL" ]; then
+        PRODUCTION_URL="$ACTUAL_URL"
+    fi
+fi
 
 # Counters
 CHECKS_PASSED=0
@@ -339,7 +353,12 @@ echo -e "Failed: ${RED}${BOLD}$CHECKS_FAILED${NC}"
 echo -e "Warnings: ${YELLOW}${BOLD}$CHECKS_WARNING${NC}"
 echo ""
 
-PASS_RATE=$((CHECKS_PASSED * 100 / TOTAL_CHECKS))
+# Calculate pass rate with guard against division by zero
+if [ "$TOTAL_CHECKS" -gt 0 ]; then
+    PASS_RATE=$((CHECKS_PASSED * 100 / TOTAL_CHECKS))
+else
+    PASS_RATE=0
+fi
 echo -e "Pass rate: ${BOLD}$PASS_RATE%${NC}\n"
 
 echo -e "Completed: $(date -u +%Y-%m-%dT%H:%M:%SZ)\n"
