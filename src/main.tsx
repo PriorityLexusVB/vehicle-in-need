@@ -57,7 +57,7 @@ function setupMutationObserverGuard() {
 }
 
 // Runtime diagnostics to detect stale bundle and CSS loading issues
-function logBundleInfo() {
+async function logBundleInfo() {
   // @ts-expect-error - These are injected by Vite at build time
   const commitSha = typeof import.meta !== 'undefined' && import.meta.env?.VITE_APP_COMMIT_SHA;
   // @ts-expect-error - Build time is also injected by Vite
@@ -73,6 +73,38 @@ function logBundleInfo() {
   if (!commitSha || commitSha === 'unknown' || commitSha === 'dev') {
     console.warn('%c⚠️ STALE_BUNDLE_DETECTED: Version information missing or invalid', 'color: #f59e0b; font-weight: bold;');
     console.warn('This may indicate an outdated deployment or build configuration issue.');
+  }
+
+  // Check for version mismatch between client bundle and server
+  try {
+    const response = await fetch('/api/status');
+    if (response.ok) {
+      const serverStatus = await response.json();
+      const serverVersion = serverStatus.version;
+      
+      if (serverVersion && serverVersion !== 'unknown') {
+        if (commitSha && commitSha !== 'unknown' && commitSha !== 'dev') {
+          if (commitSha === serverVersion) {
+            console.log('%c✅ Version Match: Client and server versions are in sync', 'color: #10b981; font-weight: bold;');
+          } else {
+            console.error('%c❌ VERSION MISMATCH DETECTED', 'color: #ef4444; font-weight: bold; font-size: 14px;');
+            console.error(`Client bundle version: ${commitSha}`);
+            console.error(`Server version: ${serverVersion}`);
+            console.error('This indicates the client is loading a stale cached bundle.');
+            console.error('Solutions:');
+            console.error('  1. Hard refresh (Ctrl+Shift+R or Cmd+Shift+R)');
+            console.error('  2. Clear browser cache and service workers');
+            console.error('  3. If issue persists, server may need redeployment');
+            
+            // Show user-facing warning for version mismatch
+            showVersionMismatchBanner(commitSha, serverVersion);
+          }
+        }
+      }
+    }
+  } catch {
+    // Silently fail if /api/status is not available (e.g., during development)
+    console.log('Note: Could not verify version parity with server');
   }
 
   // Diagnostic: Check CSS loading
@@ -174,10 +206,70 @@ function showCSSWarningBanner() {
   document.body.prepend(banner);
 }
 
+// Show a warning banner when version mismatch is detected
+function showVersionMismatchBanner(clientVersion: string, serverVersion: string) {
+  // Check if banner already exists
+  if (document.getElementById('version-mismatch-banner')) {
+    return;
+  }
+
+  const banner = document.createElement('div');
+  banner.id = 'version-mismatch-banner';
+  banner.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: #ef4444;
+    color: white;
+    padding: 12px 16px;
+    text-align: center;
+    font-family: sans-serif;
+    font-size: 14px;
+    z-index: 10001;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  `;
+  banner.innerHTML = `
+    <strong>⚠️ Version Mismatch Detected</strong> - 
+    You may be viewing an outdated version of this app. 
+    Client: ${clientVersion} | Server: ${serverVersion}
+    <button onclick="location.reload(true)" style="
+      background: white;
+      color: #ef4444;
+      border: none;
+      padding: 4px 12px;
+      margin-left: 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    ">Hard Reload</button>
+    <button onclick="caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => location.reload())" style="
+      background: #dc2626;
+      color: white;
+      border: 1px solid white;
+      padding: 4px 12px;
+      margin-left: 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    ">Clear Cache & Reload</button>
+    <button onclick="document.getElementById('version-mismatch-banner').remove()" style="
+      background: transparent;
+      color: white;
+      border: 1px solid white;
+      padding: 4px 12px;
+      margin-left: 8px;
+      border-radius: 4px;
+      cursor: pointer;
+    ">Dismiss</button>
+  `;
+  document.body.prepend(banner);
+}
+
 // Initialize app
 async function initializeApp() {
   try {
-    logBundleInfo();
+    await logBundleInfo();
     setupMutationObserverGuard();
     
     const willReload = await unregisterLegacyServiceWorkers();
