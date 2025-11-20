@@ -33,16 +33,25 @@ substitutions:
 
 **Note**: Do NOT add `SERVICE_URL` or `_SERVICE_URL` - it's dynamically retrieved at runtime.
 
-### Method 2: Manual Cloud Build
+### Method 2: Manual Cloud Build (from Git Repository)
+
+**Important**: All deployments must be traceable to git commits. Do NOT use arbitrary version strings.
 
 ```bash
 cd /path/to/vehicle-in-need
+
+# Get the current commit SHA (must be a real commit in the repository)
 SHORT_SHA=$(git rev-parse --short HEAD)
+
+# Ensure you're on the main branch or a tracked branch
+git branch --show-current
 
 gcloud builds submit \
   --config=cloudbuild.yaml \
   --substitutions=_REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=$SHORT_SHA
 ```
+
+**Note**: The SHORT_SHA must be a valid git commit SHA. Manual version strings like `manual-20241120` are blocked to ensure deployment traceability.
 
 ### Method 3: Local Docker Build + Deploy
 

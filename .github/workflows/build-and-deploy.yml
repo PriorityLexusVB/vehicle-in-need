@@ -107,12 +107,17 @@ jobs:
       - name: Submit build to Cloud Build
         id: build
         run: |
+          # Use the full GitHub SHA for the build, converted to short form
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          echo "Using SHORT_SHA: $SHORT_SHA (from commit: ${{ github.sha }})"
+          
           BUILD_ID=$(gcloud builds submit \
             --config cloudbuild.yaml \
-            --substitutions=SHORT_SHA=${{ github.sha }},_REGION=${{ env.GCP_REGION }},_SERVICE=${{ env.SERVICE_NAME }} \
+            --substitutions=SHORT_SHA=$SHORT_SHA,_REGION=${{ env.GCP_REGION }},_SERVICE=${{ env.SERVICE_NAME }} \
             --format='value(id)')
           
           echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+          echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
           echo "✅ Cloud Build submitted: $BUILD_ID"
           
       - name: Wait for build completion
@@ -132,10 +137,11 @@ jobs:
       - name: Verify image in Artifact Registry
         run: |
           IMAGE_PATH="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.SERVICE_NAME }}"
+          SHORT_SHA="${{ steps.build.outputs.short_sha }}"
           
           echo "Checking for image at: $IMAGE_PATH"
-          if gcloud artifacts docker images list $IMAGE_PATH --limit=1 | grep -q "${{ github.sha }}"; then
-            echo "✅ Image found in Artifact Registry"
+          if gcloud artifacts docker images list $IMAGE_PATH --limit=1 | grep -q "$SHORT_SHA"; then
+            echo "✅ Image found in Artifact Registry with tag: $SHORT_SHA"
           else
             echo "❌ Image not found in Artifact Registry"
             exit 1
@@ -143,7 +149,8 @@ jobs:
           
       - name: Inspect image structure (validation)
         run: |
-          IMAGE_PATH="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
+          SHORT_SHA="${{ steps.build.outputs.short_sha }}"
+          IMAGE_PATH="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.SERVICE_NAME }}:$SHORT_SHA"
           
           echo "Pulling image for inspection..."
           docker pull $IMAGE_PATH
@@ -163,16 +170,23 @@ jobs:
           
       - name: Generate deployment command
         run: |
+          SHORT_SHA="${{ steps.build.outputs.short_sha }}"
+          
           echo "### Deployment Command" >> $GITHUB_STEP_SUMMARY
           echo '```bash' >> $GITHUB_STEP_SUMMARY
           echo "gcloud run deploy ${{ env.SERVICE_NAME }} \\" >> $GITHUB_STEP_SUMMARY
-          echo "  --image=${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.SERVICE_NAME }}:${{ github.sha }} \\" >> $GITHUB_STEP_SUMMARY
+          echo "  --image=${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.SERVICE_NAME }}:$SHORT_SHA \\" >> $GITHUB_STEP_SUMMARY
           echo "  --region=${{ env.GCP_REGION }} \\" >> $GITHUB_STEP_SUMMARY
           echo "  --platform=managed \\" >> $GITHUB_STEP_SUMMARY
           echo "  --allow-unauthenticated \\" >> $GITHUB_STEP_SUMMARY
-          echo "  --set-env-vars=NODE_ENV=production,APP_VERSION=${{ github.sha }},BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) \\" >> $GITHUB_STEP_SUMMARY
+          echo "  --set-env-vars=NODE_ENV=production,APP_VERSION=$SHORT_SHA,BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) \\" >> $GITHUB_STEP_SUMMARY
           echo "  --update-secrets=API_KEY=vehicle-in-need-gemini:latest" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
+          
+          echo "### Deployed Version" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit SHA**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Short SHA**: $SHORT_SHA" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
 
   # Manual deployment gate - only runs on workflow_dispatch with deploy=true
   deploy:
@@ -196,16 +210,20 @@ jobs:
         
       - name: Deploy to Cloud Run
         run: |
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          
           gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --image=${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.SERVICE_NAME }}:${{ github.sha }} \
+            --image=${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.SERVICE_NAME }}:$SHORT_SHA \
             --region=${{ env.GCP_REGION }} \
             --platform=managed \
             --allow-unauthenticated \
-            --set-env-vars=NODE_ENV=production,APP_VERSION=${{ github.sha }},BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+            --set-env-vars=NODE_ENV=production,APP_VERSION=$SHORT_SHA,BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
             --update-secrets=API_KEY=vehicle-in-need-gemini:latest
             
       - name: Verify deployment
         run: |
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          
           SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
             --region=${{ env.GCP_REGION }} \
             --format='value(status.url)')
@@ -224,8 +242,8 @@ jobs:
           VERSION=$(curl -s "$SERVICE_URL/api/status" | jq -r '.version')
           echo "Deployed version: $VERSION"
           
-          if [ "$VERSION" = "${{ github.sha }}" ]; then
+          if [ "$VERSION" = "$SHORT_SHA" ]; then
             echo "✅ Version matches deployment"
           else
-            echo "⚠️  Version mismatch - deployed: $VERSION, expected: ${{ github.sha }}"
+            echo "⚠️  Version mismatch - deployed: $VERSION, expected: $SHORT_SHA"
           fi

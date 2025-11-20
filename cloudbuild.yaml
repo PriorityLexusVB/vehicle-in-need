@@ -11,9 +11,11 @@
 #      - Uses commit SHA as image tag
 #      - Configure trigger with: _REGION, _SERVICE (see substitutions block below)
 #
-#   2. Manual builds:
+#   2. Manual builds (for testing only - NOT for production):
+#      # Get current commit SHA first
+#      SHORT_SHA=$(git rev-parse --short HEAD)
 #      gcloud builds submit --config cloudbuild.yaml \
-#        --substitutions _REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=manual-$(date +%Y%m%d-%H%M)
+#        --substitutions _REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=$SHORT_SHA
 #
 # Service Account Requirements:
 #   The Cloud Build service account (cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com) needs:
@@ -55,9 +57,46 @@ steps:
         fi
         echo "✓ No conflict markers detected"
 
+  # Guard: Validate SHORT_SHA is a valid git commit format (not "manual" or other invalid values)
+  - name: gcr.io/cloud-builders/gcloud
+    id: validate-version
+    waitFor: ['check-conflicts']
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        echo "🔍 Validating deployment version..."
+        echo "SHORT_SHA: ${SHORT_SHA}"
+        
+        # Check if SHORT_SHA starts with "manual" or contains invalid patterns
+        if [[ "${SHORT_SHA}" =~ ^manual ]]; then
+          echo "❌ ERROR: Manual deployment versions are not allowed in production!"
+          echo "   SHORT_SHA: ${SHORT_SHA}"
+          echo ""
+          echo "Production deployments must be traceable to git commits."
+          echo "Use a proper git commit SHA instead."
+          echo ""
+          echo "To deploy from current commit:"
+          echo "  SHORT_SHA=\$(git rev-parse --short HEAD)"
+          echo "  gcloud builds submit --config cloudbuild.yaml \\"
+          echo "    --substitutions=_REGION=us-west1,_SERVICE=${_SERVICE},SHORT_SHA=\$SHORT_SHA"
+          exit 1
+        fi
+        
+        # Validate format is alphanumeric (typical git SHA format)
+        if ! [[ "${SHORT_SHA}" =~ ^[a-fA-F0-9]{7,40}$ ]]; then
+          echo "⚠️  WARNING: SHORT_SHA does not match standard git commit format"
+          echo "   SHORT_SHA: ${SHORT_SHA}"
+          echo "   Expected: 7-40 character hexadecimal string"
+          echo ""
+          echo "Continuing anyway, but this may not be a traceable deployment..."
+        fi
+        
+        echo "✅ Version validation passed: ${SHORT_SHA}"
+
   - name: gcr.io/cloud-builders/docker
     id: build-image
-    waitFor: ['check-conflicts']
+    waitFor: ['validate-version']
     args:
       - build
       - --build-arg
@@ -185,6 +224,78 @@ steps:
         echo "   Contains Tailwind: $TAILWIND_CHECK"
         echo ""
         echo "🎉 Deployment verification complete - CSS is properly deployed!"
+
+  # CRITICAL: Verify deployed version matches the commit SHA
+  - name: gcr.io/cloud-builders/curl
+    id: verify-version
+    waitFor: ['verify-css-deployed']
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -e
+        echo "🔍 Verifying deployed version..."
+        
+        SERVICE_URL=$(gcloud run services describe ${_SERVICE} \
+          --region=${_REGION} \
+          --format='value(status.url)')
+        
+        echo "Service URL: $SERVICE_URL"
+        
+        # Wait a moment for service to stabilize
+        sleep 3
+        
+        # Fetch version from /api/status
+        echo "Fetching version from /api/status..."
+        STATUS_JSON=$(curl -sS "$SERVICE_URL/api/status" || echo "{}")
+        
+        if [ -z "$STATUS_JSON" ] || [ "$STATUS_JSON" = "{}" ]; then
+          echo "❌ ERROR: Could not fetch /api/status"
+          exit 1
+        fi
+        
+        # Extract version field
+        DEPLOYED_VERSION=$(echo "$STATUS_JSON" | grep -o '"version":"[^"]*"' | cut -d'"' -f4 || echo "")
+        
+        if [ -z "$DEPLOYED_VERSION" ]; then
+          echo "❌ ERROR: Could not extract version from API status"
+          echo "Response: $STATUS_JSON"
+          exit 1
+        fi
+        
+        echo "Deployed version: $DEPLOYED_VERSION"
+        echo "Expected version: ${SHORT_SHA}"
+        
+        # Check for manual deployment
+        if [[ "$DEPLOYED_VERSION" =~ ^manual ]]; then
+          echo "❌ ERROR: Deployed version shows MANUAL DEPLOYMENT!"
+          echo "   Version: $DEPLOYED_VERSION"
+          echo "   This should never happen in production!"
+          exit 1
+        fi
+        
+        # Check if version is unknown
+        if [ "$DEPLOYED_VERSION" = "unknown" ]; then
+          echo "❌ ERROR: Deployed version is 'unknown'"
+          echo "   APP_VERSION environment variable was not set correctly"
+          exit 1
+        fi
+        
+        # Verify version matches deployed commit
+        if [ "$DEPLOYED_VERSION" = "${SHORT_SHA}" ]; then
+          echo "✅ Version verification passed!"
+          echo "   Deployed version matches commit SHA: ${SHORT_SHA}"
+        else
+          echo "❌ ERROR: Version mismatch detected"
+          echo "   Deployed: $DEPLOYED_VERSION"
+          echo "   Expected: ${SHORT_SHA}"
+          echo "   This indicates the deployment did not set APP_VERSION correctly"
+          exit 1
+        fi
+        
+        echo ""
+        echo "🎉 Version verification complete!"
+
 
 images:
   - us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${_SERVICE}:${SHORT_SHA}

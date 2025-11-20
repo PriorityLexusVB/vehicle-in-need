@@ -34,6 +34,9 @@
     "verify:parity": "node scripts/verify-deploy-parity.cjs https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/",
     "verify:css": "bash scripts/verify-css-in-build.sh",
     "verify:production": "bash scripts/verify-production-state.sh",
+    "verify:version": "node scripts/check-production-version.cjs",
+    "verify:deployment": "bash scripts/post-deployment-verification.sh",
+    "sync:production": "bash scripts/sync-production-with-main.sh",
     "predeploy": "bash scripts/pre-deploy-css-check.sh",
     "seed:managers:dry-run": "node scripts/seed-manager.mjs --project vehicles-in-need --dry-run",
     "seed:managers:apply": "node scripts/seed-manager.mjs --project vehicles-in-need --apply"
