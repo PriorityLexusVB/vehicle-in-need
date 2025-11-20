@@ -11,9 +11,11 @@
 #      - Uses commit SHA as image tag
 #      - Configure trigger with: _REGION, _SERVICE (see substitutions block below)
 #
-#   2. Manual builds:
+#   2. Manual builds (for testing only - NOT for production):
+#      # Get current commit SHA first
+#      SHORT_SHA=$(git rev-parse --short HEAD)
 #      gcloud builds submit --config cloudbuild.yaml \
-#        --substitutions _REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=manual-$(date +%Y%m%d-%H%M)
+#        --substitutions _REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=$SHORT_SHA
 #
 # Service Account Requirements:
 #   The Cloud Build service account (cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com) needs:
@@ -55,9 +57,46 @@ steps:
         fi
         echo "✓ No conflict markers detected"
 
+  # Guard: Validate SHORT_SHA is a valid git commit format (not "manual" or other invalid values)
+  - name: gcr.io/cloud-builders/gcloud
+    id: validate-version
+    waitFor: ['check-conflicts']
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        echo "🔍 Validating deployment version..."
+        echo "SHORT_SHA: ${SHORT_SHA}"
+        
+        # Check if SHORT_SHA starts with "manual" or contains invalid patterns
+        if [[ "${SHORT_SHA}" =~ ^manual ]]; then
+          echo "❌ ERROR: Manual deployment versions are not allowed in production!"
+          echo "   SHORT_SHA: ${SHORT_SHA}"
+          echo ""
+          echo "Production deployments must be traceable to git commits."
+          echo "Use a proper git commit SHA instead."
+          echo ""
+          echo "To deploy from current commit:"
+          echo "  SHORT_SHA=\$(git rev-parse --short HEAD)"
+          echo "  gcloud builds submit --config cloudbuild.yaml \\"
+          echo "    --substitutions=_REGION=us-west1,_SERVICE=${_SERVICE},SHORT_SHA=\$SHORT_SHA"
+          exit 1
+        fi
+        
+        # Validate format is alphanumeric (typical git SHA format)
+        if ! [[ "${SHORT_SHA}" =~ ^[a-f0-9]{7,40}$ ]]; then
+          echo "⚠️  WARNING: SHORT_SHA does not match standard git commit format"
+          echo "   SHORT_SHA: ${SHORT_SHA}"
+          echo "   Expected: 7-40 character hexadecimal string"
+          echo ""
+          echo "Continuing anyway, but this may not be a traceable deployment..."
+        fi
+        
+        echo "✅ Version validation passed: ${SHORT_SHA}"
+
   - name: gcr.io/cloud-builders/docker
     id: build-image
-    waitFor: ['check-conflicts']
+    waitFor: ['validate-version']
     args:
       - build
       - --build-arg

@@ -1387,6 +1387,7 @@ This project uses `vite-plugin-node-polyfills` with `protocolImports: true` in b
 ### Quick Links
 
 - **[Production Quick Reference](docs/PRODUCTION_QUICK_REFERENCE.md)** - Quick verification and deployment commands
+- **[Version Tracking](docs/VERSION_TRACKING.md)** - Deployment traceability and version management
 - **[CSS Execution Final](docs/CSS_EXECUTION_FINAL.md)** - Comprehensive production URL consistency verification
 - **[Deployment Guide](DEPLOYMENT_GUIDE.md)** - Complete deployment procedures and troubleshooting
 - **[Documentation Index](docs/INDEX.md)** - Full documentation directory
@@ -1398,7 +1399,7 @@ The repository documentation is organized as follows:
 
 - **Root level**: `README.md` (this file) and `DEPLOYMENT_GUIDE.md`
 - **`docs/operations/`**: Current operational runbooks for Cloud Build, Cloud Run, and deployment
-- **`docs/`**: Development documentation (CI/CD, MCP, templates)
+- **`docs/`**: Development documentation (CI/CD, MCP, templates, version tracking)
 - **`docs/archive/`**: Historical documentation from previous fixes (for reference only)
 
 For current deployment and troubleshooting information, always refer to the operational runbooks, not the archived documentation.
