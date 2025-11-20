@@ -102,9 +102,12 @@ async function logBundleInfo() {
         }
       }
     }
-  } catch {
+  } catch (error) {
     // Silently fail if /api/status is not available (e.g., during development)
     console.log('Note: Could not verify version parity with server');
+    if (import.meta.env.DEV) {
+      console.log('Error details:', error);
+    }
   }
 
   // Diagnostic: Check CSS loading
@@ -206,6 +209,27 @@ function showCSSWarningBanner() {
   document.body.prepend(banner);
 }
 
+// Helper function to clear all caches and reload
+function clearCachesAndReload() {
+  if ('caches' in window) {
+    caches.keys()
+      .then(keys => Promise.all(keys.map(k => caches.delete(k))))
+      .then(() => {
+        console.log('All caches cleared, reloading...');
+        location.reload();
+      })
+      .catch((error) => {
+        console.error('Failed to clear caches:', error);
+        // Fall back to simple reload if cache clearing fails
+        console.log('Falling back to simple reload');
+        location.reload();
+      });
+  } else {
+    // Caches API not available, just reload
+    location.reload();
+  }
+}
+
 // Show a warning banner when version mismatch is detected
 function showVersionMismatchBanner(clientVersion: string, serverVersion: string) {
   // Check if banner already exists
@@ -229,40 +253,72 @@ function showVersionMismatchBanner(clientVersion: string, serverVersion: string)
     z-index: 10001;
     box-shadow: 0 2px 8px rgba(0,0,0,0.3);
   `;
-  banner.innerHTML = `
-    <strong>⚠️ Version Mismatch Detected</strong> - 
-    You may be viewing an outdated version of this app. 
-    Client: ${clientVersion} | Server: ${serverVersion}
-    <button onclick="location.reload(true)" style="
-      background: white;
-      color: #ef4444;
-      border: none;
-      padding: 4px 12px;
-      margin-left: 12px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: bold;
-    ">Hard Reload</button>
-    <button onclick="caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => location.reload())" style="
-      background: #dc2626;
-      color: white;
-      border: 1px solid white;
-      padding: 4px 12px;
-      margin-left: 8px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: bold;
-    ">Clear Cache & Reload</button>
-    <button onclick="document.getElementById('version-mismatch-banner').remove()" style="
-      background: transparent;
-      color: white;
-      border: 1px solid white;
-      padding: 4px 12px;
-      margin-left: 8px;
-      border-radius: 4px;
-      cursor: pointer;
-    ">Dismiss</button>
+
+  // Build banner content safely without innerHTML to prevent XSS
+  const strong = document.createElement('strong');
+  strong.textContent = '⚠️ Version Mismatch Detected';
+  banner.appendChild(strong);
+
+  banner.appendChild(document.createTextNode(' - You may be viewing an outdated version of this app. '));
+
+  const versionSpan = document.createElement('span');
+  versionSpan.textContent = `Client: ${clientVersion} | Server: ${serverVersion}`;
+  banner.appendChild(versionSpan);
+
+  // Hard Reload button
+  const hardReloadBtn = document.createElement('button');
+  hardReloadBtn.textContent = 'Hard Reload';
+  hardReloadBtn.setAttribute('aria-label', 'Hard reload page to get latest version');
+  hardReloadBtn.style.cssText = `
+    background: white;
+    color: #ef4444;
+    border: none;
+    padding: 4px 12px;
+    margin-left: 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
   `;
+  hardReloadBtn.onclick = function() {
+    location.reload();
+  };
+  banner.appendChild(hardReloadBtn);
+
+  // Clear Cache & Reload button
+  const clearCacheBtn = document.createElement('button');
+  clearCacheBtn.textContent = 'Clear Cache & Reload';
+  clearCacheBtn.setAttribute('aria-label', 'Clear browser cache and reload page');
+  clearCacheBtn.style.cssText = `
+    background: #dc2626;
+    color: white;
+    border: 1px solid white;
+    padding: 4px 12px;
+    margin-left: 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+  `;
+  clearCacheBtn.onclick = clearCachesAndReload;
+  banner.appendChild(clearCacheBtn);
+
+  // Dismiss button
+  const dismissBtn = document.createElement('button');
+  dismissBtn.textContent = 'Dismiss';
+  dismissBtn.setAttribute('aria-label', 'Dismiss version mismatch warning');
+  dismissBtn.style.cssText = `
+    background: transparent;
+    color: white;
+    border: 1px solid white;
+    padding: 4px 12px;
+    margin-left: 8px;
+    border-radius: 4px;
+    cursor: pointer;
+  `;
+  dismissBtn.onclick = function() {
+    banner.remove();
+  };
+  banner.appendChild(dismissBtn);
+
   document.body.prepend(banner);
 }
 

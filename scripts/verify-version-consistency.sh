@@ -107,7 +107,10 @@ else
     if grep -q "VITE_APP_COMMIT_SHA" $JS_FILES 2>/dev/null; then
         log_pass "VITE_APP_COMMIT_SHA reference found in bundle"
         
-        # Try to extract the actual value
+        # Try to extract the actual version value from the bundle
+        # Pattern matches: VITE_APP_COMMIT_SHA followed by key-value pair like {"VITE_APP_COMMIT_SHA":"abc1234"}
+        # This works with both minified and non-minified bundles
+        # Example matches: VITE_APP_COMMIT_SHA":"abc1234" or VITE_APP_COMMIT_SHA': 'abc1234'
         if BUNDLE_SHA=$(grep -o "VITE_APP_COMMIT_SHA.*['\"]:['\"][^'\"]*" $JS_FILES 2>/dev/null | head -1 | sed "s/.*['\"]:\s*['\"]//; s/['\"].*//"); then
             if [ -n "$BUNDLE_SHA" ] && [ "$BUNDLE_SHA" != "dev" ] && [ "$BUNDLE_SHA" != "unknown" ]; then
                 log_info "Bundle version: $BUNDLE_SHA"
