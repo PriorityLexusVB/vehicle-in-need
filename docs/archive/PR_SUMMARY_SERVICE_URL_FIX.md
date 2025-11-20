@@ -35,6 +35,7 @@ is not a valid built-in substitution
 - Returns exit code 0 if configuration is correct
 
 **Usage**:
+
 ```bash
 ./scripts/verify-cloud-build-config.sh
 ```
@@ -44,6 +45,7 @@ is not a valid built-in substitution
 **File**: `CLOUD_BUILD_SERVICE_URL_FIX.md`
 
 Complete documentation covering:
+
 - Detailed explanation of the issue
 - Why `SERVICE_URL` cannot be a substitution
 - Three fix methods:
@@ -59,6 +61,7 @@ Complete documentation covering:
 **File**: `README.md`
 
 Added troubleshooting entry in the "Troubleshooting" section:
+
 - Clear error message reference
 - Brief explanation
 - Link to comprehensive fix guide
@@ -68,7 +71,7 @@ Added troubleshooting entry in the "Troubleshooting" section:
 
 **The repository code is correct.** The fix requires manual action in Google Cloud Console:
 
-1. Navigate to https://console.cloud.google.com/cloud-build/triggers
+1. Navigate to <https://console.cloud.google.com/cloud-build/triggers>
 2. Select project: `gen-lang-client-0615287333`
 3. Edit trigger: `vehicle-in-need-deploy`
 4. Remove `SERVICE_URL` from substitution variables
@@ -80,11 +83,13 @@ Added troubleshooting entry in the "Troubleshooting" section:
 After fixing the trigger:
 
 1. Run verification script:
+
    ```bash
    ./scripts/verify-cloud-build-config.sh
    ```
 
 2. Test build manually:
+
    ```bash
    gcloud builds submit --config cloudbuild.yaml \
      --substitutions _REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=test-$(date +%Y%m%d-%H%M)
@@ -97,11 +102,13 @@ After fixing the trigger:
 ### Valid Cloud Build Substitutions
 
 **Built-in** (no underscore):
+
 - `PROJECT_ID` - GCP project ID
 - `SHORT_SHA` - Short commit SHA
 - `BUILD_ID` - Unique build identifier
 
 **Custom** (must start with underscore):
+
 - `_REGION` - Deployment region (default: us-west1)
 - `_SERVICE` - Service name (default: pre-order-dealer-exchange-tracker)
 
@@ -123,6 +130,7 @@ steps:
 ```
 
 The service URL:
+
 - Doesn't exist until after Cloud Run deployment
 - Changes with each deployment
 - Must be retrieved dynamically using gcloud

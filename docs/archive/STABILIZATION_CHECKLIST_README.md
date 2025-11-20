@@ -58,6 +58,7 @@ The checklist was created based on successful stabilization efforts in:
 ### 1. Firestore Rules Best Practices
 
 ✅ **Always check for null/undefined:**
+
 ```javascript
 // BAD
 resource.data.field
@@ -67,6 +68,7 @@ resource != null && ('field' in resource.data) && resource.data.field
 ```
 
 ✅ **Prefer custom claims over get() calls:**
+
 ```javascript
 // SLOW + CIRCULAR DEPENDENCIES
 get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isManager
@@ -78,6 +80,7 @@ request.auth.token.isManager == true
 ### 2. Cloud Build Substitutions
 
 ✅ **Custom substitutions must start with underscore:**
+
 ```yaml
 substitutions:
   _REGION: us-west1           # ✅ CORRECT
@@ -88,6 +91,7 @@ substitutions:
 ### 3. CI/CD Pipeline Reliability
 
 ✅ **Full git history for diff operations:**
+
 ```yaml
 - uses: actions/checkout@v4
   with:
@@ -95,6 +99,7 @@ substitutions:
 ```
 
 ✅ **Use commit SHAs, not branch refs:**
+
 ```bash
 # Good
 git diff ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}
@@ -121,6 +126,7 @@ The checklist includes solutions for:
 ### Phase-by-Phase Breakdown
 
 Each phase includes:
+
 - ☑️ **Checklist items** - Specific tasks to complete
 - 💻 **Code examples** - Copy-paste ready commands
 - 🔍 **What to check** - Specific validation steps

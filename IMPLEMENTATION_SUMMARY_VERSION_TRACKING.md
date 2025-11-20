@@ -23,6 +23,7 @@ Implemented a comprehensive version tracking and validation system with multiple
 **Added Two Validation Steps:**
 
 #### Pre-Build Validation (`validate-version`)
+
 - Runs immediately after conflict checking
 - **Blocks** deployments where `SHORT_SHA` starts with "manual"
 - **Warns** if `SHORT_SHA` doesn't match git commit format
@@ -44,6 +45,7 @@ Implemented a comprehensive version tracking and validation system with multiple
 ```
 
 #### Post-Deployment Verification (`verify-version`)
+
 - Runs after CSS deployment verification
 - Fetches deployed version from `/api/status`
 - Confirms version matches deployed commit SHA
@@ -55,6 +57,7 @@ Implemented a comprehensive version tracking and validation system with multiple
 **Purpose**: Safely deploy production from a specific git commit
 
 **Features:**
+
 - Fetches latest commit from `origin/main` by default
 - Validates commit exists in repository
 - Shows commit details before deploying
@@ -64,6 +67,7 @@ Implemented a comprehensive version tracking and validation system with multiple
 - Verifies deployed version after completion
 
 **Usage:**
+
 ```bash
 # Deploy from latest main
 npm run sync:production
@@ -73,6 +77,7 @@ npm run sync:production -- abc123d
 ```
 
 **Exit Codes:**
+
 - `0` - Deployment successful
 - `1` - Deployment failed or invalid input
 
@@ -81,6 +86,7 @@ npm run sync:production -- abc123d
 **Purpose**: Verify production version matches expected commit
 
 **Features:**
+
 - Fetches production version from `/api/status` endpoint
 - Compares to expected commit (origin/main or provided)
 - Detects "manual" deployments (ERROR)
@@ -89,6 +95,7 @@ npm run sync:production -- abc123d
 - Calculates commits ahead/behind
 
 **Usage:**
+
 ```bash
 # Check against origin/main
 npm run verify:version
@@ -98,6 +105,7 @@ npm run verify:version -- abc123d
 ```
 
 **Exit Codes:**
+
 - `0` - Version matches expected commit
 - `1` - Version mismatch or manual deployment
 - `2` - Cannot verify (service unavailable)
@@ -107,6 +115,7 @@ npm run verify:version -- abc123d
 **Purpose**: Comprehensive health check after deployment
 
 **Checks Performed:**
+
 1. Health endpoint accessible
 2. API status endpoint accessible
 3. Environment is "production"
@@ -123,6 +132,7 @@ npm run verify:version -- abc123d
 14. Service worker accessible
 
 **Usage:**
+
 ```bash
 # Verify current deployment
 npm run verify:deployment
@@ -132,6 +142,7 @@ bash scripts/post-deployment-verification.sh abc123d
 ```
 
 **Exit Codes:**
+
 - `0` - All checks passed
 - `1` - One or more checks failed
 - Status returned even on warnings
@@ -139,6 +150,7 @@ bash scripts/post-deployment-verification.sh abc123d
 ### 5. GitHub Actions Workflow (`.github/workflows/build-and-deploy.yml`)
 
 **Changes:**
+
 - Extract short SHA from GitHub commit SHA consistently
 - Use `SHORT_SHA` throughout build and deployment
 - Store `SHORT_SHA` in build outputs for reuse
@@ -146,6 +158,7 @@ bash scripts/post-deployment-verification.sh abc123d
 - Add version info to GitHub step summary
 
 **Example:**
+
 ```yaml
 SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
 BUILD_ID=$(gcloud builds submit \
@@ -155,20 +168,23 @@ BUILD_ID=$(gcloud builds submit \
 ### 6. Package.json Scripts
 
 **New Scripts:**
+
 - `verify:version` - Check production version matches expected commit
 - `verify:deployment` - Comprehensive post-deployment verification
 - `sync:production` - Deploy from latest main with validation
 
 **Updated Scripts:**
+
 - All verification scripts remain functional
 - Scripts now work together as part of version tracking system
 
 ### 7. Documentation
 
-#### New Documents:
+#### New Documents
 
 **`docs/VERSION_TRACKING.md`** (11KB, 400+ lines)
 Comprehensive guide covering:
+
 - Problem statement and solution
 - How version tracking works
 - All deployment workflows
@@ -178,18 +194,21 @@ Comprehensive guide covering:
 - Troubleshooting guide
 - Best practices
 
-#### Updated Documents:
+#### Updated Documents
 
 **`DEPLOYMENT_GUIDE.md`**
+
 - Removed manual deployment examples with arbitrary versions
 - Updated to show proper git commit usage
 - Added warnings about version traceability
 
 **`README.md`**
+
 - Added link to VERSION_TRACKING.md in documentation section
 - Updated documentation structure description
 
 **`docs/INDEX.md`**
+
 - Added VERSION_TRACKING.md to development documentation section
 
 ## How to Use
@@ -197,16 +216,19 @@ Comprehensive guide covering:
 ### For Operators
 
 **Deploy from Latest Main:**
+
 ```bash
 npm run sync:production
 ```
 
 **Verify Production Version:**
+
 ```bash
 npm run verify:version
 ```
 
 **Comprehensive Health Check:**
+
 ```bash
 npm run verify:deployment
 ```
@@ -214,6 +236,7 @@ npm run verify:deployment
 ### For Developers
 
 **Check Version Before Committing:**
+
 ```bash
 npm run verify:version
 ```
@@ -222,6 +245,7 @@ npm run verify:version
 The GitHub Actions workflow automatically deploys with proper version tracking.
 
 **Manual Deployment (Testing Only):**
+
 ```bash
 SHORT_SHA=$(git rev-parse --short HEAD)
 gcloud builds submit \
@@ -232,12 +256,14 @@ gcloud builds submit \
 ### For Troubleshooting
 
 **Version Shows "manual":**
+
 ```bash
 # Redeploy from latest main
 npm run sync:production
 ```
 
 **Version is "unknown":**
+
 ```bash
 # Check environment variables
 gcloud run services describe pre-order-dealer-exchange-tracker \
@@ -249,6 +275,7 @@ npm run sync:production
 ```
 
 **Version Mismatch:**
+
 ```bash
 # Check difference
 npm run verify:version
@@ -260,24 +287,28 @@ npm run sync:production
 ## Validation Layers
 
 ### Layer 1: Pre-Build (Cloud Build)
+
 - **What**: Validates SHORT_SHA before building image
 - **When**: Before Docker build starts
 - **Action**: BLOCKS invalid deployments
 - **Benefit**: Fail fast, no wasted build time
 
 ### Layer 2: Post-Deploy (Cloud Build)
+
 - **What**: Verifies version after deployment completes
 - **When**: After Cloud Run deployment
 - **Action**: WARNS on mismatch
 - **Benefit**: Immediate feedback on deployment
 
 ### Layer 3: On-Demand (Scripts)
+
 - **What**: Check version any time
 - **When**: Ad-hoc or scheduled checks
 - **Action**: REPORTS status
 - **Benefit**: Continuous monitoring capability
 
 ### Layer 4: Comprehensive (Verification)
+
 - **What**: Full health check including version
 - **When**: After deployment or regularly
 - **Action**: DETAILED report
@@ -286,26 +317,31 @@ npm run sync:production
 ## Benefits Achieved
 
 ### ✅ Traceability
+
 - Every deployment tied to a git commit
 - Can always determine exact code running
 - Git history provides full deployment timeline
 
 ### ✅ Reproducibility
+
 - Can rebuild any version from git commit
 - No mystery "manual" builds
 - Consistent deployment process
 
 ### ✅ Debugging
+
 - Can checkout exact code for any deployment
 - Can compare versions using git diff
 - Can identify when bugs were introduced
 
 ### ✅ Rollback
+
 - Can revert to any previous commit
 - Know exactly what will be deployed
 - Verified rollback procedure
 
 ### ✅ Confidence
+
 - Multiple validation layers
 - Automated verification
 - Clear error messages
@@ -314,18 +350,21 @@ npm run sync:production
 ## Testing Performed
 
 ### 1. Cloud Build Validation
+
 - ✅ Valid git commit SHAs pass validation
 - ✅ "manual-*" versions are blocked
 - ✅ Clear error messages displayed
 - ✅ Build continues after validation passes
 
 ### 2. Version Check Script
+
 - ✅ Correctly identifies version mismatches
 - ✅ Detects "manual" deployments
 - ✅ Shows commit comparison details
 - ✅ Handles service unavailability gracefully
 
 ### 3. Sync Script
+
 - ✅ Fetches latest from origin/main
 - ✅ Validates commit exists
 - ✅ Shows commit details
@@ -333,12 +372,14 @@ npm run sync:production
 - ✅ Provides clear status output
 
 ### 4. Post-Deployment Verification
+
 - ✅ Performs all 14 checks correctly
 - ✅ Reports pass/fail/warning appropriately
 - ✅ Handles service unavailability
 - ✅ Provides remediation suggestions
 
 ### 5. Documentation
+
 - ✅ Comprehensive coverage (11KB guide)
 - ✅ Clear examples
 - ✅ Troubleshooting section
@@ -349,6 +390,7 @@ npm run sync:production
 For existing production deployment showing "manual" version:
 
 1. **Check Current State:**
+
    ```bash
    npm run verify:version
    ```
@@ -359,11 +401,13 @@ For existing production deployment showing "manual" version:
    - If version matches → no action needed
 
 3. **Sync Production:**
+
    ```bash
    npm run sync:production
    ```
 
 4. **Verify Fix:**
+
    ```bash
    npm run verify:version
    npm run verify:deployment
@@ -379,15 +423,18 @@ For existing production deployment showing "manual" version:
 ### Regular Checks
 
 **Daily (Automated):**
+
 - GitHub Actions validates all merges to main
 - Cloud Build validates every deployment
 
 **Weekly (Recommended):**
+
 ```bash
 npm run verify:version
 ```
 
 **Monthly (Recommended):**
+
 ```bash
 npm run verify:deployment
 ```
@@ -403,6 +450,7 @@ npm run verify:deployment
 ### Updating Documentation
 
 When deployment process changes:
+
 1. Update `docs/VERSION_TRACKING.md`
 2. Update `DEPLOYMENT_GUIDE.md` if needed
 3. Update scripts if validation logic changes
@@ -412,6 +460,7 @@ When deployment process changes:
 ## Success Metrics
 
 ### Before Fix
+
 - ❌ Production showed "manual deployment"
 - ❌ No way to determine deployed code version
 - ❌ Version mismatches common
@@ -419,6 +468,7 @@ When deployment process changes:
 - ❌ Limited documentation
 
 ### After Fix
+
 - ✅ All deployments traceable to git commits
 - ✅ Multiple validation layers prevent "manual" versions
 - ✅ Automated version verification in Cloud Build
@@ -432,11 +482,13 @@ When deployment process changes:
 ### Immediate (User Action Required)
 
 1. **Sync Production:**
+
    ```bash
    npm run sync:production
    ```
 
 2. **Verify Success:**
+
    ```bash
    npm run verify:version
    ```

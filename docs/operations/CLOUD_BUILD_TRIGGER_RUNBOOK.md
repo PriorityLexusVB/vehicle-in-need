@@ -42,6 +42,7 @@ gcloud builds describe <BUILD_ID> --project=gen-lang-client-0615287333
 ```
 
 Example:
+
 ```bash
 gcloud builds describe ec7409ab-9e65-4324-8a49-d6801e5709d5 --project=gen-lang-client-0615287333
 ```
@@ -67,6 +68,7 @@ gcloud builds triggers list --project=gen-lang-client-0615287333
 ```
 
 This shows:
+
 - Trigger IDs
 - Trigger names
 - Repository connections
@@ -78,10 +80,10 @@ This shows:
 
 ### Step 2.1: Navigate to Cloud Build Triggers
 
-1. Open Google Cloud Console: https://console.cloud.google.com
+1. Open Google Cloud Console: <https://console.cloud.google.com>
 2. Select project: **gen-lang-client-0615287333**
 3. Navigate to: **Cloud Build → Triggers**
-   - Direct link: https://console.cloud.google.com/cloud-build/triggers?project=gen-lang-client-0615287333
+   - Direct link: <https://console.cloud.google.com/cloud-build/triggers?project=gen-lang-client-0615287333>
 
 ### Step 2.2: Find the Specific Trigger
 
@@ -92,6 +94,7 @@ This shows:
 ### Step 2.3: View Current Configuration
 
 Click on the trigger name to see:
+
 - **Source**: Connected repository and branch
 - **Configuration**: Path to `cloudbuild.yaml`
 - **Substitution variables**: The section we need to fix
@@ -126,6 +129,7 @@ Click on the trigger name to see:
 *These have defaults in `cloudbuild.yaml`, but should be set in trigger for clarity.
 
 **Built-in variables** (automatically provided by Cloud Build, no configuration needed):
+
 - `PROJECT_ID` - GCP project ID
 - `SHORT_SHA` - Short commit hash (7 characters)
 - `BUILD_ID` - Unique build identifier
@@ -191,6 +195,7 @@ gcloud builds submit \
 ### Step 4.3: Monitor Build Progress
 
 The build should proceed through these steps:
+
 1. ✅ Check for conflict markers
 2. ✅ Build Docker image
 3. ✅ Push image to Artifact Registry
@@ -214,7 +219,7 @@ git commit --allow-empty -m "test: verify Cloud Build trigger"
 git push origin main
 ```
 
-Monitor the build in Cloud Console: https://console.cloud.google.com/cloud-build/builds?project=gen-lang-client-0615287333
+Monitor the build in Cloud Console: <https://console.cloud.google.com/cloud-build/builds?project=gen-lang-client-0615287333>
 
 ---
 
@@ -230,6 +235,7 @@ cd ~/vehicle-in-need
 ```
 
 This script will:
+
 - List all Cloud Build triggers in the project
 - Show each trigger's substitution variables
 - Highlight any triggers with SERVICE_URL configured (these need fixing)
@@ -260,6 +266,7 @@ Summary:
 ### ❌ Mistake 1: Adding SERVICE_URL to Trigger
 
 **Wrong:**
+
 ```yaml
 # In Cloud Build trigger configuration
 substitutions:
@@ -269,6 +276,7 @@ substitutions:
 ```
 
 **Right:**
+
 ```yaml
 # In Cloud Build trigger configuration
 substitutions:
@@ -280,12 +288,14 @@ substitutions:
 ### ❌ Mistake 2: Using SERVICE_URL in Manual Builds
 
 **Wrong:**
+
 ```bash
 gcloud builds submit --config=cloudbuild.yaml \
   --substitutions=_REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SERVICE_URL=https://...
 ```
 
 **Right:**
+
 ```bash
 gcloud builds submit --config=cloudbuild.yaml \
   --substitutions=_REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=$(git rev-parse --short HEAD)
@@ -294,6 +304,7 @@ gcloud builds submit --config=cloudbuild.yaml \
 ### ❌ Mistake 3: Forgetting Underscore Prefix
 
 **Wrong:**
+
 ```yaml
 substitutions:
   REGION: us-west1      # Missing underscore
@@ -301,6 +312,7 @@ substitutions:
 ```
 
 **Right:**
+
 ```yaml
 substitutions:
   _REGION: us-west1     # Underscore prefix for custom variables
@@ -322,6 +334,7 @@ npm run lint:cloudbuild
 ```
 
 This executes `scripts/check-cloudbuild-service-url.sh` which verifies:
+
 - ✅ `cloudbuild.yaml` has no SERVICE_URL in substitutions block
 - ✅ No scripts use `--substitutions=SERVICE_URL`
 - ✅ No workflows pass SERVICE_URL as substitution
@@ -391,11 +404,13 @@ steps:
 ### Problem: Verification Script Can't Find Trigger
 
 **Symptom:**
+
 ```
 ❌ ERROR: Could not find trigger 'vehicle-in-need-deploy'
 ```
 
 **Solution:**
+
 ```bash
 # List all triggers to find the correct name
 gcloud builds triggers list --project=gen-lang-client-0615287333
@@ -406,6 +421,7 @@ gcloud builds triggers list --project=gen-lang-client-0615287333
 ### Problem: Permission Denied
 
 **Symptom:**
+
 ```
 ERROR: (gcloud.builds.triggers.describe) Permission denied
 ```
@@ -413,6 +429,7 @@ ERROR: (gcloud.builds.triggers.describe) Permission denied
 **Solution:**
 
 You need one of these IAM roles:
+
 - `roles/cloudbuild.builds.viewer` (read-only)
 - `roles/cloudbuild.builds.editor` (read-write)
 
@@ -444,28 +461,33 @@ Request access from project owner or administrator.
 ## Section 11: Quick Command Reference
 
 ### Diagnose Failed Build
+
 ```bash
 gcloud builds describe <BUILD_ID> --project=gen-lang-client-0615287333
 ```
 
 ### List All Triggers
+
 ```bash
 gcloud builds triggers list --project=gen-lang-client-0615287333
 ```
 
 ### Verify Trigger Configuration
+
 ```bash
 cd ~/vehicle-in-need
 ./scripts/verify-cloud-build-config.sh
 ```
 
 ### List Triggers with Substitutions
+
 ```bash
 cd ~/vehicle-in-need
 ./scripts/list-cloud-build-triggers.sh
 ```
 
 ### Test Manual Build
+
 ```bash
 cd ~/vehicle-in-need
 git checkout main && git pull
@@ -476,6 +498,7 @@ gcloud builds submit \
 ```
 
 ### Check Repository Configuration
+
 ```bash
 cd ~/vehicle-in-need
 npm run lint:cloudbuild

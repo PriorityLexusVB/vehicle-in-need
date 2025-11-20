@@ -15,7 +15,7 @@ This PR provides comprehensive tools and documentation to fix Cloud Build errors
 2. **scripts/diagnose-cloud-build-error.sh** - Automated diagnosis tool
 3. **README.md** - Added troubleshooting section for IAM errors
 
-### Files Enhanced
+## Files Enhanced
 
 1. **package.json** - Added npm scripts:
    - `npm run cloudbuild:diagnose` - Diagnose Cloud Build errors
@@ -112,15 +112,19 @@ After applying the fix:
 
 1. **Wait 1-2 minutes** for IAM changes to propagate
 2. **Verify permissions**:
+
    ```bash
    npm run cloudbuild:diagnose
    ```
+
 3. **Test deployment**:
+
    ```bash
    git commit --allow-empty -m "test: verify Cloud Build fix"
    git push origin main
    ```
-4. **Monitor build**: https://console.cloud.google.com/cloud-build/builds?project=gen-lang-client-0615287333
+
+4. **Monitor build**: <https://console.cloud.google.com/cloud-build/builds?project=gen-lang-client-0615287333>
 
 Expected result: All build steps should succeed, including Cloud Run deployment.
 

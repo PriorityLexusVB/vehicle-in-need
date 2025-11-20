@@ -7,11 +7,13 @@ This document explains how the Vehicle-in-Need application ensures that all prod
 ## Problem Statement
 
 Previously, the deployment system allowed:
+
 - Manual deployments with arbitrary version strings (e.g., `manual-20241120-1430`)
 - Deployments where `APP_VERSION` was "unknown"
 - No enforcement that deployments must come from tracked commits
 
 This led to situations where:
+
 - Production showed "manual deployment" instead of a git commit SHA
 - Version mismatches between production and the main branch
 - Inability to determine exactly what code was running in production
@@ -47,6 +49,7 @@ A new validation step (`validate-version`) runs before building the Docker image
 ```
 
 This step:
+
 - **Blocks** any deployment where `SHORT_SHA` starts with "manual"
 - **Warns** if `SHORT_SHA` doesn't match standard git commit SHA format (7-40 hex characters)
 - **Passes** valid git commit SHAs
@@ -56,6 +59,7 @@ This step:
 **File**: `.github/workflows/build-and-deploy.yml`
 
 The GitHub Actions workflow now:
+
 1. Extracts the short SHA from the full GitHub commit SHA
 2. Uses this consistently throughout the build and deployment
 3. Verifies the deployed version matches the expected commit
@@ -80,12 +84,14 @@ npm run verify:version
 ```
 
 This script:
+
 - Fetches the production version from `/api/status`
 - Compares it to the latest commit on `origin/main`
 - Detects "manual" deployments and reports them as errors
 - Shows commit history to understand version differences
 
 **Exit Codes**:
+
 - `0` - Version matches expected commit
 - `1` - Version mismatch or manual deployment detected
 - `2` - Cannot verify (service unavailable)
@@ -101,6 +107,7 @@ npm run sync:production
 ```
 
 This script:
+
 - Fetches the latest commit from `origin/main`
 - Validates the commit exists in the repository
 - Submits a Cloud Build with the proper git commit SHA
@@ -108,6 +115,7 @@ This script:
 - Verifies the deployed version matches
 
 **Features**:
+
 - Can deploy a specific commit: `npm run sync:production -- <commit-sha>`
 - Defaults to latest `origin/main` if no commit specified
 - Shows commit details before deploying
@@ -144,7 +152,8 @@ gcloud builds submit \
   --substitutions=_REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=$SHORT_SHA
 ```
 
-**Important**: 
+**Important**:
+
 - Must use a real git commit SHA
 - Cannot use `SHORT_SHA=manual-...` format
 - Should only be used for testing, not production
@@ -156,6 +165,7 @@ npm run sync:production
 ```
 
 This is the safest way to manually deploy because it:
+
 - Automatically fetches latest from `origin/main`
 - Validates the commit exists
 - Uses proper version format
@@ -173,6 +183,7 @@ npm run verify:version
 **Output Examples**:
 
 ✅ **Success** (versions match):
+
 ```
 Production Version Verification
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -188,6 +199,7 @@ Version Check: PASSED
 ```
 
 ❌ **Error** (manual deployment):
+
 ```
 Production Status
 Environment: production
@@ -203,6 +215,7 @@ To fix this:
 ```
 
 ⚠️ **Warning** (version mismatch):
+
 ```
 Production Status
 Environment: production
@@ -226,6 +239,7 @@ npm run verify:production
 ```
 
 This runs the full `verify-production-state.sh` script which checks:
+
 - Repository state
 - Build system configuration
 - Production service status
@@ -251,6 +265,7 @@ The `/api/status` endpoint returns version information:
 ```
 
 **Key Fields**:
+
 - `version`: Git commit SHA (short form) - **should never be "manual" or "unknown"**
 - `buildTime`: When the container was built
 - `environment`: Should be "production" in production
@@ -281,6 +296,7 @@ version: process.env.APP_VERSION || "unknown"
 ### What is a "Manual Deployment"?
 
 A manual deployment is one where the version is set to an arbitrary string like:
+
 - `manual-20241120-1430`
 - `manual-test-deployment`
 - `dev-build`
@@ -307,6 +323,7 @@ A manual deployment is one where the version is set to an arbitrary string like:
 **Cause**: Previous deployment used arbitrary version string
 
 **Fix**:
+
 ```bash
 npm run sync:production
 ```
@@ -318,7 +335,9 @@ This will redeploy from the latest `origin/main` commit with proper version trac
 **Cause**: `APP_VERSION` environment variable was not set during deployment
 
 **Check**:
+
 1. Verify Cloud Run service environment variables:
+
    ```bash
    gcloud run services describe pre-order-dealer-exchange-tracker \
      --region=us-west1 \
@@ -328,6 +347,7 @@ This will redeploy from the latest `origin/main` commit with proper version trac
 2. Verify the deployment command includes `--set-env-vars=APP_VERSION=...`
 
 **Fix**: Redeploy with proper environment variables:
+
 ```bash
 npm run sync:production
 ```
@@ -337,17 +357,20 @@ npm run sync:production
 **Cause**: Production is behind or ahead of main branch
 
 **Check Difference**:
+
 ```bash
 npm run verify:version
 ```
 
 This will show:
+
 - Current production version
 - Expected version from `origin/main`
 - Number of commits different
 - Commit details
 
 **Fix**: Deploy latest main:
+
 ```bash
 npm run sync:production
 ```
@@ -357,6 +380,7 @@ npm run sync:production
 **Cause**: Trying to deploy with `SHORT_SHA=manual-...`
 
 **Fix**: Use a real git commit SHA:
+
 ```bash
 SHORT_SHA=$(git rev-parse --short HEAD)
 gcloud builds submit --config=cloudbuild.yaml \
@@ -364,6 +388,7 @@ gcloud builds submit --config=cloudbuild.yaml \
 ```
 
 Or better, use the sync script:
+
 ```bash
 npm run sync:production
 ```
@@ -373,21 +398,25 @@ npm run sync:production
 ### ✅ DO
 
 1. **Always deploy from tracked commits**
+
    ```bash
    SHORT_SHA=$(git rev-parse --short HEAD)
    ```
 
 2. **Use the sync script for manual deployments**
+
    ```bash
    npm run sync:production
    ```
 
 3. **Verify version after deployment**
+
    ```bash
    npm run verify:version
    ```
 
 4. **Keep main branch up to date**
+
    ```bash
    git pull origin main
    ```
@@ -399,6 +428,7 @@ npm run sync:production
 ### ❌ DON'T
 
 1. **Never use arbitrary version strings**
+
    ```bash
    # BAD - will be rejected
    SHORT_SHA=manual-$(date +%Y%m%d-%H%M)
@@ -427,6 +457,7 @@ The version tracking system ensures that:
 5. ✅ Deployment history is maintained in git
 
 This provides:
+
 - **Traceability**: Know exactly what code is running
 - **Reproducibility**: Can rebuild any version
 - **Debugging**: Can checkout the exact code to investigate

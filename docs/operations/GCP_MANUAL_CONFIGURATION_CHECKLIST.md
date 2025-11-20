@@ -28,7 +28,7 @@ This checklist contains the manual GCP-side configuration steps required to comp
 
 **Trigger Name**: `vehicle-in-need-deploy`
 
-#### Steps:
+#### Steps
 
 1. [ ] Navigate to [Cloud Build Triggers](https://console.cloud.google.com/cloud-build/triggers)
 2. [ ] Select project: `gen-lang-client-0615287333`
@@ -73,6 +73,7 @@ cd /path/to/vehicle-in-need
 ```
 
 Expected output:
+
 ```
 ✅ No SERVICE_URL in substitutions block (correct)
 ✅ _REGION: us-west1
@@ -90,13 +91,13 @@ Expected output:
 
 This account is used by Cloud Build to deploy to Cloud Run.
 
-#### Required Roles:
+#### Required Roles
 
 1. [ ] `roles/run.admin` - Deploy Cloud Run services
 2. [ ] `roles/iam.serviceAccountUser` - Use Cloud Run runtime service account
 3. [ ] `roles/artifactregistry.writer` - Push images to Artifact Registry
 
-#### Verify Roles:
+#### Verify Roles
 
 ```bash
 # List roles for Cloud Build service account
@@ -106,7 +107,7 @@ gcloud projects get-iam-policy gen-lang-client-0615287333 \
   --format="table(bindings.role)"
 ```
 
-#### Add Missing Roles (if needed):
+#### Add Missing Roles (if needed)
 
 ```bash
 # Add Cloud Run Admin role
@@ -132,12 +133,12 @@ gcloud projects add-iam-policy-binding gen-lang-client-0615287333 \
 
 This account is used by the Cloud Run service at runtime.
 
-#### Required Roles:
+#### Required Roles
 
 1. [ ] `roles/logging.logWriter` - Write logs to Cloud Logging
 2. [ ] `roles/secretmanager.secretAccessor` - Access `vehicle-in-need-gemini` secret
 
-#### Verify Roles:
+#### Verify Roles
 
 ```bash
 # List roles for Cloud Run runtime service account
@@ -147,7 +148,7 @@ gcloud projects get-iam-policy gen-lang-client-0615287333 \
   --format="table(bindings.role)"
 ```
 
-#### Add Missing Roles (if needed):
+#### Add Missing Roles (if needed)
 
 ```bash
 # Add Log Writer role
@@ -175,7 +176,7 @@ gcloud builds submit --config=cloudbuild.yaml \
   --substitutions=_REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=test-$(date +%Y%m%d-%H%M)
 ```
 
-#### Expected Results:
+#### Expected Results
 
 - [ ] Build starts successfully
 - [ ] All build steps complete (check-conflicts, build-image, push-image, push-latest, deploy-cloud-run)
@@ -187,7 +188,7 @@ gcloud builds submit --config=cloudbuild.yaml \
   - [ ] Validates CSS size and content
 - [ ] Build completes with success status
 
-#### View Build Logs:
+#### View Build Logs
 
 1. [ ] Go to [Cloud Build History](https://console.cloud.google.com/cloud-build/builds)
 2. [ ] Find your test build
@@ -199,6 +200,7 @@ gcloud builds submit --config=cloudbuild.yaml \
 Test the automated trigger:
 
 1. [ ] Create a test commit in the repository:
+
    ```bash
    echo "# Test deployment" >> TEST.md
    git add TEST.md
@@ -212,6 +214,7 @@ Test the automated trigger:
    - [ ] Verify it completes successfully
 
 3. [ ] Clean up test file:
+
    ```bash
    git rm TEST.md
    git commit -m "Clean up test file"
@@ -235,7 +238,7 @@ echo "Service URL: $SERVICE_URL"
 curl -I "$SERVICE_URL"
 ```
 
-#### Expected Results:
+#### Expected Results
 
 - [ ] Service URL is returned
 - [ ] HTTP status is 200 OK
@@ -256,6 +259,7 @@ grep -r "substitutions.*SERVICE_URL" .github/workflows/
 Expected: No matches found (or only in comments/error messages).
 
 **GitHub Workflow Status**: The repository's `.github/workflows/build-and-deploy.yml` correctly uses:
+
 ```yaml
 --substitutions=SHORT_SHA=${{ github.sha }},_REGION=${{ env.GCP_REGION }},_SERVICE=${{ env.SERVICE_NAME }}
 ```
@@ -320,7 +324,8 @@ Expected: Secret details should be displayed with at least one version.
 
 **Error**: `Permission denied` or `403 Forbidden` during deployment
 
-**Solution**: 
+**Solution**:
+
 1. Review Step 2 and verify all required roles are assigned
 2. Wait 60 seconds for IAM changes to propagate
 3. Retry the build
@@ -330,11 +335,13 @@ Expected: Secret details should be displayed with at least one version.
 **Error**: `ERROR: No CSS file referenced in index.html` or `ERROR: CSS file returned HTTP 404`
 
 **Potential Causes**:
+
 1. Build process not generating CSS properly
 2. Nginx configuration issue
 3. CSS assets not copied to dist/ directory
 
-**Solution**: 
+**Solution**:
+
 1. Run build locally: `npm run build`
 2. Check dist/ directory for CSS files
 3. Verify nginx.conf serves /assets/ correctly
@@ -345,6 +352,7 @@ Expected: Secret details should be displayed with at least one version.
 If deployment hangs or times out:
 
 1. Check Cloud Run logs for startup errors:
+
    ```bash
    gcloud run services logs read pre-order-dealer-exchange-tracker \
      --region=us-west1 \
@@ -353,6 +361,7 @@ If deployment hangs or times out:
    ```
 
 2. Verify the container starts locally:
+
    ```bash
    docker build -t test-image .
    docker run -p 8080:8080 test-image

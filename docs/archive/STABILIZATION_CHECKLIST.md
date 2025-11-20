@@ -5,6 +5,7 @@ This document provides a reusable template for performing comprehensive stabiliz
 ## Purpose
 
 Use this checklist when:
+
 - CI/CD pipelines are failing
 - Firestore security rules tests are failing
 - Cloud Build deployments are failing
@@ -43,21 +44,26 @@ firebase --version
 ### Basic Quality Gates
 
 - [ ] **Linting passes**
+
   ```bash
   npm run lint
   ```
+
   - If fails: Run `npm run lint:fix` and review changes
   - Check eslint.config.js for any outdated rules
 
 - [ ] **Build succeeds**
+
   ```bash
   npm run build
   ```
+
   - Verify dist/ folder is created
   - Check build output for warnings
   - Verify CSS is properly included in build
 
 - [ ] **Markdown linting passes**
+
   ```bash
   npm run lint:md
   ```
@@ -67,6 +73,7 @@ firebase --version
 ### Test Execution
 
 - [ ] **Run Firestore rules tests**
+
   ```bash
   npm run test:rules
   ```
@@ -74,11 +81,13 @@ firebase --version
 ### Common Firestore Rules Issues
 
 #### Null Safety Issues
+
 - [ ] Check for undefined property access without null checks
 - [ ] Verify `resource.data` and `request.resource.data` existence checks
 - [ ] Ensure `request.auth` and `request.auth.token` null safety
 
 **Pattern to check:**
+
 ```javascript
 // BAD
 resource.data.field
@@ -88,22 +97,26 @@ resource != null && ('field' in resource.data) && resource.data.field
 ```
 
 #### Circular Dependencies with get()
+
 - [ ] Minimize use of `get()` in rules
 - [ ] Consider using custom claims instead of Firestore lookups
 - [ ] Document any remaining `get()` usage with justification
 
 **Recommended pattern:**
+
 ```javascript
 // Instead of: get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isManager
 // Use: request.auth.token.isManager (custom claim)
 ```
 
 #### Field Validation
+
 - [ ] Verify required fields are checked in create rules
 - [ ] Ensure immutable fields cannot be changed in update rules
 - [ ] Check that field types are validated (e.g., `isBool()`, `isString()`)
 
 #### Test Coverage
+
 - [ ] All collections have create/read/update/delete tests
 - [ ] Both positive and negative test cases exist
 - [ ] Manager vs non-manager role differentiation tested
@@ -114,10 +127,12 @@ resource != null && ('field' in resource.data) && resource.data.field
 **Target:** 100% pass rate (42/42 tests for current schema)
 
 **Known Architectural Limitations (may cause occasional flakiness):**
+
 - Manager reading other users via client-side queries (requires server-side)
 - Emulator timing issues with complex get() chains
 
 **Action if tests fail:**
+
 1. Identify which collection/operation is failing
 2. Review the specific rule and test
 3. Fix rule or test (never weaken security just to pass tests)
@@ -135,6 +150,7 @@ resource != null && ('field' in resource.data) && resource.data.field
   - Service account permissions documented
 
 - [ ] **Check substitutions block**
+
   ```yaml
   substitutions:
     _REGION: us-west1
@@ -151,23 +167,28 @@ resource != null && ('field' in resource.data) && resource.data.field
 ### Common Cloud Build Issues
 
 #### Invalid Substitutions
+
 **Error:** `invalid value for 'build.substitutions': key in the template "SERVICE_URL" is not a valid built-in substitution`
 
 **Fix:**
+
 - Custom substitutions MUST start with `_`
 - Remove `SERVICE_URL` from trigger if present
 - Use `_SERVICE_URL` if needed, or compute dynamically in script
 
 #### CSS Verification Failures
+
 **Error:** CSS file not accessible or contains no Tailwind classes
 
 **Check:**
+
 - [ ] Build includes CSS file in dist/assets/
 - [ ] index.html references CSS file correctly
 - [ ] CSS contains Tailwind utility classes
 - [ ] Nginx serves static assets correctly
 
 #### Service Account Permissions
+
 - [ ] Cloud Build service account has `roles/run.admin`
 - [ ] Cloud Build service account has `roles/iam.serviceAccountUser`
 - [ ] Runtime service account has `roles/secretmanager.secretAccessor`
@@ -175,6 +196,7 @@ resource != null && ('field' in resource.data) && resource.data.field
 ### Build Test (Local)
 
 - [ ] **Test build configuration locally**
+
   ```bash
   # Validate YAML syntax
   cat cloudbuild.yaml | grep -E '<<<|===|>>>' || echo "No conflicts"
@@ -204,17 +226,20 @@ resource != null && ('field' in resource.data) && resource.data.field
 ### Common CI Issues
 
 #### Dependency Installation
+
 - [ ] Verify package-lock.json is committed
 - [ ] Check for peer dependency warnings
 - [ ] Ensure correct Node version in CI (match .nvmrc)
 
 #### Test Failures in CI but not Local
+
 - [ ] Check for environment-specific issues
 - [ ] Verify Firebase emulator starts correctly
 - [ ] Look for timing/concurrency issues
 - [ ] Check if tests run in correct order
 
 #### Secrets and Credentials
+
 - [ ] GitHub secrets configured correctly
 - [ ] Service account keys not committed
 - [ ] API keys in Secret Manager, not code
@@ -231,12 +256,14 @@ resource != null && ('field' in resource.data) && resource.data.field
 ### Migration Steps
 
 - [ ] **Create helper script for setting claims**
+
   ```javascript
   // scripts/set-manager-custom-claims.mjs
   await admin.auth().setCustomUserClaims(uid, { isManager: true });
   ```
 
 - [ ] **Update Firestore rules to use claims**
+
   ```javascript
   // Before:
   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isManager == true
@@ -251,6 +278,7 @@ resource != null && ('field' in resource.data) && resource.data.field
   - UI uses Firestore field for display
 
 - [ ] **Set claims for production managers**
+
   ```bash
   node scripts/set-manager-custom-claims.mjs \
     --project vehicles-in-need \
@@ -297,16 +325,19 @@ resource != null && ('field' in resource.data) && resource.data.field
 ### Deployment Steps
 
 1. **Deploy Firestore Rules**
+
    ```bash
    firebase deploy --only firestore:rules --project vehicles-in-need
    ```
 
 2. **Deploy Firestore Indexes**
+
    ```bash
    firebase deploy --only firestore:indexes --project vehicles-in-need
    ```
 
 3. **Build and Deploy Application**
+
    ```bash
    gcloud builds submit --config cloudbuild.yaml \
      --substitutions _REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker
@@ -386,11 +417,13 @@ npm run test:rules
 **Symptom:** `Property isManager is undefined on object`
 
 **Causes:**
+
 - Accessing field without checking existence
 - Using `get()` on non-existent document
 - Missing null checks
 
 **Solution:**
+
 ```javascript
 // Always check existence first
 ('isManager' in request.auth.token) && request.auth.token.isManager == true
@@ -401,6 +434,7 @@ npm run test:rules
 **Symptom:** `fatal: origin/main...HEAD: no merge base`
 
 **Solution:**
+
 - Use `fetch-depth: 0` in checkout action
 - Use commit SHAs instead of branch refs for diff
 
@@ -409,6 +443,7 @@ npm run test:rules
 **Symptom:** Tests hang during `firebase emulators:exec`
 
 **Solution:**
+
 - Kill any existing emulator processes
 - Clear emulator data: `rm -rf ~/.config/firebase/emulators/`
 - Restart with explicit ports
@@ -419,6 +454,7 @@ npm run test:rules
 **Symptom:** Build times out after 10 minutes
 
 **Solution:**
+
 - Increase timeout in cloudbuild.yaml: `timeout: 1200s`
 - Check for hanging processes in build steps
 - Optimize build steps (caching, parallel execution)
@@ -426,12 +462,14 @@ npm run test:rules
 ## Reference Links
 
 ### Internal Documentation
+
 - STABILIZATION_COMPLETE.md - Last stabilization report
 - FIRESTORE_RULES_STATUS.md - Rules implementation details
 - CLOUD_BUILD_TRIGGER_FIX.md - Trigger configuration guide
 - OPERATOR_DEPLOYMENT_GUIDE.md - Production deployment steps
 
 ### External Resources
+
 - [Firestore Security Rules](https://firebase.google.com/docs/firestore/security/get-started)
 - [Cloud Build Substitutions](https://cloud.google.com/build/docs/configuring-builds/substitute-variable-values)
 - [Firebase Custom Claims](https://firebase.google.com/docs/auth/admin/custom-claims)

@@ -13,6 +13,7 @@ This PR comprehensively addresses failing CI workflows and provides complete doc
 **Root Cause**: The workflow attempted to use pnpm caching before pnpm was installed, creating a chicken-and-egg problem.
 
 **Solution**: Reordered workflow steps to:
+
 1. Enable corepack
 2. Install pnpm via corepack
 3. Setup Node.js with pnpm caching
@@ -26,7 +27,8 @@ This PR comprehensively addresses failing CI workflows and provides complete doc
 
 **Root Cause**: `server/index.cjs` performs CSS file validation on startup, which is inappropriate for test environments where no build artifacts exist.
 
-**Solution**: 
+**Solution**:
+
 - Added environment variable check to skip CSS validation when `NODE_ENV=test` or `VITEST` is set
 - Updated `vitest.setup.ts` to set `NODE_ENV=test` for all test runs
 - Maintains production safety while enabling tests to run
@@ -38,6 +40,7 @@ This PR comprehensively addresses failing CI workflows and provides complete doc
 **Problem**: No comprehensive documentation for MCP servers configuration
 
 **Root Cause**: While an example configuration existed, there was no detailed documentation explaining:
+
 - What each server does
 - How to configure them
 - Environment requirements
@@ -45,6 +48,7 @@ This PR comprehensively addresses failing CI workflows and provides complete doc
 - Security considerations
 
 **Solution**: Created two comprehensive documentation files:
+
 1. `mcp-servers-config.json` - Complete JSON configuration with inline documentation
 2. `CI_AND_MCP_DOCUMENTATION.md` - Detailed guide with examples and troubleshooting
 
@@ -53,15 +57,18 @@ This PR comprehensively addresses failing CI workflows and provides complete doc
 ## Files Changed
 
 ### CI Workflow Fixes
+
 - `.github/workflows/ci-pnpm.yml` - Reordered steps for proper pnpm installation
 - `server/index.cjs` - Added test environment detection
 - `vitest.setup.ts` - Set NODE_ENV for tests
 
 ### Documentation Added
+
 - `mcp-servers-config.json` - Complete MCP server configuration (112 lines)
 - `CI_AND_MCP_DOCUMENTATION.md` - Comprehensive guide (218 lines)
 
 ### Documentation Updated (Auto-formatted)
+
 - Various markdown files auto-fixed for linting compliance
 
 ## MCP Server Documentation
@@ -69,18 +76,21 @@ This PR comprehensively addresses failing CI workflows and provides complete doc
 ### Servers Documented
 
 #### 1. GitHub MCP Server
+
 - **Purpose**: GitHub repository, issue, PR, and workflow operations
 - **Command**: `gh mcp server`
 - **Setup**: Requires GitHub CLI authentication
 - **Capabilities**: Repository ops, issue management, PR management, workflow operations, code search
 
 #### 2. Playwright MCP Server
+
 - **Purpose**: Browser automation and testing
 - **Command**: `npx -y @microsoft/mcp-playwright stdio`
 - **Setup**: Auto-installs via npx
 - **Capabilities**: Browser navigation, element interaction, screenshots, console/network monitoring
 
 #### 3. Firebase-v5 MCP Server (Custom)
+
 - **Purpose**: Firebase operations for this project
 - **Command**: `node ./mcp/firebase-v5/index.mjs`
 - **Setup**: Requires service account JSON and project ID
@@ -93,6 +103,7 @@ This PR comprehensively addresses failing CI workflows and provides complete doc
 ## Testing Performed
 
 ### Unit Tests
+
 ```
 ✓ All 58 tests passing across 13 test files
 ✓ Server tests now work without dist directory
@@ -100,6 +111,7 @@ This PR comprehensively addresses failing CI workflows and provides complete doc
 ```
 
 ### Build Verification
+
 ```
 ✓ npm run build successful
 ✓ CSS verification working
@@ -107,6 +119,7 @@ This PR comprehensively addresses failing CI workflows and provides complete doc
 ```
 
 ### Code Quality
+
 ```
 ✓ ESLint: 0 errors
 ✓ Markdown linting: New files compliant
@@ -114,6 +127,7 @@ This PR comprehensively addresses failing CI workflows and provides complete doc
 ```
 
 ### Workflow Verification
+
 ```
 ✓ ci-pnpm.yml: Steps execute in correct order
 ✓ All other workflows: Unaffected, working as expected
@@ -122,11 +136,13 @@ This PR comprehensively addresses failing CI workflows and provides complete doc
 ## Security Summary
 
 ### CodeQL Analysis
+
 - **Actions**: 0 vulnerabilities
 - **JavaScript**: 0 vulnerabilities
 - **Total**: No security issues found
 
 ### Security Improvements
+
 1. Added documentation for secure service account handling
 2. Emphasized least-privilege principles for Firebase access
 3. Documented that MCP servers are development tools only
@@ -134,6 +150,7 @@ This PR comprehensively addresses failing CI workflows and provides complete doc
 ## Documentation Quality
 
 ### Coverage
+
 - ✅ Complete setup instructions for all MCP servers
 - ✅ Environment variable requirements documented
 - ✅ Troubleshooting guides for common issues
@@ -142,6 +159,7 @@ This PR comprehensively addresses failing CI workflows and provides complete doc
 - ✅ Reference links to official documentation
 
 ### Accessibility
+
 - ✅ Clear problem/solution structure
 - ✅ Code examples with syntax highlighting
 - ✅ Step-by-step instructions
@@ -153,13 +171,16 @@ This PR comprehensively addresses failing CI workflows and provides complete doc
 ### Risk Level: **LOW**
 
 **Rationale**:
+
 - Changes only affect CI/CD workflows and test environment
 - No production code changes
 - No API or database changes
 - All changes are backwards compatible
 
 ### Rollback Plan
+
 If issues arise:
+
 1. Revert workflow changes via Git
 2. Tests will still pass (they were fixed)
 3. Documentation has no impact on runtime
@@ -167,11 +188,13 @@ If issues arise:
 ## Recommendations
 
 ### Immediate
+
 - ✅ Merge this PR
 - ✅ Monitor first CI run on main branch
 - ✅ Share MCP documentation with team
 
 ### Future Improvements
+
 1. **Workflow Consolidation**: Consider consolidating ci.yml and ci-pnpm.yml if both package managers aren't needed
 2. **Lockfile**: Add pnpm-lock.yaml for reproducible builds
 3. **Emulator Caching**: Add Firebase emulator caching to rules-tests.yml

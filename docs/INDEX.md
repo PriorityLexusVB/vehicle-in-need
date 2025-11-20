@@ -12,12 +12,14 @@ This directory contains operational documentation for the Pre-Order & Dealer Exc
 These are current, maintained operational guides:
 
 ### Cloud Build & Deployment
+
 - [`operations/CLOUD_BUILD_TRIGGER_RUNBOOK.md`](operations/CLOUD_BUILD_TRIGGER_RUNBOOK.md) - Cloud Build trigger configuration and troubleshooting
 - [`operations/CLOUD_RUN_DEPLOYMENT_RUNBOOK.md`](operations/CLOUD_RUN_DEPLOYMENT_RUNBOOK.md) - Cloud Run deployment procedures
 - [`operations/DEPLOYMENT_CHECKLIST.md`](operations/DEPLOYMENT_CHECKLIST.md) - Pre-deployment verification checklist
 - [`operations/GCP_MANUAL_CONFIGURATION_CHECKLIST.md`](operations/GCP_MANUAL_CONFIGURATION_CHECKLIST.md) - GCP project setup and configuration
 
 ### Build System
+
 - [`operations/TAILWIND_CSS_SAFEGUARDS.md`](operations/TAILWIND_CSS_SAFEGUARDS.md) - Tailwind CSS build safeguards and verification
 
 ## Development Documentation
@@ -72,6 +74,7 @@ When adding new documentation:
 4. **Archived materials** go in `docs/archive/`
 
 Keep documentation:
+
 - **Current** - Remove or archive outdated information
 - **Focused** - One topic per document
 - **Actionable** - Include clear steps and examples

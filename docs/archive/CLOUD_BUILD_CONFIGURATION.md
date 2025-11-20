@@ -21,11 +21,13 @@ The trigger should be configured with only these substitution variables:
 ### Custom vs Built-in Substitutions
 
 **Custom substitutions** (user-defined):
+
 - MUST start with underscore (`_`)
 - Examples: `_REGION`, `_SERVICE`
 - Can have default values in `cloudbuild.yaml`
 
 **Built-in substitutions** (Cloud Build provided):
+
 - Do NOT start with underscore
 - Examples: `PROJECT_ID`, `SHORT_SHA`, `BUILD_ID`
 - Automatically available in all builds
@@ -33,6 +35,7 @@ The trigger should be configured with only these substitution variables:
 ### What NOT to Add
 
 **DO NOT add** `SERVICE_URL` or `_SERVICE_URL` as substitutions:
+
 - These are NOT Cloud Build substitution variables
 - `SERVICE_URL` is a bash variable dynamically computed at runtime
 - It's retrieved after deployment using: `gcloud run services describe`
@@ -82,6 +85,7 @@ The `cloudbuild.yaml` defines these steps:
 ### Cloud Build Service Account
 
 `cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com` needs:
+
 - `roles/run.admin` - Deploy Cloud Run services
 - `roles/iam.serviceAccountUser` - Impersonate runtime service account
 - `roles/artifactregistry.writer` - Push container images
@@ -89,6 +93,7 @@ The `cloudbuild.yaml` defines these steps:
 ### Cloud Run Runtime Service Account
 
 `pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com` needs:
+
 - `roles/logging.logWriter` - Write application logs
 - `roles/secretmanager.secretAccessor` - Access Gemini API key secret
 
@@ -97,11 +102,13 @@ The `cloudbuild.yaml` defines these steps:
 ### Common Errors
 
 **Error: "invalid value for 'build.substitutions': key in the template 'SERVICE_URL'"**
+
 - **Cause**: `SERVICE_URL` was added as a substitution variable
 - **Fix**: Remove `SERVICE_URL` or `_SERVICE_URL` from trigger configuration
 - **Details**: See [CLOUD_BUILD_FIX.md](./CLOUD_BUILD_FIX.md)
 
 **Error: Build fails to find service**
+
 - **Cause**: Incorrect `_SERVICE` or `_REGION` values
 - **Fix**: Verify service name and region match actual Cloud Run configuration
 

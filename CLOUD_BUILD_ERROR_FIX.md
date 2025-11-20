@@ -42,6 +42,7 @@ cd vehicle-in-need
 ```
 
 The script will:
+
 - ✅ Verify that service accounts exist (create runtime SA if missing)
 - ✅ Grant Cloud Run Admin to Cloud Build SA
 - ✅ Grant Artifact Registry Writer to Cloud Build SA
@@ -52,7 +53,7 @@ The script will:
 
 #### Step 1: Navigate to IAM & Admin
 
-1. Go to: https://console.cloud.google.com/iam-admin/iam?project=gen-lang-client-0615287333
+1. Go to: <https://console.cloud.google.com/iam-admin/iam?project=gen-lang-client-0615287333>
 2. Search for service account: `cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com`
 
 #### Step 2: Grant Permissions to Cloud Build Service Account
@@ -69,7 +70,7 @@ Add the following roles to `cloud-build-deployer@gen-lang-client-0615287333.iam.
 
 This is the most critical step that fixes the `PERMISSION_DENIED: Permission 'iam.serviceaccounts.actAs' denied` error:
 
-1. Go to: https://console.cloud.google.com/iam-admin/serviceaccounts?project=gen-lang-client-0615287333
+1. Go to: <https://console.cloud.google.com/iam-admin/serviceaccounts?project=gen-lang-client-0615287333>
 2. Find service account: `pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com`
 3. Click on the service account email
 4. Go to the **PERMISSIONS** tab
@@ -88,7 +89,7 @@ For `pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccoun
 
 For the secret `vehicle-in-need-gemini`:
 
-1. Go to: https://console.cloud.google.com/security/secret-manager?project=gen-lang-client-0615287333
+1. Go to: <https://console.cloud.google.com/security/secret-manager?project=gen-lang-client-0615287333>
 2. Click on secret: `vehicle-in-need-gemini`
 3. Go to **PERMISSIONS** tab
 4. Click **GRANT ACCESS**
@@ -154,6 +155,7 @@ gcloud projects get-iam-policy gen-lang-client-0615287333 \
 ```
 
 **Expected output should include**:
+
 - `roles/run.admin`
 - `roles/artifactregistry.writer`
 - `roles/cloudbuild.builds.editor`
@@ -167,6 +169,7 @@ gcloud iam service-accounts get-iam-policy \
 ```
 
 **Expected output should show**:
+
 ```yaml
 bindings:
 - members:
@@ -184,6 +187,7 @@ gcloud projects get-iam-policy gen-lang-client-0615287333 \
 ```
 
 **Expected output should include**:
+
 - `roles/logging.logWriter`
 
 ### 4. Verify Secret Access
@@ -194,6 +198,7 @@ gcloud secrets get-iam-policy vehicle-in-need-gemini \
 ```
 
 **Expected output should show**:
+
 ```yaml
 bindings:
 - members:
@@ -216,7 +221,7 @@ git push origin main
 ```
 
 Then monitor the build at:
-https://console.cloud.google.com/cloud-build/builds?project=gen-lang-client-0615287333
+<https://console.cloud.google.com/cloud-build/builds?project=gen-lang-client-0615287333>
 
 ### Option 2: Manual Cloud Build Submit
 
@@ -266,7 +271,8 @@ gcloud iam service-accounts create pre-order-dealer-exchange-860 \
 
 **Symptom**: Cannot run `gcloud` IAM commands
 
-**Solution**: 
+**Solution**:
+
 1. Verify you're authenticated: `gcloud auth list`
 2. Ensure you have Owner or Security Admin role
 3. Request access from project administrator if needed
@@ -276,6 +282,7 @@ gcloud iam service-accounts create pre-order-dealer-exchange-860 \
 **Symptom**: Build still fails after applying permissions
 
 **Solution**:
+
 1. **Wait 1-2 minutes** for IAM changes to propagate
 2. Verify all permissions were applied using the verification commands above
 3. Check that you applied permissions to the correct service accounts (watch for typos)
@@ -286,6 +293,7 @@ gcloud iam service-accounts create pre-order-dealer-exchange-860 \
 **Symptom**: Build fails with a different error message
 
 **Solution**:
+
 1. Check the Cloud Build logs for the specific error
 2. Common secondary issues:
    - **Artifact Registry repository doesn't exist**: Create it or verify the name
@@ -341,11 +349,13 @@ This repository includes automated checks to prevent configuration issues:
 ### CI/CD Checks
 
 Every PR runs:
+
 ```bash
 npm run lint:cloudbuild
 ```
 
 This verifies:
+
 - ✅ No SERVICE_URL in Cloud Build substitutions
 - ✅ Valid YAML syntax
 - ✅ No conflict markers in source code
@@ -353,6 +363,7 @@ This verifies:
 ### Local Development
 
 Before committing, run:
+
 ```bash
 npm run lint
 npm run lint:cloudbuild
@@ -375,7 +386,7 @@ npm test
 If you continue to experience issues after following this guide:
 
 1. **Check the actual error message** in Cloud Build logs:
-   - https://console.cloud.google.com/cloud-build/builds?project=gen-lang-client-0615287333
+   - <https://console.cloud.google.com/cloud-build/builds?project=gen-lang-client-0615287333>
    - Look for specific permission or resource errors
 
 2. **Run the verification commands** in the "Verification" section above to ensure all permissions are correctly configured
@@ -385,6 +396,7 @@ If you continue to experience issues after following this guide:
 4. **Wait 1-2 minutes** after making IAM changes before retrying the build (IAM changes can take time to propagate)
 
 5. **Check for API enablement**: Ensure these APIs are enabled:
+
    ```bash
    gcloud services list --project=gen-lang-client-0615287333 | grep -E "(run|artifactregistry|cloudbuild|secretmanager)"
    ```

@@ -7,18 +7,23 @@ This PR finalizes the Cloud Build trigger configuration and documentation, ensur
 ## Changes Made
 
 ### 1. cloudbuild.yaml
+
 **Removed unused substitution:**
+
 - Removed `_SERVICE_URL` substitution that was defined but never used
 - The actual `SERVICE_URL` is dynamically generated as a bash variable at runtime
 
 **Added comprehensive documentation:**
+
 - Clear explanation that custom substitutions MUST start with underscore (_)
 - Documented distinction between custom and built-in substitutions
 - Updated usage examples to show only valid substitutions
 - Added note that SERVICE_URL is NOT a substitution variable
 
 ### 2. CLOUD_BUILD_FIX.md
+
 **Complete rewrite for clarity:**
+
 - Aligned with correct approach (no SERVICE_URL substitution)
 - Added clear table of valid substitution variables
 - Provided step-by-step console configuration instructions
@@ -26,7 +31,9 @@ This PR finalizes the Cloud Build trigger configuration and documentation, ensur
 - Explained why SERVICE_URL should not be added
 
 ### 3. CLOUD_BUILD_CONFIGURATION.md (NEW)
+
 **Created authoritative reference:**
+
 - Comprehensive table of all substitution variables (custom and built-in)
 - Clear distinction between variable types
 - Step-by-step trigger configuration guide
@@ -55,6 +62,7 @@ All Firestore rules tests passing: **42/42 ✅**
 ### Security Model Summary
 
 **Users Collection:**
+
 - ✅ Self-escalation prevention (users cannot grant themselves manager role)
 - ✅ Email integrity (must match auth token)
 - ✅ Role immutability (users cannot change their own role)
@@ -62,6 +70,7 @@ All Firestore rules tests passing: **42/42 ✅**
 - ✅ Deletion blocked from client
 
 **Orders Collection:**
+
 - ✅ Ownership enforcement (createdByUid, createdByEmail required)
 - ✅ Owner read access (can read own orders)
 - ✅ Manager read access (can read all orders)
@@ -70,11 +79,13 @@ All Firestore rules tests passing: **42/42 ✅**
 - ✅ Manager-only deletion
 
 ### Null-Safety
+
 All rules properly check `resource != null` before accessing fields, preventing evaluation errors when documents don't exist.
 
 ## Test Results
 
 All tests passing:
+
 ```
 ✅ npm run lint: Clean
 ✅ npm run test:rules: 42/42 tests passing
