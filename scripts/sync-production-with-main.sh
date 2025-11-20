@@ -154,8 +154,8 @@ if [ "$BUILD_STATUS" = "SUCCESS" ]; then
     
     echo ""
     echo -e "${GREEN}Next steps:${NC}"
-    echo -e "  1. Verify deployment: ${BOLD}npm run verify:production${NC}"
-    echo -e "  2. Check version parity: ${BOLD}npm run verify:parity${NC}"
+    echo -e "  1. Verify deployment: ${BOLD}npm run verify:deployment${NC}"
+    echo -e "  2. Check version match: ${BOLD}npm run verify:version${NC}"
     echo -e "  3. Test the application: ${BOLD}$SERVICE_URL${NC}"
     
 elif [ "$BUILD_STATUS" = "FAILURE" ]; then

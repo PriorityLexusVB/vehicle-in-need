@@ -41,7 +41,7 @@ A new validation step (`validate-version`) runs before building the Docker image
       fi
       
       # Warn if not standard git SHA format
-      if ! [[ "${SHORT_SHA}" =~ ^[a-f0-9]{7,40}$ ]]; then
+      if ! [[ "${SHORT_SHA}" =~ ^[a-fA-F0-9]{7,40}$ ]]; then
         echo "⚠️  WARNING: SHORT_SHA does not match standard git commit format"
       fi
 ```

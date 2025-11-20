@@ -58,7 +58,6 @@ function logHeader(message) {
 // Configuration
 const SERVICE_NAME = 'pre-order-dealer-exchange-tracker';
 const REGION = 'us-west1';
-const PROJECT_ID = 'gen-lang-client-0615287333';
 const PRODUCTION_URL = `https://${SERVICE_NAME}-842946218691.${REGION}.run.app`;
 
 // Get expected commit SHA from argument or from git

@@ -116,7 +116,7 @@ if [ -n "$STATUS_JSON" ] && [ "$STATUS_JSON" != "{}" ]; then
         check "fail" "Version shows MANUAL DEPLOYMENT: $PROD_VERSION"
     elif [ "$PROD_VERSION" = "unknown" ]; then
         check "fail" "Version is unknown (APP_VERSION not set)"
-    elif [[ "$PROD_VERSION" =~ ^[a-f0-9]{7,40}$ ]]; then
+    elif [[ "$PROD_VERSION" =~ ^[a-fA-F0-9]{7,40}$ ]]; then
         check "pass" "Version format is valid git commit SHA"
         
         # Check if matches expected

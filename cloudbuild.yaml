@@ -84,7 +84,7 @@ steps:
         fi
         
         # Validate format is alphanumeric (typical git SHA format)
-        if ! [[ "${SHORT_SHA}" =~ ^[a-f0-9]{7,40}$ ]]; then
+        if ! [[ "${SHORT_SHA}" =~ ^[a-fA-F0-9]{7,40}$ ]]; then
           echo "⚠️  WARNING: SHORT_SHA does not match standard git commit format"
           echo "   SHORT_SHA: ${SHORT_SHA}"
           echo "   Expected: 7-40 character hexadecimal string"
@@ -286,12 +286,11 @@ steps:
           echo "✅ Version verification passed!"
           echo "   Deployed version matches commit SHA: ${SHORT_SHA}"
         else
-          echo "⚠️  WARNING: Version mismatch detected"
+          echo "❌ ERROR: Version mismatch detected"
           echo "   Deployed: $DEPLOYED_VERSION"
           echo "   Expected: ${SHORT_SHA}"
-          echo "   This may indicate a deployment issue"
-          # Note: We don't fail here as the version might take a moment to update
-          # The version check will be caught by post-deployment verification
+          echo "   This indicates the deployment did not set APP_VERSION correctly"
+          exit 1
         fi
         
         echo ""
