@@ -408,7 +408,7 @@ ERROR: Permission 'iam.serviceaccounts.actAs' denied
    - **CI/CD (Recommended)**: Cloud Build trigger `vehicle-in-need-deploy` automatically builds and deploys on push to `main`
    - **Manual**: Use the `gcloud builds submit` command above for testing or emergency deployments
    - **Never use**: `SERVICE_URL` as a Cloud Build substitution variable (it's retrieved dynamically at runtime)
-   
+
    See [GCP_MANUAL_CONFIGURATION_CHECKLIST.md](./GCP_MANUAL_CONFIGURATION_CHECKLIST.md) for complete Cloud Build trigger setup.
 
 4. **Deploy with client-side API key (optional):**
@@ -826,6 +826,25 @@ If production is serving an outdated bundle:
 - **Verify Trigger:** Run `npm run cloudbuild:verify-trigger` to check a specific trigger configuration
 - **Prevention:** Run `npm run lint:cloudbuild` to check for SERVICE_URL misuse (runs automatically in CI)
 - **Complete GCP Setup:** See [GCP_MANUAL_CONFIGURATION_CHECKLIST.md](./GCP_MANUAL_CONFIGURATION_CHECKLIST.md) for full IAM and trigger configuration
+
+### Problem: Cloud Build IAM permission errors
+
+- **Error:** `PERMISSION_DENIED: Permission 'iam.serviceaccounts.actAs' denied` or other permission errors
+- **Cause:** Missing IAM permissions for Cloud Build or runtime service accounts
+- **Comprehensive Fix Guide:** See [CLOUD_BUILD_ERROR_FIX.md](./CLOUD_BUILD_ERROR_FIX.md) for complete step-by-step instructions
+- **Quick Diagnosis:** Run `./scripts/diagnose-cloud-build-error.sh [BUILD_ID]` to analyze the issue
+- **Automated Fix:** Run `./scripts/setup-iam-permissions.sh --execute` to configure all required permissions
+- **Most Common Fix:** Grant actAs permission to Cloud Build SA:
+
+  ```bash
+  gcloud iam service-accounts add-iam-policy-binding \
+    pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com \
+    --member="serviceAccount:cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com" \
+    --role="roles/iam.serviceAccountUser" \
+    --project="gen-lang-client-0615287333"
+  ```
+
+- **Manual Fix:** See [QUICK_IAM_FIX.md](./docs/archive/QUICK_IAM_FIX.md) for individual commands
 
 See [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md) for comprehensive deployment procedures.
 

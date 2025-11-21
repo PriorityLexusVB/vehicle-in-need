@@ -18,6 +18,7 @@ The error occurred because `SERVICE_URL` was incorrectly configured as a Cloud B
    - Start with an underscore (`_`) for custom variables (e.g., `_REGION`, `_SERVICE`)
 
 2. **`SERVICE_URL` is NOT a substitution** - it's a bash variable dynamically generated at runtime within the `verify-css-deployed` step:
+
    ```bash
    SERVICE_URL=$(gcloud run services describe ${_SERVICE} \
      --region=${_REGION} \
@@ -31,6 +32,7 @@ The error occurred because `SERVICE_URL` was incorrectly configured as a Cloud B
 The repository configuration has been updated:
 
 1. **cloudbuild.yaml** uses only valid substitutions:
+
    ```yaml
    substitutions:
      _REGION: us-west1

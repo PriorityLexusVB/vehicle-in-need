@@ -69,6 +69,7 @@ Verifying CSS file is accessible: https://[service-url]/assets/index-[hash].css
 ### 3. What Would Indicate a Problem
 
 ❌ **Error indicators**:
+
 - `❌ ERROR: Could not fetch index.html` - Service not responding
 - `❌ ERROR: No CSS file referenced in index.html` - Build didn't generate CSS reference
 - `❌ ERROR: CSS file returned HTTP 404` - CSS file not deployed or wrong path
@@ -88,6 +89,7 @@ SERVICE_URL=$(gcloud run services describe ${_SERVICE} ...)
 ```
 
 In the logs, you should see:
+
 1. The substitutions passed to Cloud Build (should NOT include SERVICE_URL)
 2. The `verify-css-deployed` step retrieving SERVICE_URL via gcloud command
 3. SERVICE_URL being used in subsequent curl commands
@@ -97,10 +99,12 @@ In the logs, you should see:
 The current `cloudbuild.yaml` now has **more robust CSS verification**:
 
 ### Pattern Matching
+
 - **Old**: Only matched `/assets/index-*.css`
 - **New**: Matches `/assets/*.css` OR `/static/*.css`
 
 ### Tailwind Detection
+
 - **Old**: Hard fail if no `tw-` prefix found
 - **New**: Also accepts `tailwind` or `@tailwind` markers
 - **New**: Warning instead of failure for edge cases
@@ -168,16 +172,19 @@ substitutions:
 ## Runtime Behavior to Verify
 
 ### 1. Deployment Process
+
 - Cloud Run service gets updated with new image
 - Service URL remains stable (same domain)
 - New revision is created and becomes primary
 
 ### 2. CSS Accessibility
+
 - CSS file is served with correct Content-Type: `text/css`
 - CSS file is cacheable (has cache headers)
 - CSS file contains expected Tailwind utility classes
 
 ### 3. Application Behavior
+
 - Index.html references the hashed CSS file
 - Browser loads CSS successfully
 - No console errors about missing CSS

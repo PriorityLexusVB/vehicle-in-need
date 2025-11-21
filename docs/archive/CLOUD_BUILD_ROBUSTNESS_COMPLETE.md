@@ -11,6 +11,7 @@ This document confirms that all requested robustness improvements have been impl
 **File**: `scripts/check-cloudbuild-service-url.sh`
 
 **What it does**:
+
 - ✅ Checks `cloudbuild.yaml` for SERVICE_URL in substitutions block
 - ✅ Scans all shell scripts for `--substitutions=SERVICE_URL`
 - ✅ Scans GitHub workflows for SERVICE_URL misuse
@@ -19,6 +20,7 @@ This document confirms that all requested robustness improvements have been impl
 - ✅ Exits with code 0 if valid, 1 if issues found
 
 **Usage**:
+
 ```bash
 # Run directly
 ./scripts/check-cloudbuild-service-url.sh
@@ -30,6 +32,7 @@ npm run lint:cloudbuild
 ```
 
 **Test Results**:
+
 ```
 ✅ cloudbuild.yaml is valid
 ✅ No SERVICE_URL in substitutions block
@@ -42,6 +45,7 @@ SERVICE_URL is correctly used only as a runtime bash variable.
 **File**: `.github/workflows/ci.yml`
 
 **Changes**:
+
 - Added `npm run lint:cloudbuild` to lint job
 - Renamed lint job to "Lint (ESLint + Markdown + Cloud Build)"
 - Runs on every PR to main branch
@@ -51,6 +55,7 @@ SERVICE_URL is correctly used only as a runtime bash variable.
 ### 3. Enhanced cloudbuild.yaml
 
 **Changes**:
+
 - ✅ Added prominent warnings in substitutions section
 - ✅ Explained why SERVICE_URL cannot be a substitution
 - ✅ Enhanced CSS verification to support more path patterns
@@ -58,6 +63,7 @@ SERVICE_URL is correctly used only as a runtime bash variable.
 - ✅ Clearer comments throughout
 
 **Key additions**:
+
 ```yaml
 # ⚠️ CRITICAL: SERVICE_URL is NOT a substitution variable!
 # - SERVICE_URL does not exist until AFTER Cloud Run deployment completes
@@ -69,7 +75,8 @@ SERVICE_URL is correctly used only as a runtime bash variable.
 
 ### 4. Comprehensive Documentation
 
-#### New Documents:
+#### New Documents
+
 - **`GCP_MANUAL_CONFIGURATION_CHECKLIST.md`** - Complete GCP-side setup guide
   - Cloud Build trigger configuration
   - IAM roles for both service accounts
@@ -82,7 +89,8 @@ SERVICE_URL is correctly used only as a runtime bash variable.
   - Common issues and their signatures
   - Testing procedures
 
-#### Updated Documents:
+#### Updated Documents
+
 - **`CLOUD_BUILD_SERVICE_URL_FIX.md`**
   - Added canonical deployment flows
   - Added IAM requirements
@@ -107,6 +115,7 @@ SERVICE_URL is correctly used only as a runtime bash variable.
 **Added**: `"lint:cloudbuild": "bash scripts/check-cloudbuild-service-url.sh"`
 
 **Full lint suite**:
+
 ```bash
 npm run lint              # ESLint
 npm run lint:md           # Markdown
@@ -116,35 +125,44 @@ npm run lint:cloudbuild   # Cloud Build config ✨ NEW
 ### 6. Verification of Existing Code
 
 **GitHub Workflows**: ✅ Clean
+
 - `.github/workflows/build-and-deploy.yml` correctly uses:
   - `--substitutions=SHORT_SHA=...,_REGION=...,_SERVICE=...`
   - No SERVICE_URL in substitutions ✅
   - SERVICE_URL retrieved as bash variable during verification ✅
 
 **Shell Scripts**: ✅ Clean
+
 - No scripts misuse SERVICE_URL as a substitution
 - All existing usage is correct (bash variable retrieval)
 
 **Documentation**: ✅ Clean
+
 - Examples of SERVICE_URL as substitution only appear in "WRONG" or "ERROR" contexts
 - All guidance is correct
 
 ## 🛡️ Three Layers of Protection
 
 ### Layer 1: Static Analysis
+
 **Script**: `scripts/check-cloudbuild-service-url.sh`
+
 - Runs locally before commits
 - Catches misuse immediately
 - Clear error messages
 
 ### Layer 2: Automated CI
+
 **Workflow**: `.github/workflows/ci.yml`
+
 - Runs on every PR
 - Blocks merge if check fails
 - Provides feedback in PR checks
 
 ### Layer 3: Documentation
+
 **Files**: Multiple comprehensive guides
+
 - Clear warnings in code comments
 - Detailed explanation documents
 - Step-by-step checklists
@@ -251,20 +269,24 @@ grep -A 5 "CRITICAL" cloudbuild.yaml
 ## 📚 Complete Documentation Index
 
 ### Primary Guides
+
 1. **[GCP_MANUAL_CONFIGURATION_CHECKLIST.md](./GCP_MANUAL_CONFIGURATION_CHECKLIST.md)** - Start here for GCP setup
 2. **[CLOUD_BUILD_SERVICE_URL_FIX.md](./CLOUD_BUILD_SERVICE_URL_FIX.md)** - Understanding the issue
 3. **[QUICK_FIX_CHECKLIST.md](./QUICK_FIX_CHECKLIST.md)** - Quick reference
 
 ### Supporting Guides
+
 4. **[CLOUD_BUILD_LOG_VERIFICATION_GUIDE.md](./CLOUD_BUILD_LOG_VERIFICATION_GUIDE.md)** - Analyzing build logs
 5. **[README.md](./README.md)** - Main documentation (see Deployment and Troubleshooting sections)
 6. **[cloudbuild.yaml](./cloudbuild.yaml)** - Build configuration with inline comments
 
 ### Scripts
+
 7. **[scripts/check-cloudbuild-service-url.sh](./scripts/check-cloudbuild-service-url.sh)** - Static guardrail
 8. **[scripts/verify-cloud-build-config.sh](./scripts/verify-cloud-build-config.sh)** - Trigger verification
 
 ### CI Configuration
+
 9. **[.github/workflows/ci.yml](./.github/workflows/ci.yml)** - CI pipeline with checks
 
 ## 🎉 Conclusion

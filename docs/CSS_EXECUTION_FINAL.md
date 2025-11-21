@@ -28,12 +28,14 @@ The repository has a **single, canonical CI/CD pipeline** that ensures:
 ### Service Configuration
 
 **Cloud Run Service Details:**
+
 - **Service Name**: `pre-order-dealer-exchange-tracker`
 - **Region**: `us-west1`
 - **Project**: `gen-lang-client-0615287333`
 - **Production URL**: `https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/`
 
 **Container Image Location:**
+
 ```
 us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker
 ```
@@ -79,6 +81,7 @@ npm run verify:parity https://pre-order-dealer-exchange-tracker-842946218691.us-
 The build process includes multiple CSS safeguards:
 
 #### Step 1: Tailwind Compilation (vite.config.ts)
+
 ```typescript
 // Tailwind CSS compiled via @tailwindcss/postcss
 // Content paths: ./index.html, ./**/*.{js,ts,jsx,tsx}
@@ -86,12 +89,14 @@ The build process includes multiple CSS safeguards:
 ```
 
 #### Step 2: Post-Build Verification (postbuild script)
+
 ```bash
 npm run build
 # Automatically runs: bash scripts/verify-css-in-build.sh
 ```
 
 **Script checks:**
+
 - ✅ CSS files exist in `dist/assets/`
 - ✅ CSS files are linked in `index.html`
 - ✅ CSS files contain Tailwind classes (tw-* variables)
@@ -99,6 +104,7 @@ npm run build
 - ❌ Build fails if any check fails
 
 #### Step 3: Docker Build Verification (Dockerfile)
+
 ```dockerfile
 # Builder stage verifies CSS after npm run build
 RUN CSS_COUNT=$(find dist/assets -name "*.css" -type f | wc -l) && \
@@ -116,6 +122,7 @@ RUN CSS_COUNT=$(find dist/assets -name "*.css" -type f 2>/dev/null | wc -l) && \
 ```
 
 #### Step 4: Post-Deployment Verification (cloudbuild.yaml)
+
 ```yaml
 steps:
   - name: gcr.io/cloud-builders/curl
@@ -136,12 +143,14 @@ steps:
 ### Runtime CSS Verification
 
 **Manual verification script:**
+
 ```bash
 # Test deployed CSS
 bash scripts/test-deployed-css.sh https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/
 ```
 
 **What it checks:**
+
 1. Fetches HTML from production URL
 2. Extracts CSS references from `<link>` tags
 3. Verifies each CSS file returns HTTP 200
@@ -153,6 +162,7 @@ bash scripts/test-deployed-css.sh https://pre-order-dealer-exchange-tracker-8429
 **Verified Configuration:**
 
 1. **tailwind.config.js**
+
    ```javascript
    content: [
      "./index.html",
@@ -161,6 +171,7 @@ bash scripts/test-deployed-css.sh https://pre-order-dealer-exchange-tracker-8429
    ```
 
 2. **postcss.config.js**
+
    ```javascript
    plugins: {
      '@tailwindcss/postcss': {},
@@ -168,6 +179,7 @@ bash scripts/test-deployed-css.sh https://pre-order-dealer-exchange-tracker-8429
    ```
 
 3. **src/index.css**
+
    ```css
    @tailwind base;
    @tailwind components;
@@ -188,6 +200,7 @@ bash scripts/test-deployed-css.sh https://pre-order-dealer-exchange-tracker-8429
 ### Primary Deployment Path: Cloud Build Trigger
 
 **Trigger Configuration:**
+
 - **Name**: `vehicle-in-need-deploy` (or similar, verify with `gcloud builds triggers list`)
 - **Repository**: `PriorityLexusVB/vehicle-in-need`
 - **Branch**: `^main$`
@@ -195,6 +208,7 @@ bash scripts/test-deployed-css.sh https://pre-order-dealer-exchange-tracker-8429
 - **Region**: `us-west1`
 
 **Substitution Variables (ONLY these):**
+
 ```yaml
 _REGION: us-west1
 _SERVICE: pre-order-dealer-exchange-tracker
@@ -203,6 +217,7 @@ _SERVICE: pre-order-dealer-exchange-tracker
 **⚠️ CRITICAL**: The trigger does NOT have `SERVICE_URL` as a substitution variable. This is intentional and correct. `SERVICE_URL` is derived at runtime after Cloud Run deployment.
 
 **Verification:**
+
 ```bash
 # Check trigger configuration
 npm run cloudbuild:verify-trigger
@@ -214,6 +229,7 @@ npm run cloudbuild:list-triggers
 ### Secondary Path: GitHub Actions (Manual)
 
 **Workflow**: `.github/workflows/build-and-deploy.yml`
+
 - **Triggers**: Manual workflow_dispatch only
 - **Purpose**: Build validation and manual deployment gate
 - **Authentication**: Workload Identity Federation
@@ -228,6 +244,7 @@ npm run cloudbuild:list-triggers
 - ❌ `vehicle-in-need` in `us-central1` - NOT PRODUCTION (if exists, should be disabled)
 
 **To verify:**
+
 ```bash
 gcloud run services list --project=gen-lang-client-0615287333
 ```
@@ -264,6 +281,7 @@ sequenceDiagram
 **Configuration File**: `src/firebase.ts`
 
 **Environment Variables** (set at build time):
+
 ```bash
 # These are set in Cloud Build via cloudbuild.yaml
 NODE_ENV=production
@@ -272,6 +290,7 @@ BUILD_TIME=${BUILD_ID}
 ```
 
 **Secrets** (injected at runtime via Secret Manager):
+
 ```bash
 # Cloud Run deployment command includes:
 --update-secrets=API_KEY=vehicle-in-need-gemini:latest
@@ -282,6 +301,7 @@ BUILD_TIME=${BUILD_ID}
 ### Consistency Across Environments
 
 **Local Development**:
+
 ```bash
 npm run dev
 # Uses firebase.ts configuration
@@ -289,6 +309,7 @@ npm run dev
 ```
 
 **CI Builds**:
+
 ```bash
 npm ci
 npm run build
@@ -297,6 +318,7 @@ npm run build
 ```
 
 **Cloud Run Deployment**:
+
 ```yaml
 # cloudbuild.yaml deploy step
 --set-env-vars=NODE_ENV=production,APP_VERSION=${SHORT_SHA}
@@ -304,6 +326,7 @@ npm run build
 ```
 
 **Firestore Rules**:
+
 ```bash
 # Deploy rules (manual, as needed)
 firebase deploy --only firestore:rules --project vehicles-in-need
@@ -312,6 +335,7 @@ firebase deploy --only firestore:rules --project vehicles-in-need
 ### API Key Security
 
 **✅ CORRECT Implementation:**
+
 - API keys stored in Secret Manager (`vehicle-in-need-gemini`)
 - Cloud Run service account has `secretAccessor` role
 - Keys injected at runtime as environment variables
@@ -319,6 +343,7 @@ firebase deploy --only firestore:rules --project vehicles-in-need
 - Client-side code makes requests to `/api/*` endpoints (no keys exposed)
 
 **❌ INCORRECT (Not Present):**
+
 - No `VITE_*_API_KEY` variables that would expose keys to browser
 - No hardcoded keys in source code
 - No keys in git history
@@ -330,24 +355,28 @@ firebase deploy --only firestore:rules --project vehicles-in-need
 ### Build-Time Safeguards
 
 **1. Conflict Marker Detection** (cloudbuild.yaml step 1)
+
 ```bash
 grep -r '<<<<<<< \|=======$\|>>>>>>> ' --include="*.ts" --include="*.tsx"
 # Exit 1 if found - build fails
 ```
 
 **2. CSS File Presence** (Dockerfile builder stage)
+
 ```bash
 CSS_COUNT=$(find dist/assets -name "*.css" -type f | wc -l)
 if [ "$CSS_COUNT" -eq 0 ]; then exit 1; fi
 ```
 
 **3. CSS Link Verification** (scripts/verify-css-in-build.sh)
+
 ```bash
 grep -c "\.css" "$DIST_DIR/index.html"
 # Exit 1 if no CSS links found
 ```
 
 **4. CSS Content Validation** (scripts/verify-css-in-build.sh)
+
 ```bash
 grep -q "tw-" "$MAIN_CSS"
 # Warning if no Tailwind classes found
@@ -356,6 +385,7 @@ grep -q "tw-" "$MAIN_CSS"
 ### Post-Deployment Safeguards
 
 **5. Production CSS Accessibility** (cloudbuild.yaml verify-css-deployed step)
+
 ```bash
 # Fetch index.html from production URL
 # Extract CSS href
@@ -367,6 +397,7 @@ grep -q "tw-" "$MAIN_CSS"
 ### CI/CD Safeguards
 
 **6. GitHub Actions CI** (.github/workflows/ci.yml)
+
 - Lint check (ESLint)
 - Markdown lint
 - Cloud Build config lint
@@ -374,6 +405,7 @@ grep -q "tw-" "$MAIN_CSS"
 - E2E tests (Playwright)
 
 **7. Pre-Deploy Checks** (package.json)
+
 ```json
 "prebuild:check": "node scripts/check-conflicts.cjs",
 "prebuild": "npm run prebuild:check",
@@ -401,12 +433,14 @@ grep -q "tw-" "$MAIN_CSS"
 ### Authoritative Documentation
 
 **Primary Runbooks** (docs/):
+
 1. **DEPLOYMENT_RUNBOOK.md** - Complete deployment guide
 2. **operations/CLOUD_BUILD_TRIGGER_RUNBOOK.md** - Trigger configuration
 3. **operations/CLOUD_RUN_DEPLOYMENT_RUNBOOK.md** - Cloud Run procedures
 4. **operations/OPERATOR_DEPLOYMENT_GUIDE.md** - Operator guide
 
 **Archived Documentation** (docs/archive/):
+
 - Historical CSS fixes and investigations
 - Previous deployment issues and resolutions
 - Obsolete configurations (for reference only)
@@ -414,6 +448,7 @@ grep -q "tw-" "$MAIN_CSS"
 ### Quick Reference Commands
 
 **Verify Production State:**
+
 ```bash
 # Check deployed version
 npm run verify:parity https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/
@@ -429,6 +464,7 @@ npm run cloudbuild:list-triggers
 ```
 
 **Manual Deployment:**
+
 ```bash
 # Build and deploy via Cloud Build
 gcloud builds submit \
@@ -437,6 +473,7 @@ gcloud builds submit \
 ```
 
 **Rollback:**
+
 ```bash
 # List recent revisions
 gcloud run revisions list \
@@ -455,6 +492,7 @@ gcloud run services update-traffic pre-order-dealer-exchange-tracker \
 **Update Frequency**: As needed when deployment process changes
 
 **Review Checklist** (when updating):
+
 - [ ] Update version in DEPLOYMENT_RUNBOOK.md
 - [ ] Update Cloud Build trigger configuration
 - [ ] Update secrets/IAM if changed
@@ -479,6 +517,7 @@ gcloud run services update-traffic pre-order-dealer-exchange-tracker \
 ### Post-Deployment Validation
 
 - [ ] **Service Status**: Check Cloud Run service is ready
+
   ```bash
   gcloud run services describe pre-order-dealer-exchange-tracker \
     --region=us-west1 \
@@ -487,18 +526,21 @@ gcloud run services update-traffic pre-order-dealer-exchange-tracker \
   ```
 
 - [ ] **Health Check**: Test `/health` endpoint
+
   ```bash
   curl -I https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/health
   # Expected: HTTP/2 200
   ```
 
 - [ ] **CSS Accessibility**: Run test-deployed-css.sh
+
   ```bash
   bash scripts/test-deployed-css.sh https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/
   # Expected: All checks pass
   ```
 
 - [ ] **Version Parity**: Check deployed version matches GitHub
+
   ```bash
   npm run verify:parity https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/
   # Expected: Version matches local commit SHA
@@ -513,11 +555,13 @@ gcloud run services update-traffic pre-order-dealer-exchange-tracker \
 ### Monitoring
 
 - [ ] **Build Logs**: Check Cloud Build history
+
   ```bash
   gcloud builds list --project=gen-lang-client-0615287333 --limit=5
   ```
 
 - [ ] **Service Logs**: Check Cloud Run logs for errors
+
   ```bash
   gcloud run services logs read pre-order-dealer-exchange-tracker \
     --region=us-west1 \
@@ -536,6 +580,7 @@ gcloud run services update-traffic pre-order-dealer-exchange-tracker \
 ### Historical Issues (RESOLVED)
 
 **Issue 1: SERVICE_URL Substitution Error**
+
 - **Root Cause**: `SERVICE_URL` was configured as a Cloud Build substitution variable
 - **Problem**: SERVICE_URL doesn't exist until after deployment completes
 - **Resolution**: Removed SERVICE_URL from trigger substitutions; retrieve it at runtime
@@ -543,9 +588,10 @@ gcloud run services update-traffic pre-order-dealer-exchange-tracker \
 - **Status**: ✅ RESOLVED - Comprehensive documentation in CLOUD_BUILD_TRIGGER_RUNBOOK.md
 
 **Issue 2: Missing CSS in Production**
+
 - **Root Cause**: CSS not being copied to Docker image or not being built
 - **Problem**: Users saw unstyled HTML
-- **Resolution**: 
+- **Resolution**:
   - Added CSS verification in Dockerfile (both builder and runtime stages)
   - Added post-build CSS verification script
   - Added post-deployment CSS verification in cloudbuild.yaml
@@ -553,6 +599,7 @@ gcloud run services update-traffic pre-order-dealer-exchange-tracker \
 - **Status**: ✅ RESOLVED - Multiple verification layers in place
 
 **Issue 3: Wrong Image Path**
+
 - **Root Cause**: Multiple Artifact Registry paths for same service
 - **Problem**: Confusion about which image to deploy
 - **Resolution**: Standardized on `vehicle-in-need/pre-order-dealer-exchange-tracker`
@@ -560,6 +607,7 @@ gcloud run services update-traffic pre-order-dealer-exchange-tracker \
 - **Status**: ✅ RESOLVED - Single canonical image path
 
 **Issue 4: Tailwind CDN in Production**
+
 - **Root Cause**: Using Tailwind CDN instead of compiled CSS
 - **Problem**: Production dependent on external CDN
 - **Resolution**: Ensured Vite build compiles Tailwind CSS
@@ -569,6 +617,7 @@ gcloud run services update-traffic pre-order-dealer-exchange-tracker \
 ### Current State: NO KNOWN ISSUES
 
 All previous issues have been addressed with:
+
 - ✅ Automated verification scripts
 - ✅ Build-time safeguards
 - ✅ Post-deployment checks
@@ -584,6 +633,7 @@ All previous issues have been addressed with:
 **Trigger**: Push to `main` branch
 
 **Process**:
+
 1. Developer commits code to `main` branch
 2. GitHub push triggers Cloud Build automatically
 3. Cloud Build executes `cloudbuild.yaml`:
@@ -601,11 +651,13 @@ All previous issues have been addressed with:
 ### Manual Deployment (If Needed)
 
 **When to use**:
+
 - Testing changes before merging to `main`
 - Deploying a specific commit
 - Troubleshooting deployment issues
 
 **Process**:
+
 ```bash
 # 1. Clone/update repository
 git clone https://github.com/PriorityLexusVB/vehicle-in-need.git
@@ -633,10 +685,12 @@ npm run verify:parity https://pre-order-dealer-exchange-tracker-842946218691.us-
 ### Emergency Rollback
 
 **When to use**:
+
 - Production issue detected
 - Bad deploy needs immediate revert
 
 **Process**:
+
 ```bash
 # 1. List recent revisions
 gcloud run revisions list \
@@ -662,23 +716,27 @@ curl -I https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/
 ### Infrastructure Verified
 
 ✅ **Cloud Run Service**
+
 - Name: `pre-order-dealer-exchange-tracker`
 - Region: `us-west1`
 - Project: `gen-lang-client-0615287333`
 - URL: `https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/`
 
 ✅ **Artifact Registry**
+
 - Repository: `vehicle-in-need`
 - Location: `us-west1`
 - Images tagged with commit SHA
 
 ✅ **Cloud Build Trigger**
+
 - Connected to `PriorityLexusVB/vehicle-in-need`
 - Triggers on push to `main`
 - Uses `cloudbuild.yaml`
 - No SERVICE_URL misconfiguration
 
 ✅ **Secret Manager**
+
 - API keys stored securely
 - Cloud Run service account has access
 - No keys exposed to client
@@ -686,18 +744,21 @@ curl -I https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/
 ### Build Pipeline Verified
 
 ✅ **Build Process**
+
 - Tailwind CSS compiles correctly
 - CSS files generated in `dist/assets/`
 - CSS files linked in `index.html`
 - CSS contains Tailwind utility classes
 
 ✅ **Docker Image**
+
 - Multi-stage build
 - CSS verified in builder stage
 - CSS verified in runtime stage
 - Proper OCI image structure
 
 ✅ **Deployment**
+
 - Image tagged with commit SHA
 - Deployed to correct service
 - CSS accessible at production URL
@@ -706,12 +767,14 @@ curl -I https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/
 ### Documentation Verified
 
 ✅ **Runbooks Present**
+
 - Deployment procedures documented
 - Cloud Build trigger configuration documented
 - Troubleshooting guides present
 - Quick reference commands provided
 
 ✅ **Scripts Present**
+
 - CSS verification scripts
 - Deploy parity verification
 - Cloud Build trigger verification
@@ -735,9 +798,11 @@ The production URL `https://pre-order-dealer-exchange-tracker-842946218691.us-we
 ### Recommendations
 
 **Immediate (Not Required, System is Operational):**
+
 - None - system is functioning as designed
 
 **Future Enhancements (Optional):**
+
 1. Set up alerts for failed Cloud Build triggers
 2. Add Slack/email notifications for deployments
 3. Implement canary deployments for gradual rollout
@@ -747,6 +812,7 @@ The production URL `https://pre-order-dealer-exchange-tracker-842946218691.us-we
 ### Next Steps for Operators
 
 **Routine Monitoring:**
+
 ```bash
 # Weekly: Check build status
 gcloud builds list --project=gen-lang-client-0615287333 --limit=10
@@ -758,6 +824,7 @@ curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/hea
 ```
 
 **When Making Changes:**
+
 1. Always commit to a feature branch first
 2. Open PR for review
 3. Wait for CI checks to pass
@@ -765,6 +832,7 @@ curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/hea
 5. Verify deployment with `npm run verify:parity`
 
 **Troubleshooting:**
+
 1. Check Cloud Build logs for build failures
 2. Check Cloud Run logs for runtime errors
 3. Use verification scripts to diagnose issues
@@ -775,6 +843,7 @@ curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/hea
 ## Appendix A: Critical Files
 
 ### Build Configuration
+
 - `package.json` - Build scripts and dependencies
 - `cloudbuild.yaml` - Cloud Build pipeline definition
 - `Dockerfile` - Container image build instructions
@@ -783,6 +852,7 @@ curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/hea
 - `postcss.config.js` - PostCSS plugin configuration
 
 ### Verification Scripts
+
 - `scripts/verify-css-in-build.sh` - Post-build CSS verification
 - `scripts/test-deployed-css.sh` - Production CSS testing
 - `scripts/verify-deploy-parity.cjs` - Deployment version verification
@@ -790,11 +860,13 @@ curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/hea
 - `scripts/list-cloud-build-triggers.sh` - Trigger inventory
 
 ### Documentation
+
 - `docs/DEPLOYMENT_RUNBOOK.md` - Primary deployment guide
 - `docs/operations/CLOUD_BUILD_TRIGGER_RUNBOOK.md` - Trigger management
 - `docs/CSS_EXECUTION_FINAL.md` - This document
 
 ### Application Code
+
 - `src/index.css` - Tailwind imports
 - `index.html` - HTML template
 - `server/index.cjs` - Express server
@@ -804,17 +876,19 @@ curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/hea
 
 ## Appendix B: Contact & Support
 
-**Project Repository**: https://github.com/PriorityLexusVB/vehicle-in-need
+**Project Repository**: <https://github.com/PriorityLexusVB/vehicle-in-need>
 
 **GCP Project**: gen-lang-client-0615287333
 
 **For Issues**:
+
 1. Check runbooks in `docs/operations/`
 2. Run verification scripts in `scripts/`
 3. Check Cloud Build logs in GCP Console
 4. Open GitHub issue with logs and error messages
 
 **For Questions**:
+
 1. Review documentation in `docs/`
 2. Check archived docs in `docs/archive/` for historical context
 3. Use verification scripts to gather diagnostic info

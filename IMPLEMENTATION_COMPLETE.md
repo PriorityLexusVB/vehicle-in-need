@@ -19,24 +19,28 @@ The production URL `https://pre-order-dealer-exchange-tracker-842946218691.us-we
 The repository **already had** excellent infrastructure:
 
 ✅ **Build System**
+
 - Vite + React + Tailwind CSS 4.1.16
 - Multi-stage Dockerfile with CSS verification
 - PostCSS configured with @tailwindcss/postcss
 - Build produces hashed CSS files correctly
 
 ✅ **CI/CD Pipeline**
+
 - Cloud Build trigger on push to `main`
 - Automated deployment to Cloud Run
 - Image tagging with commit SHA
 - CSS verification in pipeline
 
 ✅ **Verification Scripts**
+
 - `verify-css-in-build.sh` - Post-build CSS validation
 - `test-deployed-css.sh` - Production CSS testing
 - `verify-deploy-parity.cjs` - Version verification
 - `verify-cloud-build-config.sh` - Trigger validation
 
 ✅ **Documentation**
+
 - Comprehensive DEPLOYMENT_RUNBOOK.md
 - Operations guides in docs/operations/
 - Cloud Build trigger runbook
@@ -49,6 +53,7 @@ This implementation **enhanced** the existing system with:
 #### 1. Comprehensive Final Documentation
 
 **`docs/CSS_EXECUTION_FINAL.md`** (400+ lines)
+
 - Complete verification of all 6 success criteria
 - Production URL alignment details
 - CSS/Tailwind correctness validation
@@ -63,6 +68,7 @@ This implementation **enhanced** the existing system with:
 #### 2. Quick Reference Guide
 
 **`docs/PRODUCTION_QUICK_REFERENCE.md`**
+
 - Common verification commands
 - Deployment procedures (automatic & manual)
 - Troubleshooting steps
@@ -75,6 +81,7 @@ This implementation **enhanced** the existing system with:
 **`scripts/verify-production-state.sh`**
 
 Performs 31+ automated checks across 7 categories:
+
 1. Local repository state
 2. Build system verification
 3. Production service status
@@ -96,6 +103,7 @@ Added `verify:production` script for one-command verification of entire system.
 ### ✅ 1. Production URL Alignment
 
 **Verified:**
+
 - Service name: `pre-order-dealer-exchange-tracker`
 - Region: `us-west1`
 - Project: `gen-lang-client-0615287333`
@@ -105,6 +113,7 @@ Added `verify:production` script for one-command verification of entire system.
 - Deployment step in cloudbuild.yaml correct
 
 **Commands:**
+
 ```bash
 npm run verify:parity
 npm run verify:production
@@ -115,6 +124,7 @@ npm run verify:production
 **Verified at Multiple Stages:**
 
 **Build Time:**
+
 - Tailwind CSS 4.1.16 configured in tailwind.config.js
 - Content paths include all component files
 - PostCSS configured with @tailwindcss/postcss
@@ -124,11 +134,13 @@ npm run verify:production
 - Build fails if CSS missing or invalid
 
 **Docker Build:**
+
 - Builder stage verifies CSS after build
 - Runtime stage verifies CSS copied to image
 - Image build fails if CSS missing
 
 **Post-Deployment:**
+
 - cloudbuild.yaml verify-css-deployed step
 - Fetches HTML from production URL
 - Extracts CSS filename
@@ -138,6 +150,7 @@ npm run verify:production
 - Build fails if any check fails
 
 **Commands:**
+
 ```bash
 npm run build  # Includes postbuild verification
 npm run verify:css
@@ -149,6 +162,7 @@ bash scripts/test-deployed-css.sh <url>
 **Verified:**
 
 **Primary Path: Cloud Build Trigger**
+
 - Connected to `PriorityLexusVB/vehicle-in-need`
 - Triggers on push to `main` branch
 - Uses `cloudbuild.yaml` from repository
@@ -157,15 +171,18 @@ bash scripts/test-deployed-css.sh <url>
 - Deploys to correct service in us-west1
 
 **Secondary Path: GitHub Actions**
+
 - `.github/workflows/build-and-deploy.yml`
 - Manual workflow_dispatch only
 - Does NOT auto-deploy (requires explicit approval)
 
 **No Alternate Services:**
+
 - Only one production service: `pre-order-dealer-exchange-tracker`
 - No conflicting services in us-central1
 
 **Commands:**
+
 ```bash
 npm run cloudbuild:verify-trigger
 npm run cloudbuild:list-triggers
@@ -177,21 +194,25 @@ npm run lint:cloudbuild
 **Verified:**
 
 **Configuration Files:**
+
 - `src/firebase.ts` - Firebase client config
 - `firebase.json` - Firebase project config
 - `firestore.rules` - Security rules
 
 **Environment Variables:**
+
 - Build-time: `APP_VERSION`, `BUILD_TIME`, `NODE_ENV`
 - Runtime: Secrets via Secret Manager (`API_KEY`)
 - No client-side API keys (no `VITE_*_API_KEY`)
 
 **Consistency:**
+
 - Same firebase.ts used in dev, CI, and production
 - API keys server-side only (in `server/index.cjs`, `server/aiProxy.cjs`)
 - Client makes requests to `/api/*` endpoints
 
 **Commands:**
+
 ```bash
 # Check Firebase config
 cat src/firebase.ts
@@ -203,6 +224,7 @@ cat firebase.json
 **Verified Safeguards:**
 
 **Build-Time:**
+
 1. Conflict marker detection (fails build)
 2. CSS file presence check (fails build)
 3. CSS link verification (fails build)
@@ -222,6 +244,7 @@ cat firebase.json
 13. Markdown lint checks
 
 **Commands:**
+
 ```bash
 npm run lint
 npm run lint:cloudbuild
@@ -234,23 +257,27 @@ npm run test:e2e
 **Verified:**
 
 **Primary Documentation:**
+
 - `docs/DEPLOYMENT_RUNBOOK.md` - Complete deployment guide (500+ lines)
 - `docs/CSS_EXECUTION_FINAL.md` - This verification summary (400+ lines)
 - `docs/PRODUCTION_QUICK_REFERENCE.md` - Quick reference (150+ lines)
 - `DEPLOYMENT_GUIDE.md` - High-level guide
 
 **Operations Documentation:**
+
 - `docs/operations/CLOUD_BUILD_TRIGGER_RUNBOOK.md` - Trigger management (500+ lines)
 - `docs/operations/CLOUD_RUN_DEPLOYMENT_RUNBOOK.md` - Cloud Run procedures
 - `docs/operations/OPERATOR_DEPLOYMENT_GUIDE.md` - Operator guide
 - `docs/operations/CONTAINER_DEPLOYMENT_GUIDE.md` - Container guide
 
 **Archived Documentation:**
+
 - Historical issues and resolutions in `docs/archive/`
 - CSS fixes and investigations
 - Previous deployment problems
 
 **All Documentation Verified:**
+
 - Accurate and up-to-date
 - Reflects current system state
 - Includes all verification commands
@@ -294,16 +321,19 @@ npm run test:e2e
 ### Daily Operations
 
 **Verify Everything:**
+
 ```bash
 npm run verify:production
 ```
 
 **Check Production Matches Code:**
+
 ```bash
 npm run verify:parity
 ```
 
 **Test CSS Deployed:**
+
 ```bash
 bash scripts/test-deployed-css.sh https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/
 ```
@@ -331,17 +361,20 @@ npm run verify:production
 ### Troubleshooting
 
 **Build Failed:**
+
 1. Check build logs: `gcloud builds list --limit=1`
 2. Review error: `gcloud builds log <BUILD_ID>`
 3. Fix issue locally and push
 
 **CSS Not Showing:**
+
 1. Run: `npm run build && npm run verify:css`
 2. Check Tailwind config
 3. Verify postcss.config.js
 4. Rebuild and redeploy
 
 **Version Mismatch:**
+
 1. Check production version: `curl -s <url>/api/status | jq -r '.version'`
 2. Check local version: `git rev-parse --short HEAD`
 3. Wait for build to complete or trigger manually
@@ -353,6 +386,7 @@ npm run verify:production
 ### Local Testing
 
 ✅ **Build System:**
+
 ```bash
 npm ci          # Dependencies installed
 npm run build   # Build successful, CSS verified
@@ -361,12 +395,14 @@ npm run lint:cloudbuild  # Cloud Build config validated
 ```
 
 **Results:**
+
 - Build produces valid CSS (9.91 kB)
 - CSS contains Tailwind utility classes
 - All verification scripts pass
 - No linting errors
 
 ✅ **Verification Scripts:**
+
 ```bash
 bash scripts/verify-production-state.sh  # 87% pass rate (production inaccessible from dev environment)
 bash scripts/verify-css-in-build.sh      # Passed
@@ -374,6 +410,7 @@ npm run lint:cloudbuild                   # Passed
 ```
 
 **Results:**
+
 - All local checks pass
 - Production checks skip gracefully (expected in dev environment)
 - Configuration validated
@@ -381,6 +418,7 @@ npm run lint:cloudbuild                   # Passed
 ### Repository State
 
 ✅ **Configuration Files:**
+
 - All required files present
 - Tailwind correctly configured
 - PostCSS configured
@@ -389,6 +427,7 @@ npm run lint:cloudbuild                   # Passed
 - Cloud Build config correct
 
 ✅ **Documentation:**
+
 - All runbooks present
 - Operations guides complete
 - Quick reference created
@@ -401,6 +440,7 @@ npm run lint:cloudbuild                   # Passed
 ### System Status: ✅ PRODUCTION READY
 
 The production URL is:
+
 - ✅ Correctly configured to track GitHub `main`
 - ✅ Automatically deployed via Cloud Build
 - ✅ CSS verified at multiple stages
@@ -411,6 +451,7 @@ The production URL is:
 ### Confidence Level: HIGH
 
 **Reasons:**
+
 1. Existing infrastructure was already solid
 2. Multiple verification layers present
 3. Comprehensive documentation added
@@ -426,6 +467,7 @@ The production URL is:
 ### Regular Tasks
 
 **Weekly:**
+
 ```bash
 # Check build status
 gcloud builds list --project=gen-lang-client-0615287333 --limit=10
@@ -435,6 +477,7 @@ curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/hea
 ```
 
 **Monthly:**
+
 ```bash
 # Review service metrics in Cloud Console
 # Review build success rate
@@ -456,6 +499,7 @@ curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/hea
 ## Support
 
 **For Issues:**
+
 1. Check `docs/PRODUCTION_QUICK_REFERENCE.md`
 2. Review runbooks in `docs/operations/`
 3. Run `npm run verify:production` for diagnostics
@@ -463,8 +507,8 @@ curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/hea
 5. Open GitHub issue with logs
 
 **GCP Project**: gen-lang-client-0615287333  
-**Repository**: https://github.com/PriorityLexusVB/vehicle-in-need  
-**Production URL**: https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/
+**Repository**: <https://github.com/PriorityLexusVB/vehicle-in-need>  
+**Production URL**: <https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/>
 
 ---
 

@@ -7,6 +7,7 @@ This document provides quick reference commands for verifying and managing the p
 **Important**: Cloud Run URLs are dynamic and can change if the service is recreated.
 
 **To get the current production URL:**
+
 ```bash
 gcloud run services describe pre-order-dealer-exchange-tracker \
   --region=us-west1 \
@@ -23,6 +24,7 @@ This URL is automatically updated when code is pushed to the `main` branch.
 ## Quick Verification Commands
 
 ### Verify Everything
+
 ```bash
 # Run comprehensive production state verification
 npm run verify:production
@@ -62,6 +64,7 @@ npm run cloudbuild:list-triggers
 6. Deployment completes in ~5-10 minutes
 
 **Monitor deployment:**
+
 ```bash
 # View recent builds
 gcloud builds list --project=gen-lang-client-0615287333 --limit=5
@@ -117,12 +120,14 @@ npm run verify:production
 ### Build Failures
 
 **Check build logs:**
+
 ```bash
 gcloud builds list --project=gen-lang-client-0615287333 --limit=1
 gcloud builds log <BUILD_ID>
 ```
 
 **Common issues:**
+
 - Merge conflict markers in code → Fix conflicts and commit
 - CSS verification failed → Check Tailwind config and postcss setup
 - SERVICE_URL error → Remove SERVICE_URL from trigger substitutions
@@ -130,17 +135,20 @@ gcloud builds log <BUILD_ID>
 ### CSS Not Showing
 
 **Verify CSS in build:**
+
 ```bash
 npm run build
 npm run verify:css
 ```
 
 **Check production CSS:**
+
 ```bash
 bash scripts/test-deployed-css.sh https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/
 ```
 
 **If CSS missing:**
+
 1. Check `tailwind.config.js` content paths
 2. Verify `src/index.css` has `@tailwind` directives
 3. Confirm `postcss.config.js` has `@tailwindcss/postcss`
@@ -149,16 +157,19 @@ bash scripts/test-deployed-css.sh https://pre-order-dealer-exchange-tracker-8429
 ### Version Mismatch
 
 **Check deployed version:**
+
 ```bash
 curl -s https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/api/status | jq -r '.version'
 ```
 
 **Check local version:**
+
 ```bash
 git rev-parse --short HEAD
 ```
 
 **If mismatch:**
+
 - Wait for current deployment to complete (check Cloud Build)
 - Verify trigger is enabled and working
 - Check if deployment failed (review build logs)
@@ -166,6 +177,7 @@ git rev-parse --short HEAD
 ### Rollback
 
 **If production has issues:**
+
 ```bash
 # List recent revisions
 gcloud run revisions list \
@@ -184,6 +196,7 @@ gcloud run services update-traffic pre-order-dealer-exchange-tracker \
 ## Key Files
 
 ### Configuration
+
 - `cloudbuild.yaml` - Cloud Build pipeline
 - `Dockerfile` - Container image build
 - `tailwind.config.js` - Tailwind CSS config
@@ -191,6 +204,7 @@ gcloud run services update-traffic pre-order-dealer-exchange-tracker \
 - `package.json` - Build scripts
 
 ### Verification Scripts
+
 - `scripts/verify-production-state.sh` - Comprehensive verification
 - `scripts/verify-css-in-build.sh` - Post-build CSS check
 - `scripts/test-deployed-css.sh` - Production CSS test
@@ -198,6 +212,7 @@ gcloud run services update-traffic pre-order-dealer-exchange-tracker \
 - `scripts/verify-cloud-build-config.sh` - Trigger config check
 
 ### Documentation
+
 - `docs/DEPLOYMENT_RUNBOOK.md` - Complete deployment guide
 - `docs/CSS_EXECUTION_FINAL.md` - CSS & deployment summary
 - `docs/operations/CLOUD_BUILD_TRIGGER_RUNBOOK.md` - Trigger management
@@ -208,6 +223,7 @@ gcloud run services update-traffic pre-order-dealer-exchange-tracker \
 ## Support
 
 **For issues:**
+
 1. Check this guide
 2. Review runbooks in `docs/operations/`
 3. Run `npm run verify:production` for diagnostics
@@ -215,4 +231,4 @@ gcloud run services update-traffic pre-order-dealer-exchange-tracker \
 5. Open GitHub issue with logs and error details
 
 **GCP Project**: gen-lang-client-0615287333  
-**Repository**: https://github.com/PriorityLexusVB/vehicle-in-need
+**Repository**: <https://github.com/PriorityLexusVB/vehicle-in-need>

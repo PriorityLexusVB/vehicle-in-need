@@ -49,6 +49,7 @@ Cloud Build substitutions must be:
 3. **It's retrieved, not configured** - We fetch it using `gcloud run services describe`
 
 The build steps execute in order:
+
 1. Build container image
 2. Push to Artifact Registry
 3. Deploy to Cloud Run → Service URL is created/updated
@@ -59,7 +60,7 @@ The build steps execute in order:
 ### Option 1: Using Google Cloud Console (Recommended)
 
 1. **Navigate to Cloud Build Triggers**
-   - Go to: https://console.cloud.google.com/cloud-build/triggers
+   - Go to: <https://console.cloud.google.com/cloud-build/triggers>
    - Select project: `gen-lang-client-0615287333`
 
 2. **Find and Edit the Trigger**
@@ -79,6 +80,7 @@ The build steps execute in order:
 
 5. **Verify the Fix**
    - Run the verification script:
+
      ```bash
      ./scripts/verify-cloud-build-config.sh
      ```
@@ -125,6 +127,7 @@ The repository includes an automated verification script:
 ```
 
 Expected output:
+
 ```
 ✅ Found trigger: vehicle-in-need-deploy
 ✅ No SERVICE_URL in substitutions (correct)
@@ -153,6 +156,7 @@ gcloud builds submit --config cloudbuild.yaml \
 ```
 
 The build should:
+
 1. ✅ Pass all build steps
 2. ✅ Deploy to Cloud Run successfully
 3. ✅ Retrieve `SERVICE_URL` dynamically in the `verify-css-deployed` step
@@ -202,12 +206,14 @@ steps:
 #### 1. CI/CD via Cloud Build Trigger (Recommended)
 
 **Setup**:
+
 - Trigger name: `vehicle-in-need-deploy`
 - Connected to GitHub repository
 - Triggered on push to `main` branch
 - Uses `cloudbuild.yaml` from repository
 
 **Configuration**:
+
 ```yaml
 # In Cloud Build trigger settings:
 substitutions:
@@ -218,6 +224,7 @@ substitutions:
 ```
 
 **Deployment Flow**:
+
 1. Push commit to main branch
 2. Cloud Build trigger activates automatically
 3. Executes steps from `cloudbuild.yaml`
@@ -236,6 +243,7 @@ gcloud builds submit \
 ```
 
 **Important**:
+
 - Include `_REGION` and `_SERVICE` in substitutions
 - Include `SHORT_SHA` for image tagging
 - DO NOT include `SERVICE_URL` in substitutions
@@ -253,6 +261,7 @@ gcloud builds triggers list --project=gen-lang-client-0615287333
 ### Error: "Permission denied"
 
 You need these IAM roles:
+
 - `roles/cloudbuild.builds.editor` - To edit triggers
 - `roles/cloudbuild.builds.viewer` - To view trigger configuration
 
@@ -284,11 +293,13 @@ To prevent SERVICE_URL from ever being misused as a substitution again, this rep
 **Script**: `scripts/check-cloudbuild-service-url.sh`
 
 Automatically checks:
+
 - ✅ cloudbuild.yaml has no SERVICE_URL in substitutions block
 - ✅ No shell scripts use `--substitutions=SERVICE_URL`
 - ✅ cloudbuild.yaml is valid YAML
 
 **Run locally**:
+
 ```bash
 npm run lint:cloudbuild
 # or directly:
@@ -308,6 +319,7 @@ See `.github/workflows/ci.yml` for the integration.
 **Account**: `cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com`
 
 Required roles:
+
 - `roles/run.admin` - Deploy Cloud Run services
 - `roles/iam.serviceAccountUser` - Use Cloud Run runtime service account
 - `roles/artifactregistry.writer` - Push images to Artifact Registry
@@ -317,6 +329,7 @@ Required roles:
 **Account**: `pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com`
 
 Required roles:
+
 - `roles/logging.logWriter` - Write logs to Cloud Logging
 - `roles/secretmanager.secretAccessor` - Access `vehicle-in-need-gemini` secret
 

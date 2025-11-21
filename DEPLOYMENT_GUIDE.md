@@ -12,6 +12,7 @@ This is the single source of truth for deploying the Pre-Order & Dealer Exchange
 ## Build System Status
 
 ✅ **All systems operational:**
+
 - Tailwind CSS compiles correctly
 - PostCSS processes styles properly
 - Vite build generates optimized bundles
@@ -25,6 +26,7 @@ This is the single source of truth for deploying the Pre-Order & Dealer Exchange
 The repository has a Cloud Build trigger named `vehicle-in-need-deploy` that automatically builds and deploys on commits to `main`.
 
 **Trigger Configuration:**
+
 ```yaml
 substitutions:
   _REGION: us-west1
@@ -87,6 +89,7 @@ npm run build
 ```
 
 Expected output:
+
 - ✅ CSS file generated in `dist/assets/`
 - ✅ CSS referenced in `dist/index.html`
 - ✅ Tailwind utility classes present in CSS
@@ -100,6 +103,7 @@ npm run verify:css
 ```
 
 Or manually check:
+
 ```bash
 SERVICE_URL="https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app"
 curl -sS "$SERVICE_URL/" | grep -o 'href="/assets/[^"]*\.css"'
@@ -107,7 +111,7 @@ curl -sS "$SERVICE_URL/" | grep -o 'href="/assets/[^"]*\.css"'
 
 ### 3. Browser Verification
 
-1. Open: https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app
+1. Open: <https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app>
 2. Open DevTools → Network tab
 3. Clear cache and hard reload (Ctrl+Shift+R / Cmd+Shift+R)
 4. Verify CSS file loads (look for `/assets/index-*.css`)
@@ -116,11 +120,13 @@ curl -sS "$SERVICE_URL/" | grep -o 'href="/assets/[^"]*\.css"'
 ## Cache Busting
 
 The application includes service worker cleanup that runs on page load:
+
 - Unregisters legacy service workers
 - Forces reload after cleanup (one-time)
 - Uses session storage to prevent infinite reload loops
 
 If styles don't appear:
+
 1. Clear browser cache
 2. Hard reload (Ctrl+Shift+R)
 3. Check DevTools Console for service worker messages
@@ -132,17 +138,20 @@ If styles don't appear:
 **Symptoms**: Application loads but appears unstyled
 
 **Solutions**:
+
 1. **Clear Service Worker**:
    - DevTools → Application → Service Workers → Unregister all
    - Hard reload
 
 2. **Verify CSS in Build**:
+
    ```bash
    npm run build
    ls -lh dist/assets/*.css
    ```
 
 3. **Check Production**:
+
    ```bash
    curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/ | grep stylesheet
    ```
@@ -163,6 +172,7 @@ If styles don't appear:
 ### Build Locally Works, Production Doesn't
 
 1. **Confirm deployed version**:
+
    ```bash
    curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/ | grep 'data-commit'
    ```
@@ -170,6 +180,7 @@ If styles don't appear:
 2. **Check Cloud Build logs** for the deployment
 3. **Verify Docker image** was pushed and deployed
 4. **Test direct container**:
+
    ```bash
    docker run -p 8080:8080 \
      us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:latest
@@ -182,6 +193,7 @@ If styles don't appear:
 `cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com`
 
 Required roles:
+
 - `roles/run.admin` - Deploy Cloud Run services
 - `roles/iam.serviceAccountUser` - Act as runtime service account
 - `roles/artifactregistry.writer` - Push container images
@@ -191,6 +203,7 @@ Required roles:
 `pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com`
 
 Required roles:
+
 - `roles/logging.logWriter` - Write logs
 - `roles/secretmanager.secretAccessor` - Access API keys
 
@@ -238,7 +251,7 @@ A successful deployment has:
 
 ## Additional Resources
 
-- **Cloud Build Logs**: https://console.cloud.google.com/cloud-build/builds
-- **Cloud Run Service**: https://console.cloud.google.com/run/detail/us-west1/pre-order-dealer-exchange-tracker
-- **Artifact Registry**: https://console.cloud.google.com/artifacts/docker/gen-lang-client-0615287333/us-west1/vehicle-in-need
-- **Production App**: https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app
+- **Cloud Build Logs**: <https://console.cloud.google.com/cloud-build/builds>
+- **Cloud Run Service**: <https://console.cloud.google.com/run/detail/us-west1/pre-order-dealer-exchange-tracker>
+- **Artifact Registry**: <https://console.cloud.google.com/artifacts/docker/gen-lang-client-0615287333/us-west1/vehicle-in-need>
+- **Production App**: <https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app>

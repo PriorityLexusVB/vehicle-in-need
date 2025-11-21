@@ -24,6 +24,7 @@ https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app
 ## Root Cause
 
 Cloud Run generates URLs based on service name + random identifier + region:
+
 - Format: `https://<service-name>-<random-id>-<region-code>.a.run.app`
 - The URL can change if the service is recreated
 - The documented URL may have been from a previous deployment or example
@@ -81,6 +82,7 @@ The verification scripts and documentation were created with an example URL. Thi
 ### What Needs the Actual URL
 
 When running production verification:
+
 1. First get the URL: `gcloud run services describe ... --format='value(status.url)'`
 2. Then pass it to verification scripts
 
