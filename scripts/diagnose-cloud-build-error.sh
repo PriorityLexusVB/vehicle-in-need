@@ -16,8 +16,6 @@
 #   BUILD_ID    Optional Cloud Build ID to analyze (e.g., ba239e76-a1ad-4e30-bf0e-1ca4eb1fa401)
 #
 
-set -e
-
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -26,6 +24,8 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 # Configuration
+# NOTE: These values are specific to the vehicle-in-need project.
+# If reusing this script elsewhere, update these configuration values.
 PROJECT_ID="gen-lang-client-0615287333"
 CLOUD_BUILD_SA="cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com"
 RUNTIME_SA="pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com"
