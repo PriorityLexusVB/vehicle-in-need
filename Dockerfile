@@ -5,7 +5,7 @@
 # This Dockerfile is optimized for Google Cloud Build. Use `gcloud builds submit` for production builds.
 #
 # Stage 1: Build the application
-FROM node:20-alpine AS builder
+FROM node:20 AS builder
 
 # Set build arguments for version info (no API keys)
 ARG COMMIT_SHA=unknown
