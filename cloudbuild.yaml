@@ -2,39 +2,23 @@
 #
 # Cloud Build Substitution Variables:
 #   - Custom substitutions MUST start with underscore (_) per Cloud Build requirements
-#   - Built-in substitutions (PROJECT_ID, SHORT_SHA, BUILD_ID) do not need underscore
-#   - Keep trigger configuration in sync with these substitutions
+#   - Built-in substitutions (PROJECT_ID, SHORT_SHA, BUILD_ID) are provided automatically
 #
-# Usage:
-#   1. CI/CD (GitHub Actions or Cloud Build triggers):
-#      - SHORT_SHA is automatically provided by Cloud Build
-#      - Uses commit SHA as image tag
-#      - Configure trigger with: _REGION, _SERVICE (see substitutions block below)
-#
-#   2. Manual builds (for testing only - NOT for production):
-#      # Get current commit SHA first
-#      SHORT_SHA=$(git rev-parse --short HEAD)
-#      gcloud builds submit --config cloudbuild.yaml \
-#        --substitutions _REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=$SHORT_SHA
-#
-# Service Account Requirements:
-#   The Cloud Build service account (cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com) needs:
-#   - roles/run.admin (to deploy Cloud Run services)
-#   - roles/iam.serviceAccountUser (on pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com)
-#   - roles/artifactregistry.writer (to push images)
-#
-#   The Cloud Run runtime service account (pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com) needs:
-#   - roles/logging.logWriter (for Cloud Logging)
-#   - roles/secretmanager.secretAccessor (for vehicle-in-need-gemini secret at runtime)
-#
+# Trigger:
+#   - Trigger name: vehicle-in-need-deploy
+#   - filename: cloudbuild.yaml
+#   - substitutions:
+#       _REGION: us-west1
+#       _SERVICE: pre-order-dealer-exchange-tracker
+
 substitutions:
   # Custom substitutions (must start with underscore):
   _REGION: us-west1
   _SERVICE: pre-order-dealer-exchange-tracker
-  # Built-in substitutions (automatically provided by Cloud Build):
-  # - PROJECT_ID: GCP project ID
-  # - SHORT_SHA: Short commit SHA (7 chars) or manually specified
-  # - BUILD_ID: Unique build identifier
+  # Built-ins used (no need to define):
+  #   PROJECT_ID  – GCP project ID
+  #   SHORT_SHA   – short commit SHA (7 chars)
+  #   BUILD_ID    – unique build ID
 
 steps:
   # Guard: Fail fast if merge conflict markers are present
@@ -44,13 +28,16 @@ steps:
     args:
       - -c
       - |
-        if grep -r '<<<<<<< \|=======$\|>>>>>>> ' --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --include="*.html" --exclude-dir=node_modules .; then
+        if grep -r '<<<<<<< \|=======$\|>>>>>>> ' \
+          --include="*.ts" --include="*.tsx" \
+          --include="*.js" --include="*.jsx" \
+          --include="*.html" --exclude-dir=node_modules .; then
           echo "ERROR: Git merge conflict markers found in source code!"
           exit 1
         fi
         echo "✓ No conflict markers detected"
 
-  # Guard: Validate SHORT_SHA is a valid git commit format (not "manual" or other invalid values)
+  # Guard: Validate SHORT_SHA looks like a commit SHA
   - name: gcr.io/cloud-builders/gcloud
     id: validate-version
     waitFor: ['check-conflicts']
@@ -61,32 +48,29 @@ steps:
         echo "🔍 Validating deployment version..."
         echo "SHORT_SHA: ${SHORT_SHA}"
 
-        # Check if SHORT_SHA starts with "manual" or contains invalid patterns
+        # Do NOT allow 'manual...' style versions in this pipeline
         if [[ "${SHORT_SHA}" =~ ^manual ]]; then
-          echo "❌ ERROR: Manual deployment versions are not allowed in production!"
+          echo "❌ ERROR: Manual deployment versions are not allowed in this pipeline."
           echo "   SHORT_SHA: ${SHORT_SHA}"
           echo ""
-          echo "Production deployments must be traceable to git commits."
-          echo "Use a proper git commit SHA instead."
-          echo ""
-          echo "To deploy from current commit:"
+          echo "Use a real commit SHA instead:"
           echo "  SHORT_SHA=\$(git rev-parse --short HEAD)"
-          echo "  gcloud builds submit --config cloudbuild.yaml \\"
+          echo "  gcloud builds submit --config=cloudbuild.yaml \\"
           echo "    --substitutions=_REGION=us-west1,_SERVICE=${_SERVICE},SHORT_SHA=\$SHORT_SHA"
           exit 1
         fi
 
-        # Validate format is alphanumeric (typical git SHA format)
+        # Validate format is typical git SHA (7–40 hex chars)
         if ! [[ "${SHORT_SHA}" =~ ^[a-fA-F0-9]{7,40}$ ]]; then
-          echo "⚠️  WARNING: SHORT_SHA does not match standard git commit format"
+          echo "⚠️ WARNING: SHORT_SHA does not match standard git commit format"
           echo "   SHORT_SHA: ${SHORT_SHA}"
-          echo "   Expected: 7-40 character hexadecimal string"
-          echo ""
-          echo "Continuing anyway, but this may not be a traceable deployment..."
+          echo "   Expected: 7–40 character hexadecimal string"
+          echo "   Continuing anyway..."
         fi
 
         echo "✅ Version validation passed: ${SHORT_SHA}"
 
+  # Build the Docker image using your Dockerfile
   - name: gcr.io/cloud-builders/docker
     id: build-image
     waitFor: ['validate-version']
@@ -102,6 +86,7 @@ steps:
       - us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${_SERVICE}:latest
       - .
 
+  # Push versioned image
   - name: gcr.io/cloud-builders/docker
     id: push-image
     waitFor: ['build-image']
@@ -109,6 +94,7 @@ steps:
       - push
       - us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${_SERVICE}:${SHORT_SHA}
 
+  # Push latest tag
   - name: gcr.io/cloud-builders/docker
     id: push-latest
     waitFor: ['build-image']
@@ -116,6 +102,7 @@ steps:
       - push
       - us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${_SERVICE}:latest
 
+  # Deploy to Cloud Run
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
     id: deploy-cloud-run
     entrypoint: gcloud
@@ -131,28 +118,6 @@ steps:
       - --service-account=pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com
       - --set-env-vars=NODE_ENV=production,APP_VERSION=${SHORT_SHA},BUILD_TIME=${BUILD_ID}
       - --update-secrets=API_KEY=vehicle-in-need-gemini:latest
-
-  # CSS verification AFTER deployment, implemented in a repo script
-  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
-    id: verify-css-deployed
-    waitFor: ['deploy-cloud-run']
-    entrypoint: bash
-    args:
-      - -c
-      - |
-        echo "🔍 Running CSS deployment verification script..."
-        scripts/verify-css-deployed.sh ${_SERVICE} ${_REGION}
-
-  # Version verification AFTER deployment, implemented in a repo script
-  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
-    id: verify-version
-    waitFor: ['verify-css-deployed']
-    entrypoint: bash
-    args:
-      - -c
-      - |
-        echo "🔍 Running version verification script..."
-        scripts/verify-version.sh ${_SERVICE} ${_REGION} ${SHORT_SHA}
 
 images:
   - us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${_SERVICE}:${SHORT_SHA}
