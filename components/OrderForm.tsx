@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Order, OrderStatus, AppUser } from '../types';
+import React, { useState, useMemo } from 'react';
+import { Order, OrderStatus, AppUser, VehicleOption } from '../types';
 import { STATUS_OPTIONS, YEARS } from '../constants';
 import { PlusIcon } from './icons/PlusIcon';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
@@ -7,6 +7,7 @@ import { CheckCircleIcon } from './icons/CheckCircleIcon';
 interface OrderFormProps {
   onAddOrder: (order: Omit<Order, 'id'>) => Promise<boolean>;
   currentUser?: AppUser | null;
+  vehicleOptions: VehicleOption[];
 }
 
 const getInitialFormState = (currentUser?: AppUser | null) => ({
@@ -44,11 +45,21 @@ const FormField: React.FC<{label: string, id: string, error?: string, hint?: str
     </div>
 );
 
-const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
+const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser, vehicleOptions }) => {
   const [formState, setFormState] = useState(() => getInitialFormState(currentUser));
   const [errors, setErrors] = useState<Partial<Record<keyof typeof formState, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  // Separate exterior and interior options
+  const exteriorOptions = useMemo(
+    () => vehicleOptions.filter(opt => opt.type === 'exterior'),
+    [vehicleOptions]
+  );
+  const interiorOptions = useMemo(
+    () => vehicleOptions.filter(opt => opt.type === 'interior'),
+    [vehicleOptions]
+  );
 
   const validate = () => {
     const newErrors: Partial<Record<keyof typeof formState, string>> = {};
@@ -185,10 +196,38 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
                 </FormField>
             </div>
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField label="Ext. Option 1 #" id="extOption1" error={errors.extOption1}><input type="text" id="extOption1" name="extOption1" value={formState.extOption1} onChange={handleChange} maxLength={4} className={inputClass('extOption1')} /></FormField>
-                <FormField label="Ext. Option 2 #" id="extOption2" error={errors.extOption2}><input type="text" id="extOption2" name="extOption2" value={formState.extOption2} onChange={handleChange} maxLength={4} className={inputClass('extOption2')} /></FormField>
-                <FormField label="Int. Option 1 #" id="intOption1" error={errors.intOption1}><input type="text" id="intOption1" name="intOption1" value={formState.intOption1} onChange={handleChange} maxLength={4} className={inputClass('intOption1')} /></FormField>
-                <FormField label="Int. Option 2 #" id="intOption2" error={errors.intOption2}><input type="text" id="intOption2" name="intOption2" value={formState.intOption2} onChange={handleChange} maxLength={4} className={inputClass('intOption2')} /></FormField>
+                <FormField label="Ext. Option 1" id="extOption1" error={errors.extOption1}>
+                  <select id="extOption1" name="extOption1" value={formState.extOption1} onChange={handleChange} className={inputClass('extOption1')}>
+                    <option value="">— Select Option —</option>
+                    {exteriorOptions.map(opt => (
+                      <option key={opt.id} value={opt.code}>{opt.code} - {opt.name}</option>
+                    ))}
+                  </select>
+                </FormField>
+                <FormField label="Ext. Option 2" id="extOption2" error={errors.extOption2}>
+                  <select id="extOption2" name="extOption2" value={formState.extOption2} onChange={handleChange} className={inputClass('extOption2')}>
+                    <option value="">— Select Option —</option>
+                    {exteriorOptions.map(opt => (
+                      <option key={opt.id} value={opt.code}>{opt.code} - {opt.name}</option>
+                    ))}
+                  </select>
+                </FormField>
+                <FormField label="Int. Option 1" id="intOption1" error={errors.intOption1}>
+                  <select id="intOption1" name="intOption1" value={formState.intOption1} onChange={handleChange} className={inputClass('intOption1')}>
+                    <option value="">— Select Option —</option>
+                    {interiorOptions.map(opt => (
+                      <option key={opt.id} value={opt.code}>{opt.code} - {opt.name}</option>
+                    ))}
+                  </select>
+                </FormField>
+                <FormField label="Int. Option 2" id="intOption2" error={errors.intOption2}>
+                  <select id="intOption2" name="intOption2" value={formState.intOption2} onChange={handleChange} className={inputClass('intOption2')}>
+                    <option value="">— Select Option —</option>
+                    {interiorOptions.map(opt => (
+                      <option key={opt.id} value={opt.code}>{opt.code} - {opt.name}</option>
+                    ))}
+                  </select>
+                </FormField>
             </div>
         </div>
 

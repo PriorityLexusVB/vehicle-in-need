@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Order, OrderStatus, AppUser } from '../types';
+import { Order, OrderStatus, AppUser, VehicleOption } from '../types';
 import { STATUS_OPTIONS } from '../constants';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
 import StatusBadge from './StatusBadge';
@@ -14,6 +14,7 @@ interface OrderCardProps {
   onUpdateStatus: (orderId: string, status: OrderStatus) => void;
   onDeleteOrder: (orderId: string) => void;
   currentUser?: AppUser | null;
+  vehicleOptions?: VehicleOption[];
 }
 
 const DetailItem: React.FC<{label: string, children: React.ReactNode}> = ({ label, children }) => (
@@ -23,14 +24,28 @@ const DetailItem: React.FC<{label: string, children: React.ReactNode}> = ({ labe
     </div>
 );
 
-const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOrder, currentUser }) => {
+const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOrder, currentUser, vehicleOptions = [] }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedEmail, setGeneratedEmail] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
 
-  const extOptions = [order.extOption1, order.extOption2].filter(Boolean);
-  const intOptions = [order.intOption1, order.intOption2].filter(Boolean);
+  // Helper function to get option name from code
+  const getOptionName = (code: string | undefined, type: 'exterior' | 'interior'): string => {
+    if (!code) return '';
+    const option = vehicleOptions.find(opt => opt.code === code && opt.type === type);
+    return option ? `${option.code} - ${option.name}` : code;
+  };
+
+  const extOptions = [
+    order.extOption1 ? getOptionName(order.extOption1, 'exterior') : null,
+    order.extOption2 ? getOptionName(order.extOption2, 'exterior') : null
+  ].filter(Boolean);
+  
+  const intOptions = [
+    order.intOption1 ? getOptionName(order.intOption1, 'interior') : null,
+    order.intOption2 ? getOptionName(order.intOption2, 'interior') : null
+  ].filter(Boolean);
   const isDelivered = order.status === OrderStatus.Delivered;
   const isReceived = order.status === OrderStatus.Received;
   const isActive = !isDelivered && !isReceived;

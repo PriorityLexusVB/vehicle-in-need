@@ -44,3 +44,12 @@ export interface AppUser {
   displayName: string | null;
   isManager: boolean;
 }
+
+export interface VehicleOption {
+  id: string;
+  code: string; // 4-character code (e.g., "PW01")
+  name: string; // Descriptive name (e.g., "Premium Wheels")
+  type: 'exterior' | 'interior';
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+}
