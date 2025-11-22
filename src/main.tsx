@@ -104,23 +104,43 @@ function logBundleInfo() {
   // Check if Tailwind styles are applied
   if (cssLinks.length > 0) {
     setTimeout(() => {
-      const body = document.body;
-      const computedStyle = getComputedStyle(body);
-      const bgColor = computedStyle.backgroundColor;
+      // Create a temporary test element with known Tailwind classes
+      // This is more reliable than checking the body element which may have
+      // styles from other sources (browser extensions, dark mode, etc.)
+      const testEl = document.createElement('div');
+      testEl.className = 'bg-slate-100 text-slate-800';
+      testEl.style.position = 'absolute';
+      testEl.style.visibility = 'hidden';
+      testEl.style.pointerEvents = 'none';
+      document.body.appendChild(testEl);
       
-      // Tailwind's slate-100 is rgb(241, 245, 249)
-      // If styles aren't applied, it will be default (white: rgb(255, 255, 255))
-      const isTailwindApplied = bgColor === 'rgb(241, 245, 249)' || bgColor === 'rgba(241, 245, 249, 1)';
+      const testStyle = getComputedStyle(testEl);
+      const bgColor = testStyle.backgroundColor;
+      const textColor = testStyle.color;
+      
+      // Clean up test element
+      document.body.removeChild(testEl);
+      
+      // Tailwind v4 with oklch colors: slate-100 resolves to a light gray background
+      // and slate-800 resolves to a dark gray text color
+      // Check if background is NOT transparent (rgba(0, 0, 0, 0)) and NOT pure white (rgb(255, 255, 255))
+      // Also check if text is NOT black (default) to confirm text-slate-800 is applied
+      const isTransparent = bgColor === 'rgba(0, 0, 0, 0)' || bgColor === 'transparent';
+      const isWhite = bgColor === 'rgb(255, 255, 255)' || bgColor === 'rgba(255, 255, 255, 1)';
+      const isDefaultBlack = textColor === 'rgb(0, 0, 0)' || textColor === 'rgba(0, 0, 0, 1)';
+      const isTailwindApplied = !isTransparent && !isWhite && !isDefaultBlack;
       
       if (isTailwindApplied) {
         console.log('%c✅ Tailwind styles applied successfully', 'color: #10b981; font-weight: bold;');
+        console.log(`Test element colors - background: ${bgColor}, text: ${textColor}`);
       } else {
         console.warn('%c⚠️ Tailwind styles NOT applied', 'color: #f59e0b; font-weight: bold;');
-        console.warn(`Expected bg-slate-100 (rgb(241, 245, 249)), got: ${bgColor}`);
+        console.warn(`Expected bg-slate-100 (light gray) and text-slate-800 (dark gray)`);
+        console.warn(`Got: background: ${bgColor}, text: ${textColor}`);
         console.warn('This indicates CSS file loaded but Tailwind classes are not working.');
         console.warn('Check:');
         console.warn('  1. CSS file contains Tailwind utility classes');
-        console.warn('  2. PostCSS processed @tailwind directives');
+        console.warn('  2. PostCSS processed @source directives (Tailwind v4)');
         console.warn('  3. Tailwind content paths match component files');
         
         // Show user-facing warning banner for CSS failure
