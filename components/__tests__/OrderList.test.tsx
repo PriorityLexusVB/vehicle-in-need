@@ -60,7 +60,7 @@ describe("OrderList", () => {
 
   it("renders list of orders", () => {
     render(
-      <OrderList
+      <OrderList vehicleOptions={[]} 
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
@@ -76,7 +76,7 @@ describe("OrderList", () => {
   it("filters orders by search query", async () => {
     const user = userEvent.setup();
     render(
-      <OrderList
+      <OrderList vehicleOptions={[]} 
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
@@ -95,7 +95,7 @@ describe("OrderList", () => {
   it("switches between active and delivered tabs", async () => {
     const user = userEvent.setup();
     render(
-      <OrderList
+      <OrderList vehicleOptions={[]} 
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
@@ -121,7 +121,7 @@ describe("OrderList", () => {
   it("filters orders by status", async () => {
     const user = userEvent.setup();
     render(
-      <OrderList
+      <OrderList vehicleOptions={[]} 
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
@@ -141,7 +141,7 @@ describe("OrderList", () => {
   it("shows message when no orders match filters", async () => {
     const user = userEvent.setup();
     render(
-      <OrderList
+      <OrderList vehicleOptions={[]} 
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
@@ -157,7 +157,7 @@ describe("OrderList", () => {
 
   it("displays order count in active tab", () => {
     render(
-      <OrderList
+      <OrderList vehicleOptions={[]} 
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
@@ -180,7 +180,7 @@ describe("OrderList", () => {
 
   it("displays order count in delivered tab", () => {
     render(
-      <OrderList
+      <OrderList vehicleOptions={[]} 
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
@@ -203,7 +203,7 @@ describe("OrderList", () => {
 
   it("shows empty state when no orders exist", () => {
     render(
-      <OrderList
+      <OrderList vehicleOptions={[]} 
         orders={[]}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}

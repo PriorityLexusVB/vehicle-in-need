@@ -137,5 +137,16 @@ service cloud.firestore {
       // DELETE: Managers (with custom claims) only.
       allow delete: if isSignedIn() && ('isManager' in request.auth.token) && request.auth.token.isManager == true;
     }
+
+    /****************************************
+     * Vehicle Options Collection
+     ****************************************/
+    match /vehicleOptions/{optionId} {
+      // READ: All authenticated users can read vehicle options
+      allow read: if isSignedIn();
+
+      // CREATE/UPDATE/DELETE: Managers only
+      allow create, update, delete: if isSignedIn() && ('isManager' in request.auth.token) && request.auth.token.isManager == true;
+    }
   }
 }
