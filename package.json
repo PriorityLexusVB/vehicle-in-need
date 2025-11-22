@@ -41,7 +41,9 @@
     "sync:production": "bash scripts/sync-production-with-main.sh",
     "predeploy": "bash scripts/pre-deploy-css-check.sh",
     "seed:managers:dry-run": "node scripts/seed-manager.mjs --project vehicles-in-need --dry-run",
-    "seed:managers:apply": "node scripts/seed-manager.mjs --project vehicles-in-need --apply"
+    "seed:managers:apply": "node scripts/seed-manager.mjs --project vehicles-in-need --apply",
+    "seed:options:dry-run": "node scripts/seed-vehicle-options.mjs --project vehicles-in-need --dry-run",
+    "seed:options:apply": "node scripts/seed-vehicle-options.mjs --project vehicles-in-need --apply"
   },
   "dependencies": {
     "@google-cloud/vertexai": "^1.9.0",
