@@ -16,7 +16,7 @@
  */
 
 import { initializeApp, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -109,8 +109,8 @@ async function seedVehicleOptions() {
           code: option.code,
           name: option.name,
           type: option.type,
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
         });
         console.log(`✓ ADDED: ${option.code} (${option.name}) - ${option.type}`);
         addedCount++;

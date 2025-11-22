@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { VehicleOption } from '../types';
 import { PlusIcon } from './icons/PlusIcon';
 import { TrashIcon } from './icons/TrashIcon';
@@ -19,7 +19,10 @@ const VehicleOptionsManager: React.FC<VehicleOptionsManagerProps> = ({
   const [newOption, setNewOption] = useState({ code: '', name: '', type: 'exterior' as const });
   const [error, setError] = useState('');
 
-  const filteredOptions = options.filter(opt => opt.type === activeTab);
+  const filteredOptions = useMemo(
+    () => options.filter(opt => opt.type === activeTab),
+    [options, activeTab]
+  );
 
   const handleAddOption = async (e: React.FormEvent) => {
     e.preventDefault();
