@@ -1,5 +1,8 @@
+/* Tailwind CSS v4 - Uses @import instead of @tailwind directives */
 @import "tailwindcss";
 
+/* @source directives tell Tailwind where to find classes to generate
+   Paths are relative to this CSS file (src/index.css) */
 @source "../index.html";
 @source "../**/*.{js,ts,jsx,tsx}";
 

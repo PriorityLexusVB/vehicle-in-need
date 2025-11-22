@@ -107,20 +107,24 @@ function logBundleInfo() {
       const body = document.body;
       const computedStyle = getComputedStyle(body);
       const bgColor = computedStyle.backgroundColor;
+      const textColor = computedStyle.color;
       
-      // Tailwind v4 with oklch colors: slate-100 resolves to a light gray color
-      // Check if NOT transparent (rgba(0, 0, 0, 0)) and NOT pure white (rgb(255, 255, 255))
-      // Tailwind's slate-100 should be close to rgb(241, 245, 249) or similar light gray
+      // Tailwind v4 with oklch colors: slate-100 resolves to a light gray background
+      // and slate-800 resolves to a dark gray text color
+      // Check if background is NOT transparent (rgba(0, 0, 0, 0)) and NOT pure white (rgb(255, 255, 255))
+      // Also check if text is NOT black (default) to confirm text-slate-800 is applied
       const isTransparent = bgColor === 'rgba(0, 0, 0, 0)' || bgColor === 'transparent';
       const isWhite = bgColor === 'rgb(255, 255, 255)' || bgColor === 'rgba(255, 255, 255, 1)';
-      const isTailwindApplied = !isTransparent && !isWhite;
+      const isDefaultBlack = textColor === 'rgb(0, 0, 0)' || textColor === 'rgba(0, 0, 0, 1)';
+      const isTailwindApplied = !isTransparent && !isWhite && !isDefaultBlack;
       
       if (isTailwindApplied) {
         console.log('%c✅ Tailwind styles applied successfully', 'color: #10b981; font-weight: bold;');
-        console.log(`Body background color: ${bgColor}`);
+        console.log(`Body background: ${bgColor}, text: ${textColor}`);
       } else {
         console.warn('%c⚠️ Tailwind styles NOT applied', 'color: #f59e0b; font-weight: bold;');
-        console.warn(`Expected bg-slate-100 (light gray), got: ${bgColor}`);
+        console.warn(`Expected bg-slate-100 (light gray) and text-slate-800 (dark gray)`);
+        console.warn(`Got: background: ${bgColor}, text: ${textColor}`);
         console.warn('This indicates CSS file loaded but Tailwind classes are not working.');
         console.warn('Check:');
         console.warn('  1. CSS file contains Tailwind utility classes');
