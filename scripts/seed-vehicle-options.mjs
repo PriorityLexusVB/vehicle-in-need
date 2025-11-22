@@ -15,7 +15,7 @@
  *   --dry-run       Show what would be added without making changes
  */
 
-import { initializeApp, cert } from 'firebase-admin/app';
+import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 // Parse command line arguments

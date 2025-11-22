@@ -38,7 +38,7 @@ Created a complete vehicle options management system that allows managers to con
 
 ### 6. Developer Tools
 - **Seed Script**: `scripts/seed-vehicle-options.mjs`
-  - Includes 16 default Lexus options
+  - Includes 18 default Lexus options (8 exterior, 10 interior)
   - Dry-run mode for safety
   - Duplicate detection
 - **NPM Scripts**: 
@@ -73,7 +73,7 @@ Created a complete vehicle options management system that allows managers to con
 13. Various test files - Updated for new props
 
 ## Default Options Included
-**Exterior (8 options):**
+**Exterior (8):**
 - PW01 - Premium Wheel Package
 - SPW1 - Sport Wheel Package
 - CF01 - Carbon Fiber Package
@@ -83,7 +83,7 @@ Created a complete vehicle options management system that allows managers to con
 - TOWH - Tow Hitch
 - CHRM - Chrome Package
 
-**Interior (8 options):**
+**Interior (10):**
 - LA40 - Leather Package - Black
 - LA41 - Leather Package - Tan
 - LA42 - Leather Package - Gray

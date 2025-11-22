@@ -58,7 +58,7 @@ npm run seed:options:apply
 
 **Default options included:**
 
-**Exterior Options:**
+**8 Exterior Options:**
 - PW01 - Premium Wheel Package
 - SPW1 - Sport Wheel Package
 - CF01 - Carbon Fiber Package
@@ -68,7 +68,7 @@ npm run seed:options:apply
 - TOWH - Tow Hitch
 - CHRM - Chrome Package
 
-**Interior Options:**
+**10 Interior Options:**
 - LA40 - Leather Package - Black
 - LA41 - Leather Package - Tan
 - LA42 - Leather Package - Gray
