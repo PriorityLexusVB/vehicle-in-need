@@ -35,13 +35,6 @@ substitutions:
   # - PROJECT_ID: GCP project ID
   # - SHORT_SHA: Short commit SHA (7 chars) or manually specified
   # - BUILD_ID: Unique build identifier
-  #
-  # ⚠️ CRITICAL: SERVICE_URL is NOT a substitution variable!
-  # - SERVICE_URL does not exist until AFTER Cloud Run deployment completes
-  # - It is dynamically retrieved at runtime in the verify-css-deployed step
-  # - Using: SERVICE_URL=$(gcloud run services describe ... --format='value(status.url)')
-  # - NEVER add SERVICE_URL or _SERVICE_URL as a substitution key here or in triggers
-  # - Doing so will cause build failures: "key in the template SERVICE_URL is not a valid built-in substitution"
 
 steps:
   # Guard: Fail fast if merge conflict markers are present
@@ -139,9 +132,7 @@ steps:
       - --set-env-vars=NODE_ENV=production,APP_VERSION=${SHORT_SHA},BUILD_TIME=${BUILD_ID}
       - --update-secrets=API_KEY=vehicle-in-need-gemini:latest
 
-  # CRITICAL: Verify CSS is accessible after deployment
-  # This step ensures that Tailwind CSS assets are properly built and deployed
-  # SERVICE_URL is retrieved here as a bash variable, NOT as a Cloud Build substitution
+  # CSS verification AFTER deployment, implemented in a repo script
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
     id: verify-css-deployed
     waitFor: ['deploy-cloud-run']
@@ -149,83 +140,10 @@ steps:
     args:
       - -c
       - |
-        set -e
-        echo "🔍 Verifying CSS deployment..."
+        echo "🔍 Running CSS deployment verification script..."
+        scripts/verify-css-deployed.sh ${_SERVICE} ${_REGION}
 
-        # ⚠️ IMPORTANT: SERVICE_URL is a bash variable, NOT a Cloud Build substitution
-        # It's retrieved after deployment completes, using gcloud CLI
-        SERVICE_URL=$(gcloud run services describe ${_SERVICE} \
-          --region=${_REGION} \
-          --format='value(status.url)')
-
-        echo "Service URL: $$SERVICE_URL"
-
-        # Wait for service to be ready
-        echo "Waiting 10 seconds for service to stabilize..."
-        sleep 10
-
-        # Fetch index.html and extract CSS filename
-        echo "Fetching index.html..."
-        HTML_CONTENT=$(curl -sS "$$SERVICE_URL/" || echo "")
-
-        if [ -z "$$HTML_CONTENT" ]; then
-          echo "❌ ERROR: Could not fetch index.html from $$SERVICE_URL"
-          exit 1
-        fi
-
-        # Extract CSS filename from HTML - match common patterns
-        # Supports: /assets/index-*.css, /assets/*.css, or other CSS files in /assets/
-        CSS_HREF=$(echo "$$HTML_CONTENT" | grep -oE '/(assets|static)/[^"]*\.css' | head -n 1 || echo "")
-
-        if [ -z "$$CSS_HREF" ]; then
-          echo "❌ ERROR: No CSS file referenced in index.html!"
-          echo "HTML content preview:"
-          echo "$$HTML_CONTENT" | head -30
-          exit 1
-        fi
-
-        echo "Found CSS reference: $$CSS_HREF"
-        CSS_URL="$$SERVICE_URL$$CSS_HREF"
-
-        # Verify CSS file is accessible
-        echo "Verifying CSS file is accessible: $$CSS_URL"
-        HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}" "$$CSS_URL")
-
-        if [ "$$HTTP_STATUS" != "200" ]; then
-          echo "❌ ERROR: CSS file returned HTTP $$HTTP_STATUS"
-          echo "CSS URL: $$CSS_URL"
-          exit 1
-        fi
-
-        # Verify CSS content is not empty and contains Tailwind
-        CSS_CONTENT=$(curl -sS "$$CSS_URL")
-        CSS_SIZE=$(echo -n "$$CSS_CONTENT" | wc -c)
-
-        if [ "$$CSS_SIZE" -lt 1000 ]; then
-          echo "❌ ERROR: CSS file is too small ($$CSS_SIZE bytes)"
-          echo "Expected at least 1000 bytes"
-          exit 1
-        fi
-
-        # Check for Tailwind indicators - look for either tw- prefix or Tailwind CSS markers
-        # This handles various Tailwind CSS compilation outputs
-        if echo "$$CSS_CONTENT" | grep -qE 'tw-|tailwind|@tailwind'; then
-          TAILWIND_CHECK="YES"
-        else
-          echo "⚠️  WARNING: CSS file does not contain obvious Tailwind markers (tw-, tailwind, @tailwind)"
-          echo "   This may be OK if Tailwind classes are compiled differently"
-          TAILWIND_CHECK="UNCERTAIN"
-        fi
-
-        echo "✅ CSS verification passed!"
-        echo "   URL: $$CSS_URL"
-        echo "   HTTP Status: $$HTTP_STATUS"
-        echo "   Size: $$CSS_SIZE bytes"
-        echo "   Contains Tailwind: $$TAILWIND_CHECK"
-        echo ""
-        echo "🎉 Deployment verification complete - CSS is properly deployed!"
-
-  # CRITICAL: Verify deployed version matches the commit SHA
+  # Version verification AFTER deployment, implemented in a repo script
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
     id: verify-version
     waitFor: ['verify-css-deployed']
@@ -233,68 +151,8 @@ steps:
     args:
       - -c
       - |
-        set -e
-        echo "🔍 Verifying deployed version..."
-
-        SERVICE_URL=$(gcloud run services describe ${_SERVICE} \
-          --region=${_REGION} \
-          --format='value(status.url)')
-
-        echo "Service URL: $$SERVICE_URL"
-
-        # Wait a moment for service to stabilize
-        sleep 3
-
-        # Fetch version from /api/status
-        echo "Fetching version from /api/status..."
-        STATUS_JSON=$(curl -sS "$$SERVICE_URL/api/status" || echo "{}")
-
-        if [ -z "$$STATUS_JSON" ] || [ "$$STATUS_JSON" = "{}" ]; then
-          echo "❌ ERROR: Could not fetch /api/status"
-          exit 1
-        fi
-
-        # Extract version field
-        DEPLOYED_VERSION=$(echo "$$STATUS_JSON" | grep -o '"version":"[^"]*"' | cut -d'"' -f4 || echo "")
-
-        if [ -z "$$DEPLOYED_VERSION" ]; then
-          echo "❌ ERROR: Could not extract version from API status"
-          echo "Response: $$STATUS_JSON"
-          exit 1
-        fi
-
-        echo "Deployed version: $$DEPLOYED_VERSION"
-        echo "Expected version: ${SHORT_SHA}"
-
-        # Check for manual deployment
-        if [[ "$$DEPLOYED_VERSION" =~ ^manual ]]; then
-          echo "❌ ERROR: Deployed version shows MANUAL DEPLOYMENT!"
-          echo "   Version: $$DEPLOYED_VERSION"
-          echo "   This should never happen in production!"
-          exit 1
-        fi
-
-        # Check if version is unknown
-        if [ "$$DEPLOYED_VERSION" = "unknown" ]; then
-          echo "❌ ERROR: Deployed version is 'unknown'"
-          echo "   APP_VERSION environment variable was not set correctly"
-          exit 1
-        fi
-
-        # Verify version matches deployed commit
-        if [ "$$DEPLOYED_VERSION" = "${SHORT_SHA}" ]; then
-          echo "✅ Version verification passed!"
-          echo "   Deployed version matches commit SHA: ${SHORT_SHA}"
-        else
-          echo "❌ ERROR: Version mismatch detected"
-          echo "   Deployed: $$DEPLOYED_VERSION"
-          echo "   Expected: ${SHORT_SHA}"
-          echo "   This indicates the deployment did not set APP_VERSION correctly"
-          exit 1
-        fi
-
-        echo ""
-        echo "🎉 Version verification complete!"
+        echo "🔍 Running version verification script..."
+        scripts/verify-version.sh ${_SERVICE} ${_REGION} ${SHORT_SHA}
 
 images:
   - us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${_SERVICE}:${SHORT_SHA}
