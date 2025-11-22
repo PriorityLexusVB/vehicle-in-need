@@ -1,9 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: [
-    "./index.html",
-    "./**/*.{js,ts,jsx,tsx}",
-  ],
+  // Note: In Tailwind v4, content scanning is handled by @source directives in CSS
+  // The 'content' configuration below is ignored when using v4 with @source
+  // Keep theme extensions and plugins for v4 compatibility
   theme: {
     extend: {
       fontFamily: {

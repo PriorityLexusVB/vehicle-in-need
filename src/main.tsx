@@ -104,10 +104,22 @@ function logBundleInfo() {
   // Check if Tailwind styles are applied
   if (cssLinks.length > 0) {
     setTimeout(() => {
-      const body = document.body;
-      const computedStyle = getComputedStyle(body);
-      const bgColor = computedStyle.backgroundColor;
-      const textColor = computedStyle.color;
+      // Create a temporary test element with known Tailwind classes
+      // This is more reliable than checking the body element which may have
+      // styles from other sources (browser extensions, dark mode, etc.)
+      const testEl = document.createElement('div');
+      testEl.className = 'bg-slate-100 text-slate-800';
+      testEl.style.position = 'absolute';
+      testEl.style.visibility = 'hidden';
+      testEl.style.pointerEvents = 'none';
+      document.body.appendChild(testEl);
+      
+      const testStyle = getComputedStyle(testEl);
+      const bgColor = testStyle.backgroundColor;
+      const textColor = testStyle.color;
+      
+      // Clean up test element
+      document.body.removeChild(testEl);
       
       // Tailwind v4 with oklch colors: slate-100 resolves to a light gray background
       // and slate-800 resolves to a dark gray text color
@@ -120,7 +132,7 @@ function logBundleInfo() {
       
       if (isTailwindApplied) {
         console.log('%c✅ Tailwind styles applied successfully', 'color: #10b981; font-weight: bold;');
-        console.log(`Body background: ${bgColor}, text: ${textColor}`);
+        console.log(`Test element colors - background: ${bgColor}, text: ${textColor}`);
       } else {
         console.warn('%c⚠️ Tailwind styles NOT applied', 'color: #f59e0b; font-weight: bold;');
         console.warn(`Expected bg-slate-100 (light gray) and text-slate-800 (dark gray)`);

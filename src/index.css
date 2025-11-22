@@ -2,9 +2,12 @@
 @import "tailwindcss";
 
 /* @source directives tell Tailwind where to find classes to generate
-   Paths are relative to this CSS file (src/index.css) */
+   Paths are relative to this CSS file (src/index.css)
+   Using specific paths to avoid scanning node_modules and build artifacts */
 @source "../index.html";
-@source "../**/*.{js,ts,jsx,tsx}";
+@source "../src/**/*.{js,ts,jsx,tsx}";
+@source "../components/**/*.{js,ts,jsx,tsx}";
+@source "../App.tsx";
 
 /* For Webkit-based browsers (Chrome, Safari) */
 ::-webkit-scrollbar {
