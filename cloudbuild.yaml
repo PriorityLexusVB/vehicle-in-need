@@ -119,6 +119,31 @@ steps:
       - --set-env-vars=NODE_ENV=production,APP_VERSION=${SHORT_SHA},BUILD_TIME=${BUILD_ID}
       - --update-secrets=API_KEY=vehicle-in-need-gemini:latest
 
+  # Verify CSS is deployed and accessible
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    id: verify-css-deployed
+    waitFor: ['deploy-cloud-run']
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        bash scripts/verify-css-deployed.sh \
+          "${_SERVICE}" \
+          "${_REGION}"
+
+  # Verify deployed version matches build
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    id: verify-version
+    waitFor: ['deploy-cloud-run']
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        bash scripts/verify-version.sh \
+          "${_SERVICE}" \
+          "${_REGION}" \
+          "${SHORT_SHA}"
+
 images:
   - us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${_SERVICE}:${SHORT_SHA}
   - us-west1-docker.pkg.dev/${PROJECT_ID}/vehicle-in-need/${_SERVICE}:latest

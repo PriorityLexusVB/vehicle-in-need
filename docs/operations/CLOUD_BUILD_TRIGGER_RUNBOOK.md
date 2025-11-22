@@ -458,7 +458,60 @@ Request access from project owner or administrator.
 
 ---
 
-## Section 11: Quick Command Reference
+## Section 11: Deployment Verification Steps
+
+After a successful deployment, Cloud Build automatically runs two verification steps:
+
+### Step 11.1: CSS Deployment Verification
+
+Verifies that CSS files are:
+- Referenced in the deployed HTML
+- Accessible via HTTP 200
+- Non-trivial size (>1000 bytes)
+- Contains Tailwind CSS markers
+
+Script: `scripts/verify-css-deployed.sh`
+
+This step ensures the UI is properly styled in production.
+
+### Step 11.2: Version Verification
+
+Verifies that:
+- The `/api/status` endpoint is accessible
+- The deployed version matches the commit SHA
+- No "manual" or "unknown" versions in production
+
+Script: `scripts/verify-version.sh`
+
+This step ensures version tracking is working correctly.
+
+### Manual Deployment Command
+
+If you need to manually trigger a deployment outside of the trigger:
+
+```bash
+cd ~/vehicle-in-need
+git checkout main && git pull
+gcloud config set project gen-lang-client-0615287333
+SHORT_SHA=$(git rev-parse --short HEAD)
+
+gcloud builds submit \
+  --config=cloudbuild.yaml \
+  --substitutions=_REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=$SHORT_SHA
+```
+
+**Service Account Configuration:**
+- **Cloud Build SA** (for build/deploy): `cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com`
+- **Runtime SA** (for Cloud Run): `pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com`
+
+**Substitution Variables:**
+- `_REGION`: `us-west1`
+- `_SERVICE`: `pre-order-dealer-exchange-tracker`
+- `SHORT_SHA`: Auto-generated from git commit (passed explicitly in manual builds)
+
+---
+
+## Section 12: Quick Command Reference
 
 ### Diagnose Failed Build
 
@@ -506,7 +559,7 @@ npm run lint:cloudbuild
 
 ---
 
-**Last Updated**: 2024-11-19  
+**Last Updated**: 2025-11-22  
 **Project**: gen-lang-client-0615287333  
 **Service**: pre-order-dealer-exchange-tracker  
 **Region**: us-west1
