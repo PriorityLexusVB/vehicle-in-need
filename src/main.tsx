@@ -108,19 +108,23 @@ function logBundleInfo() {
       const computedStyle = getComputedStyle(body);
       const bgColor = computedStyle.backgroundColor;
       
-      // Tailwind's slate-100 is rgb(241, 245, 249)
-      // If styles aren't applied, it will be default (white: rgb(255, 255, 255))
-      const isTailwindApplied = bgColor === 'rgb(241, 245, 249)' || bgColor === 'rgba(241, 245, 249, 1)';
+      // Tailwind v4 with oklch colors: slate-100 resolves to a light gray color
+      // Check if NOT transparent (rgba(0, 0, 0, 0)) and NOT pure white (rgb(255, 255, 255))
+      // Tailwind's slate-100 should be close to rgb(241, 245, 249) or similar light gray
+      const isTransparent = bgColor === 'rgba(0, 0, 0, 0)' || bgColor === 'transparent';
+      const isWhite = bgColor === 'rgb(255, 255, 255)' || bgColor === 'rgba(255, 255, 255, 1)';
+      const isTailwindApplied = !isTransparent && !isWhite;
       
       if (isTailwindApplied) {
         console.log('%c✅ Tailwind styles applied successfully', 'color: #10b981; font-weight: bold;');
+        console.log(`Body background color: ${bgColor}`);
       } else {
         console.warn('%c⚠️ Tailwind styles NOT applied', 'color: #f59e0b; font-weight: bold;');
-        console.warn(`Expected bg-slate-100 (rgb(241, 245, 249)), got: ${bgColor}`);
+        console.warn(`Expected bg-slate-100 (light gray), got: ${bgColor}`);
         console.warn('This indicates CSS file loaded but Tailwind classes are not working.');
         console.warn('Check:');
         console.warn('  1. CSS file contains Tailwind utility classes');
-        console.warn('  2. PostCSS processed @tailwind directives');
+        console.warn('  2. PostCSS processed @source directives (Tailwind v4)');
         console.warn('  3. Tailwind content paths match component files');
         
         // Show user-facing warning banner for CSS failure
