@@ -142,11 +142,23 @@ service cloud.firestore {
      * Vehicle Options Collection
      ****************************************/
     match /vehicleOptions/{optionId} {
+      // Helper: check if user is manager via Firestore document
+      function isManagerViaFirestore() {
+        let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+        return userDoc != null 
+          && userDoc.data != null 
+          && ('isManager' in userDoc.data) 
+          && userDoc.data.isManager == true;
+      }
+
       // READ: All authenticated users can read vehicle options
       allow read: if isSignedIn();
 
-      // CREATE/UPDATE/DELETE: Managers only
-      allow create, update, delete: if isSignedIn() && ('isManager' in request.auth.token) && request.auth.token.isManager == true;
+      // CREATE/UPDATE/DELETE: Managers only (check custom claims first, then Firestore)
+      allow create, update, delete: if isSignedIn() && (
+        (('isManager' in request.auth.token) && request.auth.token.isManager == true)
+        || isManagerViaFirestore()
+      );
     }
   }
 }

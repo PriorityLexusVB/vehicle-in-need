@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Order, OrderStatus, AppUser, VehicleOption } from '../types';
+import { Order, OrderStatus, AppUser } from '../types';
 import OrderCard from './OrderCard';
 import { STATUS_OPTIONS } from '../constants';
 import { DownloadIcon } from './icons/DownloadIcon';
@@ -10,10 +10,9 @@ interface OrderListProps {
   onUpdateStatus: (orderId: string, status: OrderStatus) => void;
   onDeleteOrder: (orderId: string) => void;
   currentUser?: AppUser | null;
-  vehicleOptions?: VehicleOption[];
 }
 
-const OrderList: React.FC<OrderListProps> = ({ orders, onUpdateStatus, onDeleteOrder, currentUser, vehicleOptions = [] }) => {
+const OrderList: React.FC<OrderListProps> = ({ orders, onUpdateStatus, onDeleteOrder, currentUser }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [activeTab, setActiveTab] = useState<'active' | 'delivered'>('active');
@@ -54,18 +53,11 @@ const OrderList: React.FC<OrderListProps> = ({ orders, onUpdateStatus, onDeleteO
       return;
     }
 
-    // Helper to get option display text
-    const getOptionDisplay = (code: string | undefined, type: 'exterior' | 'interior'): string => {
-      if (!code) return '';
-      const option = vehicleOptions.find(opt => opt.code === code && opt.type === type);
-      return option ? `${option.code} - ${option.name}` : code;
-    };
-
     const headers = [
       'ID', 'Salesperson', 'Manager', 'Date', 'Customer Name', 'Deal #', 'Stock #', 'VIN',
-      'Year', 'Model', 'Model #', 'Exterior Color #', 'Interior Color #',
-      'Ext. Option 1', 'Ext. Option 2',
-      'Int. Option 1', 'Int. Option 2',
+      'Year', 'Model', 'Model #', 
+      'Exterior Color #1', 'Exterior Color #2', 'Exterior Color #3',
+      'Interior Color #1', 'Interior Color #2', 'Interior Color #3',
       'MSRP', 'Selling Price', 'Gross',
       'Deposit Amount', 'Status', 'Options', 'Notes'
     ];
@@ -95,12 +87,12 @@ const OrderList: React.FC<OrderListProps> = ({ orders, onUpdateStatus, onDeleteO
         order.year,
         order.model,
         order.modelNumber,
-        order.color,
-        order.interiorColor,
-        getOptionDisplay(order.extOption1, 'exterior'),
-        getOptionDisplay(order.extOption2, 'exterior'),
-        getOptionDisplay(order.intOption1, 'interior'),
-        getOptionDisplay(order.intOption2, 'interior'),
+        order.exteriorColor1,
+        order.exteriorColor2,
+        order.exteriorColor3,
+        order.interiorColor1,
+        order.interiorColor2,
+        order.interiorColor3,
         order.msrp,
         order.sellingPrice,
         order.gross,
@@ -216,7 +208,6 @@ const OrderList: React.FC<OrderListProps> = ({ orders, onUpdateStatus, onDeleteO
               onUpdateStatus={onUpdateStatus}
               onDeleteOrder={onDeleteOrder}
               currentUser={currentUser}
-              vehicleOptions={vehicleOptions}
             />
           ))
         ) : (

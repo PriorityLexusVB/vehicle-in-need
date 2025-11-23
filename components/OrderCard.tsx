@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Order, OrderStatus, AppUser, VehicleOption } from '../types';
+import { Order, OrderStatus, AppUser } from '../types';
 import { STATUS_OPTIONS } from '../constants';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
 import StatusBadge from './StatusBadge';
@@ -14,7 +13,6 @@ interface OrderCardProps {
   onUpdateStatus: (orderId: string, status: OrderStatus) => void;
   onDeleteOrder: (orderId: string) => void;
   currentUser?: AppUser | null;
-  vehicleOptions?: VehicleOption[];
 }
 
 const DetailItem: React.FC<{label: string, children: React.ReactNode}> = ({ label, children }) => (
@@ -24,27 +22,23 @@ const DetailItem: React.FC<{label: string, children: React.ReactNode}> = ({ labe
     </div>
 );
 
-const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOrder, currentUser, vehicleOptions = [] }) => {
+const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOrder, currentUser }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedEmail, setGeneratedEmail] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
 
-  // Helper function to get option name from code
-  const getOptionName = (code: string | undefined, type: 'exterior' | 'interior'): string => {
-    if (!code) return '';
-    const option = vehicleOptions.find(opt => opt.code === code && opt.type === type);
-    return option ? `${option.code} - ${option.name}` : code;
-  };
-
-  const extOptions = [
-    order.extOption1 ? getOptionName(order.extOption1, 'exterior') : null,
-    order.extOption2 ? getOptionName(order.extOption2, 'exterior') : null
+  // Display color codes directly (no longer looking up from vehicleOptions)
+  const exteriorColors = [
+    order.exteriorColor1,
+    order.exteriorColor2,
+    order.exteriorColor3
   ].filter(Boolean);
   
-  const intOptions = [
-    order.intOption1 ? getOptionName(order.intOption1, 'interior') : null,
-    order.intOption2 ? getOptionName(order.intOption2, 'interior') : null
+  const interiorColors = [
+    order.interiorColor1,
+    order.interiorColor2,
+    order.interiorColor3
   ].filter(Boolean);
   const isDelivered = order.status === OrderStatus.Delivered;
   const isReceived = order.status === OrderStatus.Received;
@@ -173,18 +167,18 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOr
                     <DetailItem label="Stock #">{order.stockNumber}</DetailItem>
                     <DetailItem label="VIN (Last 8)">{order.vin}</DetailItem>
                     <DetailItem label="Model #">{order.modelNumber}</DetailItem>
-                    <DetailItem label="Ext. Color #">{order.color}</DetailItem>
-                    <DetailItem label="Int. Color #">{order.interiorColor}</DetailItem>
+                    <DetailItem label="Ext. Color #1">{order.exteriorColor1}</DetailItem>
+                    <DetailItem label="Int. Color #1">{order.interiorColor1}</DetailItem>
                     <DetailItem label="MSRP">{typeof order.msrp === 'number' ? `$${order.msrp.toFixed(2)}` : 'N/A'}</DetailItem>
                     <DetailItem label="Selling Price">{order.sellingPrice ? `$${order.sellingPrice.toFixed(2)}` : 'N/A'}</DetailItem>
                     <DetailItem label="Gross">{order.gross ? `$${order.gross.toFixed(2)}` : 'N/A'}</DetailItem>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {(extOptions.length > 0 || intOptions.length > 0) ? (
+                    {(exteriorColors.length > 1 || interiorColors.length > 1) ? (
                         <>
-                         <DetailItem label="Exterior Option #'s">{extOptions.join(', ')}</DetailItem>
-                         <DetailItem label="Interior Option #'s">{intOptions.join(', ')}</DetailItem>
+                         {exteriorColors.length > 1 && <DetailItem label="Additional Ext. Color #'s">{exteriorColors.slice(1).join(', ')}</DetailItem>}
+                         {interiorColors.length > 1 && <DetailItem label="Additional Int. Color #'s">{interiorColors.slice(1).join(', ')}</DetailItem>}
                         </>
                     ) : null}
                 </div>
