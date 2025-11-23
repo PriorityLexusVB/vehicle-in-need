@@ -401,6 +401,24 @@ const App: React.FC = () => {
         return false;
       }
 
+      // Additional check: Ensure Firebase auth current user matches our user state
+      const currentAuthUser = auth.currentUser;
+      if (!currentAuthUser) {
+        console.error("Cannot create order: Firebase auth.currentUser is null");
+        alert("Authentication error: Please refresh the page and try again.");
+        return false;
+      }
+
+      // Verify the auth user email matches our app user email
+      if (currentAuthUser.email !== user.email) {
+        console.error("Cannot create order: Auth email mismatch", {
+          authEmail: currentAuthUser.email,
+          appEmail: user.email,
+        });
+        alert("Authentication sync error: Please refresh the page and try again.");
+        return false;
+      }
+
       try {
         const orderPayload = { ...newOrder };
         Object.keys(orderPayload).forEach((key) => {
@@ -409,12 +427,35 @@ const App: React.FC = () => {
           }
         });
 
-        await addDoc(collection(db, "orders"), {
+        // Prepare the final document to be written to Firestore
+        const finalOrder = {
           ...orderPayload,
           createdAt: serverTimestamp(),
           createdByUid: user.uid,
           createdByEmail: user.email,
-        });
+        };
+
+        // Debug: Log the exact payload being sent (development only to avoid production overhead)
+        if (import.meta.env.DEV) {
+          console.log("%c📝 Creating Order - Payload Details", "color: #3b82f6; font-weight: bold;");
+          console.log("User authenticated:", !!user.uid);
+          console.log("Email present:", !!user.email);
+          console.log("Auth current user synced:", !!currentAuthUser.uid);
+          console.log("Email match:", currentAuthUser.email === user.email);
+          console.log("Order Status:", orderPayload.status);
+          console.log("Payload has createdAt:", 'createdAt' in finalOrder);
+          console.log("Payload keys (count):", Object.keys(finalOrder).length);
+          console.log("Full payload (createdAt will be server timestamp):", {
+            ...finalOrder,
+            createdAt: "[SERVER_TIMESTAMP]"
+          });
+        }
+
+        await addDoc(collection(db, "orders"), finalOrder);
+        
+        if (import.meta.env.DEV) {
+          console.log("%c✅ Order created successfully", "color: #10b981; font-weight: bold;");
+        }
         return true;
       } catch (error) {
         console.error("Error adding order: ", error);
