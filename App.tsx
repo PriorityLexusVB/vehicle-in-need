@@ -424,7 +424,9 @@ const App: React.FC = () => {
           if (error.message.includes("Missing or insufficient permissions")) {
             alert("Failed to add order: Permission denied. Please ensure you're logged in and try again.");
           } else {
-            alert(`Failed to add order: ${error.message}`);
+            // Log full error for debugging but show generic message to user
+            console.error("Detailed error:", error.message);
+            alert("Failed to add order. Please try again or contact support if the issue persists.");
           }
         } else {
           alert("Failed to add order. Please try again.");
