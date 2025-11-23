@@ -74,27 +74,6 @@ fi
 echo "📦 Project: $PROJECT"
 echo ""
 
-# Extract active project from JSON output
-# Firebase CLI versions may structure output differently:
-# - Older versions: .result.activeProject
-# - Newer versions: .activeProject at root level
-# The // operator provides fallback behavior for robustness
-PROJECT=$(echo "$FIREBASE_USE_OUTPUT" | jq -r '.result.activeProject // .activeProject // empty')
-
-# Check if we got a valid project
-if [ -z "$PROJECT" ]; then
-    echo "❌ Cannot determine active Firebase project."
-    echo "   Please run 'firebase use <project-name>' first."
-    echo ""
-    echo "   Available commands:"
-    echo "   - 'firebase use <project-id>' to set a project"
-    echo "   - 'firebase projects:list' to see available projects"
-    exit 1
-fi
-
-echo "📦 Project: $PROJECT"
-echo ""
-
 # Check local rules file
 if [ ! -f "firestore.rules" ]; then
     echo "❌ firestore.rules file not found in current directory"
