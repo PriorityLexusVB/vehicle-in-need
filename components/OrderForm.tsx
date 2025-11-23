@@ -56,25 +56,30 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
     if (!formState.manager) newErrors.manager = 'Manager is required';
     if (!formState.customerName) newErrors.customerName = 'Customer name is required';
     if (!formState.model) newErrors.model = 'Model is required';
-    if (!formState.exteriorColor1) newErrors.exteriorColor1 = 'Exterior Color #1 is required';
     if (!formState.dealNumber) newErrors.dealNumber = 'Deal # is required';
     if (!formState.modelNumber) newErrors.modelNumber = 'Model # is required';
-    if (!formState.interiorColor1) newErrors.interiorColor1 = 'Interior Color #1 is required';
     if (!formState.options) newErrors.options = 'Options are required';
 
-    // Validate minimum 3 characters for color codes
-    if (formState.exteriorColor1 && formState.exteriorColor1.length < 3) {
+    // Validate exterior and interior color codes with explicit else-if logic
+    if (!formState.exteriorColor1) {
+      newErrors.exteriorColor1 = 'Exterior Color #1 is required';
+    } else if (formState.exteriorColor1.length < 3) {
       newErrors.exteriorColor1 = 'Must be at least 3 characters';
     }
+
     if (formState.exteriorColor2 && formState.exteriorColor2.length < 3) {
       newErrors.exteriorColor2 = 'Must be at least 3 characters';
     }
     if (formState.exteriorColor3 && formState.exteriorColor3.length < 3) {
       newErrors.exteriorColor3 = 'Must be at least 3 characters';
     }
-    if (formState.interiorColor1 && formState.interiorColor1.length < 3) {
+
+    if (!formState.interiorColor1) {
+      newErrors.interiorColor1 = 'Interior Color #1 is required';
+    } else if (formState.interiorColor1.length < 3) {
       newErrors.interiorColor1 = 'Must be at least 3 characters';
     }
+
     if (formState.interiorColor2 && formState.interiorColor2.length < 3) {
       newErrors.interiorColor2 = 'Must be at least 3 characters';
     }
