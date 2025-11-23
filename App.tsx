@@ -444,7 +444,8 @@ const App: React.FC = () => {
           email: currentAuthUser.email,
         });
         console.log("Order Status:", orderPayload.status);
-        console.log("Payload keys:", Object.keys(finalOrder).filter(k => k !== 'createdAt'));
+        console.log("Payload has createdAt:", 'createdAt' in finalOrder);
+        console.log("Payload keys (count):", Object.keys(finalOrder).length);
         console.log("Full payload (createdAt will be server timestamp):", {
           ...finalOrder,
           createdAt: "[SERVER_TIMESTAMP]"
