@@ -390,6 +390,17 @@ const App: React.FC = () => {
 
   const handleAddOrder = useCallback(
     async (newOrder: Omit<Order, "id">): Promise<boolean> => {
+      // Validate user is authenticated and has required fields
+      if (!user?.uid || !user?.email) {
+        console.error("Cannot create order: User not authenticated or missing required fields", {
+          hasUser: !!user,
+          hasUid: !!user?.uid,
+          hasEmail: !!user?.email,
+        });
+        alert("Cannot create order: You must be logged in. Please refresh the page and try again.");
+        return false;
+      }
+
       try {
         const orderPayload = { ...newOrder };
         Object.keys(orderPayload).forEach((key) => {
@@ -401,13 +412,25 @@ const App: React.FC = () => {
         await addDoc(collection(db, "orders"), {
           ...orderPayload,
           createdAt: serverTimestamp(),
-          createdByUid: user?.uid,
-          createdByEmail: user?.email,
+          createdByUid: user.uid,
+          createdByEmail: user.email,
         });
         return true;
       } catch (error) {
         console.error("Error adding order: ", error);
-        alert("Failed to add order. Please try again.");
+        
+        // Provide more specific error messages based on the error
+        if (error instanceof Error) {
+          if (error.message.includes("Missing or insufficient permissions")) {
+            alert("Failed to add order: Permission denied. Please ensure you're logged in and try again.");
+          } else {
+            // Log full error for debugging but show generic message to user
+            console.error("Detailed error:", error.message);
+            alert("Failed to add order. Please try again or contact support if the issue persists.");
+          }
+        } else {
+          alert("Failed to add order. Please try again.");
+        }
         return false;
       }
     },
