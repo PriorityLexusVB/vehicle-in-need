@@ -23,12 +23,38 @@ if ! firebase projects:list &> /dev/null; then
     exit 1
 fi
 
-# Get the project name
-if ! PROJECT=$(firebase use 2>/dev/null | grep -oE "active project[: ]+([a-zA-Z0-9-]+)" | grep -oE "[a-zA-Z0-9-]+$"); then
-    echo "❌ Cannot determine active Firebase project."
-    echo "   Please run 'firebase use <project-name>' first."
+# Get the project name using firebase use --json for reliable parsing
+# Check if jq is available for JSON parsing
+if ! command -v jq &> /dev/null; then
+    echo "❌ jq not found. Please install jq to use this script:"
+    echo "   - On Ubuntu/Debian: sudo apt-get install jq"
+    echo "   - On macOS: brew install jq"
+    echo "   - Or run 'firebase use' manually to see your active project"
     exit 1
 fi
+
+# Use --json flag for reliable parsing
+if ! FIREBASE_USE_OUTPUT=$(firebase use --json 2>/dev/null); then
+    echo "❌ Failed to get Firebase project information."
+    echo "   Please ensure Firebase CLI is properly configured."
+    exit 1
+fi
+
+# Extract active project from JSON output
+# Try both .result.activeProject and .activeProject for different Firebase CLI versions
+PROJECT=$(echo "$FIREBASE_USE_OUTPUT" | jq -r '.result.activeProject // .activeProject // empty')
+
+# Check if we got a valid project
+if [ -z "$PROJECT" ] || [ "$PROJECT" = "null" ]; then
+    echo "❌ Cannot determine active Firebase project."
+    echo "   Please run 'firebase use <project-name>' first."
+    echo ""
+    echo "   Available commands:"
+    echo "   - 'firebase use <project-id>' to set a project"
+    echo "   - 'firebase projects:list' to see available projects"
+    exit 1
+fi
+
 echo "📦 Project: $PROJECT"
 echo ""
 
