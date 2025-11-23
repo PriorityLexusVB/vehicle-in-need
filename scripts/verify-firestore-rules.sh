@@ -27,7 +27,10 @@ fi
 # Check if jq is available for JSON parsing
 if ! command -v jq &> /dev/null; then
     echo "❌ jq not found. Please install jq to use this script:"
+    echo "   - On Cloud Shell: jq is pre-installed"
     echo "   - On Ubuntu/Debian: sudo apt-get install jq"
+    echo "   - On Fedora/RHEL/CentOS: sudo dnf install jq   # or: sudo yum install jq"
+    echo "   - On Alpine: sudo apk add jq"
     echo "   - On macOS: brew install jq"
     exit 1
 fi
@@ -47,7 +50,7 @@ fi
 PROJECT=$(echo "$FIREBASE_USE_OUTPUT" | jq -r '.result.activeProject // .activeProject // empty')
 
 # Check if we got a valid project
-if [ -z "$PROJECT" ] || [ "$PROJECT" = "null" ]; then
+if [ -z "$PROJECT" ]; then
     echo "❌ Cannot determine active Firebase project."
     echo "   Please run 'firebase use <project-name>' first."
     echo ""

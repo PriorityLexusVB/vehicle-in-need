@@ -100,7 +100,7 @@ The `npm run verify:rules` script helps you check if your local Firestore rules 
 
 From your project root directory:
 ```bash
-cd ~/vehicle-in-need
+cd /path/to/vehicle-in-need
 npm run verify:rules
 ```
 
