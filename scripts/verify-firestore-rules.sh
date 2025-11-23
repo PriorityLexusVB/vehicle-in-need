@@ -35,12 +35,44 @@ if ! command -v jq &> /dev/null; then
     exit 1
 fi
 
-# Use --json flag for reliable parsing
-if ! FIREBASE_USE_OUTPUT=$(firebase use --json 2>/dev/null); then
-    echo "❌ Failed to get Firebase project information."
-    echo "   Please ensure Firebase CLI is properly configured."
-    exit 1
+# Get active project from Firebase CLI in a robust way
+FIREBASE_USE_OUTPUT=$(firebase use --json 2>/dev/null || true)
+
+if [ -z "$FIREBASE_USE_OUTPUT" ]; then
+  echo "❌ Unable to determine active Firebase project from Firebase CLI."
+  echo "   Please run: firebase use <project-id-or-alias>"
+  exit 1
 fi
+
+# Handle multiple possible Firebase CLI JSON shapes:
+# 1) { "status": "success", "result": "136871166517" }
+# 2) { "status": "success", "result": { "activeProject": "vehicles-in-need" } }
+# 3) { "activeProject": "vehicles-in-need" }
+PROJECT=$(echo "$FIREBASE_USE_OUTPUT" | jq -r '
+  if .result? == null then
+    .activeProject // empty
+  else
+    if (.result | type) == "string" then
+      .result
+    else
+      .result.activeProject // empty
+    end
+  end
+')
+
+if [ -z "$PROJECT" ] || [ "$PROJECT" = "null" ]; then
+  echo "❌ Cannot determine active Firebase project."
+  echo "   Raw firebase use --json output was:"
+  echo "   $FIREBASE_USE_OUTPUT"
+  echo ""
+  echo "   Try running:"
+  echo "     firebase projects:list"
+  echo "     firebase use <project-id-or-alias>"
+  exit 1
+fi
+
+echo "📦 Project: $PROJECT"
+echo ""
 
 # Extract active project from JSON output
 # Firebase CLI versions may structure output differently:
