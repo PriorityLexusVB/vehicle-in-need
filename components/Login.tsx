@@ -3,7 +3,7 @@ import {
   signInWithRedirect,
   getRedirectResult,
   signInWithPopup,
-} from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
+} from "firebase/auth";
 import { auth, googleProvider, firebaseConfig } from "../services/firebase";
 import { GoogleIcon } from "./icons/GoogleIcon";
 
