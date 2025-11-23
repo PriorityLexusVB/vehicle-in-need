@@ -29,7 +29,6 @@ if ! command -v jq &> /dev/null; then
     echo "❌ jq not found. Please install jq to use this script:"
     echo "   - On Ubuntu/Debian: sudo apt-get install jq"
     echo "   - On macOS: brew install jq"
-    echo "   - Or run 'firebase use' manually to see your active project"
     exit 1
 fi
 
@@ -41,7 +40,10 @@ if ! FIREBASE_USE_OUTPUT=$(firebase use --json 2>/dev/null); then
 fi
 
 # Extract active project from JSON output
-# Try both .result.activeProject and .activeProject for different Firebase CLI versions
+# Firebase CLI versions may structure output differently:
+# - Older versions: .result.activeProject
+# - Newer versions: .activeProject at root level
+# The // operator provides fallback behavior for robustness
 PROJECT=$(echo "$FIREBASE_USE_OUTPUT" | jq -r '.result.activeProject // .activeProject // empty')
 
 # Check if we got a valid project
