@@ -71,8 +71,8 @@ echo ""
 # Extract the order creation rule dynamically
 echo "📝 Current order creation rule (orders collection create):"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-# Find the line with "match /orders/{orderId}" and extract the create rule
-if ORDER_CREATE_RULE=$(awk '/match \/orders\/\{orderId\}/,/allow create:/{if(/allow create:/)found=1} found{print; if(/;$/)exit}' firestore.rules); then
+# Find and extract the create rule from orders collection
+if ORDER_CREATE_RULE=$(awk '/allow create:/{found=1} found{print; if(/;$/)exit}' firestore.rules); then
     echo "$ORDER_CREATE_RULE" | sed 's/^/   /'
 else
     echo "   ⚠️  Could not extract order creation rule automatically."

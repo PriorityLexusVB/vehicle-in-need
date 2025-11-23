@@ -435,25 +435,27 @@ const App: React.FC = () => {
           createdByEmail: user.email,
         };
 
-        // Debug: Log the exact payload being sent (excluding createdAt sentinel)
-        console.log("%c📝 Creating Order - Payload Details", "color: #3b82f6; font-weight: bold;");
-        console.log("User UID:", user.uid);
-        console.log("User Email:", user.email);
-        console.log("Auth Current User:", {
-          uid: currentAuthUser.uid,
-          email: currentAuthUser.email,
-        });
-        console.log("Order Status:", orderPayload.status);
-        console.log("Payload has createdAt:", 'createdAt' in finalOrder);
-        console.log("Payload keys (count):", Object.keys(finalOrder).length);
-        console.log("Full payload (createdAt will be server timestamp):", {
-          ...finalOrder,
-          createdAt: "[SERVER_TIMESTAMP]"
-        });
+        // Debug: Log the exact payload being sent (development only to avoid production overhead)
+        if (import.meta.env.DEV) {
+          console.log("%c📝 Creating Order - Payload Details", "color: #3b82f6; font-weight: bold;");
+          console.log("User authenticated:", !!user.uid);
+          console.log("Email present:", !!user.email);
+          console.log("Auth current user synced:", !!currentAuthUser.uid);
+          console.log("Email match:", currentAuthUser.email === user.email);
+          console.log("Order Status:", orderPayload.status);
+          console.log("Payload has createdAt:", 'createdAt' in finalOrder);
+          console.log("Payload keys (count):", Object.keys(finalOrder).length);
+          console.log("Full payload (createdAt will be server timestamp):", {
+            ...finalOrder,
+            createdAt: "[SERVER_TIMESTAMP]"
+          });
+        }
 
         await addDoc(collection(db, "orders"), finalOrder);
         
-        console.log("%c✅ Order created successfully", "color: #10b981; font-weight: bold;");
+        if (import.meta.env.DEV) {
+          console.log("%c✅ Order created successfully", "color: #10b981; font-weight: bold;");
+        }
         return true;
       } catch (error) {
         console.error("Error adding order: ", error);
