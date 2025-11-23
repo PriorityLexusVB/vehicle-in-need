@@ -20,12 +20,12 @@ export interface Order {
   year: string;
   model: string;
   modelNumber: string;
-  color: string;
-  interiorColor: string;
-  extOption1?: string;
-  extOption2?: string;
-  intOption1?: string;
-  intOption2?: string;
+  exteriorColor1: string; // Previously 'color'
+  exteriorColor2?: string; // Previously 'extOption1'
+  exteriorColor3?: string; // Previously 'extOption2'
+  interiorColor1: string; // Previously 'interiorColor'
+  interiorColor2?: string; // Previously 'intOption1'
+  interiorColor3?: string; // Previously 'intOption2'
   msrp: number;
   sellingPrice?: number;
   gross?: number;
@@ -43,13 +43,4 @@ export interface AppUser {
   email: string | null;
   displayName: string | null;
   isManager: boolean;
-}
-
-export interface VehicleOption {
-  id: string;
-  code: string; // 4-character code (e.g., "PW01")
-  name: string; // Descriptive name (e.g., "Premium Wheels")
-  type: 'exterior' | 'interior';
-  createdAt?: Timestamp;
-  updatedAt?: Timestamp;
 }

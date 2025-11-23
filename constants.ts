@@ -38,6 +38,3 @@ export const MANAGER_EMAILS = [
 
 // Firestore constants for storing user roles.
 export const USERS_COLLECTION = 'users';
-
-// Firestore collection for vehicle options (exterior and interior)
-export const VEHICLE_OPTIONS_COLLECTION = 'vehicleOptions';

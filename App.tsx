@@ -17,8 +17,8 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { db, auth } from "./services/firebase";
-import { Order, OrderStatus, AppUser, VehicleOption } from "./types";
-import { MANAGER_EMAILS, USERS_COLLECTION, VEHICLE_OPTIONS_COLLECTION } from "./constants";
+import { Order, OrderStatus, AppUser } from "./types";
+import { MANAGER_EMAILS, USERS_COLLECTION } from "./constants";
 import Header from "./components/Header";
 import OrderForm from "./components/OrderForm";
 import OrderList from "./components/OrderList";
@@ -41,7 +41,6 @@ const App: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [user, setUser] = useState<AppUser | null>(null);
   const [allUsers, setAllUsers] = useState<AppUser[]>([]);
-  const [vehicleOptions, setVehicleOptions] = useState<VehicleOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isOrderFormVisible, setIsOrderFormVisible] = useState(false);
   const [stats, setStats] = useState({
@@ -383,29 +382,9 @@ const App: React.FC = () => {
       );
     }
 
-    // Fetch vehicle options (for all authenticated users)
-    const optionsQuery = query(
-      collection(db, VEHICLE_OPTIONS_COLLECTION),
-      orderBy("type", "asc"),
-      orderBy("code", "asc")
-    );
-    const unsubscribeOptions = onSnapshot(
-      optionsQuery,
-      (querySnapshot) => {
-        const optionsData: VehicleOption[] = querySnapshot.docs.map(
-          (doc) => ({ ...doc.data(), id: doc.id } as VehicleOption)
-        );
-        setVehicleOptions(optionsData);
-      },
-      (error) => {
-        console.error("Error fetching vehicle options from Firestore: ", error);
-      }
-    );
-
     return () => {
       unsubscribeOrders?.();
       unsubscribeUsers?.();
-      unsubscribeOptions?.();
     };
   }, [user]);
 
@@ -488,36 +467,6 @@ const App: React.FC = () => {
       } catch (error) {
         console.error("Error updating user role:", error);
         alert("Failed to update user role. Please try again.");
-      }
-    },
-    [user]
-  );
-
-  const handleAddVehicleOption = useCallback(
-    async (option: Omit<VehicleOption, 'id'>) => {
-      if (!user?.isManager) return; // Security check
-      try {
-        await addDoc(collection(db, VEHICLE_OPTIONS_COLLECTION), {
-          ...option,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
-      } catch (error) {
-        console.error("Error adding vehicle option:", error);
-        throw error;
-      }
-    },
-    [user]
-  );
-
-  const handleDeleteVehicleOption = useCallback(
-    async (optionId: string) => {
-      if (!user?.isManager) return; // Security check
-      try {
-        await deleteDoc(doc(db, VEHICLE_OPTIONS_COLLECTION, optionId));
-      } catch (error) {
-        console.error("Error deleting vehicle option:", error);
-        throw error;
       }
     },
     [user]
@@ -606,7 +555,6 @@ const App: React.FC = () => {
                       <OrderForm
                         onAddOrder={handleAddOrderAndCloseForm}
                         currentUser={user}
-                        vehicleOptions={vehicleOptions}
                       />
                     </div>
                   )}
@@ -615,7 +563,6 @@ const App: React.FC = () => {
                     onUpdateStatus={handleUpdateOrderStatus}
                     onDeleteOrder={handleDeleteOrder}
                     currentUser={user}
-                    vehicleOptions={vehicleOptions}
                   />
                 </div>
               ) : (
@@ -634,7 +581,6 @@ const App: React.FC = () => {
                       <OrderForm
                         onAddOrder={handleAddOrder}
                         currentUser={user}
-                        vehicleOptions={vehicleOptions}
                       />
                     </div>
                   </div>
@@ -647,7 +593,6 @@ const App: React.FC = () => {
                       onUpdateStatus={handleUpdateOrderStatus}
                       onDeleteOrder={handleDeleteOrder}
                       currentUser={user}
-                      vehicleOptions={vehicleOptions}
                     />
                   </div>
                 </div>
@@ -662,10 +607,7 @@ const App: React.FC = () => {
                 <SettingsPage
                   users={allUsers}
                   currentUser={user!}
-                  vehicleOptions={vehicleOptions}
                   onUpdateUserRole={handleUpdateUserRole}
-                  onAddVehicleOption={handleAddVehicleOption}
-                  onDeleteVehicleOption={handleDeleteVehicleOption}
                 />
               </ProtectedRoute>
             }

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import SettingsPage from '../SettingsPage';
-import { AppUser, VehicleOption } from '../../types';
+import { AppUser } from '../../types';
 
 const mockUsers: AppUser[] = [
   { uid: 'user-1', email: 'manager@test.com', displayName: 'Manager User', isManager: true },
@@ -12,46 +12,32 @@ const mockUsers: AppUser[] = [
 
 const mockCurrentUser: AppUser = mockUsers[0];
 
-const mockVehicleOptions: VehicleOption[] = [
-  { id: '1', code: 'PW01', name: 'Premium Wheels', type: 'exterior' },
-  { id: '2', code: 'LA40', name: 'Leather Black', type: 'interior' },
-];
-
 describe('SettingsPage', () => {
   const mockOnUpdateUserRole = vi.fn();
-  const mockOnAddVehicleOption = vi.fn();
-  const mockOnDeleteVehicleOption = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('renders section tabs', () => {
+  it('renders user management heading', () => {
     render(
       <SettingsPage
         users={mockUsers}
         currentUser={mockCurrentUser}
-        vehicleOptions={mockVehicleOptions}
         onUpdateUserRole={mockOnUpdateUserRole}
-        onAddVehicleOption={mockOnAddVehicleOption}
-        onDeleteVehicleOption={mockOnDeleteVehicleOption}
       />
     );
 
-    // Check for section tabs
-    expect(screen.getAllByText('User Management')).toHaveLength(2); // One in tab, one in content
-    expect(screen.getByText('Vehicle Options')).toBeInTheDocument();
+    // Check for user management heading
+    expect(screen.getByText('User Management')).toBeInTheDocument();
   });
 
-  it('renders user management content by default', () => {
+  it('renders user management content', () => {
     render(
       <SettingsPage
         users={mockUsers}
         currentUser={mockCurrentUser}
-        vehicleOptions={mockVehicleOptions}
         onUpdateUserRole={mockOnUpdateUserRole}
-        onAddVehicleOption={mockOnAddVehicleOption}
-        onDeleteVehicleOption={mockOnDeleteVehicleOption}
       />
     );
 
@@ -66,10 +52,7 @@ describe('SettingsPage', () => {
       <SettingsPage
         users={mockUsers}
         currentUser={mockCurrentUser}
-        vehicleOptions={mockVehicleOptions}
         onUpdateUserRole={mockOnUpdateUserRole}
-        onAddVehicleOption={mockOnAddVehicleOption}
-        onDeleteVehicleOption={mockOnDeleteVehicleOption}
       />
     );
 
@@ -84,14 +67,24 @@ describe('SettingsPage', () => {
       <SettingsPage
         users={mockUsers}
         currentUser={mockCurrentUser}
-        vehicleOptions={mockVehicleOptions}
         onUpdateUserRole={mockOnUpdateUserRole}
-        onAddVehicleOption={mockOnAddVehicleOption}
-        onDeleteVehicleOption={mockOnDeleteVehicleOption}
       />
     );
 
     const currentUserToggle = screen.getByTestId('manager-toggle-user-1') as HTMLInputElement;
     expect(currentUserToggle.disabled).toBe(true);
+  });
+
+  it('does not render vehicle options section', () => {
+    render(
+      <SettingsPage
+        users={mockUsers}
+        currentUser={mockCurrentUser}
+        onUpdateUserRole={mockOnUpdateUserRole}
+      />
+    );
+
+    // Vehicle Options should not be present
+    expect(screen.queryByText('Vehicle Options')).not.toBeInTheDocument();
   });
 });

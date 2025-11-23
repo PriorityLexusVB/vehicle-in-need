@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Order, OrderStatus, AppUser, VehicleOption } from '../types';
+import React, { useState } from 'react';
+import { Order, OrderStatus, AppUser } from '../types';
 import { STATUS_OPTIONS, YEARS } from '../constants';
 import { PlusIcon } from './icons/PlusIcon';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
@@ -7,7 +7,6 @@ import { CheckCircleIcon } from './icons/CheckCircleIcon';
 interface OrderFormProps {
   onAddOrder: (order: Omit<Order, 'id'>) => Promise<boolean>;
   currentUser?: AppUser | null;
-  vehicleOptions: VehicleOption[];
 }
 
 const getInitialFormState = (currentUser?: AppUser | null) => ({
@@ -21,12 +20,12 @@ const getInitialFormState = (currentUser?: AppUser | null) => ({
   year: YEARS[0],
   model: '',
   modelNumber: '',
-  color: '',
-  interiorColor: '',
-  extOption1: '',
-  extOption2: '',
-  intOption1: '',
-  intOption2: '',
+  exteriorColor1: '',
+  exteriorColor2: '',
+  exteriorColor3: '',
+  interiorColor1: '',
+  interiorColor2: '',
+  interiorColor3: '',
   msrp: '',
   sellingPrice: '',
   gross: '',
@@ -45,21 +44,11 @@ const FormField: React.FC<{label: string, id: string, error?: string, hint?: str
     </div>
 );
 
-const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser, vehicleOptions }) => {
+const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
   const [formState, setFormState] = useState(() => getInitialFormState(currentUser));
   const [errors, setErrors] = useState<Partial<Record<keyof typeof formState, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
-
-  // Separate exterior and interior options
-  const exteriorOptions = useMemo(
-    () => vehicleOptions.filter(opt => opt.type === 'exterior'),
-    [vehicleOptions]
-  );
-  const interiorOptions = useMemo(
-    () => vehicleOptions.filter(opt => opt.type === 'interior'),
-    [vehicleOptions]
-  );
 
   const validate = () => {
     const newErrors: Partial<Record<keyof typeof formState, string>> = {};
@@ -67,11 +56,31 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser, vehicleO
     if (!formState.manager) newErrors.manager = 'Manager is required';
     if (!formState.customerName) newErrors.customerName = 'Customer name is required';
     if (!formState.model) newErrors.model = 'Model is required';
-    if (!formState.color) newErrors.color = 'Exterior color is required';
+    if (!formState.exteriorColor1) newErrors.exteriorColor1 = 'Exterior Color #1 is required';
     if (!formState.dealNumber) newErrors.dealNumber = 'Deal # is required';
     if (!formState.modelNumber) newErrors.modelNumber = 'Model # is required';
-    if (!formState.interiorColor) newErrors.interiorColor = 'Interior Color # is required';
+    if (!formState.interiorColor1) newErrors.interiorColor1 = 'Interior Color #1 is required';
     if (!formState.options) newErrors.options = 'Options are required';
+
+    // Validate minimum 3 characters for color codes
+    if (formState.exteriorColor1 && formState.exteriorColor1.length < 3) {
+      newErrors.exteriorColor1 = 'Must be at least 3 characters';
+    }
+    if (formState.exteriorColor2 && formState.exteriorColor2.length < 3) {
+      newErrors.exteriorColor2 = 'Must be at least 3 characters';
+    }
+    if (formState.exteriorColor3 && formState.exteriorColor3.length < 3) {
+      newErrors.exteriorColor3 = 'Must be at least 3 characters';
+    }
+    if (formState.interiorColor1 && formState.interiorColor1.length < 3) {
+      newErrors.interiorColor1 = 'Must be at least 3 characters';
+    }
+    if (formState.interiorColor2 && formState.interiorColor2.length < 3) {
+      newErrors.interiorColor2 = 'Must be at least 3 characters';
+    }
+    if (formState.interiorColor3 && formState.interiorColor3.length < 3) {
+      newErrors.interiorColor3 = 'Must be at least 3 characters';
+    }
 
     if (!formState.depositAmount || isNaN(parseFloat(formState.depositAmount))) {
       newErrors.depositAmount = 'A valid deposit amount is required';
@@ -188,46 +197,28 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser, vehicleO
                 <input type="text" id="modelNumber" name="modelNumber" value={formState.modelNumber} onChange={handleChange} maxLength={4} className={inputClass('modelNumber')} />
             </FormField>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField label="Exterior Color #*" id="color" error={errors.color} hint="4-character code, e.g., 01UL">
-                    <input type="text" id="color" name="color" value={formState.color} onChange={handleChange} maxLength={4} className={inputClass('color')} />
-                </FormField>
-                <FormField label="Interior Color #*" id="interiorColor" error={errors.interiorColor} hint="4-character code, e.g., LA40">
-                    <input type="text" id="interiorColor" name="interiorColor" value={formState.interiorColor} onChange={handleChange} maxLength={4} className={inputClass('interiorColor')} />
-                </FormField>
-            </div>
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField label="Ext. Option 1" id="extOption1" error={errors.extOption1}>
-                  <select id="extOption1" name="extOption1" value={formState.extOption1} onChange={handleChange} className={inputClass('extOption1')}>
-                    <option value="">— Select Option —</option>
-                    {exteriorOptions.map(opt => (
-                      <option key={opt.id} value={opt.code}>{opt.code} - {opt.name}</option>
-                    ))}
-                  </select>
-                </FormField>
-                <FormField label="Ext. Option 2" id="extOption2" error={errors.extOption2}>
-                  <select id="extOption2" name="extOption2" value={formState.extOption2} onChange={handleChange} className={inputClass('extOption2')}>
-                    <option value="">— Select Option —</option>
-                    {exteriorOptions.map(opt => (
-                      <option key={opt.id} value={opt.code}>{opt.code} - {opt.name}</option>
-                    ))}
-                  </select>
-                </FormField>
-                <FormField label="Int. Option 1" id="intOption1" error={errors.intOption1}>
-                  <select id="intOption1" name="intOption1" value={formState.intOption1} onChange={handleChange} className={inputClass('intOption1')}>
-                    <option value="">— Select Option —</option>
-                    {interiorOptions.map(opt => (
-                      <option key={opt.id} value={opt.code}>{opt.code} - {opt.name}</option>
-                    ))}
-                  </select>
-                </FormField>
-                <FormField label="Int. Option 2" id="intOption2" error={errors.intOption2}>
-                  <select id="intOption2" name="intOption2" value={formState.intOption2} onChange={handleChange} className={inputClass('intOption2')}>
-                    <option value="">— Select Option —</option>
-                    {interiorOptions.map(opt => (
-                      <option key={opt.id} value={opt.code}>{opt.code} - {opt.name}</option>
-                    ))}
-                  </select>
-                </FormField>
+                <div>
+                    <FormField label="Exterior Color #1*" id="exteriorColor1" error={errors.exteriorColor1} hint="Min 3 chars, e.g., 01UL">
+                        <input type="text" id="exteriorColor1" name="exteriorColor1" value={formState.exteriorColor1} onChange={handleChange} minLength={3} maxLength={4} className={inputClass('exteriorColor1')} />
+                    </FormField>
+                    <FormField label="Exterior Color #2" id="exteriorColor2" error={errors.exteriorColor2} hint="Min 3 chars">
+                        <input type="text" id="exteriorColor2" name="exteriorColor2" value={formState.exteriorColor2} onChange={handleChange} minLength={3} maxLength={4} className={inputClass('exteriorColor2')} />
+                    </FormField>
+                    <FormField label="Exterior Color #3" id="exteriorColor3" error={errors.exteriorColor3} hint="Min 3 chars">
+                        <input type="text" id="exteriorColor3" name="exteriorColor3" value={formState.exteriorColor3} onChange={handleChange} minLength={3} maxLength={4} className={inputClass('exteriorColor3')} />
+                    </FormField>
+                </div>
+                <div>
+                    <FormField label="Interior Color #1*" id="interiorColor1" error={errors.interiorColor1} hint="Min 3 chars, e.g., LA40">
+                        <input type="text" id="interiorColor1" name="interiorColor1" value={formState.interiorColor1} onChange={handleChange} minLength={3} maxLength={4} className={inputClass('interiorColor1')} />
+                    </FormField>
+                    <FormField label="Interior Color #2" id="interiorColor2" error={errors.interiorColor2} hint="Min 3 chars">
+                        <input type="text" id="interiorColor2" name="interiorColor2" value={formState.interiorColor2} onChange={handleChange} minLength={3} maxLength={4} className={inputClass('interiorColor2')} />
+                    </FormField>
+                    <FormField label="Interior Color #3" id="interiorColor3" error={errors.interiorColor3} hint="Min 3 chars">
+                        <input type="text" id="interiorColor3" name="interiorColor3" value={formState.interiorColor3} onChange={handleChange} minLength={3} maxLength={4} className={inputClass('interiorColor3')} />
+                    </FormField>
+                </div>
             </div>
         </div>
 
