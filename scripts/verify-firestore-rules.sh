@@ -116,9 +116,9 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 # Find and extract the create rule specifically from the orders collection
 # Strategy: Find "match /orders/" block first, then extract the "allow create:" within it
 if ORDER_CREATE_RULE=$(awk '
-  /match \/orders\/\{orderId\}/ { in_orders=1; next }
-  in_orders && /match \/[^}]+\{/ { in_orders=0 }
-  in_orders && /allow create:/ { found=1 }
+  /^[[:space:]]*match \/orders\/\{orderId\}/ { in_orders=1; next }
+  in_orders && /^[[:space:]]*match \// { in_orders=0 }
+  in_orders && /^[[:space:]]*allow create:/ { found=1; print; next }
   found { print }
   found && /;$/ { exit }
 ' firestore.rules); then
