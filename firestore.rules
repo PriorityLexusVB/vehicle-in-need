@@ -25,9 +25,10 @@ service cloud.firestore {
     // Note: This incurs an extra Firestore read but ensures managers work even
     // without custom claims being set. For best performance, run the 
     // set-manager-custom-claims.mjs script to sync custom claims.
+    // When both custom claims and Firestore document exist, custom claims
+    // are checked first (hasManagerClaim) as they're more performant.
     function hasManagerInFirestore() {
       return isSignedIn()
-        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isManager == true;
     }
 
@@ -92,8 +93,8 @@ service cloud.firestore {
         && request.resource.data.email == resource.data.email
         // Prevent adding arbitrary new keys (exact same set as before)
         && request.resource.data.keys().hasOnly(resource.data.keys())
-        // Role must stay a boolean if present
-        && (!('isManager' in resource.data) || isBool(resource.data.isManager));
+        // If isManager is being set in the update, ensure it's a boolean
+        && (!('isManager' in request.resource.data) || isBool(request.resource.data.isManager));
 
       // DELETE: Blocked from client.
       allow delete: if false;

@@ -497,6 +497,12 @@ describe('Firestore Security Rules - Orders Collection', () => {
   describe('Manager Firestore Document Fallback', () => {
     // Tests that managers with isManager=true in Firestore (but NO custom claim)
     // can still perform manager actions via the Firestore document fallback.
+    // 
+    // PERFORMANCE NOTE: The Firestore document fallback incurs an additional read
+    // for each permission check. For best performance in production, run the
+    // set-manager-custom-claims.mjs script to sync custom claims with Firestore.
+    // When custom claims are set, hasManagerClaim() is checked first and the
+    // Firestore read is skipped.
     
     beforeEach(async () => {
       // Setup: Create users and orders
