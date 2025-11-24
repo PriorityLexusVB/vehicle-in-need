@@ -29,6 +29,7 @@ service cloud.firestore {
     // are checked first (hasManagerClaim) as they're more performant.
     function hasManagerInFirestore() {
       return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isManager == true;
     }
 
@@ -56,12 +57,14 @@ service cloud.firestore {
           !('isManager' in request.resource.data)
           || request.resource.data.isManager == false
         )
-        // Allowed keys - only displayName, email, and isManager permitted
+        // Allowed keys - uid, displayName, email, and isManager permitted
         // Use difference check: incoming keys must be subset of allowed keys
         && request.resource.data.keys().hasAll(['displayName', 'email'])
-        && request.resource.data.keys().hasOnly(['displayName', 'email', 'isManager'])
+        && request.resource.data.keys().hasOnly(['uid', 'displayName', 'email', 'isManager'])
         // Email must match auth token (ensures integrity)
         && request.resource.data.email == request.auth.token.email
+        // If uid is provided, it must match the document path userId
+        && (!('uid' in request.resource.data) || request.resource.data.uid == userId)
         // If provided, isManager must be boolean
         && (!('isManager' in request.resource.data) || isBool(request.resource.data.isManager));
 

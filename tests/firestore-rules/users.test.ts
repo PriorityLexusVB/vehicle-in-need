@@ -4,7 +4,7 @@ import {
   assertSucceeds,
   RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { setDoc, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { setDoc, doc, getDoc, updateDoc, deleteDoc, collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { getTestEnv, clearTestData } from './test-env';
 
 let testEnv: RulesTestEnvironment;
@@ -77,6 +77,43 @@ describe('Firestore Security Rules - Users Collection', () => {
         setDoc(userRef, {
           email: 'user@example.com',
           displayName: 'Test User',
+        })
+      );
+    });
+
+    it('should allow user to create their own document with uid field included', async () => {
+      // This tests the exact pattern used by the production app (App.tsx)
+      // which stores uid, email, displayName, and isManager in the user document
+      const userId = 'user123';
+      const userDb = testEnv
+        .authenticatedContext(userId, { email: 'user@example.com' })
+        .firestore();
+      const userRef = doc(userDb, 'users', userId);
+      
+      await assertSucceeds(
+        setDoc(userRef, {
+          uid: userId,  // This is the pattern App.tsx uses
+          email: 'user@example.com',
+          displayName: 'Test User',
+          isManager: false,
+        })
+      );
+    });
+
+    it('should deny user creating document with uid mismatch', async () => {
+      // uid field must match the document path userId
+      const userId = 'user123';
+      const userDb = testEnv
+        .authenticatedContext(userId, { email: 'user@example.com' })
+        .firestore();
+      const userRef = doc(userDb, 'users', userId);
+      
+      await assertFails(
+        setDoc(userRef, {
+          uid: 'differentUid',  // Mismatch!
+          email: 'user@example.com',
+          displayName: 'Test User',
+          isManager: false,
         })
       );
     });
@@ -499,6 +536,97 @@ describe('Firestore Security Rules - Users Collection', () => {
           isManager: true,  // Promote to manager
         })
       );
+    });
+  });
+
+  describe('Collection Queries - Manager Access', () => {
+    // Tests that verify collection queries (list operations) work for managers.
+    // The production app uses queries like:
+    //   query(collection(db, "users"), orderBy("displayName", "asc"))
+    // to populate the user management view for managers.
+    
+    beforeEach(async () => {
+      // Setup: Create multiple users
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const adminDb = context.firestore();
+        
+        // Create a manager with custom claims
+        await setDoc(doc(adminDb, 'users', 'claimManager'), {
+          email: 'claimmanager@example.com',
+          displayName: 'Claims Manager',
+          isManager: true,
+        });
+        
+        // Create a manager WITHOUT custom claims (only Firestore document)
+        await setDoc(doc(adminDb, 'users', 'firestoreManager'), {
+          email: 'firestoremanager@example.com',
+          displayName: 'Firestore Manager',
+          isManager: true,
+        });
+        
+        // Create regular users
+        await setDoc(doc(adminDb, 'users', 'regularUser1'), {
+          email: 'regular1@example.com',
+          displayName: 'Regular User 1',
+          isManager: false,
+        });
+        await setDoc(doc(adminDb, 'users', 'regularUser2'), {
+          email: 'regular2@example.com',
+          displayName: 'Regular User 2',
+          isManager: false,
+        });
+      });
+    });
+
+    it('should allow manager with custom claims to list all users', async () => {
+      const managerDb = testEnv
+        .authenticatedContext('claimManager', { 
+          email: 'claimmanager@example.com',
+          isManager: true  // Custom claim
+        })
+        .firestore();
+      
+      // This is the exact query pattern used by the production app for managers
+      const usersQuery = query(
+        collection(managerDb, 'users'),
+        orderBy('displayName', 'asc')
+      );
+      
+      await assertSucceeds(getDocs(usersQuery));
+    });
+
+    it('should allow manager via Firestore document to list all users', async () => {
+      // Manager WITHOUT custom claim (only Firestore document has isManager: true)
+      const managerDb = testEnv
+        .authenticatedContext('firestoreManager', { 
+          email: 'firestoremanager@example.com'
+          // NOTE: No isManager custom claim!
+        })
+        .firestore();
+      
+      // This is the exact query pattern used by the production app for managers
+      const usersQuery = query(
+        collection(managerDb, 'users'),
+        orderBy('displayName', 'asc')
+      );
+      
+      await assertSucceeds(getDocs(usersQuery));
+    });
+
+    it('should deny regular user listing all users', async () => {
+      const userDb = testEnv
+        .authenticatedContext('regularUser1', { 
+          email: 'regular1@example.com'
+        })
+        .firestore();
+      
+      // Non-manager trying to list all users should fail
+      const usersQuery = query(
+        collection(userDb, 'users'),
+        orderBy('displayName', 'asc')
+      );
+      
+      await assertFails(getDocs(usersQuery));
     });
   });
 });
