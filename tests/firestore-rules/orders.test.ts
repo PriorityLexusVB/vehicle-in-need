@@ -493,4 +493,95 @@ describe('Firestore Security Rules - Orders Collection', () => {
       await assertFails(deleteDoc(orderRef));
     });
   });
+
+  describe('Manager Firestore Document Fallback', () => {
+    // Tests that managers with isManager=true in Firestore (but NO custom claim)
+    // can still perform manager actions via the Firestore document fallback.
+    
+    beforeEach(async () => {
+      // Setup: Create users and orders
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const adminDb = context.firestore();
+        
+        // Create a manager WITHOUT custom claim (only Firestore document)
+        await setDoc(doc(adminDb, 'users', 'firestoreManager'), {
+          email: 'firestoremanager@example.com',
+          displayName: 'Firestore Manager',
+          isManager: true,  // Manager in Firestore only, no custom claim
+        });
+        
+        // Create a regular user
+        await setDoc(doc(adminDb, 'users', 'regularUser'), {
+          email: 'regular@example.com',
+          displayName: 'Regular User',
+          isManager: false,
+        });
+        
+        // Create orders by both users
+        await setDoc(doc(adminDb, 'orders', 'managerOrder'), {
+          createdByUid: 'firestoreManager',
+          createdByEmail: 'firestoremanager@example.com',
+          createdAt: new Date(),
+          status: 'Factory Order',
+        });
+        await setDoc(doc(adminDb, 'orders', 'userOrder'), {
+          createdByUid: 'regularUser',
+          createdByEmail: 'regular@example.com',
+          createdAt: new Date(),
+          status: 'Locate',
+        });
+      });
+    });
+
+    it('should allow manager via Firestore document to read any order', async () => {
+      // Manager WITHOUT custom claim (only Firestore document has isManager: true)
+      const managerDb = testEnv
+        .authenticatedContext('firestoreManager', { 
+          email: 'firestoremanager@example.com'
+          // NOTE: No isManager custom claim!
+        })
+        .firestore();
+      
+      // Can read own order
+      const ownOrderRef = doc(managerDb, 'orders', 'managerOrder');
+      await assertSucceeds(getDoc(ownOrderRef));
+      
+      // Can read another user's order
+      const otherOrderRef = doc(managerDb, 'orders', 'userOrder');
+      await assertSucceeds(getDoc(otherOrderRef));
+    });
+
+    it('should allow manager via Firestore document to update any order', async () => {
+      const managerDb = testEnv
+        .authenticatedContext('firestoreManager', { 
+          email: 'firestoremanager@example.com'
+          // NOTE: No isManager custom claim!
+        })
+        .firestore();
+      
+      const orderRef = doc(managerDb, 'orders', 'userOrder');
+      
+      await assertSucceeds(
+        updateDoc(orderRef, {
+          createdByUid: 'regularUser',
+          createdByEmail: 'regular@example.com',
+          createdAt: new Date(),
+          status: 'Delivered',
+        })
+      );
+    });
+
+    it('should allow manager via Firestore document to delete any order', async () => {
+      const managerDb = testEnv
+        .authenticatedContext('firestoreManager', { 
+          email: 'firestoremanager@example.com'
+          // NOTE: No isManager custom claim!
+        })
+        .firestore();
+      
+      const orderRef = doc(managerDb, 'orders', 'userOrder');
+      
+      await assertSucceeds(deleteDoc(orderRef));
+    });
+  });
 });
