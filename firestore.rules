@@ -14,13 +14,28 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function isManager() {
-      // Manager status is determined by custom claims only to avoid circular dependencies.
-      // This function is kept for potential future use but is currently unused in the rules.
-      // All manager checks are inlined to use custom claims directly.
+    // Check if user has manager status via custom claims (preferred)
+    function hasManagerClaim() {
       return isSignedIn() 
         && ('isManager' in request.auth.token) 
         && request.auth.token.isManager == true;
+    }
+
+    // Check if user has manager status via Firestore document (fallback)
+    // Note: This incurs an extra Firestore read but ensures managers work even
+    // without custom claims being set. For best performance, run the 
+    // set-manager-custom-claims.mjs script to sync custom claims.
+    // When both custom claims and Firestore document exist, custom claims
+    // are checked first (hasManagerClaim) as they're more performant.
+    function hasManagerInFirestore() {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isManager == true;
+    }
+
+    // Combined manager check: custom claims OR Firestore document
+    // Custom claims are checked first as they're more performant
+    function isManager() {
+      return hasManagerClaim() || hasManagerInFirestore();
     }
 
     function isBool(v) {
@@ -50,20 +65,16 @@ service cloud.firestore {
         // If provided, isManager must be boolean
         && (!('isManager' in request.resource.data) || isBool(request.resource.data.isManager));
 
-      // READ: User can read self; managers (with custom claims only) can read anyone.
-      // IMPORTANT: Manager read via Firestore document check is NOT supported here because
-      // it would create infinite recursion when get(/users/{uid}) is called from other rules.
-      // Managers MUST use custom claims for reading other users' documents.
-      allow read: if isOwner(userId)
-        || (isSignedIn() && ('isManager' in request.auth.token) && request.auth.token.isManager == true);
+      // READ: User can read self; managers can read anyone.
+      // Manager check uses both custom claims and Firestore document fallback.
+      allow read: if isOwner(userId) || isManager();
 
       // UPDATE:
       // - Manager can update other users (including changing isManager).
       // - User updating self cannot change isManager.
       // - Email is immutable; restrict key set to existing keys to avoid schema drift.
-      // NOTE: Manager check uses custom claims only to avoid reading the user doc during update.
       allow update: if (
-          ((isSignedIn() && ('isManager' in request.auth.token) && request.auth.token.isManager == true) && !isOwner(userId))  // Manager editing another user
+          (isManager() && !isOwner(userId))  // Manager editing another user
           ||
           (
             isOwner(userId) 
@@ -82,8 +93,8 @@ service cloud.firestore {
         && request.resource.data.email == resource.data.email
         // Prevent adding arbitrary new keys (exact same set as before)
         && request.resource.data.keys().hasOnly(resource.data.keys())
-        // Role must stay a boolean if present
-        && (!('isManager' in resource.data) || isBool(resource.data.isManager));
+        // If isManager is being set in the update, ensure it's a boolean
+        && (!('isManager' in request.resource.data) || isBool(request.resource.data.isManager));
 
       // DELETE: Blocked from client.
       allow delete: if false;
@@ -115,14 +126,13 @@ service cloud.firestore {
 
       // READ:
       // Owners can read their own orders.
-      // Managers (with custom claims) can read any order.
-      allow read: if isOrderOwner();
-      allow read: if isSignedIn() && ('isManager' in request.auth.token) && request.auth.token.isManager == true;
+      // Managers can read any order (via custom claims or Firestore document).
+      allow read: if isOrderOwner() || isManager();
 
       // UPDATE:
-      // - Managers (with custom claims) can update any order.
+      // - Managers can update any order (via custom claims or Firestore document).
       // - Owners can update limited mutable fields (e.g. status, notes) without changing ownership.
-      allow update: if isSignedIn() && ('isManager' in request.auth.token) && request.auth.token.isManager == true;
+      allow update: if isManager();
       allow update: if isOrderOwner()
         // Ownership must remain unchanged
         && ('createdByUid' in request.resource.data)
@@ -134,8 +144,8 @@ service cloud.firestore {
         // Optional: owners can only change these fields
         && request.resource.data.status in ['Factory Order', 'Locate', 'Dealer Exchange', 'Received', 'Delivered'];
 
-      // DELETE: Managers (with custom claims) only.
-      allow delete: if isSignedIn() && ('isManager' in request.auth.token) && request.auth.token.isManager == true;
+      // DELETE: Managers only (via custom claims or Firestore document).
+      allow delete: if isManager();
     }
   }
 }
