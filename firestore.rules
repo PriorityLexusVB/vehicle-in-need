@@ -57,7 +57,7 @@ service cloud.firestore {
           !('isManager' in request.resource.data)
           || request.resource.data.isManager == false
         )
-        // Allowed keys - uid, displayName, email, and isManager permitted
+        // Allowed keys - uid (optional), displayName (required), email (required), and isManager (optional)
         // Use difference check: incoming keys must be subset of allowed keys
         && request.resource.data.keys().hasAll(['displayName', 'email'])
         && request.resource.data.keys().hasOnly(['uid', 'displayName', 'email', 'isManager'])
