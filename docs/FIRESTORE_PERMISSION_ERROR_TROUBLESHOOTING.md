@@ -13,6 +13,7 @@ Error adding order: FirebaseError: Missing or insufficient permissions.
 ### 1. Verify User Authentication
 
 Check browser console for:
+
 ```javascript
 ✅ Auth Complete - Final AppUser State
 isManager: true
@@ -24,6 +25,7 @@ If auth is complete but order creation fails, proceed to step 2.
 ### 2. Check Deployed Firestore Rules
 
 Run the verification script:
+
 ```bash
 npm run verify:rules
 ```
@@ -31,6 +33,7 @@ npm run verify:rules
 Compare the local rules with production rules in [Firebase Console](https://console.firebase.google.com/project/vehicles-in-need/firestore/rules).
 
 **Key rules to verify (lines 108-114):**
+
 ```javascript
 allow create: if isSignedIn()
   && request.resource.data.keys().hasAll(['createdByUid', 'createdByEmail', 'createdAt'])
@@ -53,6 +56,7 @@ Payload keys: [...]
 ```
 
 **Look for:**
+
 - ❌ `auth.currentUser` is null → Auth state not synced
 - ❌ Email mismatch between app and auth → State sync issue
 - ❌ Missing required keys → Payload construction error
@@ -61,6 +65,7 @@ Payload keys: [...]
 ### 4. Test with Firebase Emulator
 
 Run local tests to verify rules work correctly:
+
 ```bash
 npm run test:rules
 ```
@@ -74,17 +79,20 @@ The `npm run verify:rules` script helps you check if your local Firestore rules 
 ### Prerequisites
 
 1. **Firebase CLI installed**: The script requires `firebase-tools` to be installed
+
    ```bash
    npm install -g firebase-tools
    # or use the locally installed version via npm run
    ```
 
 2. **Logged in to Firebase**:
+
    ```bash
    firebase login
    ```
 
 3. **Active project configured**:
+
    ```bash
    firebase use <project-name-or-alias>
    # Example: firebase use vehicles-in-need
@@ -99,6 +107,7 @@ The `npm run verify:rules` script helps you check if your local Firestore rules 
 ### Running the Script
 
 From your project root directory:
+
 ```bash
 cd /path/to/vehicle-in-need
 npm run verify:rules
@@ -119,6 +128,7 @@ The script performs the following checks:
 ### Understanding the Output
 
 **Success output looks like:**
+
 ```
 🔍 Verifying Firestore Rules Deployment
 ========================================
@@ -167,6 +177,7 @@ The script performs the following checks:
 ### Troubleshooting the Script
 
 **Error: "jq not found"**
+
 ```bash
 # Install jq first
 sudo apt-get install jq   # Ubuntu/Debian
@@ -174,6 +185,7 @@ brew install jq           # macOS
 ```
 
 **Error: "Cannot determine active Firebase project"**
+
 ```bash
 # Set your Firebase project
 firebase use <project-name>
@@ -182,12 +194,14 @@ firebase projects:list
 ```
 
 **Error: "Firebase CLI not found"**
+
 ```bash
 # Install Firebase CLI globally
 npm install -g firebase-tools
 ```
 
 **Error: "Not logged into Firebase"**
+
 ```bash
 firebase login
 ```
@@ -199,11 +213,13 @@ firebase login
 **Symptom:** Rules tests pass locally, but production fails.
 
 **Solution:**
+
 ```bash
 firebase deploy --only firestore:rules
 ```
 
 **Verify:**
+
 ```bash
 npm run verify:rules
 ```
@@ -216,6 +232,7 @@ npm run verify:rules
 
 1. User should refresh the page after login
 2. Or we need to add a token refresh:
+
    ```javascript
    await auth.currentUser.getIdToken(true); // Force token refresh
    ```
@@ -225,6 +242,7 @@ npm run verify:rules
 **Symptom:** `auth.currentUser.email` is null or undefined.
 
 **Solution:** This is rare, but if it happens:
+
 1. Check Firebase Authentication settings
 2. Ensure email is verified
 3. Check for custom domain authentication issues
@@ -234,6 +252,7 @@ npm run verify:rules
 **Symptom:** `createdAt` field check fails despite using `serverTimestamp()`.
 
 **Solution:** This is unlikely (Firebase documentation confirms it works), but if suspected:
+
 1. Check if production Firebase SDK version differs from local
 2. Temporarily test with `new Date()` instead of `serverTimestamp()`
 
@@ -245,10 +264,12 @@ After deploying a fix:
 - [ ] Test locally with emulator: `npm run test:rules`
 - [ ] Deploy to production
 - [ ] Check deployed version in console:
+
   ```javascript
   App Version: [commit-sha]
   Build Time: [uuid]
   ```
+
 - [ ] Have user attempt order creation
 - [ ] Capture and analyze debug logs from console
 
@@ -257,6 +278,7 @@ After deploying a fix:
 ### Enable Firestore Debug Logging
 
 In browser console:
+
 ```javascript
 firebase.firestore.setLogLevel('debug');
 ```
@@ -264,6 +286,7 @@ firebase.firestore.setLogLevel('debug');
 ### Check Auth Token Claims
 
 In browser console:
+
 ```javascript
 const user = firebase.auth().currentUser;
 const token = await user.getIdToken();
@@ -272,6 +295,7 @@ console.log('Token claims:', decoded);
 ```
 
 Look for:
+
 - `email` claim
 - `user_id` or `uid` claim
 - Custom claims like `isManager` (if using custom claims)
@@ -281,6 +305,7 @@ Look for:
 1. Go to [Firestore Rules](https://console.firebase.google.com/project/vehicles-in-need/firestore/rules)
 2. Click "Rules Playground"
 3. Test the exact operation:
+
    ```
    Operation: create
    Path: orders/test-order-123
@@ -298,6 +323,7 @@ Look for:
 ## Fix History
 
 ### PR #118 (Merged: 2025-11-23)
+
 - Added validation to ensure `user.uid` and `user.email` are present
 - Removed optional chaining to prevent undefined values
 - Improved error messages
@@ -305,6 +331,7 @@ Look for:
 **Status:** Deployed to commit 5e608c5, but issue persists in production
 
 ### Current PR (In Progress)
+
 - Added comprehensive debug logging
 - Added `auth.currentUser` validation
 - Added email verification between auth states
@@ -315,13 +342,14 @@ Look for:
 ## Production Environment
 
 - **Firebase Project:** vehicles-in-need
-- **Deployed URL:** https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/
+- **Deployed URL:** <https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/>
 - **Firestore Rules:** [Console Link](https://console.firebase.google.com/project/vehicles-in-need/firestore/rules)
 - **Current Version:** Check console logs for `App Version`
 
 ## Contact & Support
 
 If issue persists after following this guide:
+
 1. Capture full browser console logs
 2. Note the exact steps to reproduce
 3. Check Firebase Console for any error patterns

@@ -15,6 +15,7 @@ This PR provides a complete solution to fix Cloud Build IAM permission errors in
 ### 1. Root Cause Analysis ✅
 
 Analyzed the Cloud Build error and identified the root cause:
+
 - Missing `iam.serviceaccounts.actAs` permission (most critical)
 - Missing Cloud Run Admin role
 - Missing Artifact Registry Writer role
@@ -67,6 +68,7 @@ Analyzed the Cloud Build error and identified the root cause:
 ### Prerequisites
 
 You need:
+
 - Access to Google Cloud Console for project `gen-lang-client-0615287333`
 - **Owner** or **Security Admin** IAM role on the project
 - `gcloud` CLI installed and authenticated
@@ -85,6 +87,7 @@ npm run cloudbuild:diagnose ba239e76-a1ad-4e30-bf0e-1ca4eb1fa401
 ```
 
 The diagnosis script will:
+
 - Check if service accounts exist
 - Verify IAM permissions
 - Check API enablement
@@ -168,6 +171,7 @@ Expected result: All build steps should succeed, including Cloud Run deployment.
 ## Prevention
 
 Once the fix is applied, the issue should not recur because:
+
 - IAM permissions are persistent
 - The repository has automated checks (`npm run lint:cloudbuild`)
 - The diagnosis script can be run anytime to verify configuration

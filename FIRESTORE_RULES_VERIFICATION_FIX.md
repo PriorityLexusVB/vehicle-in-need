@@ -27,6 +27,7 @@ This is clearly a **user profile** rule (with displayName, isManager), not an **
 ### Root Cause
 
 The awk pattern in the script was too generic:
+
 ```bash
 awk '/allow create:/{found=1} found{print; if(/;$/)exit}' firestore.rules
 ```
@@ -42,6 +43,7 @@ This pattern found the **first** `allow create:` rule in the file, which happens
 **File:** `scripts/verify-firestore-rules.sh`
 
 **Changed from:**
+
 ```bash
 if ORDER_CREATE_RULE=$(awk '/allow create:/{found=1} found{print; if(/;$/)exit}' firestore.rules); then
     echo "$ORDER_CREATE_RULE" | sed 's/^/   /'
@@ -51,6 +53,7 @@ fi
 ```
 
 **Changed to:**
+
 ```bash
 if ORDER_CREATE_RULE=$(awk '
   /match \/orders\/\{orderId\}/ { in_orders=1; next }
@@ -72,6 +75,7 @@ fi
 ```
 
 **How it works:**
+
 1. First locates the `match /orders/{orderId}` block
 2. Sets a flag `in_orders=1` when entering this block
 3. Clears the flag if another `match` block is encountered (nested collection)
@@ -83,6 +87,7 @@ fi
 **File:** `firestore.rules` (lines 108-114)
 
 Confirmed the actual orders creation rule is **correct** and matches documentation:
+
 ```javascript
 allow create: if isSignedIn()
   && request.resource.data.keys().hasAll(['createdByUid', 'createdByEmail', 'createdAt'])
@@ -92,6 +97,7 @@ allow create: if isSignedIn()
 ```
 
 **Required fields:**
+
 - ✅ `createdByUid` - Must match authenticated user's UID
 - ✅ `createdByEmail` - Must match authenticated user's email token
 - ✅ `createdAt` - Timestamp (usually serverTimestamp())
@@ -104,6 +110,7 @@ allow create: if isSignedIn()
 **File:** `package.json` (line 25)
 
 Confirmed `verify:rules` script already exists:
+
 ```json
 {
   "scripts": {
@@ -119,6 +126,7 @@ Confirmed `verify:rules` script already exists:
 Reviewed all documentation files that reference the verification script:
 
 #### ✅ docs/FIRESTORE_PERMISSION_ERROR_TROUBLESHOOTING.md
+
 - Line 28: Correctly shows `npm run verify:rules`
 - Lines 33-40: Shows correct orders rule syntax
 - Lines 70-195: Comprehensive guide on using the script
@@ -127,6 +135,7 @@ Reviewed all documentation files that reference the verification script:
 **Status:** Accurate, no changes needed
 
 #### ✅ IMPLEMENTATION_ORDER_PERMISSION_FIX.md
+
 - Lines 28-35: Shows correct orders rule
 - Line 131: References `npm run verify:rules`
 - Line 269: Lists script as "New verification script"
@@ -134,6 +143,7 @@ Reviewed all documentation files that reference the verification script:
 **Status:** Accurate, no changes needed
 
 #### ✅ NEXT_STEPS_FOR_ROB.md
+
 - No references to verify:rules script
 
 **Status:** No updates needed
@@ -178,6 +188,7 @@ codeql_checker   # ℹ️  N/A - Bash scripts not analyzed by CodeQL
 ## Before & After Comparison
 
 ### BEFORE (Incorrect Output)
+
 ```
 📝 Current order creation rule (orders collection create):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -192,9 +203,11 @@ codeql_checker   # ℹ️  N/A - Bash scripts not analyzed by CodeQL
            && (!('isManager' in request.resource.data) || isBool(request.resource.data.isManager));
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
 ❌ **Problem:** This shows the user profile creation rule, not the orders rule!
 
 ### AFTER (Correct Output)
+
 ```
 📝 Current order creation rule (orders collection create):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -207,6 +220,7 @@ codeql_checker   # ℹ️  N/A - Bash scripts not analyzed by CodeQL
            && request.resource.data.status in ['Factory Order', 'Locate', 'Dealer Exchange', 'Received', 'Delivered'];
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
 ✅ **Correct:** Now shows the actual orders collection creation rule!
 
 ---
@@ -216,6 +230,7 @@ codeql_checker   # ℹ️  N/A - Bash scripts not analyzed by CodeQL
 ### Running the Verification Script
 
 From the project root:
+
 ```bash
 # Ensure you're using the correct Firebase project
 firebase use <project-id-or-alias>
@@ -228,6 +243,7 @@ npm run verify:rules
 ### Expected Output
 
 The script will:
+
 1. ✅ Detect active Firebase project (works with numeric IDs and aliases)
 2. ✅ Read local `firestore.rules` file (141 lines)
 3. ✅ Calculate SHA256 checksum for comparison
@@ -238,6 +254,7 @@ The script will:
 ### What to Check
 
 After running the script:
+
 1. Note the checksum displayed
 2. Visit the Firebase Console link provided
 3. Compare active rules in console with local `firestore.rules`
@@ -262,6 +279,7 @@ After running the script:
 ## Related Documentation
 
 All documentation was verified to be accurate:
+
 - ✅ `docs/FIRESTORE_PERMISSION_ERROR_TROUBLESHOOTING.md` - Complete usage guide
 - ✅ `IMPLEMENTATION_ORDER_PERMISSION_FIX.md` - Implementation history
 - ✅ `firestore.rules` - Rules file (already correct)
@@ -300,6 +318,7 @@ npm run verify:rules
 ```
 
 Expected result:
+
 - Script will show the correct orders rule
 - Compare with Firebase Console
 - Deploy if needed: `firebase deploy --only firestore:rules`
