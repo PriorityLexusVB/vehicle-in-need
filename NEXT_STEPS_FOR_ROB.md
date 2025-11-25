@@ -10,9 +10,12 @@
 
 The Cloud Build deployment pipeline is now fully hardened with automatic verification:
 
-1. ✅ **CSS Verification** - Automatically verifies CSS is deployed and accessible
-2. ✅ **Version Verification** - Automatically verifies deployed version matches commit SHA
-3. ✅ **No Invalid Substitutions** - Removed all problematic variables (SERVICE_URL, etc.)
+1. ✅ **CSS Verification** - Automatically verifies CSS is deployed and
+   accessible
+2. ✅ **Version Verification** - Automatically verifies deployed version
+   matches commit SHA
+3. ✅ **No Invalid Substitutions** - Removed all problematic variables
+   (SERVICE_URL, etc.)
 4. ✅ **Complete Documentation** - Three comprehensive guides created
 5. ✅ **All Local Tests Pass** - Build, lint, and tests all succeed
 
@@ -76,7 +79,8 @@ After a successful build, verify the deployment:
 ### 1. Check Version Endpoint
 
 ```bash
-curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/api/status | jq
+URL=https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app
+curl "$URL/api/status" | jq
 ```
 
 Expected output should include:
@@ -94,12 +98,13 @@ Expected output should include:
 
 ```bash
 # Get the deployed HTML
-curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/ | grep -o '/assets/[^"]*\.css'
+URL=https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app
+curl "$URL/" | grep -o '/assets/[^"]*\.css'
 
 # Should output something like: /assets/index-DNzTS1Bl.css
 
 # Verify CSS is accessible
-curl -I https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/assets/index-DNzTS1Bl.css
+curl -I "$URL/assets/index-DNzTS1Bl.css"
 ```
 
 Expected: HTTP 200 status code
@@ -148,7 +153,8 @@ bash scripts/verify-css-deployed.sh pre-order-dealer-exchange-tracker us-west1
 **Diagnose**:
 
 ```bash
-bash scripts/verify-version.sh pre-order-dealer-exchange-tracker us-west1 $(git rev-parse --short HEAD)
+bash scripts/verify-version.sh pre-order-dealer-exchange-tracker us-west1 \
+  $(git rev-parse --short HEAD)
 ```
 
 **Common causes**:
@@ -223,14 +229,14 @@ Three comprehensive documents have been created:
 
 ### GCP Project
 
-```
+```text
 Project ID: gen-lang-client-0615287333
 Project Number: 842946218691
 ```
 
 ### Cloud Run Service
 
-```
+```text
 Service: pre-order-dealer-exchange-tracker
 Region: us-west1
 URL: https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/
@@ -238,14 +244,14 @@ URL: https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/
 
 ### Service Accounts
 
-```
-Cloud Build SA: cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com
-Runtime SA: pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com
+```text
+Cloud Build SA: cloud-build-deployer@gen-lang-client-0615287333.iam...
+Runtime SA: pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam...
 ```
 
 ### Cloud Build Trigger
 
-```
+```text
 Name: vehicle-in-need-deploy
 Branch: main
 Substitutions:
@@ -255,10 +261,11 @@ Substitutions:
 
 ### Artifact Registry
 
-```
+```text
 Region: us-west1
 Repository: vehicle-in-need
-Image Pattern: us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:SHORT_SHA
+Image Pattern: us-west1-docker.pkg.dev/gen-lang-client-0615287333/
+  vehicle-in-need/pre-order-dealer-exchange-tracker:SHORT_SHA
 ```
 
 ---
@@ -274,7 +281,8 @@ substitutions:
   SERVICE_URL: https://...  # ❌ ERROR
 ```
 
-**Why**: SERVICE_URL doesn't exist until AFTER deployment. It must be derived at runtime inside scripts.
+**Why**: SERVICE_URL doesn't exist until AFTER deployment. It must be derived
+at runtime inside scripts.
 
 ### ✅ Only Use Valid Substitutions
 
@@ -387,7 +395,8 @@ bash scripts/diagnose-cloud-build-error.sh [BUILD_ID]
 bash scripts/verify-css-deployed.sh pre-order-dealer-exchange-tracker us-west1
 
 # Verify version
-bash scripts/verify-version.sh pre-order-dealer-exchange-tracker us-west1 $(git rev-parse --short HEAD)
+bash scripts/verify-version.sh pre-order-dealer-exchange-tracker us-west1 \
+  $(git rev-parse --short HEAD)
 ```
 
 ### Reference Documentation
@@ -406,7 +415,8 @@ bash scripts/verify-version.sh pre-order-dealer-exchange-tracker us-west1 $(git 
 
 **Time Required**: 15-30 minutes for full verification.
 
-**Risk Level**: Low - all changes are additive (new verification steps), no breaking changes.
+**Risk Level**: Low - all changes are additive (new verification steps),
+no breaking changes.
 
 ---
 

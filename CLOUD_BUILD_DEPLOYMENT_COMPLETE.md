@@ -2,13 +2,17 @@
 
 **Date**: 2025-11-22  
 **Status**: ✅ COMPLETE  
-**Objective**: Complete, harden, and verify the Cloud Build → Cloud Run deployment pipeline
+**Objective**: Complete, harden, and verify the Cloud Build → Cloud Run
+deployment pipeline
 
 ---
 
 ## Summary
 
-The Cloud Build deployment pipeline for `pre-order-dealer-exchange-tracker` is now fully functional and hardened with comprehensive verification steps. The pipeline builds, deploys, and verifies CSS and version information automatically on every push to `main`.
+The Cloud Build deployment pipeline for `pre-order-dealer-exchange-tracker`
+is now fully functional and hardened with comprehensive verification steps.
+The pipeline builds, deploys, and verifies CSS and version information
+automatically on every push to `main`.
 
 ---
 
@@ -95,7 +99,8 @@ The pipeline is now free of invalid substitution variables:
 - ❌ No `HTTP_STATUS` (used only inside scripts)
 - ❌ No `DEPLOYED_VERSION` (used only inside scripts)
 
-These variables are correctly used as **bash variables inside scripts**, not as Cloud Build substitutions.
+These variables are correctly used as **bash variables inside scripts**, not as
+Cloud Build substitutions.
 
 ---
 
@@ -173,26 +178,31 @@ Steps 7 and 8 are newly added in this implementation.
 
 **Cloud Build Triggers**:
 
-```
-https://console.cloud.google.com/cloud-build/triggers?project=gen-lang-client-0615287333
+```text
+https://console.cloud.google.com/cloud-build/triggers
+  ?project=gen-lang-client-0615287333
 ```
 
 **Cloud Build History**:
 
-```
-https://console.cloud.google.com/cloud-build/builds?project=gen-lang-client-0615287333
+```text
+https://console.cloud.google.com/cloud-build/builds
+  ?project=gen-lang-client-0615287333
 ```
 
 **Cloud Run Service**:
 
-```
-https://console.cloud.google.com/run/detail/us-west1/pre-order-dealer-exchange-tracker?project=gen-lang-client-0615287333
+```text
+https://console.cloud.google.com/run/detail/us-west1/
+  pre-order-dealer-exchange-tracker?project=gen-lang-client-0615287333
 ```
 
 **Artifact Registry**:
 
-```
-https://console.cloud.google.com/artifacts/docker/gen-lang-client-0615287333/us-west1/vehicle-in-need?project=gen-lang-client-0615287333
+```text
+https://console.cloud.google.com/artifacts/docker/
+  gen-lang-client-0615287333/us-west1/vehicle-in-need
+  ?project=gen-lang-client-0615287333
 ```
 
 ---
@@ -281,10 +291,11 @@ gcloud run services describe pre-order-dealer-exchange-tracker \
   --format='value(status.url)'
 
 # Check version endpoint
-curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/api/status | jq
+URL=https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app
+curl "$URL/api/status" | jq
 
 # Verify CSS manually
-curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/ | grep -o '/assets/[^"]*\.css'
+curl "$URL/" | grep -o '/assets/[^"]*\.css'
 ```
 
 ### Step 4: Verify UI Styling
@@ -302,7 +313,9 @@ Open in browser and confirm:
 
 ### Why Not Use SERVICE_URL as a Substitution?
 
-Cloud Build substitution variables must exist **before** the build starts. However, the service URL is only created **after** Cloud Run deployment completes.
+Cloud Build substitution variables must exist **before** the build starts.
+However, the service URL is only created **after** Cloud Run deployment
+completes.
 
 **Incorrect Approach** ❌:
 
@@ -341,8 +354,8 @@ steps:
 
 **Symptom**:
 
-```
-INVALID_ARGUMENT: invalid value for 'build.substitutions': 
+```text
+INVALID_ARGUMENT: invalid value for 'build.substitutions':
 key in the template "SERVICE_URL" is not a valid built-in substitution
 ```
 
@@ -357,7 +370,7 @@ key in the template "SERVICE_URL" is not a valid built-in substitution
 
 **Symptom**:
 
-```
+```text
 ❌ ERROR: CSS file returned HTTP 404
 ```
 
@@ -377,7 +390,7 @@ key in the template "SERVICE_URL" is not a valid built-in substitution
 
 **Symptom**:
 
-```
+```text
 ❌ ERROR: Version mismatch detected
 Deployed: abc1234
 Expected: xyz5678
@@ -455,7 +468,8 @@ gcloud builds submit \
   --substitutions=_REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=$SHORT_SHA
 ```
 
-Expected result: Build completes with "Status: SUCCESS" and all steps (including `verify-css-deployed` and `verify-version`) pass.
+Expected result: Build completes with "Status: SUCCESS" and all steps
+(including `verify-css-deployed` and `verify-version`) pass.
 
 ### 2. Test Automatic Trigger
 
@@ -468,8 +482,9 @@ git push origin main
 
 Monitor in Cloud Console:
 
-```
-https://console.cloud.google.com/cloud-build/builds?project=gen-lang-client-0615287333
+```text
+https://console.cloud.google.com/cloud-build/builds
+  ?project=gen-lang-client-0615287333
 ```
 
 ### 3. Verify Production
@@ -479,7 +494,8 @@ After successful deployment:
 1. **Check version**:
 
    ```bash
-   curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/api/status | jq '.version'
+   URL=https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app
+   curl "$URL/api/status" | jq '.version'
    ```
 
    Should return the SHORT_SHA of the deployed commit.

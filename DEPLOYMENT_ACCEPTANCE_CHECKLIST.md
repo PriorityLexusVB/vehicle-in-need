@@ -97,26 +97,31 @@ gcloud builds submit \
 
 - [x] Cloud Build Triggers:
 
-  ```
-  https://console.cloud.google.com/cloud-build/triggers?project=gen-lang-client-0615287333
+  ```text
+  https://console.cloud.google.com/cloud-build/triggers
+    ?project=gen-lang-client-0615287333
   ```
 
 - [x] Cloud Build History:
 
-  ```
-  https://console.cloud.google.com/cloud-build/builds?project=gen-lang-client-0615287333
+  ```text
+  https://console.cloud.google.com/cloud-build/builds
+    ?project=gen-lang-client-0615287333
   ```
 
 - [x] Cloud Run Service:
 
-  ```
-  https://console.cloud.google.com/run/detail/us-west1/pre-order-dealer-exchange-tracker?project=gen-lang-client-0615287333
+  ```text
+  https://console.cloud.google.com/run/detail/us-west1/
+    pre-order-dealer-exchange-tracker?project=gen-lang-client-0615287333
   ```
 
 - [x] Artifact Registry:
 
-  ```
-  https://console.cloud.google.com/artifacts/docker/gen-lang-client-0615287333/us-west1/vehicle-in-need?project=gen-lang-client-0615287333
+  ```text
+  https://console.cloud.google.com/artifacts/docker/
+    gen-lang-client-0615287333/us-west1/vehicle-in-need
+    ?project=gen-lang-client-0615287333
   ```
 
 ---
@@ -156,16 +161,18 @@ gcloud run services describe pre-order-dealer-exchange-tracker \
 ### 2. Verify Version
 
 ```bash
-curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/api/status | jq '.version'
+URL=https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app
+curl "$URL/api/status" | jq '.version'
 ```
 
 ### 3. Verify CSS
 
 ```bash
-curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/ | grep -o '/assets/[^"]*\.css'
+URL=https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app
+curl "$URL/" | grep -o '/assets/[^"]*\.css'
 
 # Then check CSS file exists:
-curl -I https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/assets/index-DNzTS1Bl.css
+curl -I "$URL/assets/index-DNzTS1Bl.css"
 ```
 
 ### 4. Visual UI Check
@@ -190,7 +197,8 @@ The following can only be tested with GCP access:
 ```bash
 gcloud builds submit \
   --config=cloudbuild.yaml \
-  --substitutions=_REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=$(git rev-parse --short HEAD)
+  --substitutions=_REGION=us-west1,\
+_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=$(git rev-parse --short HEAD)
 ```
 
 Expected: Build completes with "Status: SUCCESS"
@@ -212,7 +220,12 @@ Expected: All checks pass
 
 ### Test 4: Verify Version in Production
 
-Run: `bash scripts/verify-version.sh pre-order-dealer-exchange-tracker us-west1 $(git rev-parse --short HEAD)`
+Run:
+
+```bash
+bash scripts/verify-version.sh pre-order-dealer-exchange-tracker us-west1 \
+  $(git rev-parse --short HEAD)
+```
 
 Expected: Deployed version matches current commit
 
@@ -295,7 +308,8 @@ These items can only be completed by someone with GCP access:
 **Documentation**: ✅ COMPLETE  
 **GCP Testing**: ⏳ PENDING (requires GCP access)
 
-All code changes are complete and validated locally. The pipeline is ready for testing in GCP.
+All code changes are complete and validated locally. The pipeline is ready
+for testing in GCP.
 
 ---
 

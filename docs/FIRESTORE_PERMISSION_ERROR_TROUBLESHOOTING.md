@@ -2,9 +2,10 @@
 
 ## Problem
 
-Users encounter "Missing or insufficient permissions" error when creating orders despite being authenticated.
+Users encounter "Missing or insufficient permissions" error when creating orders
+despite being authenticated.
 
-```
+```text
 Error adding order: FirebaseError: Missing or insufficient permissions.
 ```
 
@@ -36,10 +37,12 @@ Compare the local rules with production rules in [Firebase Console](https://cons
 
 ```javascript
 allow create: if isSignedIn()
-  && request.resource.data.keys().hasAll(['createdByUid', 'createdByEmail', 'createdAt'])
+  && request.resource.data.keys().hasAll([
+       'createdByUid', 'createdByEmail', 'createdAt'])
   && request.resource.data.createdByUid == request.auth.uid
   && request.resource.data.createdByEmail == request.auth.token.email
-  && request.resource.data.status in ['Factory Order', 'Locate', 'Dealer Exchange', 'Received', 'Delivered'];
+  && request.resource.data.status in [
+       'Factory Order', 'Locate', 'Dealer Exchange', 'Received', 'Delivered'];
 ```
 
 ### 3. Verify Debug Logs
@@ -74,7 +77,8 @@ Expected: All 42 tests should pass ✅
 
 ## How to Use the Rules Verification Script
 
-The `npm run verify:rules` script helps you check if your local Firestore rules match what's deployed in production. Here's how to use it:
+The `npm run verify:rules` script helps you check if your local Firestore
+rules match what's deployed in production. Here's how to use it:
 
 ### Prerequisites
 
@@ -129,7 +133,7 @@ The script performs the following checks:
 
 **Success output looks like:**
 
-```
+```text
 🔍 Verifying Firestore Rules Deployment
 ========================================
 
@@ -141,7 +145,8 @@ The script performs the following checks:
 🔐 Local rules checksum: a1b2c3d4...
 
 ⚠️  To verify production rules match local rules:
-   1. Go to Firebase Console: https://console.firebase.google.com/project/vehicles-in-need/firestore/rules
+   1. Go to Firebase Console:
+      https://console.firebase.google.com/project/vehicles-in-need/firestore/rules
    2. Check if the rules match the content of firestore.rules
    3. If they don't match, deploy with: firebase deploy --only firestore:rules
 
@@ -154,10 +159,12 @@ The script performs the following checks:
 📝 Current order creation rule (orders collection create):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    allow create: if isSignedIn()
-     && request.resource.data.keys().hasAll(['createdByUid', 'createdByEmail', 'createdAt'])
+     && request.resource.data.keys().hasAll([
+          'createdByUid', 'createdByEmail', 'createdAt'])
      && request.resource.data.createdByUid == request.auth.uid
      && request.resource.data.createdByEmail == request.auth.token.email
-     && request.resource.data.status in ['Factory Order', 'Locate', 'Dealer Exchange', 'Received', 'Delivered'];
+     && request.resource.data.status in [
+          'Factory Order', 'Locate', 'Dealer Exchange', 'Received', 'Delivered'];
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ✅ Verification complete. To deploy rules to production:
@@ -166,17 +173,19 @@ The script performs the following checks:
 
 ### Comparing with Production
 
-**Important:** The script does **not** automatically compare local rules with production. You must:
+**Important:** The script does **not** automatically compare local rules with
+production. You must:
 
 1. Note the checksum from the script output
 2. Open the Firebase Console link provided
-3. Manually compare the rules shown in the console with your local `firestore.rules` file
+3. Manually compare the rules shown in the console with your local
+   `firestore.rules` file
 4. If they differ, deploy using: `firebase deploy --only firestore:rules`
 5. Re-run the script to verify deployment
 
 ### Troubleshooting the Script
 
-**Error: "jq not found"**
+#### Error: "jq not found"
 
 ```bash
 # Install jq first
@@ -184,7 +193,7 @@ sudo apt-get install jq   # Ubuntu/Debian
 brew install jq           # macOS
 ```
 
-**Error: "Cannot determine active Firebase project"**
+#### Error: "Cannot determine active Firebase project"
 
 ```bash
 # Set your Firebase project
@@ -193,14 +202,14 @@ firebase use <project-name>
 firebase projects:list
 ```
 
-**Error: "Firebase CLI not found"**
+#### Error: "Firebase CLI not found"
 
 ```bash
 # Install Firebase CLI globally
 npm install -g firebase-tools
 ```
 
-**Error: "Not logged into Firebase"**
+#### Error: "Not logged into Firebase"
 
 ```bash
 firebase login
@@ -228,7 +237,8 @@ npm run verify:rules
 
 **Symptom:** Error occurs immediately after login, especially with popup sign-in.
 
-**Solution:** The enhanced code (commit 675370e) adds checks for `auth.currentUser` and email matching. If logs show null or mismatch:
+**Solution:** The enhanced code (commit 675370e) adds checks for
+`auth.currentUser` and email matching. If logs show null or mismatch:
 
 1. User should refresh the page after login
 2. Or we need to add a token refresh:
@@ -251,7 +261,8 @@ npm run verify:rules
 
 **Symptom:** `createdAt` field check fails despite using `serverTimestamp()`.
 
-**Solution:** This is unlikely (Firebase documentation confirms it works), but if suspected:
+**Solution:** This is unlikely (Firebase documentation confirms it works),
+but if suspected:
 
 1. Check if production Firebase SDK version differs from local
 2. Temporarily test with `new Date()` instead of `serverTimestamp()`
@@ -306,7 +317,7 @@ Look for:
 2. Click "Rules Playground"
 3. Test the exact operation:
 
-   ```
+   ```text
    Operation: create
    Path: orders/test-order-123
    Auth: Use authenticated user

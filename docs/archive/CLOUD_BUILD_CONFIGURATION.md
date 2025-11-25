@@ -2,7 +2,8 @@
 
 ## Overview
 
-This document provides the authoritative reference for configuring the `vehicle-in-need-deploy` Cloud Build trigger for the vehicle-in-need project.
+This document provides the authoritative reference for configuring the
+`vehicle-in-need-deploy` Cloud Build trigger for the vehicle-in-need project.
 
 ## Substitution Variables
 
@@ -12,11 +13,11 @@ The trigger should be configured with only these substitution variables:
 
 | Variable | Type | Default | Required | Description |
 |----------|------|---------|----------|-------------|
-| `_REGION` | Custom | `us-west1` | No | GCP region for Cloud Run deployment |
-| `_SERVICE` | Custom | `pre-order-dealer-exchange-tracker` | No | Cloud Run service name |
-| `SHORT_SHA` | Built-in | (auto) | No | Automatically provided by Cloud Build triggers |
-| `PROJECT_ID` | Built-in | (auto) | No | Automatically provided by Cloud Build |
-| `BUILD_ID` | Built-in | (auto) | No | Automatically provided by Cloud Build |
+| `_REGION` | Custom | `us-west1` | No | GCP region for deployment |
+| `_SERVICE` | Custom | `pre-order-dealer-exchange-tracker` | No | Service name |
+| `SHORT_SHA` | Built-in | (auto) | No | Auto-provided by triggers |
+| `PROJECT_ID` | Built-in | (auto) | No | Auto-provided by Cloud Build |
+| `BUILD_ID` | Built-in | (auto) | No | Auto-provided by Cloud Build |
 
 ### Custom vs Built-in Substitutions
 
@@ -66,7 +67,8 @@ To test the configuration manually:
 
 ```bash
 gcloud builds submit --config cloudbuild.yaml \
-  --substitutions _REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=test-$(date +%Y%m%d-%H%M)
+  --substitutions _REGION=us-west1,\
+_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=test-$(date +%Y%m%d-%H%M)
 ```
 
 ## Build Steps Overview
@@ -78,13 +80,15 @@ The `cloudbuild.yaml` defines these steps:
 3. **push-image**: Push tagged image to Artifact Registry
 4. **push-latest**: Push `:latest` tag to Artifact Registry
 5. **deploy-cloud-run**: Deploy to Cloud Run with environment variables
-6. **verify-css-deployed**: Verify CSS files are accessible (includes dynamic `SERVICE_URL` retrieval)
+6. **verify-css-deployed**: Verify CSS files are accessible (includes dynamic
+   `SERVICE_URL` retrieval)
 
 ## Service Account Requirements
 
 ### Cloud Build Service Account
 
-`cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com` needs:
+`cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com`
+needs:
 
 - `roles/run.admin` - Deploy Cloud Run services
 - `roles/iam.serviceAccountUser` - Impersonate runtime service account
@@ -92,7 +96,8 @@ The `cloudbuild.yaml` defines these steps:
 
 ### Cloud Run Runtime Service Account
 
-`pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com` needs:
+`pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com`
+needs:
 
 - `roles/logging.logWriter` - Write application logs
 - `roles/secretmanager.secretAccessor` - Access Gemini API key secret
@@ -101,13 +106,13 @@ The `cloudbuild.yaml` defines these steps:
 
 ### Common Errors
 
-**Error: "invalid value for 'build.substitutions': key in the template 'SERVICE_URL'"**
+#### Error: "invalid value for 'build.substitutions'"
 
 - **Cause**: `SERVICE_URL` was added as a substitution variable
 - **Fix**: Remove `SERVICE_URL` or `_SERVICE_URL` from trigger configuration
 - **Details**: See [CLOUD_BUILD_FIX.md](./CLOUD_BUILD_FIX.md)
 
-**Error: Build fails to find service**
+#### Error: Build fails to find service
 
 - **Cause**: Incorrect `_SERVICE` or `_REGION` values
 - **Fix**: Verify service name and region match actual Cloud Run configuration
@@ -116,9 +121,13 @@ The `cloudbuild.yaml` defines these steps:
 
 - [cloudbuild.yaml](./cloudbuild.yaml) - Build configuration file
 - [CLOUD_BUILD_FIX.md](./CLOUD_BUILD_FIX.md) - Historical trigger fix documentation
-- [CLOUD_BUILD_TRIGGER_FIX.md](./CLOUD_BUILD_TRIGGER_FIX.md) - Detailed troubleshooting guide
-- [CONTAINER_DEPLOYMENT_GUIDE.md](./CONTAINER_DEPLOYMENT_GUIDE.md) - General deployment guide
-- [Cloud Build Substitutions](https://cloud.google.com/build/docs/configuring-builds/substitute-variable-values) - Official GCP docs
+- [CLOUD_BUILD_TRIGGER_FIX.md](./CLOUD_BUILD_TRIGGER_FIX.md) - Detailed
+  troubleshooting guide
+- [CONTAINER_DEPLOYMENT_GUIDE.md](./CONTAINER_DEPLOYMENT_GUIDE.md) - General
+  deployment guide
+- [Cloud Build Substitutions][substitutions] - Official GCP docs
+
+[substitutions]: https://cloud.google.com/build/docs/configuring-builds/substitute-variable-values
 
 ## Verification Checklist
 
