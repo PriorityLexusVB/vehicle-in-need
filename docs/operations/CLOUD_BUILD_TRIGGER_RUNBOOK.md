@@ -465,6 +465,7 @@ After a successful deployment, Cloud Build automatically runs two verification s
 ### Step 11.1: CSS Deployment Verification
 
 Verifies that CSS files are:
+
 - Referenced in the deployed HTML
 - Accessible via HTTP 200
 - Non-trivial size (>1000 bytes)
@@ -477,6 +478,7 @@ This step ensures the UI is properly styled in production.
 ### Step 11.2: Version Verification
 
 Verifies that:
+
 - The `/api/status` endpoint is accessible
 - The deployed version matches the commit SHA
 - No "manual" or "unknown" versions in production
@@ -501,10 +503,12 @@ gcloud builds submit \
 ```
 
 **Service Account Configuration:**
+
 - **Cloud Build SA** (for build/deploy): `cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com`
 - **Runtime SA** (for Cloud Run): `pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com`
 
 **Substitution Variables:**
+
 - `_REGION`: `us-west1`
 - `_SERVICE`: `pre-order-dealer-exchange-tracker`
 - `SHORT_SHA`: Auto-generated from git commit (passed explicitly in manual builds)

@@ -2,13 +2,17 @@
 
 **Date**: 2025-11-22  
 **Status**: ✅ COMPLETE  
-**Objective**: Complete, harden, and verify the Cloud Build → Cloud Run deployment pipeline
+**Objective**: Complete, harden, and verify the Cloud Build → Cloud Run
+deployment pipeline
 
 ---
 
 ## Summary
 
-The Cloud Build deployment pipeline for `pre-order-dealer-exchange-tracker` is now fully functional and hardened with comprehensive verification steps. The pipeline builds, deploys, and verifies CSS and version information automatically on every push to `main`.
+The Cloud Build deployment pipeline for `pre-order-dealer-exchange-tracker`
+is now fully functional and hardened with comprehensive verification steps.
+The pipeline builds, deploys, and verifies CSS and version information
+automatically on every push to `main`.
 
 ---
 
@@ -17,6 +21,7 @@ The Cloud Build deployment pipeline for `pre-order-dealer-exchange-tracker` is n
 ### 1. Script Permissions Fixed
 
 Made verification scripts executable:
+
 - ✅ `scripts/verify-css-deployed.sh`
 - ✅ `scripts/verify-version.sh`
 - ✅ `scripts/diagnose-cloud-build-error.sh`
@@ -26,6 +31,7 @@ Made verification scripts executable:
 Added two post-deployment verification steps to `cloudbuild.yaml`:
 
 #### Step: `verify-css-deployed`
+
 - Runs after Cloud Run deployment completes
 - Fetches the service URL dynamically using `gcloud run services describe`
 - Verifies CSS files are:
@@ -36,6 +42,7 @@ Added two post-deployment verification steps to `cloudbuild.yaml`:
 - Uses: `scripts/verify-css-deployed.sh`
 
 #### Step: `verify-version`
+
 - Runs after Cloud Run deployment completes
 - Queries `/api/status` endpoint
 - Verifies deployed version matches the build's `SHORT_SHA`
@@ -45,6 +52,7 @@ Added two post-deployment verification steps to `cloudbuild.yaml`:
 ### 3. Documentation Updated
 
 Updated `docs/operations/CLOUD_BUILD_TRIGGER_RUNBOOK.md` with:
+
 - Section 11: Deployment Verification Steps
 - Manual deployment command reference
 - Service account configuration
@@ -76,6 +84,7 @@ The trigger uses **ONLY** these custom substitutions (prefixed with `_`):
 - `_SERVICE`: `pre-order-dealer-exchange-tracker`
 
 Built-in substitutions (automatically provided):
+
 - `PROJECT_ID`: GCP project ID
 - `SHORT_SHA`: Short commit hash (7 characters)
 - `BUILD_ID`: Unique build identifier
@@ -83,19 +92,22 @@ Built-in substitutions (automatically provided):
 ### No Invalid Substitutions
 
 The pipeline is now free of invalid substitution variables:
+
 - ❌ No `SERVICE_URL` (derived at runtime in bash)
 - ❌ No `HTML_CONTENT` (used only inside scripts)
 - ❌ No `CSS_URL` (used only inside scripts)
 - ❌ No `HTTP_STATUS` (used only inside scripts)
 - ❌ No `DEPLOYED_VERSION` (used only inside scripts)
 
-These variables are correctly used as **bash variables inside scripts**, not as Cloud Build substitutions.
+These variables are correctly used as **bash variables inside scripts**, not as
+Cloud Build substitutions.
 
 ---
 
 ## Service Accounts
 
 ### Cloud Build Service Account (Build & Deploy)
+
 - Email: `cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com`
 - Roles:
   - `roles/run.admin` (deploy to Cloud Run)
@@ -103,6 +115,7 @@ These variables are correctly used as **bash variables inside scripts**, not as 
   - `roles/iam.serviceAccountUser` (act as runtime SA)
 
 ### Runtime Service Account (Cloud Run)
+
 - Email: `pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com`
 - Roles:
   - `roles/logging.logWriter` (write logs)
@@ -129,7 +142,8 @@ gcloud builds submit \
   --substitutions=_REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=$SHORT_SHA
 ```
 
-**Important**: 
+**Important**:
+
 - Do **NOT** include `SERVICE_URL` in `--substitutions`
 - Always pass `SHORT_SHA` explicitly for manual builds
 - The trigger automatically provides `SHORT_SHA` for GitHub pushes
@@ -154,6 +168,7 @@ Steps 7 and 8 are newly added in this implementation.
 ## Production URLs
 
 ### Cloud Run Service
+
 - **Service**: `pre-order-dealer-exchange-tracker`
 - **Region**: `us-west1`
 - **URL**: `https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/`
@@ -162,23 +177,32 @@ Steps 7 and 8 are newly added in this implementation.
 ### GCP Console Links
 
 **Cloud Build Triggers**:
-```
-https://console.cloud.google.com/cloud-build/triggers?project=gen-lang-client-0615287333
+
+```text
+https://console.cloud.google.com/cloud-build/triggers
+  ?project=gen-lang-client-0615287333
 ```
 
 **Cloud Build History**:
-```
-https://console.cloud.google.com/cloud-build/builds?project=gen-lang-client-0615287333
+
+```text
+https://console.cloud.google.com/cloud-build/builds
+  ?project=gen-lang-client-0615287333
 ```
 
 **Cloud Run Service**:
-```
-https://console.cloud.google.com/run/detail/us-west1/pre-order-dealer-exchange-tracker?project=gen-lang-client-0615287333
+
+```text
+https://console.cloud.google.com/run/detail/us-west1/
+  pre-order-dealer-exchange-tracker?project=gen-lang-client-0615287333
 ```
 
 **Artifact Registry**:
-```
-https://console.cloud.google.com/artifacts/docker/gen-lang-client-0615287333/us-west1/vehicle-in-need?project=gen-lang-client-0615287333
+
+```text
+https://console.cloud.google.com/artifacts/docker/
+  gen-lang-client-0615287333/us-west1/vehicle-in-need
+  ?project=gen-lang-client-0615287333
 ```
 
 ---
@@ -186,6 +210,7 @@ https://console.cloud.google.com/artifacts/docker/gen-lang-client-0615287333/us-
 ## Verification Scripts
 
 ### verify-css-deployed.sh
+
 ```bash
 # Usage
 bash scripts/verify-css-deployed.sh SERVICE_NAME REGION
@@ -195,6 +220,7 @@ bash scripts/verify-css-deployed.sh pre-order-dealer-exchange-tracker us-west1
 ```
 
 Checks:
+
 - ✅ Service URL resolves
 - ✅ HTML contains CSS reference
 - ✅ CSS file is accessible (HTTP 200)
@@ -202,6 +228,7 @@ Checks:
 - ✅ CSS contains Tailwind markers
 
 ### verify-version.sh
+
 ```bash
 # Usage
 bash scripts/verify-version.sh SERVICE_NAME REGION EXPECTED_SHA
@@ -211,12 +238,14 @@ bash scripts/verify-version.sh pre-order-dealer-exchange-tracker us-west1 abc123
 ```
 
 Checks:
+
 - ✅ `/api/status` endpoint responds
 - ✅ Version field is present
 - ✅ Version is not "manual..." or "unknown"
 - ✅ Version matches expected commit SHA
 
 ### diagnose-cloud-build-error.sh
+
 ```bash
 # Usage
 bash scripts/diagnose-cloud-build-error.sh [BUILD_ID]
@@ -226,6 +255,7 @@ bash scripts/diagnose-cloud-build-error.sh 0736f1da-ef57-4e10-8e5a-7eb6e9f67d95
 ```
 
 Diagnoses:
+
 - ✅ Service accounts exist
 - ✅ IAM permissions (including actAs)
 - ✅ Required APIs enabled
@@ -238,16 +268,21 @@ Diagnoses:
 ## Testing the Deployment
 
 ### Step 1: Trigger a Build
+
 Push to `main` branch or run manual build command.
 
 ### Step 2: Monitor Build
+
 Watch in Cloud Console or CLI:
+
 ```bash
 gcloud builds list --project=gen-lang-client-0615287333 --limit=1
 ```
 
 ### Step 3: Verify Production
+
 Check the deployed service:
+
 ```bash
 # Get service URL
 gcloud run services describe pre-order-dealer-exchange-tracker \
@@ -256,14 +291,17 @@ gcloud run services describe pre-order-dealer-exchange-tracker \
   --format='value(status.url)'
 
 # Check version endpoint
-curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/api/status | jq
+URL=https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app
+curl "$URL/api/status" | jq
 
 # Verify CSS manually
-curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/ | grep -o '/assets/[^"]*\.css'
+curl "$URL/" | grep -o '/assets/[^"]*\.css'
 ```
 
 ### Step 4: Verify UI Styling
+
 Open in browser and confirm:
+
 - ✅ Page loads without errors
 - ✅ Tailwind styles are applied (not unstyled HTML)
 - ✅ Colors, spacing, fonts render correctly
@@ -275,15 +313,19 @@ Open in browser and confirm:
 
 ### Why Not Use SERVICE_URL as a Substitution?
 
-Cloud Build substitution variables must exist **before** the build starts. However, the service URL is only created **after** Cloud Run deployment completes.
+Cloud Build substitution variables must exist **before** the build starts.
+However, the service URL is only created **after** Cloud Run deployment
+completes.
 
 **Incorrect Approach** ❌:
+
 ```yaml
 substitutions:
   SERVICE_URL: https://...  # ERROR: Doesn't exist yet!
 ```
 
 **Correct Approach** ✅:
+
 ```yaml
 steps:
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
@@ -311,12 +353,14 @@ steps:
 ### Build Fails with "Invalid substitution" Error
 
 **Symptom**:
-```
-INVALID_ARGUMENT: invalid value for 'build.substitutions': 
+
+```text
+INVALID_ARGUMENT: invalid value for 'build.substitutions':
 key in the template "SERVICE_URL" is not a valid built-in substitution
 ```
 
 **Solution**:
+
 1. Check trigger configuration in Cloud Console
 2. Ensure SERVICE_URL is **not** in substitution variables
 3. Run verification: `npm run lint:cloudbuild`
@@ -325,16 +369,19 @@ key in the template "SERVICE_URL" is not a valid built-in substitution
 ### Build Succeeds but CSS Verification Fails
 
 **Symptom**:
-```
+
+```text
 ❌ ERROR: CSS file returned HTTP 404
 ```
 
 **Possible Causes**:
+
 1. CSS files not generated during build (check Tailwind config)
 2. CSS files not copied to runtime image (check Dockerfile COPY)
 3. Wrong CSS path referenced in HTML
 
 **Solution**:
+
 1. Test build locally: `npm run build && npm run verify:css`
 2. Check Dockerfile has CSS verification steps
 3. Review build logs for CSS generation
@@ -342,18 +389,21 @@ key in the template "SERVICE_URL" is not a valid built-in substitution
 ### Version Verification Fails
 
 **Symptom**:
-```
+
+```text
 ❌ ERROR: Version mismatch detected
 Deployed: abc1234
 Expected: xyz5678
 ```
 
 **Possible Causes**:
+
 1. Old deployment not replaced
 2. APP_VERSION env var not set correctly
 3. Server cache issue
 
 **Solution**:
+
 1. Check Cloud Run revision is using correct image tag
 2. Verify `--set-env-vars=APP_VERSION=${SHORT_SHA}` in deploy step
 3. Force new revision deployment
@@ -384,7 +434,7 @@ Expected: xyz5678
 ## Success Criteria - All Met ✅
 
 - [x] Scripts are executable
-- [x] `cloudbuild.yaml` uses only valid substitutions (_REGION, _SERVICE)
+- [x] `cloudbuild.yaml` uses only valid substitutions (_REGION,_SERVICE)
 - [x] No SERVICE_URL, HTML_CONTENT, CSS_URL in substitutions
 - [x] CSS verification step added and waits for deployment
 - [x] Version verification step added and waits for deployment
@@ -418,7 +468,8 @@ gcloud builds submit \
   --substitutions=_REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=$SHORT_SHA
 ```
 
-Expected result: Build completes with "Status: SUCCESS" and all steps (including `verify-css-deployed` and `verify-version`) pass.
+Expected result: Build completes with "Status: SUCCESS" and all steps
+(including `verify-css-deployed` and `verify-version`) pass.
 
 ### 2. Test Automatic Trigger
 
@@ -430,8 +481,10 @@ git push origin main
 ```
 
 Monitor in Cloud Console:
-```
-https://console.cloud.google.com/cloud-build/builds?project=gen-lang-client-0615287333
+
+```text
+https://console.cloud.google.com/cloud-build/builds
+  ?project=gen-lang-client-0615287333
 ```
 
 ### 3. Verify Production
@@ -439,19 +492,24 @@ https://console.cloud.google.com/cloud-build/builds?project=gen-lang-client-0615
 After successful deployment:
 
 1. **Check version**:
+
    ```bash
-   curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/api/status | jq '.version'
+   URL=https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app
+   curl "$URL/api/status" | jq '.version'
    ```
+
    Should return the SHORT_SHA of the deployed commit.
 
 2. **Check UI styling**:
-   Open in browser: https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/
+   Open in browser: <https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/>
    Confirm Tailwind styles are applied (not plain HTML).
 
 3. **Check CSS file**:
+
    ```bash
    curl -I https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/assets/index-DNzTS1Bl.css
    ```
+
    Should return HTTP 200.
 
 ### 4. Investigate Old Failed Build (Optional)
@@ -477,11 +535,13 @@ For questions or issues:
    - `README.md`
 
 2. **Run Diagnostics**:
+
    ```bash
    npm run cloudbuild:diagnose
    ```
 
 3. **Verify Configuration**:
+
    ```bash
    npm run cloudbuild:verify-trigger
    ```

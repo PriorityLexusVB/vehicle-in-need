@@ -354,7 +354,7 @@ When deploying to Google Cloud Run:
 
 Before deploying, ensure proper IAM permissions are configured. If you encounter:
 
-```
+```text
 ERROR: Permission 'iam.serviceaccounts.actAs' denied
 ```
 
@@ -434,7 +434,7 @@ ERROR: Permission 'iam.serviceaccounts.actAs' denied
      _VITE_GEMINI_API_KEY: "your-api-key-or-secret-ref"
    ```
 
-4. **The container automatically:**
+5. **The container automatically:**
    - Uses the attached service account credentials (for server-side proxy)
    - Or uses the build-time API key (if VITE_GEMINI_API_KEY provided)
    - Serves both static files and API endpoints on port 8080

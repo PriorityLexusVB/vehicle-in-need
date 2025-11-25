@@ -10,9 +10,12 @@
 
 The Cloud Build deployment pipeline is now fully hardened with automatic verification:
 
-1. ✅ **CSS Verification** - Automatically verifies CSS is deployed and accessible
-2. ✅ **Version Verification** - Automatically verifies deployed version matches commit SHA
-3. ✅ **No Invalid Substitutions** - Removed all problematic variables (SERVICE_URL, etc.)
+1. ✅ **CSS Verification** - Automatically verifies CSS is deployed and
+   accessible
+2. ✅ **Version Verification** - Automatically verifies deployed version
+   matches commit SHA
+3. ✅ **No Invalid Substitutions** - Removed all problematic variables
+   (SERVICE_URL, etc.)
 4. ✅ **Complete Documentation** - Three comprehensive guides created
 5. ✅ **All Local Tests Pass** - Build, lint, and tests all succeed
 
@@ -43,6 +46,7 @@ gcloud builds submit \
 ```
 
 **Expected Result**: Build completes with "Status: SUCCESS" and all 8 steps pass:
+
 1. check-conflicts ✅
 2. validate-version ✅
 3. build-image ✅
@@ -64,7 +68,7 @@ git push origin main
 ```
 
 Monitor in Cloud Console:
-https://console.cloud.google.com/cloud-build/builds?project=gen-lang-client-0615287333
+<https://console.cloud.google.com/cloud-build/builds?project=gen-lang-client-0615287333>
 
 ---
 
@@ -75,10 +79,12 @@ After a successful build, verify the deployment:
 ### 1. Check Version Endpoint
 
 ```bash
-curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/api/status | jq
+URL=https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app
+curl "$URL/api/status" | jq
 ```
 
 Expected output should include:
+
 ```json
 {
   "status": "healthy",
@@ -92,21 +98,23 @@ Expected output should include:
 
 ```bash
 # Get the deployed HTML
-curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/ | grep -o '/assets/[^"]*\.css'
+URL=https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app
+curl "$URL/" | grep -o '/assets/[^"]*\.css'
 
 # Should output something like: /assets/index-DNzTS1Bl.css
 
 # Verify CSS is accessible
-curl -I https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/assets/index-DNzTS1Bl.css
+curl -I "$URL/assets/index-DNzTS1Bl.css"
 ```
 
 Expected: HTTP 200 status code
 
 ### 3. Verify UI in Browser
 
-Open: https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/
+Open: <https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/>
 
 Check:
+
 - [ ] Page loads without errors
 - [ ] Tailwind CSS styles are applied (colors, spacing, fonts)
 - [ ] UI looks properly styled (not plain HTML)
@@ -121,6 +129,7 @@ Check:
 This means SERVICE_URL or another invalid variable slipped back in.
 
 **Fix**:
+
 1. Check trigger configuration in Cloud Console
 2. Run: `npm run lint:cloudbuild` to detect issues
 3. See: `docs/operations/CLOUD_BUILD_TRIGGER_RUNBOOK.md`
@@ -128,11 +137,13 @@ This means SERVICE_URL or another invalid variable slipped back in.
 ### CSS Verification Fails
 
 **Diagnose**:
+
 ```bash
 bash scripts/verify-css-deployed.sh pre-order-dealer-exchange-tracker us-west1
 ```
 
 **Common causes**:
+
 - CSS not generated during build (check Tailwind config)
 - CSS not copied to runtime image (check Dockerfile)
 - Wrong CSS path in HTML
@@ -140,11 +151,14 @@ bash scripts/verify-css-deployed.sh pre-order-dealer-exchange-tracker us-west1
 ### Version Verification Fails
 
 **Diagnose**:
+
 ```bash
-bash scripts/verify-version.sh pre-order-dealer-exchange-tracker us-west1 $(git rev-parse --short HEAD)
+bash scripts/verify-version.sh pre-order-dealer-exchange-tracker us-west1 \
+  $(git rev-parse --short HEAD)
 ```
 
 **Common causes**:
+
 - APP_VERSION env var not set correctly
 - Old deployment not replaced
 - Server not returning version in /api/status
@@ -152,11 +166,13 @@ bash scripts/verify-version.sh pre-order-dealer-exchange-tracker us-west1 $(git 
 ### General Build Failures
 
 **Run full diagnostics**:
+
 ```bash
 bash scripts/diagnose-cloud-build-error.sh [BUILD_ID]
 ```
 
 This checks:
+
 - Service accounts exist
 - IAM permissions (including actAs)
 - Required APIs enabled
@@ -170,8 +186,10 @@ This checks:
 Three comprehensive documents have been created:
 
 ### 1. CLOUD_BUILD_DEPLOYMENT_COMPLETE.md (START HERE)
+
 **Purpose**: Complete implementation guide  
 **Contents**:
+
 - What was changed and why
 - Manual deployment command
 - Service account configuration
@@ -182,8 +200,10 @@ Three comprehensive documents have been created:
 **Length**: 493 lines, comprehensive reference
 
 ### 2. DEPLOYMENT_ACCEPTANCE_CHECKLIST.md
+
 **Purpose**: Acceptance criteria checklist  
 **Contents**:
+
 - All validation performed
 - What passes locally
 - What needs GCP testing
@@ -192,8 +212,10 @@ Three comprehensive documents have been created:
 **Length**: 284 lines, task-oriented
 
 ### 3. docs/operations/CLOUD_BUILD_TRIGGER_RUNBOOK.md (UPDATED)
+
 **Purpose**: Operational runbook  
 **Contents**:
+
 - Trigger configuration rules
 - SERVICE_URL architecture
 - Common mistakes to avoid
@@ -206,26 +228,30 @@ Three comprehensive documents have been created:
 ## Key Configuration Reference
 
 ### GCP Project
-```
+
+```text
 Project ID: gen-lang-client-0615287333
 Project Number: 842946218691
 ```
 
 ### Cloud Run Service
-```
+
+```text
 Service: pre-order-dealer-exchange-tracker
 Region: us-west1
 URL: https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/
 ```
 
 ### Service Accounts
-```
-Cloud Build SA: cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com
-Runtime SA: pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com
+
+```text
+Cloud Build SA: cloud-build-deployer@gen-lang-client-0615287333.iam...
+Runtime SA: pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam...
 ```
 
 ### Cloud Build Trigger
-```
+
+```text
 Name: vehicle-in-need-deploy
 Branch: main
 Substitutions:
@@ -234,10 +260,12 @@ Substitutions:
 ```
 
 ### Artifact Registry
-```
+
+```text
 Region: us-west1
 Repository: vehicle-in-need
-Image Pattern: us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:SHORT_SHA
+Image Pattern: us-west1-docker.pkg.dev/gen-lang-client-0615287333/
+  vehicle-in-need/pre-order-dealer-exchange-tracker:SHORT_SHA
 ```
 
 ---
@@ -247,25 +275,30 @@ Image Pattern: us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-nee
 ### ❌ Never Add SERVICE_URL to Substitutions
 
 **Wrong**:
+
 ```yaml
 substitutions:
   SERVICE_URL: https://...  # ❌ ERROR
 ```
 
-**Why**: SERVICE_URL doesn't exist until AFTER deployment. It must be derived at runtime inside scripts.
+**Why**: SERVICE_URL doesn't exist until AFTER deployment. It must be derived
+at runtime inside scripts.
 
 ### ✅ Only Use Valid Substitutions
 
 **Valid Custom (start with `_`)**:
+
 - `_REGION`
 - `_SERVICE`
 
 **Valid Built-in**:
+
 - `PROJECT_ID`
 - `SHORT_SHA`
 - `BUILD_ID`
 
 **Invalid** (use inside scripts only):
+
 - `SERVICE_URL` ❌
 - `HTML_CONTENT` ❌
 - `CSS_URL` ❌
@@ -276,21 +309,25 @@ substitutions:
 ## Helpful Commands
 
 ### Check Recent Builds
+
 ```bash
 gcloud builds list --project=gen-lang-client-0615287333 --limit=5
 ```
 
 ### Get Build Details
+
 ```bash
 gcloud builds describe <BUILD_ID> --project=gen-lang-client-0615287333
 ```
 
 ### Watch Build Logs
+
 ```bash
 gcloud builds log <BUILD_ID> --stream --project=gen-lang-client-0615287333
 ```
 
 ### Check Cloud Run Service
+
 ```bash
 gcloud run services describe pre-order-dealer-exchange-tracker \
   --region=us-west1 \
@@ -299,6 +336,7 @@ gcloud run services describe pre-order-dealer-exchange-tracker \
 ```
 
 ### Get Service URL
+
 ```bash
 gcloud run services describe pre-order-dealer-exchange-tracker \
   --region=us-west1 \
@@ -312,15 +350,18 @@ gcloud run services describe pre-order-dealer-exchange-tracker \
 ## Expected Timeline
 
 **Immediate** (0-5 minutes):
+
 1. Review this document
 2. Read CLOUD_BUILD_DEPLOYMENT_COMPLETE.md
 
 **Short-term** (10-30 minutes):
+
 1. Test manual build
 2. Verify production deployment
 3. Test automatic trigger
 
 **Medium-term** (Optional, 15-30 minutes):
+
 1. Investigate old failed build: `0736f1da-ef57-4e10-8e5a-7eb6e9f67d95`
 2. Run diagnostics script
 3. Document any additional findings
@@ -342,6 +383,7 @@ You'll know everything is working when:
 ## Questions or Issues?
 
 ### Quick Diagnostics
+
 ```bash
 # Validate local configuration
 npm run lint:cloudbuild
@@ -353,10 +395,12 @@ bash scripts/diagnose-cloud-build-error.sh [BUILD_ID]
 bash scripts/verify-css-deployed.sh pre-order-dealer-exchange-tracker us-west1
 
 # Verify version
-bash scripts/verify-version.sh pre-order-dealer-exchange-tracker us-west1 $(git rev-parse --short HEAD)
+bash scripts/verify-version.sh pre-order-dealer-exchange-tracker us-west1 \
+  $(git rev-parse --short HEAD)
 ```
 
 ### Reference Documentation
+
 - `CLOUD_BUILD_DEPLOYMENT_COMPLETE.md` - Full implementation guide
 - `DEPLOYMENT_ACCEPTANCE_CHECKLIST.md` - Validation checklist
 - `docs/operations/CLOUD_BUILD_TRIGGER_RUNBOOK.md` - Operations guide
@@ -371,7 +415,8 @@ bash scripts/verify-version.sh pre-order-dealer-exchange-tracker us-west1 $(git 
 
 **Time Required**: 15-30 minutes for full verification.
 
-**Risk Level**: Low - all changes are additive (new verification steps), no breaking changes.
+**Risk Level**: Low - all changes are additive (new verification steps),
+no breaking changes.
 
 ---
 

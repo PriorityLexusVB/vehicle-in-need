@@ -13,11 +13,13 @@ Previously, the four option fields (Ext. Option 1, Ext. Option 2, Int. Option 1,
 Managers can access the Vehicle Options management interface at `/#/admin` → "Vehicle Options" tab.
 
 **Available actions:**
+
 - **Add Options**: Create new exterior or interior option codes
 - **Delete Options**: Remove options that are no longer needed
 - **View Options**: See all configured options organized by type
 
 Each option has:
+
 - **Code**: A 4-character identifier (e.g., "PW01", "LA40")
 - **Name**: A descriptive name (e.g., "Premium Wheel Package", "Leather Package - Black")
 - **Type**: Either "exterior" or "interior"
@@ -25,6 +27,7 @@ Each option has:
 ### For All Users
 
 When creating a vehicle order:
+
 - Option fields now display as dropdown selects
 - Each dropdown shows options in the format: "CODE - Description"
 - Empty option (no selection) is allowed for optional fields
@@ -59,6 +62,7 @@ npm run seed:options:apply
 **Default options included:**
 
 **8 Exterior Options:**
+
 - PW01 - Premium Wheel Package
 - SPW1 - Sport Wheel Package
 - CF01 - Carbon Fiber Package
@@ -69,6 +73,7 @@ npm run seed:options:apply
 - CHRM - Chrome Package
 
 **10 Interior Options:**
+
 - LA40 - Leather Package - Black
 - LA41 - Leather Package - Tan
 - LA42 - Leather Package - Gray
@@ -126,6 +131,7 @@ npm run seed:options:apply
 ### Data Model
 
 **VehicleOption Interface:**
+
 ```typescript
 interface VehicleOption {
   id: string;
@@ -157,6 +163,7 @@ vehicleOptions (collection)
 ### Firestore Indexes
 
 Composite index for querying options:
+
 - `type` (Ascending)
 - `code` (Ascending)
 
@@ -178,6 +185,7 @@ If you have existing orders with manually entered option codes:
 **Cause**: Firestore indexes not deployed or options not seeded
 
 **Solution**:
+
 ```bash
 firebase deploy --only firestore:indexes --project vehicles-in-need
 npm run seed:options:apply
@@ -211,6 +219,7 @@ Potential improvements for future versions:
 ### Component Props
 
 **VehicleOptionsManager**
+
 ```typescript
 interface VehicleOptionsManagerProps {
   options: VehicleOption[];
@@ -220,6 +229,7 @@ interface VehicleOptionsManagerProps {
 ```
 
 **OrderForm**
+
 ```typescript
 interface OrderFormProps {
   onAddOrder: (order: Omit<Order, 'id'>) => Promise<boolean>;
@@ -229,6 +239,7 @@ interface OrderFormProps {
 ```
 
 **OrderCard**
+
 ```typescript
 interface OrderCardProps {
   order: Order;
@@ -240,6 +251,7 @@ interface OrderCardProps {
 ```
 
 **OrderList**
+
 ```typescript
 interface OrderListProps {
   orders: Order[];

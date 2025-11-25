@@ -9,6 +9,7 @@ Users encounter persistent "Missing or insufficient permissions" error when crea
 ### 1. Reviewed Recent PRs
 
 **PR #118: "Fix order creation permissions: validate user auth before Firestore write"**
+
 - Merged: 2025-11-23 (commit 5e608c5)
 - Changes Made:
   - Added pre-submission check for `user.uid` and `user.email`
@@ -18,6 +19,7 @@ Users encounter persistent "Missing or insufficient permissions" error when crea
 
 **Analysis of Why PR #118 Didn't Fix the Issue:**
 The validation added in PR #118 only checked if the user object had the required fields before submitting. However, it didn't address:
+
 1. Potential race conditions between auth state and Firestore operations
 2. Mismatches between `auth.currentUser` and app user state
 3. Rules deployment verification
@@ -26,6 +28,7 @@ The validation added in PR #118 only checked if the user object had the required
 ### 2. Analyzed Firestore Rules
 
 **Orders Collection Create Rule (lines 108-114):**
+
 ```javascript
 allow create: if isSignedIn()
   && request.resource.data.keys().hasAll(['createdByUid', 'createdByEmail', 'createdAt'])
@@ -35,6 +38,7 @@ allow create: if isSignedIn()
 ```
 
 **Requirements:**
+
 1. ✅ User must be signed in
 2. ✅ Document must have `createdByUid`, `createdByEmail`, `createdAt` fields
 3. ✅ `createdByUid` must match authenticated user's UID
@@ -46,6 +50,7 @@ allow create: if isSignedIn()
 Ran Firestore rules tests: **42/42 passing** ✅
 
 This confirms:
+
 - Rules are correctly written
 - Test payload structure is correct
 - The issue is likely environmental (production vs emulator)
@@ -77,6 +82,7 @@ This confirms:
 ### 1. Enhanced Authentication & Debug Logging (App.tsx)
 
 **Added Comprehensive Validation:**
+
 ```typescript
 // Check auth.currentUser exists
 const currentAuthUser = auth.currentUser;
@@ -96,6 +102,7 @@ if (currentAuthUser.email !== user.email) {
 ```
 
 **Added Detailed Logging:**
+
 ```typescript
 console.log("📝 Creating Order - Payload Details");
 console.log("User UID:", user.uid);
@@ -110,6 +117,7 @@ console.log("Payload keys (count):", Object.keys(finalOrder).length);
 ```
 
 **Purpose:** These changes will help identify:
+
 - Whether `auth.currentUser` is null (race condition)
 - Whether emails match between app state and auth state
 - Exact payload being sent to Firestore
@@ -120,6 +128,7 @@ console.log("Payload keys (count):", Object.keys(finalOrder).length);
 **Created: `scripts/verify-firestore-rules.sh`**
 
 Features:
+
 - ✅ Cross-platform checksum support (shasum/md5sum/md5)
 - ✅ Dynamic rule extraction (no hardcoded line numbers)
 - ✅ Explicit failure when project cannot be determined
@@ -127,6 +136,7 @@ Features:
 - ✅ Extracts and displays current order creation rule
 
 **Usage:**
+
 ```bash
 npm run verify:rules
 ```
@@ -138,6 +148,7 @@ npm run verify:rules
 **Created: `docs/FIRESTORE_PERMISSION_ERROR_TROUBLESHOOTING.md`**
 
 Contents:
+
 - Quick diagnosis steps
 - Common causes and solutions
 - Deployment verification checklist
@@ -148,6 +159,7 @@ Contents:
 ## Testing & Validation
 
 ### Build Verification ✅
+
 ```bash
 npm run build
 # ✅ TypeScript compilation successful
@@ -156,18 +168,21 @@ npm run build
 ```
 
 ### Linting ✅
+
 ```bash
 npm run lint
 # ✅ No errors
 ```
 
 ### Firestore Rules Tests ✅
+
 ```bash
 npm run test:rules
 # ✅ 42/42 tests passed
 ```
 
 ### Code Review ✅
+
 - All feedback addressed:
   - ✅ Cross-platform compatibility
   - ✅ Dynamic rule extraction
@@ -175,6 +190,7 @@ npm run test:rules
   - ✅ Optimized debugging operations
 
 ### Security Scan ✅
+
 ```bash
 CodeQL Security Scan
 # ✅ 0 vulnerabilities found
@@ -193,6 +209,7 @@ npm run verify:rules
 ```
 
 **Expected Output:**
+
 - Local rules checksum
 - Link to Firebase Console
 - Extracted order creation rule
@@ -201,11 +218,13 @@ npm run verify:rules
 ### Step 2: Deploy Rules if Needed
 
 If rules don't match or are uncertain:
+
 ```bash
 firebase deploy --only firestore:rules
 ```
 
 **Verify deployment:**
+
 - Go to [Firebase Console Rules](https://console.firebase.google.com/project/vehicles-in-need/firestore/rules)
 - Check "Active rules" tab
 - Verify creation rule matches local file
@@ -213,11 +232,12 @@ firebase deploy --only firestore:rules
 ### Step 3: Test Order Creation with Debugging
 
 1. Deploy the updated code (this PR) to production
-2. Open production URL: https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/
+2. Open production URL: <https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/>
 3. Open browser console (F12)
 4. Log in if not already logged in
 5. Attempt to create an order
 6. Capture all console output, especially:
+
    ```
    📝 Creating Order - Payload Details
    User UID: ...
@@ -234,6 +254,7 @@ firebase deploy --only firestore:rules
 **If order creation still fails:**
 📋 Share the captured console logs
 📋 Check for:
+
 - `auth.currentUser is null` → Race condition confirmed
 - Email mismatch → State sync issue  
 - Missing/invalid fields → Payload construction issue
@@ -250,11 +271,13 @@ firebase deploy --only firestore:rules
 ### Failure Scenarios & Mitigation
 
 **If Issue Persists:**
+
 1. Console logs will reveal exact cause
 2. Troubleshooting guide provides solutions for each scenario
 3. Advanced debugging techniques available
 
 **Additional Actions if Needed:**
+
 - Add token refresh: `await auth.currentUser.getIdToken(true)`
 - Add delay after login before allowing form submission
 - Investigate custom claims if manager-specific
@@ -288,6 +311,7 @@ This PR implements a comprehensive solution to diagnose and fix the persistent o
 - ✅ Well-documented
 
 The enhanced debugging will either:
+
 1. **Fix the issue** through better auth validation, or
 2. **Identify the exact cause** through detailed logging
 

@@ -48,6 +48,7 @@ This checklist covers all acceptance criteria from the problem statement.
 - [x] `scripts/diagnose-cloud-build-error.sh` - Executable
 
 All scripts use correct argument patterns:
+
 - `verify-css-deployed.sh SERVICE_NAME REGION`
 - `verify-version.sh SERVICE_NAME REGION EXPECTED_SHA`
 
@@ -85,6 +86,7 @@ gcloud builds submit \
 ```
 
 **Note**: This command is ready to use but requires:
+
 1. GCP authentication: `gcloud auth login`
 2. Project access: User must have Cloud Build permissions
 3. Network access: Must reach Google Cloud APIs
@@ -94,23 +96,32 @@ gcloud builds submit \
 ## GCP Console Paths (Documented ✅)
 
 - [x] Cloud Build Triggers:
-  ```
-  https://console.cloud.google.com/cloud-build/triggers?project=gen-lang-client-0615287333
+
+  ```text
+  https://console.cloud.google.com/cloud-build/triggers
+    ?project=gen-lang-client-0615287333
   ```
 
 - [x] Cloud Build History:
-  ```
-  https://console.cloud.google.com/cloud-build/builds?project=gen-lang-client-0615287333
+
+  ```text
+  https://console.cloud.google.com/cloud-build/builds
+    ?project=gen-lang-client-0615287333
   ```
 
 - [x] Cloud Run Service:
-  ```
-  https://console.cloud.google.com/run/detail/us-west1/pre-order-dealer-exchange-tracker?project=gen-lang-client-0615287333
+
+  ```text
+  https://console.cloud.google.com/run/detail/us-west1/
+    pre-order-dealer-exchange-tracker?project=gen-lang-client-0615287333
   ```
 
 - [x] Artifact Registry:
-  ```
-  https://console.cloud.google.com/artifacts/docker/gen-lang-client-0615287333/us-west1/vehicle-in-need?project=gen-lang-client-0615287333
+
+  ```text
+  https://console.cloud.google.com/artifacts/docker/
+    gen-lang-client-0615287333/us-west1/vehicle-in-need
+    ?project=gen-lang-client-0615287333
   ```
 
 ---
@@ -118,6 +129,7 @@ gcloud builds submit \
 ## Service Account Configuration (Documented ✅)
 
 ### Cloud Build Service Account
+
 - Email: `cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com`
 - Required Roles:
   - [x] `roles/run.admin`
@@ -125,6 +137,7 @@ gcloud builds submit \
   - [x] `roles/iam.serviceAccountUser` (on runtime SA)
 
 ### Runtime Service Account
+
 - Email: `pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com`
 - Required Roles:
   - [x] `roles/logging.logWriter`
@@ -137,6 +150,7 @@ gcloud builds submit \
 To verify a successful deployment:
 
 ### 1. Check Service URL
+
 ```bash
 gcloud run services describe pre-order-dealer-exchange-tracker \
   --region=us-west1 \
@@ -145,22 +159,28 @@ gcloud run services describe pre-order-dealer-exchange-tracker \
 ```
 
 ### 2. Verify Version
+
 ```bash
-curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/api/status | jq '.version'
+URL=https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app
+curl "$URL/api/status" | jq '.version'
 ```
 
 ### 3. Verify CSS
+
 ```bash
-curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/ | grep -o '/assets/[^"]*\.css'
+URL=https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app
+curl "$URL/" | grep -o '/assets/[^"]*\.css'
 
 # Then check CSS file exists:
-curl -I https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/assets/index-DNzTS1Bl.css
+curl -I "$URL/assets/index-DNzTS1Bl.css"
 ```
 
 ### 4. Visual UI Check
-Open in browser: https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/
+
+Open in browser: <https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/>
 
 Verify:
+
 - [ ] Page loads without errors
 - [ ] Tailwind CSS styles applied (not plain HTML)
 - [ ] Colors, spacing, fonts render correctly
@@ -173,15 +193,18 @@ Verify:
 The following can only be tested with GCP access:
 
 ### Test 1: Manual Build
+
 ```bash
 gcloud builds submit \
   --config=cloudbuild.yaml \
-  --substitutions=_REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=$(git rev-parse --short HEAD)
+  --substitutions=_REGION=us-west1,\
+_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=$(git rev-parse --short HEAD)
 ```
 
 Expected: Build completes with "Status: SUCCESS"
 
 ### Test 2: Automatic Trigger
+
 ```bash
 git commit --allow-empty -m "test: verify Cloud Build trigger"
 git push origin main
@@ -190,12 +213,19 @@ git push origin main
 Expected: Trigger runs automatically and completes successfully
 
 ### Test 3: Verify CSS in Production
+
 Run: `bash scripts/verify-css-deployed.sh pre-order-dealer-exchange-tracker us-west1`
 
 Expected: All checks pass
 
 ### Test 4: Verify Version in Production
-Run: `bash scripts/verify-version.sh pre-order-dealer-exchange-tracker us-west1 $(git rev-parse --short HEAD)`
+
+Run:
+
+```bash
+bash scripts/verify-version.sh pre-order-dealer-exchange-tracker us-west1 \
+  $(git rev-parse --short HEAD)
+```
 
 Expected: Deployed version matches current commit
 
@@ -235,6 +265,7 @@ Expected: Deployed version matches current commit
 From the problem statement:
 
 ### Locally (Cloud Shell or dev env)
+
 - [x] `npm install` - Pass
 - [x] `npm run build` - Pass
 - [x] `npm run lint` - Pass
@@ -243,12 +274,14 @@ From the problem statement:
 - [x] `npm run cloudbuild:verify-trigger` - Pass (requires GCP auth)
 
 ### Cloud Build Configuration
-- [x] Only valid substitutions (_REGION, _SERVICE)
+
+- [x] Only valid substitutions (_REGION,_SERVICE)
 - [x] No invalid substitutions (SERVICE_URL, etc.)
 - [x] Verification steps added
 - [x] Scripts executable
 
 ### Documentation
+
 - [x] Manual deployment command provided
 - [x] Service accounts documented
 - [x] GCP Console paths provided
@@ -275,7 +308,8 @@ These items can only be completed by someone with GCP access:
 **Documentation**: ✅ COMPLETE  
 **GCP Testing**: ⏳ PENDING (requires GCP access)
 
-All code changes are complete and validated locally. The pipeline is ready for testing in GCP.
+All code changes are complete and validated locally. The pipeline is ready
+for testing in GCP.
 
 ---
 

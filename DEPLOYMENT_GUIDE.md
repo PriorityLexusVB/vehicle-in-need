@@ -1,6 +1,7 @@
 # Deployment Guide
 
-This is the single source of truth for deploying the Pre-Order & Dealer Exchange Tracker application to Google Cloud Run.
+This is the single source of truth for deploying the Pre-Order & Dealer
+Exchange Tracker application to Google Cloud Run.
 
 ## Prerequisites
 
@@ -23,7 +24,8 @@ This is the single source of truth for deploying the Pre-Order & Dealer Exchange
 
 ### Method 1: Cloud Build Trigger (Recommended)
 
-The repository has a Cloud Build trigger named `vehicle-in-need-deploy` that automatically builds and deploys on commits to `main`.
+The repository has a Cloud Build trigger named `vehicle-in-need-deploy` that
+automatically builds and deploys on commits to `main`.
 
 **Trigger Configuration:**
 
@@ -33,11 +35,13 @@ substitutions:
   _SERVICE: pre-order-dealer-exchange-tracker
 ```
 
-**Note**: Do NOT add `SERVICE_URL` or `_SERVICE_URL` - it's dynamically retrieved at runtime.
+**Note**: Do NOT add `SERVICE_URL` or `_SERVICE_URL` - it's dynamically
+retrieved at runtime.
 
 ### Method 2: Manual Cloud Build (from Git Repository)
 
-**Important**: All deployments must be traceable to git commits. Do NOT use arbitrary version strings.
+**Important**: All deployments must be traceable to git commits. Do NOT use
+arbitrary version strings.
 
 ```bash
 cd /path/to/vehicle-in-need
@@ -53,7 +57,8 @@ gcloud builds submit \
   --substitutions=_REGION=us-west1,_SERVICE=pre-order-dealer-exchange-tracker,SHORT_SHA=$SHORT_SHA
 ```
 
-**Note**: The SHORT_SHA must be a valid git commit SHA. Manual version strings like `manual-20241120` are blocked to ensure deployment traceability.
+**Note**: The SHORT_SHA must be a valid git commit SHA. Manual version strings
+like `manual-20241120` are blocked to ensure deployment traceability.
 
 ### Method 3: Local Docker Build + Deploy
 
@@ -62,19 +67,23 @@ gcloud builds submit \
 docker build \
   --build-arg COMMIT_SHA=$(git rev-parse --short HEAD) \
   --build-arg BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
-  -t us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:latest \
+  -t us-west1-docker.pkg.dev/gen-lang-client-0615287333/\
+vehicle-in-need/pre-order-dealer-exchange-tracker:latest \
   .
 
 # Push
-docker push us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:latest
+docker push us-west1-docker.pkg.dev/gen-lang-client-0615287333/\
+vehicle-in-need/pre-order-dealer-exchange-tracker:latest
 
 # Deploy
 gcloud run deploy pre-order-dealer-exchange-tracker \
-  --image=us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:latest \
+  --image=us-west1-docker.pkg.dev/gen-lang-client-0615287333/\
+vehicle-in-need/pre-order-dealer-exchange-tracker:latest \
   --region=us-west1 \
   --platform=managed \
   --allow-unauthenticated \
-  --service-account=pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com \
+  --service-account=pre-order-dealer-exchange-860@\
+gen-lang-client-0615287333.iam.gserviceaccount.com \
   --set-env-vars=NODE_ENV=production \
   --update-secrets=API_KEY=vehicle-in-need-gemini:latest
 ```
@@ -153,7 +162,8 @@ If styles don't appear:
 3. **Check Production**:
 
    ```bash
-   curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/ | grep stylesheet
+   URL="https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app"
+   curl "$URL/" | grep stylesheet
    ```
 
 ### Cloud Build Trigger Fails
@@ -174,7 +184,8 @@ If styles don't appear:
 1. **Confirm deployed version**:
 
    ```bash
-   curl https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/ | grep 'data-commit'
+   URL="https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app"
+   curl "$URL/" | grep 'data-commit'
    ```
 
 2. **Check Cloud Build logs** for the deployment
@@ -211,7 +222,7 @@ Required roles:
 
 ### Build Pipeline
 
-```
+```text
 Source Code
     ↓
 npm run build (Vite + Tailwind)

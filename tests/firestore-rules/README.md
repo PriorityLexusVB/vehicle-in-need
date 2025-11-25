@@ -5,11 +5,14 @@ enforce access control and data integrity.
 
 ## Architecture
 
-The tests use a **shared test environment** pattern to ensure stability and prevent race conditions:
+The tests use a **shared test environment** pattern to ensure stability and
+prevent race conditions:
 
 - **`test-env.ts`**: Singleton test environment shared across all test files
-- **`vitest.rules.config.ts`**: Configured for serial execution to prevent concurrent access issues
-- **`vitest.rules.teardown.ts`**: Global teardown to cleanup the test environment after all tests complete
+- **`vitest.rules.config.ts`**: Configured for serial execution to prevent
+  concurrent access issues
+- **`vitest.rules.teardown.ts`**: Global teardown to cleanup the test environment
+  after all tests complete
 
 ### Why Shared Environment?
 
