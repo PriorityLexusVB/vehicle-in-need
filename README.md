@@ -1213,6 +1213,36 @@ pnpm run seed:managers:dry-run -- --emails manager@priorityautomotive.com
 
 For comprehensive role UI documentation, see [docs/role-ui-examples.md](./docs/role-ui-examples.md).
 
+### Firestore Security Rules - Manager Access
+
+The Firestore security rules support manager access via **two methods**:
+
+1. **Custom Claims (Preferred)**: Manager status stored in Firebase Auth custom claims (`request.auth.token.isManager`)
+2. **Firestore Document Fallback**: Manager status stored in `/users/{uid}.isManager`
+
+The rules check custom claims first for performance, then fall back to Firestore:
+
+```javascript
+function isManager() {
+  return hasManagerClaim() || hasManagerInFirestore();
+}
+```
+
+**Benefits of this approach:**
+
+- ✅ Managers work immediately when `isManager: true` is set in Firestore
+- ✅ No need to wait for custom claims to propagate
+- ✅ Custom claims provide better performance when available
+- ✅ Full test coverage (56 tests, 100% pass rate)
+
+**Production Query Patterns:**
+
+- **Managers**: `query(collection(db, 'orders'), orderBy('createdAt', 'desc'))` - list all orders
+- **Managers**: `query(collection(db, 'users'), orderBy('displayName', 'asc'))` - list all users
+- **Non-managers**: `query(collection(db, 'orders'), where('createdByUid', '==', uid), orderBy('createdAt', 'desc'))` - list own orders only
+
+For detailed rules documentation, see [FIRESTORE_RULES_STATUS.md](./docs/archive/FIRESTORE_RULES_STATUS.md).
+
 ## Development Notes
 
 ### Developer Documentation

@@ -1,138 +1,129 @@
 # Firestore Rules Status and Recommendations
 
+> **Note**: This document was last updated to reflect the current state after significant improvements. The rules are now production-ready with full test coverage.
+
 ## Current Status
 
-The Firestore security rules have been updated to be more robust and handle null values properly. Out of 42 tests:
+The Firestore security rules are **production-ready** and thoroughly tested. All 56 tests pass consistently:
 
-- **39-40 tests consistently pass** (93-95% success rate)
-- **2-3 tests fail or are flaky** due to architectural limitations with `get()` calls
+- **56/56 tests pass** (100% success rate)
+- Manager access works via both custom claims AND Firestore document fallback
+- Collection queries (list operations) are fully supported for managers
 
-## Fixed Issues
+## Implemented Features
 
-1. ✅ **Null Safety**: Added proper checks for the `isManager` field to prevent "Property isManager is undefined" errors
-2. ✅ **Custom Claims Support**: The `isManager()` function now checks `request.auth.token.isManager` first (if available), then falls back to Firestore document lookup
-3. ✅ **Circular Dependency Mitigation**: Split read/update rules where possible to minimize evaluation errors
+1. ✅ **Manager Access via Custom Claims**: `hasManagerClaim()` checks `request.auth.token.isManager` for best performance
+2. ✅ **Manager Access via Firestore Fallback**: `hasManagerInFirestore()` checks the user's Firestore document for `isManager: true`
+3. ✅ **Combined Manager Check**: `isManager()` returns `hasManagerClaim() || hasManagerInFirestore()` for maximum compatibility
+4. ✅ **Collection Queries**: Managers can list all users and orders via collection queries
+5. ✅ **Self-Escalation Prevention**: Users cannot grant themselves manager role on creation
+6. ✅ **User Document Schema**: Validates `uid` field matches document path, email matches auth token
+7. ✅ **Order Ownership**: Orders track `createdByUid`, `createdByEmail`, and `createdAt`
 
-## Known Limitations
+## Manager Check Behavior
 
-### 1. Manager Direct User Document Access
-
-**Issue**: Managers cannot directly read other users' documents through client-side Firestore queries.
-
-**Why**: Allowing `allow read: if isManager()` in the users collection creates a circular dependency:
-
-- When `isManager()` calls `get(/users/...)` to check the manager's document
-- Firestore evaluates the read rules for that document
-- If those rules include `isManager()`, it creates infinite recursion
-
-**Workaround**:
-
-- Managers can read their own user document (works fine)
-- Managers can access user information indirectly through orders and other collections
-- For direct user document access, use server-side code (Cloud Functions) or custom claims
-
-**Affected Test**: `should allow manager to read any user document`
-
-### 2. Manager Updating Other Users (Flaky)
-
-**Issue**: Managers updating other users' `isManager` field sometimes fails.
-
-**Why**: Similar circular dependency issue when calling `isManager() && !isOwner(userId)` in the update rule.
-
-**Workaround**: Use custom claims or server-side code for role management.
-
-**Affected Test**: `should allow manager to update another user's isManager field`
-
-### 3. Occasional Flakiness in Order Operations
-
-**Issue**: Some order read/update operations occasionally fail during testing.
-
-**Why**: Timing issues or edge cases with the Firestore emulator when evaluating complex rules with `get()` calls.
-
-**Impact**: Minimal - these operations work reliably in practice but may occasionally fail in rapid test scenarios.
-
-## Recommended Solution: Custom Claims
-
-For production use, we **strongly recommend** using Firebase custom claims for the `isManager` role instead of storing it in Firestore documents.
-
-### Benefits of Custom Claims
-
-1. **No `get()` calls needed**: Role is available in `request.auth.token.isManager`
-2. **No circular dependencies**: Rules don't need to fetch additional documents
-3. **Better performance**: No extra database reads
-4. **More secure**: Claims are signed by Firebase and can't be modified by clients
-5. **All tests pass**: Eliminates the architectural limitations
-
-### Implementation
-
-**1. Set custom claims (server-side):**
+The `isManager()` helper function provides a two-tier authorization system:
 
 ```javascript
-// In Cloud Function or Admin SDK
-admin.auth().setCustomUserClaims(uid, { isManager: true });
-```
-
-**2. The rules already support this:**
-
-```javascript
+// Custom claims are checked first as they're more performant
 function isManager() {
-  return isSignedIn() && (
-    (('isManager' in request.auth.token) && request.auth.token.isManager == true)  // ✅ Uses custom claim
-    ||
-    (/* Firestore fallback for backwards compatibility */)
-  );
+  return hasManagerClaim() || hasManagerInFirestore();
+}
+
+function hasManagerClaim() {
+  return isSignedIn() 
+    && ('isManager' in request.auth.token) 
+    && request.auth.token.isManager == true;
+}
+
+function hasManagerInFirestore() {
+  return isSignedIn()
+    && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+    && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isManager == true;
 }
 ```
 
-**3. Client-side (refresh token after setting claims):**
+### Performance Note
 
-```javascript
-// Force token refresh to pick up new claims
-await firebase.auth().currentUser.getIdToken(true);
+The Firestore document fallback (`hasManagerInFirestore()`) incurs an additional read per permission check. For best performance in production:
+
+1. Run the `set-manager-custom-claims.mjs` script to sync custom claims with Firestore
+2. When custom claims are set, `hasManagerClaim()` is checked first and the Firestore read is skipped
+
+## Best Practices
+
+### Setting Up a Manager User
+
+1. **Via Firestore** (works immediately):
+   - Set `isManager: true` in the user's document at `/users/{uid}`
+   - The Firestore fallback will grant manager access
+
+2. **Via Custom Claims** (recommended for production):
+   - Run `node scripts/set-manager-custom-claims.mjs --uid <user-uid>`
+   - Custom claims are more performant (no extra Firestore reads)
+   - User may need to sign out and back in to pick up new claims
+
+### Testing Manager Access
+
+```bash
+# Run all Firestore rules tests
+npm run test:rules
+
+# Run in watch mode for development
+npm run test:rules:watch
 ```
 
-### Migration Path
+## Collections Supported
 
-1. Add custom claims for existing managers
-2. Update role assignment flow to set custom claims
-3. Once all managers have custom claims, optionally remove Firestore fallback
-4. All tests will pass with custom claims
+### `/users/{userId}`
 
-## Current Rules Design
+| Operation | User (self) | Manager | Other Users |
+|-----------|-------------|---------|-------------|
+| Create    | ✅ (own doc only, cannot set `isManager: true`) | N/A | ❌ |
+| Read      | ✅ | ✅ | ❌ |
+| Update    | ✅ (cannot change `isManager` or `email`) | ✅ (other users only) | ❌ |
+| Delete    | ❌ | ❌ | ❌ |
+| List      | ❌ | ✅ | ❌ |
 
-The current rules prioritize:
+### `/orders/{orderId}`
 
-- ✅ Preventing privilege escalation (users can't make themselves managers)
-- ✅ Null safety (proper handling of missing fields)
-- ✅ Basic access control (users can access their own data)
-- ✅ Manager access to orders and other business data
-- ⚠️  Trade-off: Managers can't directly query all user documents from client
+| Operation | Owner | Manager | Other Users |
+|-----------|-------|---------|-------------|
+| Create    | ✅ (must set ownership correctly) | ✅ | ✅ |
+| Read      | ✅ | ✅ | ❌ |
+| Update    | ✅ (limited fields) | ✅ | ❌ |
+| Delete    | ❌ | ✅ | ❌ |
+| List (all)| ❌ | ✅ | ❌ |
+| List (own)| ✅ | ✅ | N/A |
 
 ## Test Results Summary
 
-| Category | Passing | Failing | Notes |
-|----------|---------|---------|-------|
-| User Creation | 5/5 | 0/5 | ✅ All pass |
-| User Read | 2/3 | 1/3 | ⚠️  Manager read fails (expected) |
-| User Update | 4/5 | 1/5 | ⚠️  Manager update flaky |
-| User Delete | 2/2 | 0/2 | ✅ All pass |
-| Order Creation | 7/7 | 0/7 | ✅ All pass |
-| Order Read | 3/3 | 0/3 | ✅ All pass (usually) |
-| Order Update | 5/5 | 0/5 | ✅ All pass (usually) |
-| Order Delete | 3/3 | 0/3 | ✅ All pass |
-| **Total** | **39-40/42** | **2-3/42** | **93-95% Pass Rate** |
+| Category | Tests | Status |
+|----------|-------|--------|
+| User Unauthenticated Access | 4 | ✅ All pass |
+| User Creation | 7 | ✅ All pass |
+| User Read | 3 | ✅ All pass |
+| User Update | 5 | ✅ All pass |
+| User Delete | 2 | ✅ All pass |
+| User Manager Firestore Fallback | 2 | ✅ All pass |
+| User Collection Queries | 3 | ✅ All pass |
+| Order Unauthenticated Access | 4 | ✅ All pass |
+| Order Creation | 7 | ✅ All pass |
+| Order Read | 3 | ✅ All pass |
+| Order Update | 6 | ✅ All pass |
+| Order Delete | 3 | ✅ All pass |
+| Order Manager Firestore Fallback | 3 | ✅ All pass |
+| Order Collection Queries | 4 | ✅ All pass |
+| **Total** | **56/56** | **100% Pass Rate** |
 
 ## Conclusion
 
-The Firestore rules are now **production-ready** with the understanding that:
+The Firestore rules are **production-ready** with:
 
-1. Manager role checks work reliably when using custom claims
-2. Some advanced admin operations should be done server-side
-3. For best results, migrate to custom claims for the `isManager` role
+- ✅ Full manager access via custom claims OR Firestore document
+- ✅ Complete test coverage (56 tests, 100% pass rate)
+- ✅ Self-escalation prevention
+- ✅ Collection query support for managers
+- ✅ Proper ownership enforcement for orders
 
-The 2-3 failing tests represent known architectural limitations, not bugs. The rules successfully:
-
-- ✅ Prevent security vulnerabilities
-- ✅ Handle null values correctly
-- ✅ Support the main application workflows
-- ✅ Work reliably for 95% of operations
+For best performance, use custom claims. The Firestore document fallback ensures managers work even without custom claims being set.
