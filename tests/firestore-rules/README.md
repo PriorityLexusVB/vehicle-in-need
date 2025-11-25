@@ -176,3 +176,13 @@ configuration:
 3. **Data Integrity**: Ownership and email fields are immutable
 4. **Self-Escalation Prevention**: Users cannot grant themselves elevated roles
 5. **Audit Trail**: All orders must track creator information
+
+## Collections Covered
+
+The tests cover the following collections:
+
+- **`/users/{userId}`**: User profile documents with role information
+- **`/orders/{orderId}`**: Vehicle order tracking documents
+
+**Note**: The `app_settings` collection is not used in the current codebase
+and has no security rules defined.
