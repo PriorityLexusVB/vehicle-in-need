@@ -71,12 +71,19 @@ Tests security rules for user documents:
 - ✅ **Unauthenticated Access**: Denies all operations
 - ✅ **Self-Escalation Prevention**: Users cannot grant themselves manager role
   on creation
+- ✅ **User Document Schema**: Validates uid field matches document path
 - ✅ **Read Access**: Users can read their own document; managers can read any
 - ✅ **Update Protection**:
   - Users cannot change their own `isManager` field
   - Email addresses are immutable
   - Managers can update other users but not their own `isManager`
 - ✅ **Deletion**: Blocked from client for all users
+- ✅ **Manager Firestore Document Fallback**: Managers with `isManager: true` in
+  Firestore (but no custom claims) can still perform manager actions
+- ✅ **Collection Queries (List Operations)**:
+  - Managers with custom claims can list all users
+  - Managers via Firestore document can list all users
+  - Non-managers cannot list all users
 
 ### Orders Collection (`orders.test.ts`)
 
@@ -94,6 +101,13 @@ Tests security rules for order documents:
   - Owners can only update allowed fields (status, notes)
   - Managers can update any order
 - ✅ **Deletion**: Only managers can delete orders
+- ✅ **Manager Firestore Document Fallback**: Managers with `isManager: true` in
+  Firestore (but no custom claims) can still perform manager actions
+- ✅ **Collection Queries (List Operations)**:
+  - Managers with custom claims can list all orders
+  - Managers via Firestore document can list all orders
+  - Non-managers can only list their own orders (with owner filter)
+  - Non-managers cannot list all orders without filter
 
 ## Troubleshooting
 

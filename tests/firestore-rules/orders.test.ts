@@ -4,7 +4,7 @@ import {
   assertSucceeds,
   RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { setDoc, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { setDoc, doc, getDoc, updateDoc, deleteDoc, collection, getDocs, query, orderBy, where } from 'firebase/firestore';
 import { getTestEnv, clearTestData } from './test-env';
 
 let testEnv: RulesTestEnvironment;
@@ -588,6 +588,129 @@ describe('Firestore Security Rules - Orders Collection', () => {
       const orderRef = doc(managerDb, 'orders', 'userOrder');
       
       await assertSucceeds(deleteDoc(orderRef));
+    });
+  });
+
+  describe('Collection Queries - Manager Access', () => {
+    // Tests that verify collection queries (list operations) work for managers.
+    // The production app uses queries like:
+    //   query(collection(db, "orders"), orderBy("createdAt", "desc"))
+    // to populate the manager dashboard.
+    
+    beforeEach(async () => {
+      // Setup: Create users and multiple orders
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const adminDb = context.firestore();
+        
+        // Create a manager with custom claims
+        await setDoc(doc(adminDb, 'users', 'claimManager'), {
+          email: 'claimmanager@example.com',
+          displayName: 'Claims Manager',
+          isManager: true,
+        });
+        
+        // Create a manager WITHOUT custom claims (only Firestore document)
+        await setDoc(doc(adminDb, 'users', 'firestoreManager'), {
+          email: 'firestoremanager@example.com',
+          displayName: 'Firestore Manager',
+          isManager: true,
+        });
+        
+        // Create a regular user
+        await setDoc(doc(adminDb, 'users', 'regularUser'), {
+          email: 'regular@example.com',
+          displayName: 'Regular User',
+          isManager: false,
+        });
+        
+        // Create multiple orders from different users
+        await setDoc(doc(adminDb, 'orders', 'order1'), {
+          createdByUid: 'regularUser',
+          createdByEmail: 'regular@example.com',
+          createdAt: new Date('2024-01-01'),
+          status: 'Factory Order',
+        });
+        await setDoc(doc(adminDb, 'orders', 'order2'), {
+          createdByUid: 'claimManager',
+          createdByEmail: 'claimmanager@example.com',
+          createdAt: new Date('2024-01-02'),
+          status: 'Locate',
+        });
+        await setDoc(doc(adminDb, 'orders', 'order3'), {
+          createdByUid: 'firestoreManager',
+          createdByEmail: 'firestoremanager@example.com',
+          createdAt: new Date('2024-01-03'),
+          status: 'Delivered',
+        });
+      });
+    });
+
+    it('should allow manager with custom claims to list all orders', async () => {
+      const managerDb = testEnv
+        .authenticatedContext('claimManager', { 
+          email: 'claimmanager@example.com',
+          isManager: true  // Custom claim
+        })
+        .firestore();
+      
+      // This is the exact query pattern used by the production app for managers
+      const ordersQuery = query(
+        collection(managerDb, 'orders'),
+        orderBy('createdAt', 'desc')
+      );
+      
+      await assertSucceeds(getDocs(ordersQuery));
+    });
+
+    it('should allow manager via Firestore document to list all orders', async () => {
+      // Manager WITHOUT custom claim (only Firestore document has isManager: true)
+      const managerDb = testEnv
+        .authenticatedContext('firestoreManager', { 
+          email: 'firestoremanager@example.com'
+          // NOTE: No isManager custom claim!
+        })
+        .firestore();
+      
+      // This is the exact query pattern used by the production app for managers
+      const ordersQuery = query(
+        collection(managerDb, 'orders'),
+        orderBy('createdAt', 'desc')
+      );
+      
+      await assertSucceeds(getDocs(ordersQuery));
+    });
+
+    it('should allow regular user to list only their own orders', async () => {
+      const userDb = testEnv
+        .authenticatedContext('regularUser', { 
+          email: 'regular@example.com'
+        })
+        .firestore();
+      
+      // This is the exact query pattern used by the production app for non-managers
+      const ordersQuery = query(
+        collection(userDb, 'orders'),
+        where('createdByUid', '==', 'regularUser'),
+        orderBy('createdAt', 'desc')
+      );
+      
+      await assertSucceeds(getDocs(ordersQuery));
+    });
+
+    it('should deny regular user listing all orders without filter', async () => {
+      const userDb = testEnv
+        .authenticatedContext('regularUser', { 
+          email: 'regular@example.com'
+        })
+        .firestore();
+      
+      // Non-manager trying to list all orders (without owner filter) should fail
+      const ordersQuery = query(
+        collection(userDb, 'orders'),
+        orderBy('createdAt', 'desc')
+      );
+      
+      await assertFails(getDocs(ordersQuery));
     });
   });
 });
