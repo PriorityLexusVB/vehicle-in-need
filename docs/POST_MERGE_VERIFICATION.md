@@ -32,6 +32,14 @@ Why: Firestore rules changes only take effect when deployed. Merged fixes for ma
 - STAGING_URL: URL for staging app (e.g., `https://staging.example.com`)
 - TEST_MANAGER_TOKEN: a short-lived test manager token or Bearer token for an endpoint that can verify manager-only access (optional). The workflow will skip manager verification if this is not present.
 
+### Token security best practices
+
+- Use short-lived tokens that expire within hours or days
+- Generate tokens specifically for CI testing, not production admin tokens
+- Rotate tokens regularly and immediately if compromised
+- Consider using GitHub Actions OIDC for token generation if your identity provider supports it
+- Never commit tokens to source control
+
 ## Troubleshooting
 
 - If Playwright fails due to port conflicts, check that `playwright.config.ts` has `reuseExistingServer: true` or adjust CI to reuse a server.

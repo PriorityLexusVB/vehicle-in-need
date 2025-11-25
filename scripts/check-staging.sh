@@ -24,11 +24,15 @@ if [ -n "$TEST_MANAGER_TOKEN" ]; then
   echo "Attempting optional manager-access verification using TEST_MANAGER_TOKEN"
   # Optional custom endpoint that can perform a manager-only Firestore operation server-side for verification.
   VERIFY_URL="$STAGING_URL/__verify_manager_access"
-  status_code=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $TEST_MANAGER_TOKEN" "$VERIFY_URL" || true)
+  http_response=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer $TEST_MANAGER_TOKEN" "$VERIFY_URL" 2>/dev/null)
+  status_code=$(echo "$http_response" | tail -n1)
   if [ "$status_code" = "200" ]; then
     echo "Manager access verification endpoint returned 200 OK"
   elif [ "$status_code" = "404" ]; then
     echo "Manager verification endpoint not implemented (404); skipping this check"
+  elif [ -z "$status_code" ] || [ "$status_code" = "000" ]; then
+    echo "Failed to connect to manager verification endpoint" >&2
+    exit 3
   else
     echo "Manager verification endpoint returned HTTP $status_code" >&2
     exit 3

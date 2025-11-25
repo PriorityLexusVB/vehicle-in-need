@@ -34,13 +34,13 @@ jobs:
         run: |
           if [ -f playwright.config.ts ] || [ -f playwright.config.js ]; then
             npx playwright install --with-deps || true
-            npx playwright test --config=playwright.config.ts || npx playwright test
+            npx playwright test
           else
             echo "No Playwright config present; skipping E2E"
           fi
 
       - name: Optional: Smoke-check staging URL
-        if: ${{ secrets.STAGING_URL != '' }}
+        if: ${{ env.STAGING_URL != '' }}
         run: |
           chmod +x scripts/check-staging.sh || true
           ./scripts/check-staging.sh
@@ -51,4 +51,9 @@ jobs:
         with:
           name: verification-logs
           path: |
-            test-results || test-output || ./playwright-report || ./reports || ./**/test-results || ./**/report || ./**/playwright-report || ./logs || /tmp/*
+            test-results/
+            test-output/
+            playwright-report/
+            reports/
+            **/test-results/
+            **/playwright-report/
