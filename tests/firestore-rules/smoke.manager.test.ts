@@ -7,10 +7,10 @@
  * This file intentionally contains a skipped test to avoid breaking CI in case the harness differs.
  */
 
-import { describe, test } from 'vitest';
+import { describe, it } from 'vitest';
 
 describe.skip('smoke: manager access (placeholder)', () => {
-  test('implement a smoke test that asserts manager can list orders and users', async () => {
+  it('implement a smoke test that asserts manager can list orders and users', async () => {
     // TODO: implement using your test harness
   });
 });

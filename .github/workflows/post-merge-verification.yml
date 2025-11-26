@@ -32,11 +32,21 @@ jobs:
       - name: Run unit & rules tests
         run: npm run --if-present test
 
+      - name: Build app for E2E
+        run: npm run build
+
       - name: Run Playwright E2E (if present)
-        if: ${{ always() }}
         run: |
           if [ -f playwright.config.ts ] || [ -f playwright.config.js ]; then
-            npx playwright install --with-deps || true
+            npx playwright install --with-deps
+            npm run server &
+            # Wait for server to be ready
+            for i in {1..30}; do
+              if curl -fsS http://localhost:8080/health >/dev/null 2>&1; then
+                echo "Server is up"; break
+              fi
+              sleep 2
+            done
             npx playwright test
           else
             echo "No Playwright config present; skipping E2E"
@@ -45,7 +55,7 @@ jobs:
       - name: Optional: Smoke-check staging URL
         if: ${{ env.STAGING_URL != '' }}
         run: |
-          chmod +x scripts/check-staging.sh || true
+          chmod +x scripts/check-staging.sh
           ./scripts/check-staging.sh
 
       - name: Upload test artifacts
@@ -54,9 +64,5 @@ jobs:
         with:
           name: verification-logs
           path: |
-            test-results/
-            test-output/
             playwright-report/
-            reports/
-            **/test-results/
-            **/playwright-report/
+            test-results/

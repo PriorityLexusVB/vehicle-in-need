@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# WARNING: This script is intended for use with GitHub Actions secrets only.
+# Do not use production tokens in local environments where command history
+# or process listings could expose the token.
 set -euo pipefail
 
 STAGING_URL="${STAGING_URL:-}"
@@ -24,7 +27,7 @@ if [ -n "$TEST_MANAGER_TOKEN" ]; then
   echo "Attempting optional manager-access verification using TEST_MANAGER_TOKEN"
   # Optional custom endpoint that can perform a manager-only Firestore operation server-side for verification.
   VERIFY_URL="$STAGING_URL/__verify_manager_access"
-  http_response=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer $TEST_MANAGER_TOKEN" "$VERIFY_URL" 2>/dev/null)
+  http_response=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer $TEST_MANAGER_TOKEN" "$VERIFY_URL")
   status_code=$(echo "$http_response" | tail -n1)
   if [ "$status_code" = "200" ]; then
     echo "Manager access verification endpoint returned 200 OK"

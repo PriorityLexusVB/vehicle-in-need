@@ -15,7 +15,7 @@ Why: Firestore rules changes only take effect when deployed. Merged fixes for ma
 - Run unit/tests: `npm ci && npm test`
 - Run Firestore emulator for rules tests:
   - `npx firebase emulators:start --only firestore`
-  - In another shell, run the rules tests: `npm run --if-present test:firestore-rules` or `npx jest tests/firestore-rules --runInBand`
+  - In another shell, run the rules tests: `npm run test:rules` or `npx vitest run tests/firestore-rules`
 
 ## Manual verification steps after deploying rules to staging/production
 
