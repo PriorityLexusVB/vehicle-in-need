@@ -284,7 +284,8 @@ const App: React.FC = () => {
     return () => unsubscribeAuth();
   }, []);
 
-  // Helper function to process orders and update stats
+  // Helper function to process orders data, update stats, and clear permission errors.
+  // This is used both for successful data loads and as part of the error recovery mechanism.
   const processOrdersData = useCallback((ordersData: Order[]) => {
     setOrders(ordersData);
     // Clear any previous permission errors when data loads successfully
@@ -371,7 +372,63 @@ const App: React.FC = () => {
       orderBy("createdAt", "desc")
     );
 
-    // Error handler for orders query - provides detailed logging and fallback for managers
+    // Helper to log permission error details for debugging
+    const logPermissionErrorDetails = (queryType: 'manager' | 'user') => {
+      console.error(
+        "%c🔐 Permission Error Details",
+        "color: #f59e0b; font-weight: bold;"
+      );
+      console.error("User UID:", user.uid);
+      console.error("User email:", user.email);
+      console.error("User isManager (app state):", user.isManager);
+      console.error("Query type attempted:", queryType);
+    };
+
+    // Helper to set up fallback listener for manager's own orders
+    const setupManagerFallback = () => {
+      console.warn(
+        "%c⚠️ Manager permissions issue - falling back to user's own orders",
+        "color: #f59e0b; font-weight: bold;"
+      );
+      console.info(
+        "To resolve: Run the set-manager-custom-claims.mjs script to sync custom claims"
+      );
+      
+      // Show user-facing warning only once
+      if (!fallbackWarningShown.current) {
+        fallbackWarningShown.current = true;
+        setPermissionError(
+          "Unable to load all orders. Showing only your orders. Please contact an administrator to update your permissions."
+        );
+      }
+      
+      // Set up fallback listener for user's own orders
+      unsubscribeOrdersFallback = onSnapshot(
+        userOwnOrdersQuery,
+        (querySnapshot) => {
+          const ordersData: Order[] = querySnapshot.docs.map(
+            (docSnapshot) =>
+              ({
+                ...docSnapshot.data(),
+                id: docSnapshot.id,
+              } as Order)
+          );
+          processOrdersData(ordersData);
+        },
+        (fallbackError) => {
+          console.error(
+            "%c❌ Critical: Fallback orders query also failed",
+            "color: #ef4444; font-weight: bold;",
+            fallbackError
+          );
+          setPermissionError(
+            "Unable to load orders. Please try refreshing the page or contact support."
+          );
+        }
+      );
+    };
+
+    // Error handler for orders query
     const handleOrdersError = (error: FirestoreError, queryType: 'manager' | 'user') => {
       console.error(
         `%c❌ Error fetching orders (${queryType} query)`,
@@ -381,69 +438,17 @@ const App: React.FC = () => {
       console.error("Error message:", error.message);
       
       if (error.code === "permission-denied") {
-        // Log detailed debug information for permission errors
-        console.error(
-          "%c🔐 Permission Error Details",
-          "color: #f59e0b; font-weight: bold;"
-        );
-        console.error("User UID:", user.uid);
-        console.error("User email:", user.email);
-        console.error("User isManager (app state):", user.isManager);
-        console.error("Query type attempted:", queryType);
+        logPermissionErrorDetails(queryType);
         
         if (queryType === 'manager' && user.isManager) {
-          // Manager query failed - this likely means the user doesn't have
-          // the isManager custom claim set in their auth token, and the
-          // Firestore document fallback isn't working for collection queries.
-          console.warn(
-            "%c⚠️ Manager permissions issue - falling back to user's own orders",
-            "color: #f59e0b; font-weight: bold;"
-          );
-          console.info(
-            "To resolve: Run the set-manager-custom-claims.mjs script to sync custom claims"
-          );
-          
-          // Show user-facing warning only once
-          if (!fallbackWarningShown.current) {
-            fallbackWarningShown.current = true;
-            setPermissionError(
-              "Unable to load all orders. Showing only your orders. Please contact an administrator to update your permissions."
-            );
-          }
-          
-          // Set up fallback listener for user's own orders
-          unsubscribeOrdersFallback = onSnapshot(
-            userOwnOrdersQuery,
-            (querySnapshot) => {
-              const ordersData: Order[] = querySnapshot.docs.map(
-                (docSnapshot) =>
-                  ({
-                    ...docSnapshot.data(),
-                    id: docSnapshot.id,
-                  } as Order)
-              );
-              processOrdersData(ordersData);
-            },
-            (fallbackError) => {
-              // Even the fallback query failed
-              console.error(
-                "%c❌ Critical: Fallback orders query also failed",
-                "color: #ef4444; font-weight: bold;",
-                fallbackError
-              );
-              setPermissionError(
-                "Unable to load orders. Please try refreshing the page or contact support."
-              );
-            }
-          );
+          // Manager query failed - likely missing isManager custom claim
+          setupManagerFallback();
         } else {
-          // Non-manager query failed or already on fallback
           setPermissionError(
             "Unable to load orders due to a permissions error. Please try refreshing the page or contact support."
           );
         }
       } else {
-        // Non-permission error
         setPermissionError(
           "Unable to load orders. Please check your internet connection and try again."
         );
