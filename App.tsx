@@ -16,6 +16,8 @@ import {
   deleteDoc,
   Timestamp,
   FirestoreError,
+  QuerySnapshot,
+  DocumentData,
 } from "firebase/firestore";
 import { db, auth } from "./services/firebase";
 import { Order, OrderStatus, AppUser } from "./types";
@@ -32,6 +34,30 @@ import ZeroManagerWarning from "./components/ZeroManagerWarning";
 import { PlusIcon } from "./components/icons/PlusIcon";
 import { CloseIcon } from "./components/icons/CloseIcon";
 import { useRegisterSW } from "virtual:pwa-register/react";
+
+// Type guard to verify if an error is a FirestoreError.
+// Checks for FirestoreError-specific properties to distinguish from generic errors.
+const isFirestoreError = (error: unknown): error is FirestoreError => {
+  if (typeof error !== 'object' || error === null) return false;
+  const err = error as Record<string, unknown>;
+  // FirestoreError has code (string), message (string), and name properties
+  return (
+    typeof err.code === 'string' &&
+    typeof err.message === 'string' &&
+    typeof err.name === 'string'
+  );
+};
+
+// Helper function to map Firestore QuerySnapshot documents to Order objects.
+// Defined outside component to avoid recreation on every render.
+const mapDocsToOrders = (querySnapshot: QuerySnapshot<DocumentData>): Order[] => {
+  return querySnapshot.docs.map(
+    (docSnapshot) => ({
+      ...docSnapshot.data(),
+      id: docSnapshot.id,
+    } as Order)
+  );
+};
 
 // Declare version globals
 declare const __APP_VERSION__: string;
@@ -286,10 +312,13 @@ const App: React.FC = () => {
 
   // Helper function to process orders data, update stats, and clear permission errors.
   // This is used both for successful data loads and as part of the error recovery mechanism.
+  // Also resets fallbackWarningShown so users are notified if permissions fail again.
   const processOrdersData = useCallback((ordersData: Order[]) => {
     setOrders(ordersData);
     // Clear any previous permission errors when data loads successfully
     setPermissionError(null);
+    // Reset fallback warning so user is notified if permissions fail again
+    fallbackWarningShown.current = false;
 
     // Calculate stats
     const thirtyDaysAgo = new Date();
@@ -330,6 +359,7 @@ const App: React.FC = () => {
     );
     setStats(newStats);
   }, []);
+
 
   useEffect(() => {
     if (!user) {
@@ -384,8 +414,12 @@ const App: React.FC = () => {
       console.error("Query type attempted:", queryType);
     };
 
-    // Helper to set up fallback listener for manager's own orders
+    // Helper to set up fallback listener for manager's own orders.
+    // Called when a manager query fails due to missing custom claims.
     const setupManagerFallback = () => {
+      // Unsubscribe from manager query before setting up fallback to prevent race conditions
+      unsubscribeOrders?.();
+
       console.warn(
         "%c⚠️ Manager permissions issue - falling back to user's own orders",
         "color: #f59e0b; font-weight: bold;"
@@ -394,7 +428,7 @@ const App: React.FC = () => {
         "To resolve: Run the set-manager-custom-claims.mjs script to sync custom claims"
       );
       
-      // Show user-facing warning only once
+      // Show user-facing warning only once per session
       if (!fallbackWarningShown.current) {
         fallbackWarningShown.current = true;
         setPermissionError(
@@ -406,13 +440,7 @@ const App: React.FC = () => {
       unsubscribeOrdersFallback = onSnapshot(
         userOwnOrdersQuery,
         (querySnapshot) => {
-          const ordersData: Order[] = querySnapshot.docs.map(
-            (docSnapshot) =>
-              ({
-                ...docSnapshot.data(),
-                id: docSnapshot.id,
-              } as Order)
-          );
+          const ordersData = mapDocsToOrders(querySnapshot);
           processOrdersData(ordersData);
         },
         (fallbackError) => {
@@ -428,27 +456,43 @@ const App: React.FC = () => {
       );
     };
 
-    // Error handler for orders query
-    const handleOrdersError = (error: FirestoreError, queryType: 'manager' | 'user') => {
+    // Error handler for orders query.
+    // Handles different error scenarios:
+    // - permission-denied for managers: Falls back to user's own orders (likely missing custom claims)
+    // - permission-denied for non-managers: Shows permission error message
+    // - Other errors (network, etc.): Shows generic error message
+    const handleOrdersError = (error: unknown, queryType: 'manager' | 'user') => {
+      // Log error details for debugging
       console.error(
         `%c❌ Error fetching orders (${queryType} query)`,
         "color: #ef4444; font-weight: bold;"
       );
+      
+      // Verify error is a FirestoreError before accessing its properties
+      if (!isFirestoreError(error)) {
+        console.error('Unexpected error type:', error);
+        setPermissionError('An unexpected error occurred. Please try refreshing the page.');
+        return;
+      }
+
       console.error("Error code:", error.code);
       console.error("Error message:", error.message);
       
       if (error.code === "permission-denied") {
         logPermissionErrorDetails(queryType);
         
+        // For managers with Firestore isManager=true but missing custom claims,
+        // fall back to querying only their own orders instead of failing completely
         if (queryType === 'manager' && user.isManager) {
-          // Manager query failed - likely missing isManager custom claim
           setupManagerFallback();
         } else {
+          // Non-manager permission error or other permission issues
           setPermissionError(
             "Unable to load orders due to a permissions error. Please try refreshing the page or contact support."
           );
         }
       } else {
+        // Network or other non-permission errors
         setPermissionError(
           "Unable to load orders. Please check your internet connection and try again."
         );
@@ -461,32 +505,20 @@ const App: React.FC = () => {
       unsubscribeOrders = onSnapshot(
         allOrdersQuery,
         (querySnapshot) => {
-          const ordersData: Order[] = querySnapshot.docs.map(
-            (docSnapshot) =>
-              ({
-                ...docSnapshot.data(),
-                id: docSnapshot.id,
-              } as Order)
-          );
+          const ordersData = mapDocsToOrders(querySnapshot);
           processOrdersData(ordersData);
         },
-        (error) => handleOrdersError(error as FirestoreError, 'manager')
+        (error) => handleOrdersError(error, 'manager')
       );
     } else {
       // Non-manager: Only fetch their own orders
       unsubscribeOrders = onSnapshot(
         userOwnOrdersQuery,
         (querySnapshot) => {
-          const ordersData: Order[] = querySnapshot.docs.map(
-            (docSnapshot) =>
-              ({
-                ...docSnapshot.data(),
-                id: docSnapshot.id,
-              } as Order)
-          );
+          const ordersData = mapDocsToOrders(querySnapshot);
           processOrdersData(ordersData);
         },
-        (error) => handleOrdersError(error as FirestoreError, 'user')
+        (error) => handleOrdersError(error, 'user')
       );
     }
 
@@ -505,15 +537,20 @@ const App: React.FC = () => {
           setAllUsers(usersData);
         },
         (error) => {
-          const firestoreError = error as FirestoreError;
+          // Verify error is a FirestoreError before accessing its properties
+          if (!isFirestoreError(error)) {
+            console.error('Unexpected error type:', error);
+            return;
+          }
+          
           console.error(
             "%c❌ Error fetching users from Firestore",
             "color: #ef4444; font-weight: bold;"
           );
-          console.error("Error code:", firestoreError.code);
-          console.error("Error message:", firestoreError.message);
+          console.error("Error code:", error.code);
+          console.error("Error message:", error.message);
           
-          if (firestoreError.code === "permission-denied") {
+          if (error.code === "permission-denied") {
             console.error(
               "%c🔐 Users Permission Error - Manager may need custom claims",
               "color: #f59e0b; font-weight: bold;"
@@ -530,7 +567,8 @@ const App: React.FC = () => {
       unsubscribeOrdersFallback?.();
       unsubscribeUsers?.();
     };
-  }, [user, processOrdersData]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- processOrdersData is stable (useCallback with []), mapDocsToOrders/isFirestoreError are module-level functions
+  }, [user]);
 
   const handleAddOrder = useCallback(
     async (newOrder: Omit<Order, "id">): Promise<boolean> => {
@@ -727,13 +765,18 @@ const App: React.FC = () => {
           isCurrentUserManager={user.isManager}
         />
         {permissionError && (
-          <div className="mb-4 p-4 bg-amber-50 border border-amber-300 rounded-lg flex items-start gap-3">
+          <div 
+            role="alert"
+            aria-live="polite"
+            className="mb-4 p-4 bg-amber-50 border border-amber-300 rounded-lg flex items-start gap-3"
+          >
             <svg
               className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
               xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
