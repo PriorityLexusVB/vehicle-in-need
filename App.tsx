@@ -15,6 +15,7 @@ import {
   updateDoc,
   deleteDoc,
   Timestamp,
+  FirestoreError,
 } from "firebase/firestore";
 import { db, auth } from "./services/firebase";
 import { Order, OrderStatus, AppUser } from "./types";
@@ -43,6 +44,7 @@ const App: React.FC = () => {
   const [allUsers, setAllUsers] = useState<AppUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isOrderFormVisible, setIsOrderFormVisible] = useState(false);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
   const [stats, setStats] = useState({
     totalActive: 0,
     awaitingAction: 0,
@@ -52,6 +54,8 @@ const App: React.FC = () => {
 
   // Track logged elevations to prevent duplicate logging
   const loggedElevations = useRef<Set<string>>(new Set());
+  // Track if we've already shown the fallback warning
+  const fallbackWarningShown = useRef(false);
 
   // Service Worker registration with update notification
   const {
@@ -280,12 +284,59 @@ const App: React.FC = () => {
     return () => unsubscribeAuth();
   }, []);
 
+  // Helper function to process orders and update stats
+  const processOrdersData = useCallback((ordersData: Order[]) => {
+    setOrders(ordersData);
+    // Clear any previous permission errors when data loads successfully
+    setPermissionError(null);
+
+    // Calculate stats
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const newStats = ordersData.reduce(
+      (acc, order) => {
+        if (order.status !== OrderStatus.Delivered) {
+          acc.totalActive++;
+        }
+        if (
+          [
+            OrderStatus.FactoryOrder,
+            OrderStatus.Locate,
+            OrderStatus.DealerExchange,
+          ].includes(order.status)
+        ) {
+          acc.awaitingAction++;
+        }
+        if (order.status === OrderStatus.Received) {
+          acc.readyForDelivery++;
+        }
+        const createdAtDate = (order.createdAt as Timestamp)?.toDate();
+        if (
+          order.status === OrderStatus.Delivered &&
+          createdAtDate &&
+          createdAtDate > thirtyDaysAgo
+        ) {
+          acc.deliveredLast30Days++;
+        }
+        return acc;
+      },
+      {
+        totalActive: 0,
+        awaitingAction: 0,
+        readyForDelivery: 0,
+        deliveredLast30Days: 0,
+      }
+    );
+    setStats(newStats);
+  }, []);
+
   useEffect(() => {
     if (!user) {
       // If user is not logged in, reset state
       Promise.resolve().then(() => {
         setOrders([]);
         setAllUsers([]);
+        setPermissionError(null);
         setStats({
           totalActive: 0,
           awaitingAction: 0,
@@ -293,76 +344,148 @@ const App: React.FC = () => {
           deliveredLast30Days: 0,
         });
       });
+      // Reset fallback warning when user logs out
+      fallbackWarningShown.current = false;
       return;
     }
 
-    // Fetch orders based on user role
-    const ordersQuery = user.isManager
-      ? query(collection(db, "orders"), orderBy("createdAt", "desc"))
-      : query(
-          collection(db, "orders"),
-          where("createdByUid", "==", user.uid),
-          orderBy("createdAt", "desc")
-        );
+    let unsubscribeOrders: (() => void) | undefined;
+    let unsubscribeOrdersFallback: (() => void) | undefined;
+    let unsubscribeUsers: (() => void) | undefined;
 
-    const unsubscribeOrders = onSnapshot(
-      ordersQuery,
-      (querySnapshot) => {
-        const ordersData: Order[] = querySnapshot.docs.map(
-          (doc) =>
-            ({
-              ...doc.data(),
-              id: doc.id,
-            } as Order)
-        );
-        setOrders(ordersData);
-
-        // Calculate stats (only for managers, but compute for all users for simplicity)
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        const newStats = ordersData.reduce(
-          (acc, order) => {
-            if (order.status !== OrderStatus.Delivered) {
-              acc.totalActive++;
-            }
-            if (
-              [
-                OrderStatus.FactoryOrder,
-                OrderStatus.Locate,
-                OrderStatus.DealerExchange,
-              ].includes(order.status)
-            ) {
-              acc.awaitingAction++;
-            }
-            if (order.status === OrderStatus.Received) {
-              acc.readyForDelivery++;
-            }
-            const createdAtDate = (order.createdAt as Timestamp)?.toDate();
-            if (
-              order.status === OrderStatus.Delivered &&
-              createdAtDate &&
-              createdAtDate > thirtyDaysAgo
-            ) {
-              acc.deliveredLast30Days++;
-            }
-            return acc;
-          },
-          {
-            totalActive: 0,
-            awaitingAction: 0,
-            readyForDelivery: 0,
-            deliveredLast30Days: 0,
-          }
-        );
-        setStats(newStats);
-      },
-      (error) => {
-        console.error("Error fetching orders from Firestore: ", error);
-      }
+    // Determine the appropriate query based on user role
+    // For managers: First try to fetch ALL orders
+    // For non-managers: Only fetch their own orders
+    const isManagerQuery = user.isManager;
+    
+    // Query for user's own orders (used as fallback for managers or primary for non-managers)
+    const userOwnOrdersQuery = query(
+      collection(db, "orders"),
+      where("createdByUid", "==", user.uid),
+      orderBy("createdAt", "desc")
     );
 
+    // Query for all orders (manager-only)
+    const allOrdersQuery = query(
+      collection(db, "orders"),
+      orderBy("createdAt", "desc")
+    );
+
+    // Error handler for orders query - provides detailed logging and fallback for managers
+    const handleOrdersError = (error: FirestoreError, queryType: 'manager' | 'user') => {
+      console.error(
+        `%c❌ Error fetching orders (${queryType} query)`,
+        "color: #ef4444; font-weight: bold;"
+      );
+      console.error("Error code:", error.code);
+      console.error("Error message:", error.message);
+      
+      if (error.code === "permission-denied") {
+        // Log detailed debug information for permission errors
+        console.error(
+          "%c🔐 Permission Error Details",
+          "color: #f59e0b; font-weight: bold;"
+        );
+        console.error("User UID:", user.uid);
+        console.error("User email:", user.email);
+        console.error("User isManager (app state):", user.isManager);
+        console.error("Query type attempted:", queryType);
+        
+        if (queryType === 'manager' && user.isManager) {
+          // Manager query failed - this likely means the user doesn't have
+          // the isManager custom claim set in their auth token, and the
+          // Firestore document fallback isn't working for collection queries.
+          console.warn(
+            "%c⚠️ Manager permissions issue - falling back to user's own orders",
+            "color: #f59e0b; font-weight: bold;"
+          );
+          console.info(
+            "To resolve: Run the set-manager-custom-claims.mjs script to sync custom claims"
+          );
+          
+          // Show user-facing warning only once
+          if (!fallbackWarningShown.current) {
+            fallbackWarningShown.current = true;
+            setPermissionError(
+              "Unable to load all orders. Showing only your orders. Please contact an administrator to update your permissions."
+            );
+          }
+          
+          // Set up fallback listener for user's own orders
+          unsubscribeOrdersFallback = onSnapshot(
+            userOwnOrdersQuery,
+            (querySnapshot) => {
+              const ordersData: Order[] = querySnapshot.docs.map(
+                (docSnapshot) =>
+                  ({
+                    ...docSnapshot.data(),
+                    id: docSnapshot.id,
+                  } as Order)
+              );
+              processOrdersData(ordersData);
+            },
+            (fallbackError) => {
+              // Even the fallback query failed
+              console.error(
+                "%c❌ Critical: Fallback orders query also failed",
+                "color: #ef4444; font-weight: bold;",
+                fallbackError
+              );
+              setPermissionError(
+                "Unable to load orders. Please try refreshing the page or contact support."
+              );
+            }
+          );
+        } else {
+          // Non-manager query failed or already on fallback
+          setPermissionError(
+            "Unable to load orders due to a permissions error. Please try refreshing the page or contact support."
+          );
+        }
+      } else {
+        // Non-permission error
+        setPermissionError(
+          "Unable to load orders. Please check your internet connection and try again."
+        );
+      }
+    };
+
+    // Set up the primary orders listener
+    if (isManagerQuery) {
+      // Manager: Try to fetch all orders first
+      unsubscribeOrders = onSnapshot(
+        allOrdersQuery,
+        (querySnapshot) => {
+          const ordersData: Order[] = querySnapshot.docs.map(
+            (docSnapshot) =>
+              ({
+                ...docSnapshot.data(),
+                id: docSnapshot.id,
+              } as Order)
+          );
+          processOrdersData(ordersData);
+        },
+        (error) => handleOrdersError(error as FirestoreError, 'manager')
+      );
+    } else {
+      // Non-manager: Only fetch their own orders
+      unsubscribeOrders = onSnapshot(
+        userOwnOrdersQuery,
+        (querySnapshot) => {
+          const ordersData: Order[] = querySnapshot.docs.map(
+            (docSnapshot) =>
+              ({
+                ...docSnapshot.data(),
+                id: docSnapshot.id,
+              } as Order)
+          );
+          processOrdersData(ordersData);
+        },
+        (error) => handleOrdersError(error as FirestoreError, 'user')
+      );
+    }
+
     // Fetch all users (only for managers)
-    let unsubscribeUsers: (() => void) | undefined;
     if (user.isManager) {
       const usersQuery = query(
         collection(db, USERS_COLLECTION),
@@ -372,21 +495,37 @@ const App: React.FC = () => {
         usersQuery,
         (querySnapshot) => {
           const usersData: AppUser[] = querySnapshot.docs.map(
-            (doc) => doc.data() as AppUser
+            (docSnapshot) => docSnapshot.data() as AppUser
           );
           setAllUsers(usersData);
         },
         (error) => {
-          console.error("Error fetching users from Firestore: ", error);
+          const firestoreError = error as FirestoreError;
+          console.error(
+            "%c❌ Error fetching users from Firestore",
+            "color: #ef4444; font-weight: bold;"
+          );
+          console.error("Error code:", firestoreError.code);
+          console.error("Error message:", firestoreError.message);
+          
+          if (firestoreError.code === "permission-denied") {
+            console.error(
+              "%c🔐 Users Permission Error - Manager may need custom claims",
+              "color: #f59e0b; font-weight: bold;"
+            );
+            // Don't show a separate error - the orders error message is enough
+            // Just log for debugging
+          }
         }
       );
     }
 
     return () => {
       unsubscribeOrders?.();
+      unsubscribeOrdersFallback?.();
       unsubscribeUsers?.();
     };
-  }, [user]);
+  }, [user, processOrdersData]);
 
   const handleAddOrder = useCallback(
     async (newOrder: Omit<Order, "id">): Promise<boolean> => {
@@ -582,6 +721,34 @@ const App: React.FC = () => {
           hasManagers={allUsers.some((u) => u.isManager)}
           isCurrentUserManager={user.isManager}
         />
+        {permissionError && (
+          <div className="mb-4 p-4 bg-amber-50 border border-amber-300 rounded-lg flex items-start gap-3">
+            <svg
+              className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+            <div className="flex-1">
+              <p className="text-sm text-amber-800">{permissionError}</p>
+            </div>
+            <button
+              onClick={() => setPermissionError(null)}
+              className="text-amber-500 hover:text-amber-700 transition-colors"
+              aria-label="Dismiss warning"
+            >
+              <CloseIcon className="w-5 h-5" />
+            </button>
+          </div>
+        )}
         <Routes>
           <Route
             path="/"
