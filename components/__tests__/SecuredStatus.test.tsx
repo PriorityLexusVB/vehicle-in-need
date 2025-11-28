@@ -57,6 +57,10 @@ describe("Secured Status Feature", () => {
       expect(normalizeStatusForUI(OrderStatus.Delivered)).toBe(OrderStatus.Secured);
     });
 
+    it("returns Secured status unchanged", () => {
+      expect(normalizeStatusForUI(OrderStatus.Secured)).toBe(OrderStatus.Secured);
+    });
+
     it("returns other statuses unchanged", () => {
       expect(normalizeStatusForUI(OrderStatus.FactoryOrder)).toBe(OrderStatus.FactoryOrder);
       expect(normalizeStatusForUI(OrderStatus.Locate)).toBe(OrderStatus.Locate);

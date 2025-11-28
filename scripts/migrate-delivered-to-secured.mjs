@@ -31,7 +31,7 @@
  *   node scripts/migrate-delivered-to-secured.mjs --project vehicles-in-need --apply
  */
 
-import { initializeApp, applicationDefault, cert } from 'firebase-admin/app';
+import { initializeApp, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { parseArgs } from 'node:util';
 
@@ -100,6 +100,17 @@ async function main() {
   console.log(`Project: ${projectId}`);
   console.log(`Mode: ${isDryRun ? '🔍 DRY-RUN (no changes will be made)' : '⚠️  APPLY (database will be modified)'}`);
   console.log('='.repeat(70));
+  console.log('');
+
+  // Check if running against emulator
+  const isEmulator = process.env.FIRESTORE_EMULATOR_HOST;
+  if (isEmulator) {
+    console.log(`🔧 Using Firebase Emulator at: ${isEmulator}`);
+  } else if (!isDryRun) {
+    console.log('⚠️  WARNING: Running against PRODUCTION database!');
+    console.log('   Consider testing with Firebase Emulator first.');
+    console.log('   Set FIRESTORE_EMULATOR_HOST=localhost:8080 to use emulator');
+  }
   console.log('');
 
   if (!isDryRun) {
