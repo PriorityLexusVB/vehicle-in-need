@@ -60,7 +60,7 @@ describe("OrderList", () => {
 
   it("renders list of orders", () => {
     render(
-      <OrderList vehicleOptions={[]} 
+      <OrderList
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
@@ -68,7 +68,7 @@ describe("OrderList", () => {
       />
     );
 
-    // Should show active orders by default (not delivered)
+    // Should show active orders by default (not secured)
     expect(screen.getByText("John Doe")).toBeInTheDocument();
     expect(screen.getByText("Bob Johnson")).toBeInTheDocument();
   });
@@ -76,7 +76,7 @@ describe("OrderList", () => {
   it("filters orders by search query", async () => {
     const user = userEvent.setup();
     render(
-      <OrderList vehicleOptions={[]} 
+      <OrderList
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
@@ -92,10 +92,10 @@ describe("OrderList", () => {
     expect(screen.queryByText("Bob Johnson")).not.toBeInTheDocument();
   });
 
-  it("switches between active and delivered tabs", async () => {
+  it("switches between active and secured tabs", async () => {
     const user = userEvent.setup();
     render(
-      <OrderList vehicleOptions={[]} 
+      <OrderList
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
@@ -107,13 +107,13 @@ describe("OrderList", () => {
     expect(screen.getByText("John Doe")).toBeInTheDocument();
     expect(screen.queryByText("Jane Smith")).not.toBeInTheDocument();
 
-    // Click delivered tab
-    const deliveredButton = screen.getByRole("button", {
-      name: /delivered history/i,
+    // Click secured history tab (renamed from "delivered history")
+    const securedButton = screen.getByRole("button", {
+      name: /secured history/i,
     });
-    await user.click(deliveredButton);
+    await user.click(securedButton);
 
-    // Should now show delivered order
+    // Should now show secured order (legacy Delivered status)
     expect(screen.getByText("Jane Smith")).toBeInTheDocument();
     expect(screen.queryByText("John Doe")).not.toBeInTheDocument();
   });
@@ -121,7 +121,7 @@ describe("OrderList", () => {
   it("filters orders by status", async () => {
     const user = userEvent.setup();
     render(
-      <OrderList vehicleOptions={[]} 
+      <OrderList
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
@@ -141,7 +141,7 @@ describe("OrderList", () => {
   it("shows message when no orders match filters", async () => {
     const user = userEvent.setup();
     render(
-      <OrderList vehicleOptions={[]} 
+      <OrderList
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
@@ -157,7 +157,7 @@ describe("OrderList", () => {
 
   it("displays order count in active tab", () => {
     render(
-      <OrderList vehicleOptions={[]} 
+      <OrderList
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
@@ -165,9 +165,9 @@ describe("OrderList", () => {
       />
     );
 
-  // Dynamic active order count using current UI label 'Active Orders <count>'
+    // Dynamic active order count using current UI label 'Active Orders <count>'
     const activeCount = mockOrders.filter(
-      (o) => o.status !== OrderStatus.Delivered
+      (o) => o.status !== OrderStatus.Delivered && o.status !== OrderStatus.Received
     ).length;
     const activeTabRegex = new RegExp(
       `^Active\\s*Orders\\s*${activeCount}$`,
@@ -178,9 +178,9 @@ describe("OrderList", () => {
     ).toBeInTheDocument();
   });
 
-  it("displays order count in delivered tab", () => {
+  it("displays order count in secured tab", () => {
     render(
-      <OrderList vehicleOptions={[]} 
+      <OrderList
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}
@@ -188,22 +188,23 @@ describe("OrderList", () => {
       />
     );
 
-  // Dynamic delivered order count using current UI label 'Delivered History <count>'
-    const deliveredCount = mockOrders.filter(
-      (o) => o.status === OrderStatus.Delivered
+    // Dynamic secured order count using current UI label 'Secured History <count>'
+    // Secured includes legacy Received and Delivered statuses
+    const securedCount = mockOrders.filter(
+      (o) => o.status === OrderStatus.Delivered || o.status === OrderStatus.Received
     ).length;
-    const deliveredTabRegex = new RegExp(
-      `^Delivered\\s*History\\s*${deliveredCount}$`,
+    const securedTabRegex = new RegExp(
+      `^Secured\\s*History\\s*${securedCount}$`,
       "i"
     );
     expect(
-      screen.getByRole("button", { name: deliveredTabRegex })
+      screen.getByRole("button", { name: securedTabRegex })
     ).toBeInTheDocument();
   });
 
   it("shows empty state when no orders exist", () => {
     render(
-      <OrderList vehicleOptions={[]} 
+      <OrderList
         orders={[]}
         onUpdateStatus={mockOnUpdateStatus}
         onDeleteOrder={mockOnDeleteOrder}

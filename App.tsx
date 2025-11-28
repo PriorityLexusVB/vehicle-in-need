@@ -21,7 +21,7 @@ import {
 } from "firebase/firestore";
 import { db, auth } from "./services/firebase";
 import { Order, OrderStatus, AppUser } from "./types";
-import { MANAGER_EMAILS, USERS_COLLECTION } from "./constants";
+import { MANAGER_EMAILS, USERS_COLLECTION, isSecuredStatus, isActiveStatus } from "./constants";
 import Header from "./components/Header";
 import OrderForm from "./components/OrderForm";
 import OrderList from "./components/OrderList";
@@ -74,8 +74,7 @@ const App: React.FC = () => {
   const [stats, setStats] = useState({
     totalActive: 0,
     awaitingAction: 0,
-    readyForDelivery: 0,
-    deliveredLast30Days: 0,
+    securedLast30Days: 0,
   });
 
   // Track logged elevations to prevent duplicate logging
@@ -320,14 +319,16 @@ const App: React.FC = () => {
     // Reset fallback warning so user is notified if permissions fail again
     fallbackWarningShown.current = false;
 
-    // Calculate stats
+    // Calculate stats using isSecuredStatus and isActiveStatus for consistency
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const newStats = ordersData.reduce(
       (acc, order) => {
-        if (order.status !== OrderStatus.Delivered) {
+        // Count active orders (not secured)
+        if (isActiveStatus(order.status)) {
           acc.totalActive++;
         }
+        // Count orders awaiting action (Factory Order, Locate, Dealer Exchange)
         if (
           [
             OrderStatus.FactoryOrder,
@@ -337,24 +338,21 @@ const App: React.FC = () => {
         ) {
           acc.awaitingAction++;
         }
-        if (order.status === OrderStatus.Received) {
-          acc.readyForDelivery++;
-        }
+        // Count secured orders in last 30 days (includes legacy Received/Delivered)
         const createdAtDate = (order.createdAt as Timestamp)?.toDate();
         if (
-          order.status === OrderStatus.Delivered &&
+          isSecuredStatus(order.status) &&
           createdAtDate &&
           createdAtDate > thirtyDaysAgo
         ) {
-          acc.deliveredLast30Days++;
+          acc.securedLast30Days++;
         }
         return acc;
       },
       {
         totalActive: 0,
         awaitingAction: 0,
-        readyForDelivery: 0,
-        deliveredLast30Days: 0,
+        securedLast30Days: 0,
       }
     );
     setStats(newStats);
@@ -371,8 +369,7 @@ const App: React.FC = () => {
         setStats({
           totalActive: 0,
           awaitingAction: 0,
-          readyForDelivery: 0,
-          deliveredLast30Days: 0,
+          securedLast30Days: 0,
         });
       });
       // Reset fallback warning when user logs out

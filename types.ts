@@ -6,6 +6,9 @@ export enum OrderStatus {
   DealerExchange = 'Dealer Exchange',
   Received = 'Received',
   Delivered = 'Delivered',
+  // Note: Secured is a UI-only status that maps legacy 'Received' and 'Delivered' for display
+  // The database still stores 'Delivered' when marking an order as secured
+  Secured = 'Secured',
 }
 
 export interface Order {
