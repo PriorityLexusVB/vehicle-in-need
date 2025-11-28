@@ -2,7 +2,6 @@ import React from 'react';
 import { BriefcaseIcon } from './icons/BriefcaseIcon';
 import { ClockIcon } from './icons/ClockIcon';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
-import { DocumentTextIcon } from './icons/DocumentTextIcon';
 
 interface StatCardProps {
   title: string;
@@ -27,18 +26,16 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color }) => (
 interface DashboardStatsProps {
     totalActive: number;
     awaitingAction: number;
-    readyForDelivery: number;
-    deliveredLast30Days: number;
+    securedLast30Days: number;
 }
 
 const DashboardStats: React.FC<DashboardStatsProps> = ({
     totalActive,
     awaitingAction,
-    readyForDelivery,
-    deliveredLast30Days
+    securedLast30Days
 }) => {
     return (
-        <div className="mb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="mb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <StatCard 
                 title="Total Active Orders" 
                 value={totalActive}
@@ -51,17 +48,11 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
                 icon={<ClockIcon className="w-6 h-6 text-amber-700" />}
                 color="bg-amber-100"
             />
-            <StatCard 
-                title="Ready for Delivery" 
-                value={readyForDelivery}
+             <StatCard 
+                title="Secured (Last 30d)" 
+                value={securedLast30Days}
                 icon={<CheckCircleIcon className="w-6 h-6 text-green-700" />}
                 color="bg-green-100"
-            />
-             <StatCard 
-                title="Delivered (Last 30d)" 
-                value={deliveredLast30Days}
-                icon={<DocumentTextIcon className="w-6 h-6 text-purple-700" />}
-                color="bg-purple-100"
             />
         </div>
     )
