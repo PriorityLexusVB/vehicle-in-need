@@ -55,9 +55,11 @@ def normalize_table_line(line: str) -> str:
         return line
     
     # Check if this is a separator row (contains only dashes and optional colons)
+    # A separator must have at least one cell with dashes
     sep_pattern = re.compile(r'^:?-+:?$')
     inner_parts = parts[1:-1]
-    is_separator = all(sep_pattern.match(p.strip()) for p in inner_parts if p.strip())
+    non_empty_parts = [p.strip() for p in inner_parts if p.strip()]
+    is_separator = len(non_empty_parts) > 0 and all(sep_pattern.match(p) for p in non_empty_parts)
     
     normalized_cells = []
     for p in inner_parts:
