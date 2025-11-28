@@ -6,7 +6,9 @@ This document describes the security dependency upgrades performed to remediate 
 
 ## Vulnerabilities Addressed
 
-### Before (5 vulnerabilities - 3 moderate, 2 high)
+### Before (4 vulnerable packages, 6 advisories - 2 moderate, 4 high)
+
+> **Note**: npm audit reported "5 vulnerabilities (3 moderate, 2 high)" based on dependency paths. The table below lists all 6 unique security advisories affecting 4 packages.
 
 | Package | Severity | CVE/Advisory | Description |
 |---------|----------|--------------|-------------|
@@ -75,6 +77,8 @@ node-forge has an Interpretation Conflict vulnerability via its ASN.1 Validator 
 
 5 vulnerabilities (3 moderate, 2 high)
 ```
+
+> **Note**: npm audit counts "5 vulnerabilities" based on dependency paths. The 4 affected packages have 6 unique security advisories (node-forge has 3 advisories counted as a single "high" vulnerability by npm).
 
 ### After
 
