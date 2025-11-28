@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import OrderList from "../OrderList";
 import { Order, OrderStatus, AppUser } from "../../types";
+import { isSecuredStatus } from "../../constants";
 
 describe("OrderList", () => {
   const mockManagerUser: AppUser = {
@@ -166,9 +167,9 @@ describe("OrderList", () => {
     );
 
   // Dynamic active order count using current UI label 'Active Orders <count>'
-  // Active orders exclude Secured, Delivered, and Received statuses
+  // Active orders exclude all secured statuses (Secured, Delivered, Received)
     const activeCount = mockOrders.filter(
-      (o) => o.status !== OrderStatus.Delivered && o.status !== OrderStatus.Received && o.status !== OrderStatus.Secured
+      (o) => !isSecuredStatus(o.status)
     ).length;
     const activeTabRegex = new RegExp(
       `^Active\\s*Orders\\s*${activeCount}$`,
@@ -191,7 +192,7 @@ describe("OrderList", () => {
 
   // Dynamic secured order count using current UI label 'Secured History <count>'
     const securedCount = mockOrders.filter(
-      (o) => o.status === OrderStatus.Delivered || o.status === OrderStatus.Received || o.status === OrderStatus.Secured
+      (o) => isSecuredStatus(o.status)
     ).length;
     const securedTabRegex = new RegExp(
       `^Secured\\s*History\\s*${securedCount}$`,

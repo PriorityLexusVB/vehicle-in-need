@@ -21,7 +21,7 @@ export const STATUS_COLORS: Record<OrderStatus, string> = {
   [OrderStatus.Secured]: 'bg-green-100 text-green-800 border-green-300',
   // Legacy statuses - display same as Secured for backward compatibility
   [OrderStatus.Received]: 'bg-green-100 text-green-800 border-green-300',
-  [OrderStatus.Delivered]: 'bg-slate-100 text-slate-800 border-slate-300',
+  [OrderStatus.Delivered]: 'bg-green-100 text-green-800 border-green-300',
 };
 
 export const YEARS = ['2025', '2024', '2023'];
