@@ -4,6 +4,8 @@ export enum OrderStatus {
   FactoryOrder = 'Factory Order',
   Locate = 'Locate',
   DealerExchange = 'Dealer Exchange',
+  Secured = 'Secured',
+  // Legacy statuses - kept for backward compatibility with existing data
   Received = 'Received',
   Delivered = 'Delivered',
 }

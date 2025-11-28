@@ -28,14 +28,14 @@ interface DashboardStatsProps {
     totalActive: number;
     awaitingAction: number;
     readyForDelivery: number;
-    deliveredLast30Days: number;
+    securedLast30Days: number;
 }
 
 const DashboardStats: React.FC<DashboardStatsProps> = ({
     totalActive,
     awaitingAction,
     readyForDelivery,
-    deliveredLast30Days
+    securedLast30Days
 }) => {
     return (
         <div className="mb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -58,8 +58,8 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
                 color="bg-green-100"
             />
              <StatCard 
-                title="Delivered (Last 30d)" 
-                value={deliveredLast30Days}
+                title="Secured (Last 30d)" 
+                value={securedLast30Days}
                 icon={<DocumentTextIcon className="w-6 h-6 text-purple-700" />}
                 color="bg-purple-100"
             />

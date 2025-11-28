@@ -21,7 +21,7 @@ import {
 } from "firebase/firestore";
 import { db, auth } from "./services/firebase";
 import { Order, OrderStatus, AppUser } from "./types";
-import { MANAGER_EMAILS, USERS_COLLECTION } from "./constants";
+import { MANAGER_EMAILS, USERS_COLLECTION, isSecuredStatus } from "./constants";
 import Header from "./components/Header";
 import OrderForm from "./components/OrderForm";
 import OrderList from "./components/OrderList";
@@ -75,7 +75,7 @@ const App: React.FC = () => {
     totalActive: 0,
     awaitingAction: 0,
     readyForDelivery: 0,
-    deliveredLast30Days: 0,
+    securedLast30Days: 0,
   });
 
   // Track logged elevations to prevent duplicate logging
@@ -325,7 +325,8 @@ const App: React.FC = () => {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const newStats = ordersData.reduce(
       (acc, order) => {
-        if (order.status !== OrderStatus.Delivered) {
+        // Use isSecuredStatus to handle legacy Delivered/Received statuses
+        if (!isSecuredStatus(order.status)) {
           acc.totalActive++;
         }
         if (
@@ -337,16 +338,19 @@ const App: React.FC = () => {
         ) {
           acc.awaitingAction++;
         }
+        // Note: readyForDelivery is no longer applicable with the new single-step secured flow
+        // We keep this for backward compatibility with any existing "Received" status orders
         if (order.status === OrderStatus.Received) {
           acc.readyForDelivery++;
         }
         const createdAtDate = (order.createdAt as Timestamp)?.toDate();
+        // Count secured orders (including legacy Delivered/Received) in last 30 days
         if (
-          order.status === OrderStatus.Delivered &&
+          isSecuredStatus(order.status) &&
           createdAtDate &&
           createdAtDate > thirtyDaysAgo
         ) {
-          acc.deliveredLast30Days++;
+          acc.securedLast30Days++;
         }
         return acc;
       },
@@ -354,7 +358,7 @@ const App: React.FC = () => {
         totalActive: 0,
         awaitingAction: 0,
         readyForDelivery: 0,
-        deliveredLast30Days: 0,
+        securedLast30Days: 0,
       }
     );
     setStats(newStats);
@@ -372,7 +376,7 @@ const App: React.FC = () => {
           totalActive: 0,
           awaitingAction: 0,
           readyForDelivery: 0,
-          deliveredLast30Days: 0,
+          securedLast30Days: 0,
         });
       });
       // Reset fallback warning when user logs out

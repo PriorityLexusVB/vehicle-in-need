@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Order, OrderStatus, AppUser } from '../types';
 import OrderCard from './OrderCard';
-import { STATUS_OPTIONS } from '../constants';
+import { STATUS_OPTIONS, isSecuredStatus } from '../constants';
 import { DownloadIcon } from './icons/DownloadIcon';
 
 interface OrderListProps {
@@ -15,15 +15,15 @@ interface OrderListProps {
 const OrderList: React.FC<OrderListProps> = ({ orders, onUpdateStatus, onDeleteOrder, currentUser }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [activeTab, setActiveTab] = useState<'active' | 'delivered'>('active');
+  const [activeTab, setActiveTab] = useState<'active' | 'secured'>('active');
 
   const filteredOrders = useMemo(() => {
     const lowercasedQuery = searchQuery.toLowerCase();
     return orders.filter(order => {
-      // Tab filter first
+      // Tab filter first - use isSecuredStatus to handle legacy Delivered/Received statuses
       const tabMatch = activeTab === 'active'
-        ? order.status !== OrderStatus.Delivered
-        : order.status === OrderStatus.Delivered;
+        ? !isSecuredStatus(order.status)
+        : isSecuredStatus(order.status);
       if (!tabMatch) return false;
 
       // Search filter
@@ -44,8 +44,8 @@ const OrderList: React.FC<OrderListProps> = ({ orders, onUpdateStatus, onDeleteO
     });
   }, [orders, searchQuery, statusFilter, activeTab]);
   
-  const totalActiveOrders = useMemo(() => orders.filter(o => o.status !== OrderStatus.Delivered).length, [orders]);
-  const totalDeliveredOrders = useMemo(() => orders.filter(o => o.status === OrderStatus.Delivered).length, [orders]);
+  const totalActiveOrders = useMemo(() => orders.filter(o => !isSecuredStatus(o.status)).length, [orders]);
+  const totalSecuredOrders = useMemo(() => orders.filter(o => isSecuredStatus(o.status)).length, [orders]);
 
   const handleExport = () => {
     if (filteredOrders.length === 0) {
@@ -118,13 +118,13 @@ const OrderList: React.FC<OrderListProps> = ({ orders, onUpdateStatus, onDeleteO
     }
   };
   
-  const activeStatusOptions = STATUS_OPTIONS.filter(s => s !== OrderStatus.Delivered && s !== OrderStatus.Received);
+  const activeStatusOptions = STATUS_OPTIONS;
 
   return (
     <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-lg border border-slate-200">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
         <div>
-            <p className="text-sm text-slate-500 mt-1">Showing {filteredOrders.length} of {activeTab === 'active' ? totalActiveOrders : totalDeliveredOrders} orders.</p>
+            <p className="text-sm text-slate-500 mt-1">Showing {filteredOrders.length} of {activeTab === 'active' ? totalActiveOrders : totalSecuredOrders} orders.</p>
         </div>
         <button
             onClick={handleExport}
@@ -152,14 +152,14 @@ const OrderList: React.FC<OrderListProps> = ({ orders, onUpdateStatus, onDeleteO
             Active Orders <span className={`ml-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold ${activeTab === 'active' ? 'bg-sky-100 text-sky-700' : 'bg-slate-200 text-slate-700'}`}>{totalActiveOrders}</span>
           </button>
           <button
-            onClick={() => setActiveTab('delivered')}
+            onClick={() => setActiveTab('secured')}
             className={`whitespace-nowrap pb-3 px-1 border-b-2 font-semibold text-sm transition-colors ${
-              activeTab === 'delivered'
+              activeTab === 'secured'
                 ? 'border-sky-500 text-sky-600'
                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
             }`}
           >
-            Delivered History <span className={`ml-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold ${activeTab === 'delivered' ? 'bg-sky-100 text-sky-700' : 'bg-slate-200 text-slate-700'}`}>{totalDeliveredOrders}</span>
+            Secured History <span className={`ml-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold ${activeTab === 'secured' ? 'bg-sky-100 text-sky-700' : 'bg-slate-200 text-slate-700'}`}>{totalSecuredOrders}</span>
           </button>
         </nav>
       </div>
@@ -167,7 +167,7 @@ const OrderList: React.FC<OrderListProps> = ({ orders, onUpdateStatus, onDeleteO
        <div className="mb-4">
             <label htmlFor="searchQuery" className="sr-only">Search Orders</label>
             <input 
-                type="text" 
+                type="text"
                 id="searchQuery" 
                 placeholder="Search by Customer, Deal #, Stock #, or VIN..."
                 value={searchQuery}
@@ -219,7 +219,7 @@ const OrderList: React.FC<OrderListProps> = ({ orders, onUpdateStatus, onDeleteO
             <p className="mt-1 text-sm text-slate-500">
               {activeTab === 'active' 
                 ? 'No active orders match your current search and filters.' 
-                : 'There are no delivered orders to display.'
+                : 'There are no secured orders to display.'
               }
             </p>
           </div>

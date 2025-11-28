@@ -92,7 +92,7 @@ describe("OrderList", () => {
     expect(screen.queryByText("Bob Johnson")).not.toBeInTheDocument();
   });
 
-  it("switches between active and delivered tabs", async () => {
+  it("switches between active and secured tabs", async () => {
     const user = userEvent.setup();
     render(
       <OrderList vehicleOptions={[]} 
@@ -107,13 +107,13 @@ describe("OrderList", () => {
     expect(screen.getByText("John Doe")).toBeInTheDocument();
     expect(screen.queryByText("Jane Smith")).not.toBeInTheDocument();
 
-    // Click delivered tab
-    const deliveredButton = screen.getByRole("button", {
-      name: /delivered history/i,
+    // Click secured tab
+    const securedButton = screen.getByRole("button", {
+      name: /secured history/i,
     });
-    await user.click(deliveredButton);
+    await user.click(securedButton);
 
-    // Should now show delivered order
+    // Should now show secured (delivered) order
     expect(screen.getByText("Jane Smith")).toBeInTheDocument();
     expect(screen.queryByText("John Doe")).not.toBeInTheDocument();
   });
@@ -166,8 +166,9 @@ describe("OrderList", () => {
     );
 
   // Dynamic active order count using current UI label 'Active Orders <count>'
+  // Active orders exclude Secured, Delivered, and Received statuses
     const activeCount = mockOrders.filter(
-      (o) => o.status !== OrderStatus.Delivered
+      (o) => o.status !== OrderStatus.Delivered && o.status !== OrderStatus.Received && o.status !== OrderStatus.Secured
     ).length;
     const activeTabRegex = new RegExp(
       `^Active\\s*Orders\\s*${activeCount}$`,
@@ -178,7 +179,7 @@ describe("OrderList", () => {
     ).toBeInTheDocument();
   });
 
-  it("displays order count in delivered tab", () => {
+  it("displays order count in secured tab", () => {
     render(
       <OrderList vehicleOptions={[]} 
         orders={mockOrders}
@@ -188,16 +189,16 @@ describe("OrderList", () => {
       />
     );
 
-  // Dynamic delivered order count using current UI label 'Delivered History <count>'
-    const deliveredCount = mockOrders.filter(
-      (o) => o.status === OrderStatus.Delivered
+  // Dynamic secured order count using current UI label 'Secured History <count>'
+    const securedCount = mockOrders.filter(
+      (o) => o.status === OrderStatus.Delivered || o.status === OrderStatus.Received || o.status === OrderStatus.Secured
     ).length;
-    const deliveredTabRegex = new RegExp(
-      `^Delivered\\s*History\\s*${deliveredCount}$`,
+    const securedTabRegex = new RegExp(
+      `^Secured\\s*History\\s*${securedCount}$`,
       "i"
     );
     expect(
-      screen.getByRole("button", { name: deliveredTabRegex })
+      screen.getByRole("button", { name: securedTabRegex })
     ).toBeInTheDocument();
   });
 
@@ -212,5 +213,47 @@ describe("OrderList", () => {
     );
 
     expect(screen.getByText(/no orders found/i)).toBeInTheDocument();
+  });
+
+  it("shows 'Mark as Secured' button for active orders (managers)", async () => {
+    const user = userEvent.setup();
+    render(
+      <OrderList vehicleOptions={[]}
+        orders={mockOrders}
+        onUpdateStatus={mockOnUpdateStatus}
+        onDeleteOrder={mockOnDeleteOrder}
+        currentUser={mockManagerUser}
+      />
+    );
+
+    // Expand an active order to see the Mark as Secured button
+    const orderCard = screen.getByText("John Doe");
+    await user.click(orderCard);
+
+    // Should see the Mark as Secured button
+    expect(screen.getByRole("button", { name: /mark as secured/i })).toBeInTheDocument();
+  });
+
+  it("calls onUpdateStatus with Secured status when 'Mark as Secured' is clicked", async () => {
+    const user = userEvent.setup();
+    render(
+      <OrderList vehicleOptions={[]}
+        orders={mockOrders}
+        onUpdateStatus={mockOnUpdateStatus}
+        onDeleteOrder={mockOnDeleteOrder}
+        currentUser={mockManagerUser}
+      />
+    );
+
+    // Expand an active order
+    const orderCard = screen.getByText("John Doe");
+    await user.click(orderCard);
+
+    // Click the Mark as Secured button
+    const securedButton = screen.getByRole("button", { name: /mark as secured/i });
+    await user.click(securedButton);
+
+    // Verify onUpdateStatus was called with the correct order ID and Secured status
+    expect(mockOnUpdateStatus).toHaveBeenCalledWith("1", OrderStatus.Secured);
   });
 });

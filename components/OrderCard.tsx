@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Order, OrderStatus, AppUser } from '../types';
-import { STATUS_OPTIONS } from '../constants';
+import { STATUS_OPTIONS, isSecuredStatus } from '../constants';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
 import StatusBadge from './StatusBadge';
 import { generateFollowUpEmail } from '../services/geminiService';
@@ -40,9 +40,8 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOr
     order.interiorColor2,
     order.interiorColor3
   ].filter(Boolean);
-  const isDelivered = order.status === OrderStatus.Delivered;
-  const isReceived = order.status === OrderStatus.Received;
-  const isActive = !isDelivered && !isReceived;
+  const isSecured = isSecuredStatus(order.status);
+  const isActive = !isSecured;
 
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newStatus = e.target.value as OrderStatus;
@@ -71,10 +70,10 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOr
     });
   };
 
-  const activeStatusOptions = STATUS_OPTIONS.filter(s => s !== OrderStatus.Delivered && s !== OrderStatus.Received);
+  const activeStatusOptions = STATUS_OPTIONS;
 
   return (
-    <div className={`rounded-xl shadow-sm transition-all duration-300 ${isDelivered ? 'bg-slate-100/70 border-slate-200' : 'bg-white border-slate-200 hover:shadow-md hover:border-slate-300'} border`}>
+    <div className={`rounded-xl shadow-sm transition-all duration-300 ${isSecured ? 'bg-slate-100/70 border-slate-200' : 'bg-white border-slate-200 hover:shadow-md hover:border-slate-300'} border`}>
       <div 
         className="p-4 cursor-pointer" 
         onClick={() => setIsExpanded(!isExpanded)}
@@ -90,7 +89,7 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOr
       >
         <div className="flex justify-between items-start">
             <div>
-            <h3 className={`text-lg font-bold ${isDelivered ? 'line-through text-slate-500' : 'text-slate-800'}`}>
+            <h3 className={`text-lg font-bold ${isSecured ? 'line-through text-slate-500' : 'text-slate-800'}`}>
                 {order.customerName}
             </h3>
             <p className="text-sm text-slate-500 font-medium">
@@ -128,10 +127,8 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOr
                           {activeStatusOptions.map(status => <option key={status} value={status}>{status}</option>)}
                         </select>
                     </>
-                    ) : (isReceived ? (
-                        <div className="text-sm font-medium text-slate-700">Vehicle at dealership. Ready for delivery.</div>
-                    ) : isDelivered ? (
-                        <div className="text-sm font-medium text-green-700">Order Completed</div>
+                    ) : (isSecured ? (
+                        <div className="text-sm font-medium text-green-700">Order Secured</div>
                     ) : (
                         <div className="text-sm font-medium text-slate-700">Status: {order.status}</div>
                     ))}
@@ -139,13 +136,8 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOr
 
                 <div className="flex items-center gap-2">
                     {currentUser?.isManager && isActive && (
-                        <button onClick={() => onUpdateStatus(order.id, OrderStatus.Received)} className="flex items-center gap-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-3 rounded-lg shadow-sm transition-colors">
-                           Mark as Received
-                        </button>
-                    )}
-                    {currentUser?.isManager && isReceived && (
-                        <button onClick={() => onUpdateStatus(order.id, OrderStatus.Delivered)} className="flex items-center gap-1.5 text-sm bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-3 rounded-lg shadow-sm transition-colors">
-                           Mark as Delivered
+                        <button onClick={() => onUpdateStatus(order.id, OrderStatus.Secured)} className="flex items-center gap-1.5 text-sm bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-3 rounded-lg shadow-sm transition-colors">
+                           Mark as Secured
                         </button>
                     )}
                     {currentUser?.isManager && (

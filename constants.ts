@@ -4,14 +4,22 @@ export const STATUS_OPTIONS = [
   OrderStatus.FactoryOrder,
   OrderStatus.Locate,
   OrderStatus.DealerExchange,
-  OrderStatus.Received,
-  OrderStatus.Delivered,
 ];
+
+// Helper to check if a status is considered "secured" (completed)
+// This normalizes legacy Delivered/Received statuses to the new Secured workflow
+export const isSecuredStatus = (status: OrderStatus): boolean => {
+  return status === OrderStatus.Secured || 
+         status === OrderStatus.Delivered || 
+         status === OrderStatus.Received;
+};
 
 export const STATUS_COLORS: Record<OrderStatus, string> = {
   [OrderStatus.FactoryOrder]: 'bg-sky-100 text-sky-800 border-sky-300',
   [OrderStatus.Locate]: 'bg-amber-100 text-amber-800 border-amber-300',
   [OrderStatus.DealerExchange]: 'bg-purple-100 text-purple-800 border-purple-300',
+  [OrderStatus.Secured]: 'bg-green-100 text-green-800 border-green-300',
+  // Legacy statuses - display same as Secured for backward compatibility
   [OrderStatus.Received]: 'bg-green-100 text-green-800 border-green-300',
   [OrderStatus.Delivered]: 'bg-slate-100 text-slate-800 border-slate-300',
 };
