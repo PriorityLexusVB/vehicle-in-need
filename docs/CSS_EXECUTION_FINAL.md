@@ -416,7 +416,7 @@ grep -q "tw-" "$MAIN_CSS"
 ### Failure Modes Prevented
 
 | Failure Mode | Prevention Mechanism | Stage |
-|--------------|---------------------|-------|
+| --- | --- | --- |
 | Missing CSS | Dockerfile CSS count check | Build |
 | Unlinked CSS | verify-css-in-build.sh | Post-build |
 | Tiny CSS file | verify-css-deployed step | Post-deploy |

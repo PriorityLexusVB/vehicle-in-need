@@ -61,7 +61,7 @@ The script will:
 Add the following roles to `cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com`:
 
 | Role | Purpose | How to Add |
-|------|---------|------------|
+| --- | --- | --- |
 | `Cloud Run Admin` | Deploy Cloud Run services | Click pencil icon → Add role → Search "Cloud Run Admin" → Save |
 | `Artifact Registry Writer` | Push Docker images | Click pencil icon → Add role → Search "Artifact Registry Writer" → Save |
 | `Cloud Build Editor` | Manage build operations | Click pencil icon → Add role → Search "Cloud Build Editor" → Save |
@@ -84,7 +84,7 @@ This is the most critical step that fixes the `PERMISSION_DENIED: Permission 'ia
 For `pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com`, add these roles at the project level:
 
 | Role | Purpose |
-|------|---------|
+| --- | --- |
 | `Logs Writer` | Write application logs to Cloud Logging |
 
 For the secret `vehicle-in-need-gemini`:

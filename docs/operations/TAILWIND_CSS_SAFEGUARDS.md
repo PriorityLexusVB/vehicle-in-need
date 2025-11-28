@@ -296,7 +296,7 @@ function showCSSWarningBanner() {
 ## Summary of Fail-Fast Points
 
 | Stage | Check | Fail Action |
-|-------|-------|-------------|
+| --- | --- | --- |
 | Local build | `npm run build` → postbuild script | ❌ Build fails |
 | Docker build (builder) | CSS files exist after build | ❌ Docker build fails |
 | Docker build (runtime) | CSS files copied to image | ❌ Docker build fails |

@@ -342,7 +342,7 @@ gcloud run deploy pre-order-dealer-exchange-tracker \
 ## Documentation
 
 | Document | Purpose | Audience |
-|----------|---------|----------|
+| --- | --- | --- |
 | `IAM_CONFIGURATION_SUMMARY.md` | Comprehensive IAM guide | GCP Admins, DevOps |
 | `IAM_VALIDATION_CHECKLIST.md` | Testing procedures | QA, DevOps |
 | `CLOUD_RUN_DEPLOYMENT_RUNBOOK.md` | Deployment guide | Developers, DevOps |

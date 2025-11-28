@@ -78,28 +78,28 @@ npm run test:rules:watch
 ### `/users/{userId}`
 
 | Operation | User (self) | Manager | Other Users |
-|-----------|-------------|---------|-------------|
-| Create    | ✅ (own doc only, cannot set `isManager: true`) | N/A | ❌ |
-| Read      | ✅ | ✅ | ❌ |
-| Update    | ✅ (cannot change `isManager` or `email`) | ✅ (other users only) | ❌ |
-| Delete    | ❌ | ❌ | ❌ |
-| List      | ❌ | ✅ | ❌ |
+| --- | --- | --- | --- |
+| Create | ✅ (own doc only, cannot set `isManager: true`) | N/A | ❌ |
+| Read | ✅ | ✅ | ❌ |
+| Update | ✅ (cannot change `isManager` or `email`) | ✅ (other users only) | ❌ |
+| Delete | ❌ | ❌ | ❌ |
+| List | ❌ | ✅ | ❌ |
 
 ### `/orders/{orderId}`
 
 | Operation | Owner | Manager | Other Users |
-|-----------|-------|---------|-------------|
-| Create    | ✅ (must set ownership correctly) | ✅ | ✅ |
-| Read      | ✅ | ✅ | ❌ |
-| Update    | ✅ (limited fields) | ✅ | ❌ |
-| Delete    | ❌ | ✅ | ❌ |
-| List (all)| ❌ | ✅ | ❌ |
-| List (own)| ✅ | ✅ | N/A |
+| --- | --- | --- | --- |
+| Create | ✅ (must set ownership correctly) | ✅ | ✅ |
+| Read | ✅ | ✅ | ❌ |
+| Update | ✅ (limited fields) | ✅ | ❌ |
+| Delete | ❌ | ✅ | ❌ |
+| List (all) | ❌ | ✅ | ❌ |
+| List (own) | ✅ | ✅ | N/A |
 
 ## Test Results Summary
 
 | Category | Tests | Status |
-|----------|-------|--------|
+| --- | --- | --- |
 | User Unauthenticated Access | 4 | ✅ All pass |
 | User Creation | 7 | ✅ All pass |
 | User Read | 3 | ✅ All pass |

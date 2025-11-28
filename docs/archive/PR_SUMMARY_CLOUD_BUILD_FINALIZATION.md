@@ -46,7 +46,7 @@ This PR finalizes the Cloud Build trigger configuration and documentation, ensur
 The Cloud Build trigger should be configured with:
 
 | Variable | Type | Default | Description |
-|----------|------|---------|-------------|
+| --- | --- | --- | --- |
 | `_REGION` | Custom | `us-west1` | GCP region for deployment |
 | `_SERVICE` | Custom | `pre-order-dealer-exchange-tracker` | Cloud Run service name |
 | `SHORT_SHA` | Built-in | (auto) | Commit SHA provided by Cloud Build |

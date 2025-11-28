@@ -354,7 +354,7 @@ gcloud builds list --limit=10
 ## Summary
 
 | Issue | Status | Solution |
-|-------|--------|----------|
+| --- | --- | --- |
 | IAM Permission Denied | ✅ Resolved | Granted appropriate IAM roles (PR #72) |
 | Corrupted Image in cloud-run-source-deploy | ⚠️ Active | Rebuild using Cloud Build, deploy from correct registry |
 | npm Bug in Local Docker Builds | 📝 Documented | Use Cloud Build for production; local dev without Docker |

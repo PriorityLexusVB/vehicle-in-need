@@ -6,7 +6,7 @@ actions between Manager and Non-Manager users.
 ## Quick Reference Matrix
 
 | Feature | Manager | Non-Manager |
-|---------|---------|-------------|
+| --- | --- | --- |
 | **Header - Pill Navigation** | ✅ Yes (Dashboard + User Management) | ❌ No |
 | **Header - Active Orders Count** | ✅ Yes | ❌ No |
 | **Header - Gear Icon (Admin)** | ✅ Yes | ❌ No |

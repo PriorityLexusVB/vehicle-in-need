@@ -121,10 +121,10 @@ Click on the trigger name to see:
 
 **The trigger should ONLY have these substitution variables:**
 
-| Variable   | Example Value                       | Required? | Notes                          |
-|------------|-------------------------------------|-----------|--------------------------------|
-| `_REGION`  | `us-west1`                          | Optional* | Deployment region              |
-| `_SERVICE` | `pre-order-dealer-exchange-tracker` | Optional* | Cloud Run service name         |
+| Variable | Example Value | Required? | Notes |
+| --- | --- | --- | --- |
+| `_REGION` | `us-west1` | Optional* | Deployment region |
+| `_SERVICE` | `pre-order-dealer-exchange-tracker` | Optional* | Cloud Run service name |
 
 *These have defaults in `cloudbuild.yaml`, but should be set in trigger for clarity.
 

@@ -138,7 +138,7 @@ The service URL:
 ## Files Changed
 
 | File | Type | Description |
-|------|------|-------------|
+| --- | --- | --- |
 | `scripts/verify-cloud-build-config.sh` | New | Automated verification script |
 | `CLOUD_BUILD_SERVICE_URL_FIX.md` | New | Comprehensive fix guide |
 | `README.md` | Updated | Added troubleshooting entry |

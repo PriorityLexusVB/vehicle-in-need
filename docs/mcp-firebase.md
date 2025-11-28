@@ -7,12 +7,12 @@ This document describes the custom MCP server used to expose limited Firestore c
 
 ## Provided Methods
 
-| Method                      | Params                                               | Description                                                                          |
-| --------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `ping`                      | none                                                 | Health check; returns `{ ok: true, ts }`                                             |
-| `firestore.listCollections` | none                                                 | Lists root-level collection IDs                                                      |
-| `firestore.getDoc`          | `{ path: string }`                                   | Fetches a document at a slash path like `users/uid` or `orders/orderId/subcol/subId` |
-| `firestore.queryCollection` | `{ collection: string, where?: [field, op, value] }` | Simple query with single where; returns up to 50 docs                                |
+| Method | Params | Description |
+| --- | --- | --- |
+| `ping` | none | Health check; returns `{ ok: true, ts }` |
+| `firestore.listCollections` | none | Lists root-level collection IDs |
+| `firestore.getDoc` | `{ path: string }` | Fetches a document at a slash path like `users/uid` or `orders/orderId/subcol/subId` |
+| `firestore.queryCollection` | `{ collection: string, where?: [field, op, value] }` | Simple query with single where; returns up to 50 docs |
 
 ## Path Rules
 
@@ -79,12 +79,12 @@ Query:
 
 ## Troubleshooting
 
-| Symptom                         | Resolution                                                       |
-| ------------------------------- | ---------------------------------------------------------------- |
+| Symptom | Resolution |
+| --- | --- |
 | `Missing service account` error | Ensure `FIREBASE_SERVICE_ACCOUNT_FILE` path correct and readable |
-| Empty collection list           | Verify Firestore has root collections; check project id          |
-| `Invalid document path`         | Ensure even segment count: `collection/doc`                      |
-| Parse error responses           | Ensure each JSON-RPC request is on a single line                 |
+| Empty collection list | Verify Firestore has root collections; check project id |
+| `Invalid document path` | Ensure even segment count: `collection/doc` |
+| Parse error responses | Ensure each JSON-RPC request is on a single line |
 
 ## Future Extensions
 

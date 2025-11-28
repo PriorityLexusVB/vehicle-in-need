@@ -266,7 +266,7 @@ After running the script:
 ## Files Modified
 
 | File | Changes | Lines Changed | Impact |
-|------|---------|---------------|--------|
+| --- | --- | --- | --- |
 | `scripts/verify-firestore-rules.sh` | Fixed rule extraction logic | ~15 | High - now extracts correct rule |
 
 **Total files changed:** 1  

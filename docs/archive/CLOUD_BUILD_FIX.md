@@ -52,7 +52,7 @@ The Cloud Build trigger in Google Cloud Console must be configured with only the
 Configure these in the trigger's "Substitution variables" section:
 
 | Variable | Value | Required | Notes |
-|----------|-------|----------|-------|
+| --- | --- | --- | --- |
 | `_REGION` | `us-west1` | Optional | Defaults to `us-west1` if not set |
 | `_SERVICE` | `pre-order-dealer-exchange-tracker` | Optional | Defaults to service name if not set |
 

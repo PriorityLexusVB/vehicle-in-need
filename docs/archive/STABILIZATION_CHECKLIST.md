@@ -478,7 +478,7 @@ npm run test:rules
 ## Revision History
 
 | Date | Version | Changes | Author |
-|------|---------|---------|--------|
+| --- | --- | --- | --- |
 | 2025-11-18 | 1.0 | Initial checklist based on PRs #89-#99 | Copilot Agent |
 
 ## Notes

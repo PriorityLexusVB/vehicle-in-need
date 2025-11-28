@@ -12,7 +12,7 @@ This document provides the authoritative reference for configuring the
 The trigger should be configured with only these substitution variables:
 
 | Variable | Type | Default | Required | Description |
-|----------|------|---------|----------|-------------|
+| --- | --- | --- | --- | --- |
 | `_REGION` | Custom | `us-west1` | No | GCP region for deployment |
 | `_SERVICE` | Custom | `pre-order-dealer-exchange-tracker` | No | Service name |
 | `SHORT_SHA` | Built-in | (auto) | No | Auto-provided by triggers |

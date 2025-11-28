@@ -139,7 +139,7 @@ When a non-manager logs in, they see:
 ## Role Comparison Table
 
 | Feature | Manager | Non-Manager |
-|---------|---------|-------------|
+| --- | --- | --- |
 | **Navigation** | | |
 | Admin navigation pill | ✅ Yes | ❌ No |
 | Settings gear icon | ✅ Yes | ❌ No |

@@ -105,7 +105,7 @@ await signInWithCustomToken(auth, customToken);
 ### Manager Role (rob.brasco@priorityautomotive.com)
 
 | Feature | Expected Behavior |
-|---------|-------------------|
+| --- | --- |
 | **Dashboard** | Shows statistics for all orders |
 | **Order List** | Displays orders from all users |
 | **Order Query** | No filter on `createdByUid` |
@@ -119,7 +119,7 @@ await signInWithCustomToken(auth, customToken);
 ### Non-Manager Role (ron.jordan@priorityautomotive.com)
 
 | Feature | Expected Behavior |
-|---------|-------------------|
+| --- | --- |
 | **Dashboard** | Shows statistics only for own orders |
 | **Order List** | Displays only orders where `createdByUid === currentUser.uid` |
 | **Order Query** | Filtered by `createdByUid` |
