@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Order, OrderStatus, AppUser } from '../types';
 import OrderCard from './OrderCard';
-import { STATUS_OPTIONS, isSecuredStatus, isActiveStatus } from '../constants';
+import { ACTIVE_STATUS_OPTIONS, isSecuredStatus, isActiveStatus } from '../constants';
 import { DownloadIcon } from './icons/DownloadIcon';
 
 interface OrderListProps {
@@ -119,9 +119,6 @@ const OrderList: React.FC<OrderListProps> = ({ orders, onUpdateStatus, onDeleteO
       URL.revokeObjectURL(url);
     }
   };
-  
-  // Filter out terminal statuses from the filter buttons
-  const activeStatusOptions = STATUS_OPTIONS.filter(s => s !== OrderStatus.Delivered && s !== OrderStatus.Received);
 
   return (
     <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-lg border border-slate-200">
@@ -189,7 +186,7 @@ const OrderList: React.FC<OrderListProps> = ({ orders, onUpdateStatus, onDeleteO
                 >
                     All Active
                 </button>
-                {activeStatusOptions.map(status => (
+                {ACTIVE_STATUS_OPTIONS.map(status => (
                     <button
                         key={status}
                         onClick={() => setStatusFilter(status)}

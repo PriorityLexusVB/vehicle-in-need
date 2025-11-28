@@ -1,12 +1,19 @@
 import { OrderStatus } from './types';
 
-// Active status options for dropdown (excludes terminal states)
+// All status options (used for filtering - includes legacy for backwards compatibility)
 export const STATUS_OPTIONS = [
   OrderStatus.FactoryOrder,
   OrderStatus.Locate,
   OrderStatus.DealerExchange,
   OrderStatus.Received,
   OrderStatus.Delivered,
+];
+
+// Active status options for dropdowns and filters (excludes terminal states Received/Delivered/Secured)
+export const ACTIVE_STATUS_OPTIONS = [
+  OrderStatus.FactoryOrder,
+  OrderStatus.Locate,
+  OrderStatus.DealerExchange,
 ];
 
 export const STATUS_COLORS: Record<OrderStatus, string> = {

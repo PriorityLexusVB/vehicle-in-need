@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Order, OrderStatus, AppUser } from '../types';
-import { STATUS_OPTIONS, isSecuredStatus } from '../constants';
+import { ACTIVE_STATUS_OPTIONS, isSecuredStatus } from '../constants';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
 import StatusBadge from './StatusBadge';
 import { generateFollowUpEmail } from '../services/geminiService';
@@ -72,9 +72,6 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOr
     });
   };
 
-  // Filter out terminal statuses from the dropdown (Received, Delivered, Secured)
-  const activeStatusOptions = STATUS_OPTIONS.filter(s => s !== OrderStatus.Delivered && s !== OrderStatus.Received);
-
   return (
     <div className={`rounded-xl shadow-sm transition-all duration-300 ${isSecured ? 'bg-slate-100/70 border-slate-200' : 'bg-white border-slate-200 hover:shadow-md hover:border-slate-300'} border`}>
       <div 
@@ -127,7 +124,7 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOr
                           onChange={handleStatusChange}
                           className="p-1.5 border border-slate-300 rounded-md shadow-sm text-sm focus:ring-sky-500 focus:border-sky-500"
                         >
-                          {activeStatusOptions.map(status => <option key={status} value={status}>{status}</option>)}
+                          {ACTIVE_STATUS_OPTIONS.map(status => <option key={status} value={status}>{status}</option>)}
                         </select>
                     </>
                     ) : (isSecured ? (
