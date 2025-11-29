@@ -46,4 +46,10 @@ export interface AppUser {
   email: string | null;
   displayName: string | null;
   isManager: boolean;
+  /** Whether the user account is active (not disabled). Defaults to true if not set. */
+  isActive?: boolean;
+  /** Timestamp when the user was disabled (if applicable) */
+  disabledAt?: Timestamp;
+  /** UID of the manager who disabled this user (if applicable) */
+  disabledBy?: string;
 }

@@ -57,25 +57,29 @@ service cloud.firestore {
           !('isManager' in request.resource.data)
           || request.resource.data.isManager == false
         )
-        // Allowed keys - uid (optional), displayName (required), email (required), and isManager (optional)
+        // Allowed keys - uid (optional), displayName (required), email (required), isManager (optional), isActive (optional)
         // Use difference check: incoming keys must be subset of allowed keys
         && request.resource.data.keys().hasAll(['displayName', 'email'])
-        && request.resource.data.keys().hasOnly(['uid', 'displayName', 'email', 'isManager'])
+        && request.resource.data.keys().hasOnly(['uid', 'displayName', 'email', 'isManager', 'isActive'])
         // Email must match auth token (ensures integrity)
         && request.resource.data.email == request.auth.token.email
         // If uid is provided, it must match the document path userId
         && (!('uid' in request.resource.data) || request.resource.data.uid == userId)
         // If provided, isManager must be boolean
-        && (!('isManager' in request.resource.data) || isBool(request.resource.data.isManager));
+        && (!('isManager' in request.resource.data) || isBool(request.resource.data.isManager))
+        // If provided, isActive must be boolean
+        && (!('isActive' in request.resource.data) || isBool(request.resource.data.isActive));
 
       // READ: User can read self; managers can read anyone.
       // Manager check uses both custom claims and Firestore document fallback.
       allow read: if isOwner(userId) || isManager();
 
       // UPDATE:
-      // - Manager can update other users (including changing isManager).
-      // - User updating self cannot change isManager.
-      // - Email is immutable; restrict key set to existing keys to avoid schema drift.
+      // - Manager can update other users (including changing isManager, isActive, disabledAt, disabledBy).
+      // - User updating self cannot change isManager, isActive, disabledAt, or disabledBy.
+      // - Email is immutable.
+      // - Manager updates can add new fields (for isActive, disabledAt, disabledBy)
+      // - User self-updates cannot add arbitrary new keys.
       allow update: if (
           (isManager() && !isOwner(userId))  // Manager editing another user
           ||
@@ -90,17 +94,45 @@ service cloud.firestore {
                 && request.resource.data.isManager == resource.data.isManager
               )
             )
-          ) // Self without role change
+            && (
+              // isActive not in update, or it matches existing value
+              !('isActive' in request.resource.data)
+              || (
+                ('isActive' in resource.data) 
+                && ('isActive' in request.resource.data)
+                && request.resource.data.isActive == resource.data.isActive
+              )
+            )
+            // Self cannot modify disabledAt or disabledBy
+            && !('disabledAt' in request.resource.data && !('disabledAt' in resource.data))
+            && !('disabledBy' in request.resource.data && !('disabledBy' in resource.data))
+            // Self cannot add new keys
+            && request.resource.data.keys().hasOnly(resource.data.keys())
+          ) // Self without role/active change
         )
         // Keep email immutable
         && request.resource.data.email == resource.data.email
-        // Prevent adding arbitrary new keys (exact same set as before)
-        && request.resource.data.keys().hasOnly(resource.data.keys())
         // If isManager is being set in the update, ensure it's a boolean
-        && (!('isManager' in request.resource.data) || isBool(request.resource.data.isManager));
+        && (!('isManager' in request.resource.data) || isBool(request.resource.data.isManager))
+        // If isActive is being set in the update, ensure it's a boolean
+        && (!('isActive' in request.resource.data) || isBool(request.resource.data.isActive));
 
       // DELETE: Blocked from client.
       allow delete: if false;
+    }
+
+    /****************************************
+     * Admin Audit Logs Collection
+     * - Only server-side (Admin SDK) can write
+     * - Managers can read for review
+     * - No client writes allowed
+     ****************************************/
+    match /adminAuditLogs/{logId} {
+      // READ: Only managers can read audit logs
+      allow read: if isManager();
+      
+      // WRITE: No client writes - only server-side Admin SDK can write
+      allow create, update, delete: if false;
     }
 
     /****************************************
