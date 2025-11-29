@@ -4,7 +4,7 @@ import {
   assertSucceeds,
   RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { setDoc, doc, getDoc, collection, getDocs, query, orderBy, addDoc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { setDoc, doc, collection, getDocs, query, addDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { getTestEnv, clearTestData } from './test-env';
 
 let testEnv: RulesTestEnvironment;

@@ -103,9 +103,9 @@ service cloud.firestore {
                 && request.resource.data.isActive == resource.data.isActive
               )
             )
-            // Self cannot modify disabledAt or disabledBy
-            && !('disabledAt' in request.resource.data && !('disabledAt' in resource.data))
-            && !('disabledBy' in request.resource.data && !('disabledBy' in resource.data))
+            // Self cannot add disabledAt if it doesn't exist (prevent creating new disabled fields)
+            && (!('disabledAt' in request.resource.data) || ('disabledAt' in resource.data))
+            && (!('disabledBy' in request.resource.data) || ('disabledBy' in resource.data))
             // Self cannot add new keys
             && request.resource.data.keys().hasOnly(resource.data.keys())
           ) // Self without role/active change

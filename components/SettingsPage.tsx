@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { AppUser } from '../types';
 import { callSetManagerRole, callDisableUser, parseFirebaseFunctionError } from '../services/functionsService';
 
@@ -99,6 +99,23 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
       targetUser: null,
     });
   }, []);
+
+  // Handle keyboard events for modal (Escape to close)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && confirmModal.isOpen) {
+        closeConfirmModal();
+      }
+    };
+
+    if (confirmModal.isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [confirmModal.isOpen, closeConfirmModal]);
 
   // Handle user status change (disable/enable)
   const handleStatusChange = useCallback(async () => {
@@ -344,7 +361,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             type="button"
             className="absolute inset-0 w-full h-full cursor-default"
             onClick={closeConfirmModal}
-            onKeyDown={(e) => e.key === 'Escape' && closeConfirmModal()}
             aria-label="Close modal"
             tabIndex={-1}
           />

@@ -15,6 +15,22 @@ import { getApp, getApps } from "firebase/app";
 let functionsInstance: Functions | null = null;
 let emulatorConnected = false;
 
+/**
+ * Check if we should connect to the Firebase emulator
+ */
+function shouldUseEmulator(): boolean {
+  try {
+    return (
+      typeof import.meta !== 'undefined' &&
+      import.meta.env?.DEV === true &&
+      import.meta.env?.VITE_USE_EMULATORS === "true"
+    );
+  } catch {
+    // If import.meta is not available (e.g., in tests), don't use emulator
+    return false;
+  }
+}
+
 function getFunctionsInstance(): Functions {
   if (!functionsInstance) {
     // Check if Firebase app is initialized
@@ -26,7 +42,7 @@ function getFunctionsInstance(): Functions {
     functionsInstance = getFunctions(app, "us-west1");
     
     // Connect to emulator in development (only once)
-    if (!emulatorConnected && typeof import.meta !== 'undefined' && import.meta.env?.DEV && import.meta.env?.VITE_USE_EMULATORS === "true") {
+    if (!emulatorConnected && shouldUseEmulator()) {
       connectFunctionsEmulator(functionsInstance, "localhost", 5001);
       emulatorConnected = true;
     }
