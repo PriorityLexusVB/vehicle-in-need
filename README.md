@@ -1243,6 +1243,114 @@ function isManager() {
 
 For detailed rules documentation, see [FIRESTORE_RULES_STATUS.md](./docs/archive/FIRESTORE_RULES_STATUS.md).
 
+### Manager Delete Operations & Permissions Fix
+
+This section documents the fix for the "Missing or insufficient permissions" error that managers may encounter when performing delete operations. The fix ensures proper custom claims configuration and safe UI behavior.
+
+**Problem:** Managers receive permission errors from Firestore when attempting to delete orders. The UI previously removed orders optimistically before server confirmation, causing orders to disappear even when deletion failed.
+
+**Solution Components:**
+
+1. **Custom Claims Script** (`tools/set-manager-custom-claims.mjs`) - Sets the `isManager: true` custom claim
+2. **Debug Log Collector** (`scripts/collect_delete_debug.sh`) - Collects Cloud Run/Functions logs for debugging
+3. **Safe Delete Component** (`web/src/components/OrderCard_delete_fix.tsx`) - Client-side component with proper error handling
+4. **Server-Side Delete** (`server/src/handlers/orders_delete_admin.cjs`) - Admin SDK delete endpoint example
+5. **Rules Documentation** (`docs/firestore-rules-manager-delete-snippet.md`) - Security rules explanation
+
+#### Step 1: Set Manager Custom Claims
+
+```bash
+# Dry run first to verify the user
+GOOGLE_APPLICATION_CREDENTIALS=./service-account.json \
+  node tools/set-manager-custom-claims.mjs --email manager@example.com --dry-run
+
+# Apply the changes
+GOOGLE_APPLICATION_CREDENTIALS=./service-account.json \
+  node tools/set-manager-custom-claims.mjs --email manager@example.com --apply
+
+# Or using Application Default Credentials
+gcloud auth application-default login
+node tools/set-manager-custom-claims.mjs --project vehicles-in-need --email manager@example.com --apply
+```
+
+#### Step 2: User Token Refresh
+
+After setting custom claims, the user must refresh their ID token:
+
+- **Option A:** Sign out and sign back in
+- **Option B:** In client code: `await user.getIdToken(true);`
+
+The token refreshes automatically after ~1 hour, but signing out/in is immediate.
+
+#### Step 3: Verify Claims (Optional)
+
+In browser DevTools console:
+
+```javascript
+const user = firebase.auth().currentUser;
+const token = await user.getIdTokenResult();
+console.log('Claims:', token.claims);
+// Should show: { ..., isManager: true } or { ..., manager: true }
+```
+
+#### Step 4: Deploy Server-Side Delete Route (Optional)
+
+If you want to use server-side deletion (bypasses client rules):
+
+```typescript
+// In server/index.cjs (file is at server/index.cjs, paths are relative to server/)
+const { initializeFirebaseAdmin, router: ordersDeleteRouter } = require('./src/handlers/orders_delete_admin.cjs');
+
+initializeFirebaseAdmin();
+app.use('/api/orders', ordersDeleteRouter);
+```
+
+#### Step 5: Integrate Safe Delete in Client
+
+Replace optimistic delete with the safe delete component:
+
+```tsx
+import { SafeDeleteButton } from './OrderCard_delete_fix';
+
+// In OrderCard, replace the delete button with:
+<SafeDeleteButton 
+  orderId={order.id}
+  onDeleted={onDeleteOrder}
+>
+  <TrashIcon className="w-4 h-4 text-red-500" />
+  Delete
+</SafeDeleteButton>
+```
+
+#### Debugging Failed Deletions
+
+Use the debug log collector to investigate failures:
+
+```bash
+# Collect delete-related logs from the last hour
+./scripts/collect_delete_debug.sh --service pre-order-dealer-exchange-tracker
+
+# Collect logs from a specific time window
+./scripts/collect_delete_debug.sh \
+  --service pre-order-dealer-exchange-tracker \
+  --since "2024-01-01T10:00:00Z" \
+  --until "2024-01-01T12:00:00Z"
+```
+
+#### Rollback Notes
+
+If issues occur after deploying these changes:
+
+1. **Client-side:** Revert the SafeDeleteButton integration to the original delete handler
+2. **Server-side:** Remove the orders delete router from server/index.cjs
+3. **Custom claims:** Claims cannot be easily "rolled back" but can be overwritten with `{ isManager: false }`
+4. **Rules:** Firestore rules can be redeployed from a previous version via Firebase Console
+
+References:
+
+- Failing commit: `b7bbf4ce81bc133cf79910dea610113b18695186`
+- MD060 fix: PR #134
+
 ## Development Notes
 
 ### Developer Documentation
