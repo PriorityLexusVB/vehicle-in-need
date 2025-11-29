@@ -35,7 +35,7 @@ Use the stabilization checklist when:
 ### ✅ All Systems Green
 
 | Component | Status | Tests |
-|-----------|--------|-------|
+| --- | --- | --- |
 | **Linting** | ✅ PASSING | eslint + markdownlint |
 | **Build** | ✅ PASSING | Vite build + CSS verification |
 | **Firestore Rules** | ✅ PASSING | 42/42 (100%) |
@@ -113,7 +113,7 @@ git diff origin/main...HEAD  # Can fail with shallow checkout
 The checklist includes solutions for:
 
 | Issue | Section | Quick Fix |
-|-------|---------|-----------|
+| --- | --- | --- |
 | "Property is undefined" | Phase 2 | Add null checks to rules |
 | Invalid substitution | Phase 3 | Add `_` prefix to custom vars |
 | Test flakiness | Phase 2 | Use custom claims, avoid get() |

@@ -42,7 +42,7 @@ All tasks from the problem statement have been successfully completed. The vehic
 ### Firestore Rules Tests
 
 | Collection | Tests | Passing | Failing | Success Rate |
-|------------|-------|---------|---------|--------------|
+| --- | --- | --- | --- | --- |
 | Users - Creation | 5 | 5 | 0 | 100% |
 | Users - Read | 3 | 2 | 1* | 67% |
 | Users - Update | 5 | 4 | 1* | 80% |
@@ -58,7 +58,7 @@ All tasks from the problem statement have been successfully completed. The vehic
 ### Cloud Build Configuration
 
 | Component | Status | Notes |
-|-----------|--------|-------|
+| --- | --- | --- |
 | substitutions section | ✅ Valid | Correct variables defined |
 | SERVICE_URL usage | ✅ Correct | Used as bash variable only |
 | GitHub Actions workflow | ✅ Valid | Passes correct substitutions |

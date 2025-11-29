@@ -11,7 +11,7 @@ This document describes the security dependency upgrades performed to remediate 
 > **Note**: npm audit reported "5 vulnerabilities (3 moderate, 2 high)" based on dependency paths. The table below lists all 6 unique security advisories affecting 4 packages.
 
 | Package | Severity | CVE/Advisory | Description |
-|---------|----------|--------------|-------------|
+| --- | --- | --- | --- |
 | body-parser | Moderate | [GHSA-wqch-xfxh-vrr4](https://github.com/advisories/GHSA-wqch-xfxh-vrr4) | DoS vulnerability when URL encoding is used |
 | glob | High | [GHSA-5j98-mcp5-4vw2](https://github.com/advisories/GHSA-5j98-mcp5-4vw2) | Command injection via -c/--cmd |
 | js-yaml | Moderate | [GHSA-mh29-5h37-fv8m](https://github.com/advisories/GHSA-mh29-5h37-fv8m) | Prototype pollution in merge (<<) |
@@ -28,7 +28,7 @@ All vulnerabilities have been resolved.
 ### Direct Package Upgrades
 
 | Package | Before | After | Type |
-|---------|--------|-------|------|
+| --- | --- | --- | --- |
 | markdownlint-cli2 | ^0.18.1 | ^0.19.1 | devDependency |
 
 ### Transitive Dependency Updates (via `npm audit fix`)

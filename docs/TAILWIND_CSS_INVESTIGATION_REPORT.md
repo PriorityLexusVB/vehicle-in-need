@@ -14,7 +14,7 @@ An investigation into "Tailwind UI fixes not reaching production" revealed that 
 ### Build System Status: ✅ ALL WORKING
 
 | System Component | Status | Evidence |
-|-----------------|--------|----------|
+| --- | --- | --- |
 | Tailwind CSS Compilation | ✅ Working | Generates ~10KB CSS with tw-* utilities |
 | PostCSS Processing | ✅ Working | Correctly processes @tailwind directives |
 | Vite Build | ✅ Working | Creates optimized production bundle |

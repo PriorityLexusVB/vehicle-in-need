@@ -150,7 +150,7 @@ All required security behaviors verified:
 ## Quality Gates Summary
 
 | Gate | Status | Details |
-|------|--------|---------|
+| --- | --- | --- |
 | Firestore Rules Tests | ✅ PASS | 42/42 (100%) |
 | Lint | ✅ PASS | No issues |
 | Build | ✅ PASS | Successful with CSS verification |

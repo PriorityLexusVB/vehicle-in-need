@@ -191,7 +191,7 @@ codeql_checker       → ✅ No code changes to analyze
 ## Acceptance Criteria Status
 
 | Criterion | Status | Notes |
-|-----------|--------|-------|
+| --- | --- | --- |
 | Branch consolidation completed | ✅ | Analyzed all branches, documented problematic deletions |
 | Firestore composite index defined | ✅ | `firestore.indexes.json` created with correct structure |
 | Firebase config references index | ✅ | `firebase.json` properly configured |

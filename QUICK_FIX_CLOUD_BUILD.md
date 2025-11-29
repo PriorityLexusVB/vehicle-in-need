@@ -133,7 +133,7 @@ Expected result: All build steps should succeed, including Cloud Run deployment.
 ## Documentation Index
 
 | Document | Purpose |
-|----------|---------|
+| --- | --- |
 | [CLOUD_BUILD_ERROR_FIX.md](./CLOUD_BUILD_ERROR_FIX.md) | **START HERE** - Complete fix guide with multiple approaches |
 | [scripts/diagnose-cloud-build-error.sh](./scripts/diagnose-cloud-build-error.sh) | Automated diagnosis tool |
 | [scripts/setup-iam-permissions.sh](./scripts/setup-iam-permissions.sh) | Automated IAM permission setup |

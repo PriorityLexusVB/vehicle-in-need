@@ -15,7 +15,7 @@ This document provides a comprehensive summary of the IAM configuration required
 **Required IAM Roles:**
 
 | Role | Scope | Purpose |
-|------|-------|---------|
+| --- | --- | --- |
 | `roles/run.admin` | Project-level | Deploy and manage Cloud Run services |
 | `roles/artifactregistry.writer` | Project-level | Push Docker images to Artifact Registry |
 | `roles/cloudbuild.builds.editor` | Project-level | Manage Cloud Build jobs |
@@ -54,7 +54,7 @@ gcloud iam service-accounts add-iam-policy-binding \
 **Required IAM Roles:**
 
 | Role | Scope | Purpose |
-|------|-------|---------|
+| --- | --- | --- |
 | `roles/logging.logWriter` | Project-level | Write logs to Cloud Logging |
 | `roles/secretmanager.secretAccessor` | Secret-level | Access the `vehicle-in-need-gemini` secret at runtime |
 
@@ -86,7 +86,7 @@ gcloud secrets add-iam-policy-binding vehicle-in-need-gemini \
 **Roles to Review and Potentially Remove:**
 
 | Role | Risk Level | Recommendation |
-|------|------------|----------------|
+| --- | --- | --- |
 | `roles/editor` | Critical | Remove if not needed by other services |
 | `roles/run.admin` | High | Remove - the deployer SA should be used instead |
 | `roles/iam.serviceAccountAdmin` | Critical | Remove if not needed |

@@ -340,7 +340,7 @@ See [GCP_MANUAL_CONFIGURATION_CHECKLIST.md](./GCP_MANUAL_CONFIGURATION_CHECKLIST
 ### Valid Substitutions for Trigger
 
 | Variable | Value | Optional | Notes |
-|----------|-------|----------|-------|
+| --- | --- | --- | --- |
 | `_REGION` | `us-west1` | Yes | Deployment region |
 | `_SERVICE` | `pre-order-dealer-exchange-tracker` | Yes | Cloud Run service name |
 | `SHORT_SHA` | (auto) | N/A | Built-in, auto-provided |
