@@ -117,7 +117,6 @@ steps:
       - --allow-unauthenticated
       - --service-account=pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com
       - --set-env-vars=NODE_ENV=production,APP_VERSION=${SHORT_SHA},BUILD_TIME=${BUILD_ID}
-      - --update-secrets=API_KEY=vehicle-in-need-gemini:latest
 
   # Verify CSS is deployed and accessible
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
