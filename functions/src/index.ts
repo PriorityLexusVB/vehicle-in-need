@@ -46,6 +46,7 @@ interface AuditLogEntry {
   action: "setManagerRole" | "disableUser";
   performedByUid: string;
   performedByEmail: string | null;
+  performedByIsManager: boolean;
   targetUid: string;
   targetEmail: string | null;
   previousValue: Record<string, unknown>;
@@ -61,6 +62,7 @@ interface AuditLogEntry {
 async function validateManagerAccess(callerUid: string): Promise<{
   isValid: boolean;
   callerEmail: string | null;
+  callerIsManager: boolean;
   error?: string;
 }> {
   try {
@@ -74,20 +76,29 @@ async function validateManagerAccess(callerUid: string): Promise<{
         return {
           isValid: false,
           callerEmail: callerRecord.email || null,
+          callerIsManager: false,
           error: "Permission denied. Only managers can perform this action.",
         };
       }
+      // Manager status from Firestore
+      return {
+        isValid: true,
+        callerEmail: callerRecord.email || null,
+        callerIsManager: true,
+      };
     }
 
     return {
       isValid: true,
       callerEmail: callerRecord.email || null,
+      callerIsManager: true,
     };
   } catch (error) {
     console.error("Error validating manager access:", error);
     return {
       isValid: false,
       callerEmail: null,
+      callerIsManager: false,
       error: "Failed to validate permissions.",
     };
   }
@@ -157,7 +168,7 @@ export const setManagerRole = onCall<SetManagerRoleData>(
     }
 
     // Validate manager access
-    const { isValid, callerEmail, error: accessError } = await validateManagerAccess(callerUid);
+    const { isValid, callerEmail, callerIsManager, error: accessError } = await validateManagerAccess(callerUid);
     if (!isValid) {
       throw new HttpsError("permission-denied", accessError || "Permission denied.");
     }
@@ -208,6 +219,7 @@ export const setManagerRole = onCall<SetManagerRoleData>(
       action: "setManagerRole",
       performedByUid: callerUid,
       performedByEmail: callerEmail,
+      performedByIsManager: callerIsManager,
       targetUid,
       targetEmail,
       previousValue: {
@@ -315,7 +327,7 @@ export const disableUser = onCall<DisableUserData>(
     }
 
     // Validate manager access
-    const { isValid, callerEmail, error: accessError } = await validateManagerAccess(callerUid);
+    const { isValid, callerEmail, callerIsManager, error: accessError } = await validateManagerAccess(callerUid);
     if (!isValid) {
       throw new HttpsError("permission-denied", accessError || "Permission denied.");
     }
@@ -343,17 +355,34 @@ export const disableUser = onCall<DisableUserData>(
     const firestoreIsActive = targetUserDoc.exists
       ? targetUserDoc.data()?.isActive !== false
       : true;
+    const targetIsManager = targetUserDoc.exists
+      ? targetUserDoc.data()?.isManager === true
+      : false;
+
+    // If disabling a manager, check that they are not the only active manager
+    // This prevents accidental lockout by disabling all managers
+    if (disabled && targetIsManager) {
+      const managerCount = await countManagers();
+      if (managerCount <= 1) {
+        throw new HttpsError(
+          "failed-precondition",
+          "Cannot disable the only active manager. Demote their manager role first or promote another user."
+        );
+      }
+    }
 
     // Prepare audit log entry
     const auditEntry: AuditLogEntry = {
       action: "disableUser",
       performedByUid: callerUid,
       performedByEmail: callerEmail,
+      performedByIsManager: callerIsManager,
       targetUid,
       targetEmail,
       previousValue: {
         disabled: currentDisabled,
         isActive: firestoreIsActive,
+        isManager: targetIsManager,
       },
       newValue: { disabled, isActive: !disabled },
       timestamp: FieldValue.serverTimestamp(),
