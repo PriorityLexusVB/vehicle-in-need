@@ -18,6 +18,9 @@ dist-ssr
 *.key.json
 *service-account*.json
 
+# Firebase Functions build output
+functions/lib
+
 # Test artifacts
 screenshots
 test-results/

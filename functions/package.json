@@ -1,0 +1,25 @@
+{
+  "name": "vehicle-order-tracker-functions",
+  "version": "1.0.0",
+  "description": "Firebase Cloud Functions for Vehicle Order Tracker",
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "deploy": "firebase deploy --only functions"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.2",
+    "firebase-functions": "^6.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "firebase-functions-test": "^3.4.0",
+    "typescript": "~5.8.2"
+  },
+  "private": true
+}
