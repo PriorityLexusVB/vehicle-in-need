@@ -1299,8 +1299,7 @@ If you want to use server-side deletion (bypasses client rules):
 
 ```typescript
 // In server/index.cjs
-const { initializeFirebaseAdmin } = require('./src/handlers/orders_delete_admin');
-const ordersDeleteRouter = require('./src/handlers/orders_delete_admin').default;
+const { initializeFirebaseAdmin, router: ordersDeleteRouter } = require('./src/handlers/orders_delete_admin.cjs');
 
 initializeFirebaseAdmin();
 app.use('/api/orders', ordersDeleteRouter);

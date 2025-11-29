@@ -99,10 +99,12 @@ async function verifyAuthToken(req, res, next) {
     const decodedToken = await admin.auth().verifyIdToken(idToken);
 
     // Extract user info including custom claims
+    // Note: We check both 'isManager' and 'manager' claim names for backwards compatibility.
+    // The Firestore security rules use 'isManager', while the tools/set-manager-custom-claims.mjs
+    // script may set 'manager'. Standardize on 'isManager' for new implementations.
     req.user = {
       uid: decodedToken.uid,
       email: decodedToken.email,
-      // Check for manager claim (the key used in your security rules)
       isManager:
         decodedToken.isManager === true || decodedToken.manager === true,
     };
