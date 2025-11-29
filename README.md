@@ -1166,7 +1166,7 @@ The application uses a secure two-tier authorization system:
 **User Document Fields:**
 
 | Field | Type | Description |
-|-------|------|-------------|
+| ----- | ---- | ----------- |
 | `uid` | string | Firebase Auth UID |
 | `email` | string | User's email address |
 | `displayName` | string \| null | Display name from Firebase Auth |
@@ -1198,6 +1198,7 @@ npm run seed:managers:apply -- --emails newmanager@priorityautomotive.com
 ```
 
 This script uses the Firebase Admin SDK to:
+
 - Set `isManager: true` in the user's Firestore document
 - Set `isManager: true` custom claim in Firebase Auth
 
