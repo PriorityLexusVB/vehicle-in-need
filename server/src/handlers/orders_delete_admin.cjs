@@ -103,9 +103,8 @@ async function verifyAuthToken(req, res, next) {
     const decodedToken = await admin.auth().verifyIdToken(idToken);
 
     // Extract user info including custom claims
-    // Note: We check both 'isManager' and 'manager' claim names for backwards compatibility.
-    // The Firestore security rules use 'isManager', while the tools/set-manager-custom-claims.mjs
-    // script may set 'manager'. Standardize on 'isManager' for new implementations.
+    // The Firestore security rules and all new scripts should use 'isManager' as the claim name.
+    // The 'manager' claim is legacy and only supported for backwards compatibility. Standardize on 'isManager' everywhere.
     req.user = {
       uid: decodedToken.uid,
       email: decodedToken.email,
@@ -113,8 +112,12 @@ async function verifyAuthToken(req, res, next) {
         decodedToken.isManager === true || decodedToken.manager === true,
     };
 
+    const emailRedacted =
+      process.env.NODE_ENV === "production"
+        ? req.user.email.replace(/^(.{2}).*(@.*)$/, "$1***$2")
+        : req.user.email;
     console.log(
-      `[Auth] Verified user: ${req.user.uid} (${req.user.email}), isManager: ${req.user.isManager}`
+      `[Auth] Verified user: ${req.user.uid} (${emailRedacted}), isManager: ${req.user.isManager}`
     );
     next();
   } catch (error) {
@@ -125,6 +128,7 @@ async function verifyAuthToken(req, res, next) {
       message: "Invalid or expired authentication token",
       timestamp: new Date().toISOString(),
     });
+    return;
   }
 }
 
@@ -197,9 +201,9 @@ async function deleteOrderById(orderId, deletedBy) {
     const orderData = orderDoc.data();
     console.log(`[OrderDelete] Found order:`, {
       id: orderId,
-      customerName: orderData?.customerName,
-      createdByUid: orderData?.createdByUid,
       status: orderData?.status,
+      hasCustomerName: !!orderData?.customerName,
+      // Avoid logging full PII
     });
 
     // Optional: Archive the order before deletion for audit purposes

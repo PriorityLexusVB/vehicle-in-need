@@ -191,16 +191,16 @@ async function main() {
     const currentClaims = userRecord.customClaims || {};
     console.log(`\n📋 Current custom claims: ${JSON.stringify(currentClaims)}`);
 
-    const hasManagerClaim = currentClaims.manager === true;
+    const hasManagerClaim = currentClaims.isManager === true;
 
     if (hasManagerClaim) {
-      console.log("\n✅ User already has manager: true custom claim.");
+      console.log("\n✅ User already has isManager: true custom claim.");
       console.log("   No changes needed.\n");
       process.exit(0);
     }
 
     // Prepare new claims (merge with existing)
-    const newClaims = { ...currentClaims, manager: true };
+    const newClaims = { ...currentClaims, isManager: true };
     console.log(`\n📋 New custom claims: ${JSON.stringify(newClaims)}`);
 
     if (args.dryRun) {

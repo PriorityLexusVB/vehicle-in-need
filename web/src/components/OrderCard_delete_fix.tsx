@@ -63,6 +63,8 @@ export interface DeleteResult {
 export interface UseOrderDeleteOptions {
   /** Base URL for the delete API (default: '/api/orders') */
   apiBaseUrl?: string;
+  /** Function to get the current Firebase Auth token for authentication */
+  getAuthToken?: () => Promise<string | null>;
   /** Callback when deletion succeeds - only then should UI update */
   onSuccess?: (orderId: string) => void;
   /** Callback when deletion fails */
@@ -93,6 +95,7 @@ export interface UseOrderDeleteReturn {
 export function useOrderDelete(options: UseOrderDeleteOptions = {}): UseOrderDeleteReturn {
   const { 
     apiBaseUrl = '/api/orders',
+    getAuthToken,
     onSuccess,
     onError 
   } = options;
@@ -114,12 +117,21 @@ export function useOrderDelete(options: UseOrderDeleteOptions = {}): UseOrderDel
     console.log(`[OrderDelete] Starting delete request for order: ${orderId}`);
 
     try {
+      // Get auth token if provided
+      const authToken = getAuthToken ? await getAuthToken() : null;
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Include Firebase Auth token in Authorization header if available
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+
       const response = await fetch(`${apiBaseUrl}/${orderId}`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        // Include credentials for Firebase Auth token
+        headers,
         credentials: 'same-origin',
       });
 
@@ -214,7 +226,7 @@ export function useOrderDelete(options: UseOrderDeleteOptions = {}): UseOrderDel
       setIsDeleting(false);
       setDeletingOrderId(null);
     }
-  }, [apiBaseUrl, onSuccess, onError]);
+  }, [apiBaseUrl, getAuthToken, onSuccess, onError]);
 
   return {
     deleteOrder,
@@ -229,6 +241,8 @@ export function useOrderDelete(options: UseOrderDeleteOptions = {}): UseOrderDel
 interface SafeDeleteButtonProps {
   orderId: string;
   onDeleted: (orderId: string) => void;
+  /** Function to get the current Firebase Auth token for authentication */
+  getAuthToken?: () => Promise<string | null>;
   disabled?: boolean;
   className?: string;
   children?: React.ReactNode;
@@ -245,11 +259,13 @@ interface SafeDeleteButtonProps {
 export const SafeDeleteButton: React.FC<SafeDeleteButtonProps> = ({
   orderId,
   onDeleted,
+  getAuthToken,
   disabled = false,
   className = '',
   children,
 }) => {
   const { deleteOrder, isDeleting, deletingOrderId, error, clearError } = useOrderDelete({
+    getAuthToken,
     onSuccess: onDeleted,
   });
 
@@ -313,10 +329,19 @@ export const SafeDeleteButton: React.FC<SafeDeleteButtonProps> = ({
  * With:
  * 
  *   import { SafeDeleteButton } from './OrderCard_delete_fix';
+ *   import { getAuth } from 'firebase/auth';
+ * 
+ *   // Get the Firebase Auth token for API calls
+ *   const getAuthToken = async () => {
+ *     const auth = getAuth();
+ *     const user = auth.currentUser;
+ *     return user ? await user.getIdToken() : null;
+ *   };
  * 
  *   <SafeDeleteButton 
  *     orderId={order.id}
  *     onDeleted={onDeleteOrder}
+ *     getAuthToken={getAuthToken}
  *   >
  *     <TrashIcon className="w-4 h-4 text-red-500" />
  *     Delete
@@ -325,8 +350,16 @@ export const SafeDeleteButton: React.FC<SafeDeleteButtonProps> = ({
  * Or using the hook directly for more control:
  * 
  *   import { useOrderDelete, DeleteErrorMessage } from './OrderCard_delete_fix';
+ *   import { getAuth } from 'firebase/auth';
+ * 
+ *   const getAuthToken = async () => {
+ *     const auth = getAuth();
+ *     const user = auth.currentUser;
+ *     return user ? await user.getIdToken() : null;
+ *   };
  * 
  *   const { deleteOrder, isDeleting, deletingOrderId, error, clearError } = useOrderDelete({
+ *     getAuthToken,
  *     onSuccess: onDeleteOrder,
  *     onError: (orderId, errorMsg) => console.error(`Failed to delete ${orderId}: ${errorMsg}`),
  *   });

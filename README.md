@@ -1251,11 +1251,11 @@ This section documents the fix for the "Missing or insufficient permissions" err
 
 **Solution Components:**
 
-1. **Custom Claims Script** (`tools/set-manager-custom-claims.mjs`) - Sets the `manager: true` custom claim
+1. **Custom Claims Script** (`tools/set-manager-custom-claims.mjs`) - Sets the `isManager: true` custom claim
 2. **Debug Log Collector** (`scripts/collect_delete_debug.sh`) - Collects Cloud Run/Functions logs for debugging
 3. **Safe Delete Component** (`web/src/components/OrderCard_delete_fix.tsx`) - Client-side component with proper error handling
-4. **Server-Side Delete** (`server/src/handlers/orders_delete_admin.ts`) - Admin SDK delete endpoint example
-5. **Rules Documentation** (`docs/firestore-rules-manager-delete-snippet.ts`) - Security rules explanation
+4. **Server-Side Delete** (`server/src/handlers/orders_delete_admin.cjs`) - Admin SDK delete endpoint example
+5. **Rules Documentation** (`docs/firestore-rules-manager-delete-snippet.md`) - Security rules explanation
 
 #### Step 1: Set Manager Custom Claims
 
@@ -1298,7 +1298,7 @@ console.log('Claims:', token.claims);
 If you want to use server-side deletion (bypasses client rules):
 
 ```typescript
-// In server/index.cjs
+// In server/index.cjs (file is at server/index.cjs, paths are relative to server/)
 const { initializeFirebaseAdmin, router: ordersDeleteRouter } = require('./src/handlers/orders_delete_admin.cjs');
 
 initializeFirebaseAdmin();

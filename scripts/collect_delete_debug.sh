@@ -123,6 +123,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --limit)
       LIMIT="$2"
+      if ! [[ "$LIMIT" =~ ^[0-9]+$ ]] || [[ "$LIMIT" -lt 1 ]]; then
+        log_error "Invalid limit: $LIMIT (must be a positive integer)"
+        exit 1
+      fi
       shift 2
       ;;
     --help|-h)
@@ -186,24 +190,13 @@ FILTER='(
 if [[ -n "$SINCE" ]]; then
   # Handle relative time (e.g., "1h", "30m") or absolute time
   if [[ "$SINCE" =~ ^[0-9]+[hms]$ ]]; then
-    # Relative time - gcloud handles this natively
-    FILTER="$FILTER AND timestamp>=\"$(date -u -d "-${SINCE%[hms]} ${SINCE: -1}" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-${SINCE}S +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo "")\"" 
-    # Fallback: let gcloud parse it if date command fails
-    if [[ "$FILTER" == *'""'* ]]; then
-      FILTER='(
-  resource.type="cloud_run_revision" OR 
-  resource.type="cloud_function"
-) AND (
-  resource.labels.service_name="'"$SERVICE"'" OR
-  resource.labels.function_name="'"$SERVICE"'"
-) AND (
-  httpRequest.requestMethod="DELETE" OR
-  jsonPayload.message=~"(?i)delete" OR
-  textPayload=~"(?i)delete" OR
-  jsonPayload.error!="" OR
-  severity>=WARNING
-)'
+    # Relative time - try to convert to RFC3339 timestamp
+    SINCE_TS=$(date -u -d "-${SINCE%[hms]} ${SINCE: -1}" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-${SINCE}S +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo "")
+    if [[ -z "$SINCE_TS" ]]; then
+      log_error "Failed to parse relative time: $SINCE"
+      exit 1
     fi
+    FILTER="$FILTER AND timestamp>=\"$SINCE_TS\""
   else
     # Absolute time
     FILTER="$FILTER AND timestamp>=\"$SINCE\""
