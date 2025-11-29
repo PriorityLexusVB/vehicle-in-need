@@ -112,10 +112,19 @@ async function verifyAuthToken(req, res, next) {
         decodedToken.isManager === true || decodedToken.manager === true,
     };
 
-    const emailRedacted =
-      process.env.NODE_ENV === "production"
-        ? req.user.email.replace(/^(.{2}).*(@.*)$/, "$1***$2")
-        : req.user.email;
+    // Redact email in production logs to protect PII
+    let emailRedacted = req.user.email || "(unknown)";
+    if (process.env.NODE_ENV === "production" && req.user.email) {
+      // Safely redact email, handling edge cases like short emails
+      const atIndex = req.user.email.indexOf("@");
+      if (atIndex > 2) {
+        emailRedacted = req.user.email.slice(0, 2) + "***" + req.user.email.slice(atIndex);
+      } else if (atIndex > 0) {
+        emailRedacted = req.user.email[0] + "***" + req.user.email.slice(atIndex);
+      } else {
+        emailRedacted = "***";
+      }
+    }
     console.log(
       `[Auth] Verified user: ${req.user.uid} (${emailRedacted}), isManager: ${req.user.isManager}`
     );

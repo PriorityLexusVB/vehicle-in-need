@@ -63,7 +63,11 @@ export interface DeleteResult {
 export interface UseOrderDeleteOptions {
   /** Base URL for the delete API (default: '/api/orders') */
   apiBaseUrl?: string;
-  /** Function to get the current Firebase Auth token for authentication */
+  /** 
+   * Function to get the current Firebase Auth token for authentication.
+   * Should be memoized with useCallback for optimal performance.
+   * Example: const getAuthToken = useCallback(() => auth.currentUser?.getIdToken() ?? null, []);
+   */
   getAuthToken?: () => Promise<string | null>;
   /** Callback when deletion succeeds - only then should UI update */
   onSuccess?: (orderId: string) => void;

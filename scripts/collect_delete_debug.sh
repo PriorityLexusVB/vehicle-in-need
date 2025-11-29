@@ -191,6 +191,9 @@ if [[ -n "$SINCE" ]]; then
   # Handle relative time (e.g., "1h", "30m") or absolute time
   if [[ "$SINCE" =~ ^[0-9]+[hms]$ ]]; then
     # Relative time - try to convert to RFC3339 timestamp
+    # ${SINCE%[hms]} removes the time unit suffix (e.g., "1h" -> "1")
+    # ${SINCE: -1} extracts the last character (the time unit: h, m, or s)
+    # This handles both GNU date (-d) and BSD date (-v) formats
     SINCE_TS=$(date -u -d "-${SINCE%[hms]} ${SINCE: -1}" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-${SINCE}S +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo "")
     if [[ -z "$SINCE_TS" ]]; then
       log_error "Failed to parse relative time: $SINCE"
