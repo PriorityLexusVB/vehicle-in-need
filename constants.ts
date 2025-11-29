@@ -59,18 +59,22 @@ export function isActiveStatus(status: OrderStatus): boolean {
 
 export const YEARS = ['2025', '2024', '2023'];
 
-// A list of emails that will be granted manager privileges upon their FIRST LOGIN ONLY.
+// A list of known manager emails for INFORMATIONAL LOGGING ONLY.
 // All emails should be lowercase and use the @priorityautomotive.com domain.
 // 
-// IMPORTANT: This list is used ONLY for initial seeding when a user logs in for the first time.
-// After the first login, the user's manager status is stored in Firestore and can be changed
-// via the Settings page. Subsequent logins will read from Firestore, NOT from this constant.
+// IMPORTANT: This list does NOT automatically grant manager permissions!
+// Due to Firestore security rules, users cannot self-assign manager status.
+// All new users are created with isManager: false.
+// 
+// To grant manager permissions, use one of these methods:
+// 1. Via Settings page: An existing manager can promote users at /#/admin
+// 2. Via admin script: npm run seed:managers:apply -- --emails user@priorityautomotive.com
+// 
+// This list is used only to log informational messages when users in this list
+// sign up, reminding administrators to promote them using the above methods.
 // 
 // DOMAIN RESTRICTION: Only users with @priorityautomotive.com emails can access the system.
 // This is enforced in the authentication logic (App.tsx).
-// 
-// To grant a NEW user manager permissions: Add their email to this list before their first login.
-// To grant an EXISTING user manager permissions: Use the Settings page or update Firestore directly.
 export const MANAGER_EMAILS = [
     'manager1@priorityautomotive.com',
     'dealership_admin@priorityautomotive.com',
