@@ -113,7 +113,8 @@ def process_file(path: Path) -> bool:
                 if new_line != line:
                     changed = True
                 out_lines.append(new_line)
-            except Exception:
+            except Exception as e:
+                print(f"Warning: Failed to normalize table line: {e}", file=sys.stderr)
                 out_lines.append(line)
         else:
             out_lines.append(line)
@@ -137,7 +138,7 @@ def gather_files(args: List[str]) -> List[Path]:
     else:
         # Default: all *.md files excluding node_modules
         all_md = list(Path(".").rglob("*.md"))
-        return sorted(p for p in all_md if "node_modules" not in str(p))
+        return sorted(p for p in all_md if "node_modules" not in p.parts)
 
 
 def main():
