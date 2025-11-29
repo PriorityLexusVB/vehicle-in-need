@@ -102,14 +102,18 @@ const App: React.FC = () => {
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (authUser) => {
       try {
+        // Only process users with valid Priority Automotive email addresses
         if (authUser && authUser.email?.endsWith("@priorityautomotive.com")) {
+          // At this point, authUser.email is guaranteed to be a non-null string
+          // because the optional chaining + endsWith check ensures it
+          const userEmail = authUser.email; // Type narrowing for clarity
           const userDocRef = doc(db, USERS_COLLECTION, authUser.uid);
 
           console.log(
             "%c👤 Auth Flow - User Document Fetch",
             "color: #10b981; font-weight: bold;"
           );
-          console.log("User email:", authUser.email);
+          console.log("User email:", userEmail);
           console.log("User UID:", authUser.uid);
 
           let userDoc;
@@ -126,7 +130,7 @@ const App: React.FC = () => {
             // since we can't verify their status. They can still use non-manager features.
             const fallbackUser: AppUser = {
               uid: authUser.uid,
-              email: authUser.email,
+              email: userEmail,
               displayName: authUser.displayName,
               isManager: false,
             };
@@ -148,7 +152,7 @@ const App: React.FC = () => {
             
             // Check if user is in MANAGER_EMAILS for informational logging
             const shouldBeManager = MANAGER_EMAILS.includes(
-              authUser.email!.toLowerCase()
+              userEmail.toLowerCase()
             );
             if (shouldBeManager) {
               console.log(
@@ -157,14 +161,14 @@ const App: React.FC = () => {
               );
               console.log(
                 "To grant manager permissions, an existing manager must promote this user via Settings, " +
-                "or run: npm run seed:managers:apply -- --emails " + authUser.email
+                "or run: npm run seed:managers:apply -- --emails " + userEmail
               );
             }
 
             // Create user document with isManager: false (required by security rules)
             const newUserDoc = {
               uid: authUser.uid,
-              email: authUser.email,
+              email: userEmail,
               displayName: authUser.displayName,
               isManager: false,
               createdAt: serverTimestamp(),
@@ -173,7 +177,7 @@ const App: React.FC = () => {
             
             appUser = {
               uid: authUser.uid,
-              email: authUser.email,
+              email: userEmail,
               displayName: authUser.displayName,
               isManager: false,
             };
@@ -214,14 +218,14 @@ const App: React.FC = () => {
                 "MIGRATION - isManager was not boolean, setting to false"
               );
               // Check if user should be a manager for informational logging
-              if (MANAGER_EMAILS.includes(authUser.email!.toLowerCase())) {
+              if (MANAGER_EMAILS.includes(userEmail.toLowerCase())) {
                 console.log(
                   "%c📋 User is in MANAGER_EMAILS list but cannot self-elevate",
                   "color: #f59e0b; font-weight: bold;"
                 );
                 console.log(
                   "To grant manager permissions, an existing manager must promote this user via Settings, " +
-                  "or run: npm run seed:managers:apply -- --emails " + authUser.email
+                  "or run: npm run seed:managers:apply -- --emails " + userEmail
                 );
               }
             }
@@ -249,7 +253,7 @@ const App: React.FC = () => {
 
             appUser = {
               uid: authUser.uid,
-              email: authUser.email,
+              email: userEmail,
               displayName: authUser.displayName,
               isManager: isManager, // This value came from Firestore, ensuring Settings changes persist.
             };
