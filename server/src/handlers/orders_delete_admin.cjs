@@ -8,6 +8,10 @@
  * IMPORTANT: This endpoint should be protected by authentication middleware
  * that verifies the user has manager permissions.
  *
+ * SECURITY: For production deployment, add rate limiting middleware (e.g., express-rate-limit)
+ * to prevent abuse. The endpoint requires authentication and authorization, but rate limiting
+ * provides an additional defense layer.
+ *
  * Usage:
  *   DELETE /api/orders/:orderId
  *
@@ -228,6 +232,13 @@ async function deleteOrderById(orderId, deletedBy) {
 
 /**
  * Create the Express router for order delete operations
+ * 
+ * SECURITY NOTE: This endpoint is protected by authentication (verifyAuthToken)
+ * and authorization (requireManager). For production use, consider adding:
+ * 1. Rate limiting middleware (e.g., express-rate-limit) to prevent abuse
+ * 2. Request logging/auditing for compliance
+ * 3. IP-based restrictions if applicable
+ * 
  * @returns {express.Router}
  */
 function createOrdersDeleteRouter() {
@@ -237,6 +248,11 @@ function createOrdersDeleteRouter() {
    * DELETE /api/orders/:orderId
    *
    * Delete an order by ID (managers only)
+   *
+   * Security:
+   *   - Requires valid Firebase ID token (authentication)
+   *   - Requires manager custom claim (authorization)
+   *   - PRODUCTION: Add rate limiting middleware (e.g., express-rate-limit)
    *
    * Headers:
    *   Authorization: Bearer <firebase-id-token>
