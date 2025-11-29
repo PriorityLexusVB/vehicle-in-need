@@ -84,8 +84,7 @@ vehicle-in-need/pre-order-dealer-exchange-tracker:latest \
   --allow-unauthenticated \
   --service-account=pre-order-dealer-exchange-860@\
 gen-lang-client-0615287333.iam.gserviceaccount.com \
-  --set-env-vars=NODE_ENV=production \
-  --update-secrets=API_KEY=vehicle-in-need-gemini:latest
+  --set-env-vars=NODE_ENV=production
 ```
 
 ## Verification

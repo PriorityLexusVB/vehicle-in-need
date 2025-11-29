@@ -3,9 +3,6 @@ import { Order, OrderStatus, AppUser } from '../types';
 import { ACTIVE_STATUS_OPTIONS, isSecuredStatus } from '../constants';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
 import StatusBadge from './StatusBadge';
-import { generateFollowUpEmail } from '../services/geminiService';
-import { SparklesIcon } from './icons/SparklesIcon';
-import { ClipboardIcon } from './icons/ClipboardIcon';
 import { TrashIcon } from './icons/TrashIcon';
 
 interface OrderCardProps {
@@ -24,9 +21,6 @@ const DetailItem: React.FC<{label: string, children: React.ReactNode}> = ({ labe
 
 const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOrder, currentUser }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedEmail, setGeneratedEmail] = useState('');
-  const [copySuccess, setCopySuccess] = useState(false);
 
   // Display color codes directly (no longer looking up from vehicleOptions)
   const exteriorColors = [
@@ -48,28 +42,6 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOr
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newStatus = e.target.value as OrderStatus;
     onUpdateStatus(order.id, newStatus);
-  };
-  
-  const handleGenerateEmail = async () => {
-    setIsGenerating(true);
-    setGeneratedEmail('');
-    try {
-      const emailContent = await generateFollowUpEmail(order);
-      setGeneratedEmail(emailContent);
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to generate email. Please try again.";
-      alert(`AI Assistant Error: ${errorMessage}`);
-      console.error("Email generation error:", error);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-  
-  const handleCopyToClipboard = () => {
-    navigator.clipboard.writeText(generatedEmail).then(() => {
-        setCopySuccess(true);
-        setTimeout(() => setCopySuccess(false), 2000);
-    });
   };
 
   return (
@@ -195,25 +167,6 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOr
                         )}
                     </div>
                 )}
-
-
-                <div className="pt-4 mt-4 border-t border-slate-200">
-                     <h4 className="text-base font-semibold text-slate-700 mb-3">AI Email Assistant</h4>
-                    <button onClick={handleGenerateEmail} disabled={isGenerating} className="flex items-center justify-center gap-2 w-full sm:w-auto text-sm bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors disabled:bg-slate-400 disabled:cursor-wait">
-                        <SparklesIcon className={isGenerating ? 'animate-spin' : ''} />
-                        {isGenerating ? 'Generating...' : 'Generate Follow-up'}
-                    </button>
-                    {generatedEmail && (
-                        <div className="mt-4 p-4 bg-sky-50 border border-sky-200 rounded-lg">
-                            <label htmlFor={`email-draft-${order.id}`} className="block text-sm font-bold text-slate-700 mb-2">Generated Email Draft:</label>
-                            <textarea id={`email-draft-${order.id}`} readOnly value={generatedEmail} rows={10} className="w-full p-2.5 border border-slate-300 rounded-md shadow-sm bg-white text-sm focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition"></textarea>
-                            <button onClick={handleCopyToClipboard} className={`mt-2 flex items-center gap-2 text-sm font-semibold py-1.5 px-3 rounded-md transition-all duration-200 ${copySuccess ? 'bg-green-200 text-green-800' : 'bg-slate-200 hover:bg-slate-300 text-slate-800'}`}>
-                                <ClipboardIcon />
-                                {copySuccess ? 'Copied!' : 'Copy to Clipboard'}
-                            </button>
-                        </div>
-                    )}
-                </div>
             </div>
           </div>
         </div>

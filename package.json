@@ -47,8 +47,6 @@
     "seed:options:apply": "node scripts/seed-vehicle-options.mjs --project vehicles-in-need"
   },
   "dependencies": {
-    "@google-cloud/vertexai": "^1.9.0",
-    "@google/genai": "^1.28.0",
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "firebase": "^12.5.0",

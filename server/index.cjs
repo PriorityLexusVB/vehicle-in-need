@@ -1,13 +1,12 @@
 /**
  * Express server for Vehicle Order Tracker
- * Serves static files and provides API endpoints for AI-powered email generation
+ * Serves static files and provides API endpoints
  */
 
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
 const cors = require("cors");
-const aiProxyRouter = require("./aiProxy.cjs");
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -91,7 +90,6 @@ app.get("/health", (req, res) => {
 app.get("/api/status", (req, res) => {
   res.json({
     status: "healthy",
-    geminiEnabled: true, // Always return true since we're using Vertex AI
     version: process.env.APP_VERSION || "unknown",
     buildTime: process.env.BUILD_TIME || "unknown",
     nodeVersion: process.version,
@@ -100,9 +98,6 @@ app.get("/api/status", (req, res) => {
     uptime: process.uptime(),
   });
 });
-
-// Mount AI proxy routes
-app.use("/api", aiProxyRouter);
 
 // Serve static files from dist directory
 const distPath = path.join(__dirname, "..", "dist");

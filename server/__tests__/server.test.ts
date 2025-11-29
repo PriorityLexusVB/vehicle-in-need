@@ -33,7 +33,6 @@ describe('Server Endpoints', () => {
         .expect('Content-Type', /json/);
       
       expect(response.body).toHaveProperty('status', 'healthy');
-      expect(response.body).toHaveProperty('geminiEnabled', true);
       expect(response.body).toHaveProperty('version');
       expect(response.body).toHaveProperty('buildTime');
       expect(response.body).toHaveProperty('nodeVersion');

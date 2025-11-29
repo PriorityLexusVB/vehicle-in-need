@@ -28,7 +28,6 @@ This document provides a comprehensive checklist for deploying the Vehicle Order
 
 - [ ] Verify environment variables are configured
   - Firebase configuration (if applicable)
-  - Google Cloud project settings for Vertex AI
   - Any required secrets
 
 - [ ] Run automated tests
@@ -259,14 +258,6 @@ This document provides a comprehensive checklist for deploying the Vehicle Order
     - Fields: `createdByUid` (Ascending), `createdAt` (Descending)
   - If missing, create the index following README instructions
 
-#### AI Feature Test (Manager Only)
-
-- [ ] Select an order with customer email
-- [ ] Click "Generate Follow-up Email" button (sparkles icon)
-- [ ] Verify email generation works (no API key errors in console)
-- [ ] Verify generated email appears in modal/form
-- [ ] Verify no client-side errors related to missing `VITE_GEMINI_API_KEY`
-
 #### Service Worker & Updates
 
 - [ ] After deployment, refresh page (Ctrl/Cmd + R)
@@ -477,17 +468,6 @@ If deployment verification fails:
   3. Hard refresh (Ctrl/Cmd + Shift + R)
   4. Verify localStorage has `sw_cleanup_v1_done = true`
 
-### Issue: "403/401 errors on AI email generation"
-
-- **Cause:** Service account lacks Vertex AI User IAM role
-- **Fix:**
-
-  ```bash
-  gcloud projects add-iam-policy-binding ${PROJECT_ID} \
-    --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" \
-    --role="roles/aiplatform.user"
-  ```
-
 ## Post-Mortem Template
 
 If a deployment issue occurs, document it using this template:
@@ -538,7 +518,6 @@ For each deployment, consider creating a release note:
 - [x] All smoke tests passed
 - [x] No console errors
 - [x] Manager navigation functional
-- [x] AI features operational
 
 **Rollback Plan:**
 Previous revision: [revision-name]

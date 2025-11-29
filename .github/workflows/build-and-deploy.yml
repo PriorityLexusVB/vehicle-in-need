@@ -179,8 +179,7 @@ jobs:
           echo "  --region=${{ env.GCP_REGION }} \\" >> $GITHUB_STEP_SUMMARY
           echo "  --platform=managed \\" >> $GITHUB_STEP_SUMMARY
           echo "  --allow-unauthenticated \\" >> $GITHUB_STEP_SUMMARY
-          echo "  --set-env-vars=NODE_ENV=production,APP_VERSION=$SHORT_SHA,BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) \\" >> $GITHUB_STEP_SUMMARY
-          echo "  --update-secrets=API_KEY=vehicle-in-need-gemini:latest" >> $GITHUB_STEP_SUMMARY
+          echo "  --set-env-vars=NODE_ENV=production,APP_VERSION=$SHORT_SHA,BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           
           echo "### Deployed Version" >> $GITHUB_STEP_SUMMARY
@@ -217,8 +216,7 @@ jobs:
             --region=${{ env.GCP_REGION }} \
             --platform=managed \
             --allow-unauthenticated \
-            --set-env-vars=NODE_ENV=production,APP_VERSION=$SHORT_SHA,BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
-            --update-secrets=API_KEY=vehicle-in-need-gemini:latest
+            --set-env-vars=NODE_ENV=production,APP_VERSION=$SHORT_SHA,BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
             
       - name: Verify deployment
         run: |

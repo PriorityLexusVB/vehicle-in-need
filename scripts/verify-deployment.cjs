@@ -149,11 +149,6 @@ async function runTests() {
         const status = JSON.parse(res.body);
         
         recordTest(
-          status.hasOwnProperty('geminiEnabled'),
-          'Status response includes geminiEnabled field'
-        );
-        
-        recordTest(
           status.hasOwnProperty('version'),
           'Status response includes version field'
         );
