@@ -704,8 +704,8 @@ const App: React.FC = () => {
   const handleUpdateUserRole = useCallback(
     async (uid: string, isManager: boolean) => {
       if (!user?.isManager || user.uid === uid) return; // Security check
-      // Local state update - the actual update is handled by the callable function
-      // Update allUsers state to reflect the change
+      // Optimistically update local state after backend function succeeds
+      // Called from SettingsPage after successful backend update
       setAllUsers(prev => 
         prev.map(u => u.uid === uid ? { ...u, isManager } : u)
       );

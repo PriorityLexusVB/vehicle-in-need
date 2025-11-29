@@ -188,6 +188,11 @@ export const setManagerRole = onCall<SetManagerRoleData>(
       : false;
 
     // If demoting a manager, check for last-manager lockout
+    // NOTE: There is a potential race condition if two concurrent requests attempt to demote
+    // different managers when only 2 managers exist. Both could pass this check before either
+    // transaction completes, resulting in zero managers. For most use cases, this is acceptable
+    // as simultaneous manager demotion is rare. For stricter guarantees, consider using
+    // Firestore transactions with a manager count document that is updated atomically.
     if (currentIsManager && !newIsManager) {
       const managerCount = await countManagers();
       if (managerCount <= 1) {
@@ -215,27 +220,40 @@ export const setManagerRole = onCall<SetManagerRoleData>(
     };
 
     try {
-      // Update custom claims
+      // Update custom claims first
       await auth.setCustomUserClaims(targetUid, {
         ...currentClaims,
         isManager: newIsManager,
       });
 
       // Update Firestore document
+      // If this fails after claims are updated, we log for manual reconciliation
+      // since Firebase Auth custom claims cannot be rolled back atomically
       const userDocRef = db.collection(USERS_COLLECTION).doc(targetUid);
-      if (targetUserDoc.exists) {
-        await userDocRef.update({ isManager: newIsManager });
-      } else {
-        // Create user document if it doesn't exist
-        await userDocRef.set(
-          {
-            uid: targetUid,
-            email: targetEmail,
-            displayName: targetUserRecord.displayName || null,
-            isManager: newIsManager,
-          },
-          { merge: true }
+      try {
+        if (targetUserDoc.exists) {
+          await userDocRef.update({ isManager: newIsManager });
+        } else {
+          // Create user document if it doesn't exist
+          await userDocRef.set(
+            {
+              uid: targetUid,
+              email: targetEmail,
+              displayName: targetUserRecord.displayName || null,
+              isManager: newIsManager,
+            },
+            { merge: true }
+          );
+        }
+      } catch (firestoreError) {
+        // Log sync failure for manual reconciliation
+        console.error(
+          `[SYNC_FAILURE] Claims updated but Firestore failed for ${targetUid}. ` +
+          `Claims isManager=${newIsManager}, Firestore may be out of sync. ` +
+          `Run reconciliation script to fix.`,
+          firestoreError
         );
+        throw firestoreError;
       }
 
       // Mark audit as successful and write

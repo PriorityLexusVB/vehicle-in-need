@@ -95,7 +95,7 @@ service cloud.firestore {
               )
             )
             && (
-              // isActive not in update, or it matches existing value
+              // isActive not in update, or it matches existing value, or cannot be set to false by self
               !('isActive' in request.resource.data)
               || (
                 ('isActive' in resource.data) 
@@ -103,6 +103,8 @@ service cloud.firestore {
                 && request.resource.data.isActive == resource.data.isActive
               )
             )
+            // Prevent user from setting isActive to false in self-update, even if field did not exist before
+            && (!('isActive' in request.resource.data) || request.resource.data.isActive != false)
             // Self cannot add disabledAt if it doesn't exist (prevent creating new disabled fields)
             && (!('disabledAt' in request.resource.data) || ('disabledAt' in resource.data))
             && (!('disabledBy' in request.resource.data) || ('disabledBy' in resource.data))

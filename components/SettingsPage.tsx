@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { AppUser } from '../types';
 import { callSetManagerRole, callDisableUser, parseFirebaseFunctionError } from '../services/functionsService';
 
@@ -40,11 +40,28 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   });
   const [showDisabledUsers, setShowDisabledUsers] = useState(true);
 
-  // Clear messages after a delay
+  // Ref to store timeout ID for cleanup
+  const clearTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (clearTimeoutRef.current) {
+        clearTimeout(clearTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Clear messages after a delay with proper cleanup
   const clearMessages = useCallback(() => {
-    setTimeout(() => {
+    // Clear any existing timeout
+    if (clearTimeoutRef.current) {
+      clearTimeout(clearTimeoutRef.current);
+    }
+    clearTimeoutRef.current = setTimeout(() => {
       setError(null);
       setSuccessMessage(null);
+      clearTimeoutRef.current = null;
     }, 5000);
   }, []);
 
@@ -364,9 +381,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             aria-label="Close modal"
             tabIndex={-1}
           />
+          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
           <div 
             className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 relative z-10"
             role="document"
+            onClick={(e) => e.stopPropagation()}
           >
             <h3 id="confirm-modal-title" className="text-xl font-bold text-slate-800 mb-2">
               {confirmModal.action === 'disable' ? 'Deactivate User' : 'Reactivate User'}
