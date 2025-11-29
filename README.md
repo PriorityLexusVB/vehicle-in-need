@@ -7,21 +7,17 @@
 
 [![CI](https://github.com/PriorityLexusVB/vehicle-in-need/actions/workflows/ci.yml/badge.svg)](https://github.com/PriorityLexusVB/vehicle-in-need/actions/workflows/ci.yml)
 
-A vehicle order tracking application for Priority Automotive with manager controls, user management, and AI-powered email generation.
-
-View your app in AI Studio: [AI Studio App](https://ai.studio/apps/drive/1XrFhCIH0pgEmQ_DSYHkXD3TovOfqWFJu)
+A vehicle order tracking application for Priority Automotive with manager controls and user management.
 
 ## Features
 
 - 🚗 Track vehicle pre-orders and dealer exchanges
 - 👥 User management with role-based access control
 - 📊 Dashboard with real-time statistics
-- 🤖 **AI-powered email generation** via secure server-side Vertex AI integration
 - 🔔 Service worker with automatic update notifications
 - 🎨 Optimized Tailwind CSS (no CDN in production)
 - 📱 Responsive design for mobile and desktop
 - 🔗 Deep linking support (e.g., `#settings` for direct access)
-- 🔒 **Secure architecture** with no client-side API keys
 
 ## Role-Based Access Control
 
@@ -152,50 +148,6 @@ See the [full migration guide](docs/dev/order-owner-migration.md) for detailed w
 
 ## Architecture
 
-### AI Email Generation - Dual Mode Support
-
-The application supports **two methods** for AI email generation:
-
-#### Method 1: Server-Side Vertex AI Proxy (Recommended for Production)
-
-```text
-Browser → /api/generate-email → Express Server → Vertex AI (Gemini 2.0 Flash)
-                                      ↓
-                            Service Account IAM
-                         (Vertex AI User role)
-```
-
-**Benefits:**
-
-- ✅ No API keys exposed in client bundle
-- ✅ Uses Google Cloud Application Default Credentials (ADC)
-- ✅ Service account with proper IAM roles (Vertex AI User)
-- ✅ Server-side validation and error handling
-- ✅ Smaller client bundle size (~280 KB vs ~469 KB)
-
-#### Method 2: Client-Side Gemini API (Development/Fallback)
-
-```text
-Browser → Gemini API (direct)
-   ↓
-VITE_GEMINI_API_KEY
-```
-
-**Use cases:**
-
-- 🔧 Local development without server setup
-- 🔄 Fallback when server is unavailable
-- 🧪 Testing and prototyping
-
-**⚠️ Security Warning:** API keys are visible in browser DevTools. Use only for development!
-
-#### Automatic Mode Selection
-
-The application automatically detects which method to use:
-
-1. If `VITE_GEMINI_API_KEY` is set at build time → Uses client-side API
-2. Otherwise → Falls back to server-side proxy
-
 The application is split into:
 
 1. **Frontend (React + Vite)**: Static files served by Express
@@ -204,16 +156,13 @@ The application is split into:
 ### API Endpoints
 
 - `GET /health` - Health check endpoint (returns "healthy")
-- `GET /api/status` - Returns AI service status and version info
-- `POST /api/generate-email` - Generate follow-up emails for customer orders
+- `GET /api/status` - Returns service status and version info
 
 ## Run Locally
 
 **Prerequisites:** Node.js (v20 or higher recommended)
 
-### Setup 1: Server-Side Proxy (Production Mode)
-
-The recommended approach for production-like testing.
+### Setup
 
 1. Install dependencies:
 
@@ -221,70 +170,32 @@ The recommended approach for production-like testing.
    npm install
    ```
 
-2. Authenticate with Google Cloud:
-
-   ```bash
-   gcloud auth application-default login
-   ```
-
-   This authenticates your local environment using Application Default Credentials (ADC). The server will automatically use these credentials when calling Vertex AI APIs.
-
-3. Build the frontend:
+2. Build the frontend:
 
    ```bash
    npm run build
    ```
 
-4. Run the server:
+3. Run the server:
 
    ```bash
    npm run server
    ```
 
-5. Open your browser to [`http://localhost:8080`](http://localhost:8080)
+4. Open your browser to [`http://localhost:8080`](http://localhost:8080)
 
 **How it works:**
 
 - Frontend is served as static files from `dist/`
-- API endpoint `/api/generate-email` uses Vertex AI with ADC
-- No client-side API keys needed
+- API endpoints serve health and status information
 
-### Setup 2: Client-Side API (Development Mode)
+### Development Mode
 
-Quick setup for frontend development without running a server.
-
-1. Install dependencies:
-
-   ```bash
-   npm install
-   ```
-
-2. Create `.env.local` with your Gemini API key:
-
-   ```bash
-   echo "VITE_GEMINI_API_KEY=your-api-key-here" > .env.local
-   ```
-
-   Get an API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
-
-3. Run the development server:
-
-   ```bash
-   npm run dev
-   ```
-
-4. Open your browser to [`http://localhost:3000`](http://localhost:3000)
-
-**⚠️ Note:** This exposes the API key in the browser bundle. Use only for development!
-
-### Setup 3: Hybrid Development
-
-For frontend development with server-side API calls:
+For frontend development with hot reloading:
 
 1. Terminal 1 - Backend server:
 
    ```bash
-   gcloud auth application-default login  # One-time setup
    npm run server
    ```
 
@@ -302,26 +213,12 @@ The dev server (port 3000) will proxy API calls to the backend (port 8080).
 
 The application uses a multi-stage Dockerfile that builds the frontend and packages it with a Node.js server:
 
-**Build with server-side Vertex AI (recommended):**
-
 ```bash
 docker build \
   --build-arg COMMIT_SHA=$(git rev-parse --short HEAD) \
   --build-arg BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
   -t vehicle-tracker:latest .
 ```
-
-**Build with client-side API key (optional):**
-
-```bash
-docker build \
-  --build-arg COMMIT_SHA=$(git rev-parse --short HEAD) \
-  --build-arg BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
-  --build-arg VITE_GEMINI_API_KEY=your-api-key-here \
-  -t vehicle-tracker:latest .
-```
-
-**⚠️ Note:** Client-side API keys are visible in the browser bundle. For production, use the server-side proxy instead.
 
 **Note:** If you encounter an npm "Exit handler never called!" error when building locally, this is a [known npm bug](https://github.com/npm/cli/issues) in certain Docker environments. **The recommended approach is to build using Google Cloud Build** where this issue doesn't occur. For local testing, you can:
 
@@ -384,13 +281,7 @@ ERROR: Permission 'iam.serviceaccounts.actAs' denied
    - Test server startup
    - Verify CSS is accessible via HTTP
 
-2. **Ensure your service account has required roles:**
-
-   - `Vertex AI User` - for calling Gemini models via server-side proxy
-   - `Service Account Token Creator` (if needed for service-to-service calls)
-   - See IAM guides above for complete permissions setup
-
-3. **Deploy with Cloud Build (server-side mode - recommended):**
+2. **Deploy with Cloud Build:**
 
    ```bash
    gcloud builds submit --config cloudbuild.yaml \
@@ -411,36 +302,9 @@ ERROR: Permission 'iam.serviceaccounts.actAs' denied
 
    See [GCP_MANUAL_CONFIGURATION_CHECKLIST.md](./GCP_MANUAL_CONFIGURATION_CHECKLIST.md) for complete Cloud Build trigger setup.
 
-4. **Deploy with client-side API key (optional):**
-
-   Add to your `cloudbuild.yaml`:
-
-   ```yaml
-   steps:
-     - name: "gcr.io/cloud-builders/docker"
-       args:
-         - "build"
-         - "--build-arg"
-         - "COMMIT_SHA=$SHORT_SHA"
-         - "--build-arg"
-         - "BUILD_TIME=$_BUILD_TIME"
-         - "--build-arg"
-         - "VITE_GEMINI_API_KEY=${_VITE_GEMINI_API_KEY}"
-         - "-t"
-         - "gcr.io/$PROJECT_ID/vehicle-tracker:$SHORT_SHA"
-         - "."
-   substitutions:
-     _BUILD_TIME: '$(date -u +"%Y-%m-%dT%H:%M:%SZ")'
-     _VITE_GEMINI_API_KEY: "your-api-key-or-secret-ref"
-   ```
-
-5. **The container automatically:**
-   - Uses the attached service account credentials (for server-side proxy)
-   - Or uses the build-time API key (if VITE_GEMINI_API_KEY provided)
+3. **The container automatically:**
    - Serves both static files and API endpoints on port 8080
    - Provides health check at `/health` for Cloud Run
-
-**Recommended:** Use server-side Vertex AI proxy for production (no API key needed). The client-side option is available for development/testing.
 
 ### Selecting the Correct Container Image
 
@@ -502,38 +366,7 @@ See [DOCKER_BUILD_NOTES.md](./DOCKER_BUILD_NOTES.md) for detailed build and depl
 
 See [.env.example](.env.example) for detailed configuration options:
 
-**Server-side configuration:**
-
-- `GOOGLE_CLOUD_PROJECT` - Auto-detected from environment (optional override)
-- `VERTEX_AI_LOCATION` - Defaults to `us-central1` (optional)
 - `PORT` - Server port, defaults to `8080` (optional)
-
-**Client-side configuration:**
-
-- `VITE_GEMINI_API_KEY` - Gemini API key for client-side mode (build-time only)
-  - Set in `.env.local` for local development
-  - Pass as `--build-arg` for Docker builds
-  - Add as substitution in Cloud Build
-  - ⚠️ Visible in browser - use only for development!
-
-### Security: Removing Old API Keys
-
-After verifying the server-side proxy works correctly:
-
-1. **Navigate to Google Cloud Console** → APIs & Services → Credentials
-2. **Locate the API keys** previously used for client-side Gemini access
-3. **Delete unused API keys** to prevent potential exposure
-4. **Keep only service account IAM roles** for production access
-
-**What to delete:**
-
-- ❌ Any API keys labeled for "Gemini API" or "Browser access"
-- ❌ The `VITE_GEMINI_API_KEY` from GitHub Secrets (if present)
-
-**What to keep:**
-
-- ✅ Service account with "Vertex AI User" role attached to Cloud Run
-- ✅ No API keys should be present in the final deployment
 
 ### Build for Production (npm)
 
@@ -548,7 +381,6 @@ This creates an optimized production build in the `dist/` directory with:
 - Service worker for offline support and caching
 - Web app manifest for PWA support
 - Version information (git commit SHA + build time)
-- **No client-side API keys** (removed from bundle)
 
 ### Build Output
 
@@ -562,8 +394,6 @@ dist/
    ├── index-[hash].css          # Optimized CSS
    └── index-[hash].js           # Bundled JavaScript
 ```
-
-**Bundle size improvement:** The removal of `@google/genai` from the client reduced the JavaScript bundle from ~469 KB to ~268 KB (43% reduction).
 
 **Cloud Build Configuration:**
 
@@ -973,7 +803,7 @@ Automated tests run on every push and pull request to `main` via the GitHub Acti
 
 **Test Coverage:**
 
-- **Unit Tests:** Component tests (ProtectedRoute, SettingsPage, VersionBadge, OrderForm, OrderList) + Server API tests (health, status, AI endpoints)
+- **Unit Tests:** Component tests (ProtectedRoute, SettingsPage, VersionBadge, OrderForm, OrderList) + Server API tests (health, status)
 - **E2E Tests:** End-to-end user flows with Playwright (manager flows, non-manager restrictions, authentication)
 - **Crypto Polyfills:** Verified Buffer and getRandomValues availability
 
