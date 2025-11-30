@@ -52,4 +52,8 @@ export interface AppUser {
   disabledAt?: Timestamp;
   /** UID of the manager who disabled this user (if applicable) */
   disabledBy?: string;
+  /** Timestamp when the user document was created */
+  createdAt?: Timestamp;
+  /** Timestamp when the user document was last updated */
+  updatedAt?: Timestamp;
 }

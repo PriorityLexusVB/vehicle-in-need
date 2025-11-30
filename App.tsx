@@ -77,8 +77,6 @@ const App: React.FC = () => {
     securedLast30Days: 0,
   });
 
-  // Track logged elevations to prevent duplicate logging
-  const loggedElevations = useRef<Set<string>>(new Set());
   // Track if we've already shown the fallback warning
   const fallbackWarningShown = useRef(false);
 
@@ -104,14 +102,18 @@ const App: React.FC = () => {
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (authUser) => {
       try {
+        // Only process users with valid Priority Automotive email addresses
         if (authUser && authUser.email?.endsWith("@priorityautomotive.com")) {
+          // At this point, authUser.email is guaranteed to be a non-null string
+          // because the optional chaining + endsWith check ensures it
+          const userEmail = authUser.email; // Type narrowing for clarity
           const userDocRef = doc(db, USERS_COLLECTION, authUser.uid);
 
           console.log(
             "%c👤 Auth Flow - User Document Fetch",
             "color: #10b981; font-weight: bold;"
           );
-          console.log("User email:", authUser.email);
+          console.log("User email:", userEmail);
           console.log("User UID:", authUser.uid);
 
           let userDoc;
@@ -124,16 +126,13 @@ const App: React.FC = () => {
               "color: #ef4444; font-weight: bold;",
               firestoreError
             );
-            // Continue with auth info but log the error
-            alert(
-              "Warning: Could not load user profile. You may have limited access. Please refresh the page or contact support if this persists."
-            );
-            // Create a minimal user object from auth data only
+            // Create a minimal user object from auth data only - always set isManager to false
+            // since we can't verify their status. They can still use non-manager features.
             const fallbackUser: AppUser = {
               uid: authUser.uid,
-              email: authUser.email,
+              email: userEmail,
               displayName: authUser.displayName,
-              isManager: MANAGER_EMAILS.includes(authUser.email!.toLowerCase()),
+              isManager: false,
             };
             setUser(fallbackUser);
             setIsLoading(false);
@@ -143,27 +142,51 @@ const App: React.FC = () => {
           let appUser: AppUser;
 
           if (!userDoc.exists()) {
-            // NEW USER: First-time login - seed isManager from MANAGER_EMAILS constant.
-            // IMPORTANT: MANAGER_EMAILS is ONLY used for initial seeding, not on subsequent logins.
-            const isManager = MANAGER_EMAILS.includes(
-              authUser.email!.toLowerCase()
-            );
+            // NEW USER: First-time login - always create with isManager: false.
+            // This is required by Firestore security rules which prevent self-escalation.
+            // Users must be promoted to manager by an existing manager via the Settings page
+            // or by running the set-manager-custom-claims.mjs admin script.
             console.log(
-              "NEW USER - Seeding isManager from MANAGER_EMAILS:",
-              isManager
+              "NEW USER - Creating user document with isManager: false"
             );
+            
+            // Check if user is in MANAGER_EMAILS for informational logging
+            const shouldBeManager = MANAGER_EMAILS.includes(
+              userEmail.toLowerCase()
+            );
+            if (shouldBeManager) {
+              console.log(
+                "%c📋 User is in MANAGER_EMAILS list",
+                "color: #f59e0b; font-weight: bold;"
+              );
+              console.log(
+                "To grant manager permissions, an existing manager must promote this user via Settings, " +
+                "or run: npm run seed:managers:apply -- --emails " + userEmail
+              );
+            }
+
+            // Create user document with isManager: false (required by security rules)
+            const newUserDoc = {
+              uid: authUser.uid,
+              email: userEmail,
+              displayName: authUser.displayName,
+              isManager: false,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            };
+            
             appUser = {
               uid: authUser.uid,
-              email: authUser.email,
+              email: userEmail,
               displayName: authUser.displayName,
-              isManager: isManager,
+              isManager: false,
             };
 
             try {
-              await setDoc(userDocRef, appUser);
+              await setDoc(userDocRef, newUserDoc);
               console.log(
-                "Created new user document with isManager:",
-                isManager
+                "%c✅ Created new user document successfully",
+                "color: #10b981; font-weight: bold;"
               );
             } catch (firestoreError) {
               console.error(
@@ -171,7 +194,7 @@ const App: React.FC = () => {
                 "color: #ef4444; font-weight: bold;",
                 firestoreError
               );
-              // Continue with the user object even if Firestore write failed
+              // Continue with the in-memory user object - they can still use non-manager features
               console.warn("Proceeding with in-memory user object");
             }
           } else {
@@ -187,55 +210,50 @@ const App: React.FC = () => {
 
             // One-time migration for older user documents that might not have the isManager field.
             // Checking for non-boolean handles undefined, null, and any incorrectly stored values.
+            // NOTE: We can only set isManager to false here due to security rules.
+            // Manager promotion must be done by an existing manager via Settings or admin scripts.
             if (typeof isManager !== "boolean") {
-              isManager = MANAGER_EMAILS.includes(
-                authUser.email!.toLowerCase()
-              );
+              isManager = false;
               console.log(
-                "MIGRATION - isManager was not boolean, setting to:",
-                isManager
+                "MIGRATION - isManager was not boolean, setting to false"
               );
-              // Write the migrated value to Firestore so it persists.
-              try {
-                await updateDoc(userDocRef, { isManager });
-              } catch (firestoreError) {
-                console.error(
-                  "%c❌ Firestore Error - Failed to update isManager field",
-                  "color: #ef4444; font-weight: bold;",
-                  firestoreError
-                );
-                // Continue with the migrated value even if write failed
-              }
-            } else if (
-              !isManager &&
-              MANAGER_EMAILS.includes(authUser.email!.toLowerCase())
-            ) {
-              // Persistent elevation: if an existing user is in MANAGER_EMAILS but not a manager yet,
-              // elevate them now. This keeps MANAGER_EMAILS as an allow-list for upgrades only.
-              // Log only once per user to avoid duplicate logs on re-renders
-              const elevationKey = `${authUser.uid}-elevation`;
-              if (!loggedElevations.current.has(elevationKey)) {
+              // Check if user should be a manager for informational logging
+              if (MANAGER_EMAILS.includes(userEmail.toLowerCase())) {
                 console.log(
-                  `[ROLE-ELEVATION] email=${authUser.email} uid=${authUser.uid} elevated=true`
+                  "%c📋 User is in MANAGER_EMAILS list but cannot self-elevate",
+                  "color: #f59e0b; font-weight: bold;"
                 );
-                loggedElevations.current.add(elevationKey);
-              }
-              isManager = true;
-              try {
-                await updateDoc(userDocRef, { isManager: true });
-              } catch (firestoreError) {
-                console.error(
-                  "%c❌ Firestore Error - Failed to elevate user to manager",
-                  "color: #ef4444; font-weight: bold;",
-                  firestoreError
+                console.log(
+                  "To grant manager permissions, an existing manager must promote this user via Settings, " +
+                  "or run: npm run seed:managers:apply -- --emails " + userEmail
                 );
-                // Continue with the elevated value even if write failed
               }
+            }
+
+            // Update displayName if it changed and set updatedAt timestamp
+            const updates: Record<string, unknown> = {
+              updatedAt: serverTimestamp(),
+            };
+            
+            // Update displayName if it changed from Firebase Auth
+            if (existingData.displayName !== authUser.displayName) {
+              updates.displayName = authUser.displayName;
+            }
+
+            try {
+              await updateDoc(userDocRef, updates);
+              console.log("Updated user document with updatedAt timestamp");
+            } catch (firestoreError) {
+              // This is non-critical - user can still use the app
+              console.warn(
+                "Could not update user document timestamp:",
+                firestoreError
+              );
             }
 
             appUser = {
               uid: authUser.uid,
-              email: authUser.email,
+              email: userEmail,
               displayName: authUser.displayName,
               isManager: isManager, // This value came from Firestore, ensuring Settings changes persist.
             };

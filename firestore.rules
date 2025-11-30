@@ -57,10 +57,11 @@ service cloud.firestore {
           !('isManager' in request.resource.data)
           || request.resource.data.isManager == false
         )
-        // Allowed keys - uid (optional), displayName (required), email (required), isManager (optional), isActive (optional)
+        // Allowed keys - uid (optional), displayName (required), email (required), isManager (optional), 
+        // isActive (optional), createdAt (optional), updatedAt (optional)
         // Use difference check: incoming keys must be subset of allowed keys
         && request.resource.data.keys().hasAll(['displayName', 'email'])
-        && request.resource.data.keys().hasOnly(['uid', 'displayName', 'email', 'isManager', 'isActive'])
+        && request.resource.data.keys().hasOnly(['uid', 'displayName', 'email', 'isManager', 'isActive', 'createdAt', 'updatedAt'])
         // Email must match auth token (ensures integrity)
         && request.resource.data.email == request.auth.token.email
         // If uid is provided, it must match the document path userId
@@ -77,9 +78,9 @@ service cloud.firestore {
       // UPDATE:
       // - Manager can update other users (including changing isManager, isActive, disabledAt, disabledBy).
       // - User updating self cannot change isManager, isActive, disabledAt, or disabledBy.
-      // - Email is immutable.
+      // - Email is immutable, createdAt is immutable.
       // - Manager updates can add new fields (for isActive, disabledAt, disabledBy)
-      // - User self-updates cannot add arbitrary new keys.
+      // - User self-updates can only add updatedAt to existing keys.
       allow update: if (
           (isManager() && !isOwner(userId))  // Manager editing another user
           ||
@@ -108,12 +109,14 @@ service cloud.firestore {
             // Self cannot add disabledAt if it doesn't exist (prevent creating new disabled fields)
             && (!('disabledAt' in request.resource.data) || ('disabledAt' in resource.data))
             && (!('disabledBy' in request.resource.data) || ('disabledBy' in resource.data))
-            // Self cannot add new keys
-            && request.resource.data.keys().hasOnly(resource.data.keys())
+            // Self cannot add new keys except updatedAt (for timestamp updates)
+            && request.resource.data.keys().hasOnly(resource.data.keys().concat(['updatedAt']))
           ) // Self without role/active change
         )
         // Keep email immutable
         && request.resource.data.email == resource.data.email
+        // Keep createdAt immutable (if it exists in original document)
+        && (!('createdAt' in resource.data) || !('createdAt' in request.resource.data) || request.resource.data.createdAt == resource.data.createdAt)
         // If isManager is being set in the update, ensure it's a boolean
         && (!('isManager' in request.resource.data) || isBool(request.resource.data.isManager))
         // If isActive is being set in the update, ensure it's a boolean

@@ -181,6 +181,46 @@ describe('Firestore Security Rules - Users Collection', () => {
         })
       );
     });
+
+    it('should allow user to create document with displayName: null (Firebase Auth can return null)', async () => {
+      // This tests the exact scenario from App.tsx where authUser.displayName may be null
+      const userId = 'userWithNullName';
+      const userDb = testEnv
+        .authenticatedContext(userId, { email: 'nullname@example.com' })
+        .firestore();
+      const userRef = doc(userDb, 'users', userId);
+      
+      await assertSucceeds(
+        setDoc(userRef, {
+          uid: userId,
+          email: 'nullname@example.com',
+          displayName: null,  // Firebase Auth can return null for displayName
+          isManager: false,
+        })
+      );
+    });
+
+    it('should allow user to create document with createdAt and updatedAt timestamps', async () => {
+      // This tests the updated App.tsx flow that includes timestamps
+      const userId = 'userWithTimestamps';
+      const userDb = testEnv
+        .authenticatedContext(userId, { email: 'timestamps@example.com' })
+        .firestore();
+      const userRef = doc(userDb, 'users', userId);
+      
+      // Use Firestore serverTimestamp() equivalent for testing
+      const now = new Date();
+      await assertSucceeds(
+        setDoc(userRef, {
+          uid: userId,
+          email: 'timestamps@example.com',
+          displayName: 'Test User',
+          isManager: false,
+          createdAt: now,
+          updatedAt: now,
+        })
+      );
+    });
   });
 
   describe('User Read Access', () => {
@@ -286,6 +326,37 @@ describe('Firestore Security Rules - Users Collection', () => {
           email: 'user@example.com',
           displayName: 'Updated Name',
           isManager: false,
+        })
+      );
+    });
+
+    it('should allow user to add updatedAt timestamp on update', async () => {
+      // This tests the App.tsx flow where returning users get updatedAt set
+      const userId = 'user123';
+      
+      // Setup: Create user document without updatedAt
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const adminDb = context.firestore();
+        await setDoc(doc(adminDb, 'users', userId), {
+          email: 'user@example.com',
+          displayName: 'Test User',
+          isManager: false,
+        });
+      });
+
+      // Test: User can add updatedAt field on update
+      const userDb = testEnv
+        .authenticatedContext(userId, { email: 'user@example.com' })
+        .firestore();
+      const userRef = doc(userDb, 'users', userId);
+      
+      const now = new Date();
+      await assertSucceeds(
+        updateDoc(userRef, {
+          email: 'user@example.com',
+          displayName: 'Test User',
+          isManager: false,
+          updatedAt: now,  // Can add updatedAt even if it doesn't exist
         })
       );
     });

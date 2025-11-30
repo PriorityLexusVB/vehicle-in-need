@@ -981,52 +981,76 @@ See [MANUAL_TESTING_STEPS.md - Service Account Key Rotation](./MANUAL_TESTING_ST
 
 ### Role Management System
 
-The application uses a two-tier authorization system:
+The application uses a secure two-tier authorization system:
 
-1. **Initial Seeding** - The `MANAGER_EMAILS` constant in `constants.ts`:
-   - Used **only** on first login to seed initial manager status
-   - Provides a bootstrap mechanism for new users
-   - New managers can be added by updating this constant before their first login
+1. **User Document Creation** - On first login, a user document is created in Firestore:
+   - All users are created with `isManager: false` (enforced by Firestore security rules)
+   - User documents include: `uid`, `email`, `displayName`, `isManager`, `createdAt`, `updatedAt`
+   - Security rules prevent users from self-assigning manager status
 
 2. **Persistent Storage** - Firestore is the single source of truth:
    - After first login, role data is stored in Firestore `users` collection
    - Role changes via Settings page persist across logins
-   - Removing an email from `MANAGER_EMAILS` won't demote existing managers
+   - The `MANAGER_EMAILS` constant is for informational logging only; it does NOT automatically grant manager status
 
-**Manager Elevation Flow:**
+**User Document Fields:**
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `uid` | string | Firebase Auth UID |
+| `email` | string | User's email address |
+| `displayName` | string \| null | Display name from Firebase Auth |
+| `isManager` | boolean | Manager role flag (must be set by admin) |
+| `createdAt` | timestamp | When the user document was created |
+| `updatedAt` | timestamp | When the user document was last updated |
+| `isActive` | boolean (optional) | Whether the account is active |
+
+**User Registration Flow:**
 
 ```text
-User First Login → Check MANAGER_EMAILS → Seed isManager: true/false → Store in Firestore
-Subsequent Logins → Read isManager from Firestore (MANAGER_EMAILS ignored)
+User First Login → Create user doc (isManager: false) → Store in Firestore
+Subsequent Logins → Read from Firestore → Update updatedAt timestamp
 ```
 
 **Adding a New Manager:**
 
-Option 1: Before first login (automatic):
+Option 1: Use the Settings page (recommended):
 
-1. Add email to `MANAGER_EMAILS` in `constants.ts`
-2. Deploy the change
-3. User logs in → automatically becomes manager
+1. Log in as an existing manager
+2. Navigate to User Management (`/#/admin`)
+3. Find the user and toggle their manager role switch
+4. Change persists immediately in Firestore
 
-Option 2: After first login (manual):
-
-1. Use existing manager account to access User Management (`/#/admin`)
-2. Toggle the user's manager role switch
-3. Change persists immediately in Firestore
-
-Option 3: Using seeder script:
+Option 2: Using admin script:
 
 ```bash
-pnpm run seed:managers:apply -- --emails newmanager@priorityautomotive.com
+npm run seed:managers:apply -- --emails newmanager@priorityautomotive.com
+```
+
+This script uses the Firebase Admin SDK to:
+
+- Set `isManager: true` in the user's Firestore document
+- Set `isManager: true` custom claim in Firebase Auth
+
+**Bootstrap First Manager:**
+
+For a new deployment with no existing managers, use the admin script:
+
+```bash
+# Dry run first to verify
+npm run seed:managers:dry-run -- --emails first.manager@priorityautomotive.com
+
+# Apply the change
+npm run seed:managers:apply -- --emails first.manager@priorityautomotive.com
 ```
 
 **Security Safeguards:**
 
 - ✅ Domain restriction: Only `@priorityautomotive.com` emails can access the app
+- ✅ Self-escalation prevention: Users cannot set their own `isManager: true`
 - ✅ Manager self-protection: Managers cannot demote themselves
 - ✅ Protected routes: `/admin` route is guarded by `ProtectedRoute` component
 - ✅ Zero-manager warning: Non-managers see an alert if no managers exist
-- ✅ Elevation logging: Manager upgrades are logged with `[ROLE-ELEVATION]` prefix
 
 **Role Verification:**
 
@@ -1038,7 +1062,7 @@ After deployment, verify roles are correct:
 # Verify isManager: true for expected users
 
 # Or use the seeder script in dry-run mode
-pnpm run seed:managers:dry-run -- --emails manager@priorityautomotive.com
+npm run seed:managers:dry-run -- --emails manager@priorityautomotive.com
 ```
 
 For comprehensive role UI documentation, see [docs/role-ui-examples.md](./docs/role-ui-examples.md).
