@@ -28,6 +28,10 @@ These are current, maintained operational guides:
 - [`VERSION_TRACKING.md`](VERSION_TRACKING.md) - Deployment traceability and version management system
 - [`GITHUB_ISSUE_TEMPLATE.md`](GITHUB_ISSUE_TEMPLATE.md) - Template for creating GitHub issues
 
+## PR Reviews
+
+- [`PR_REVIEW_143_156.md`](PR_REVIEW_143_156.md) - Analysis and merge instructions for PRs #143-156
+
 ## Archived Documentation
 
 The [`archive/`](archive/) directory contains historical documentation from previous fixes and investigations. These are kept for reference but are not actively maintained:
