@@ -89,6 +89,57 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
+
+      - name: Validate GCP auth inputs
+        id: validate-gcp-auth
+        shell: bash
+        env:
+          WIF_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          echo "Validating GCP auth inputs..."
+
+          # Check if GCP_WORKLOAD_IDENTITY_PROVIDER is set
+          if [ -z "$WIF_PROVIDER" ]; then
+            echo "::error::Missing repository secret: GCP_WORKLOAD_IDENTITY_PROVIDER"
+            echo ""
+            echo "Add a secret named GCP_WORKLOAD_IDENTITY_PROVIDER with the provider resource name:"
+            echo "Example: projects/123456789012/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+            exit 1
+          fi
+
+          # Validate GCP_WORKLOAD_IDENTITY_PROVIDER format
+          # Expected: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER
+          if ! echo "$WIF_PROVIDER" | grep -qE '^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$'; then
+            echo "::error::GCP_WORKLOAD_IDENTITY_PROVIDER has invalid format"
+            echo ""
+            echo "Expected format: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER"
+            echo "Example: projects/123456789012/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+            exit 1
+          fi
+          echo "✅ GCP_WORKLOAD_IDENTITY_PROVIDER format is valid"
+
+          # Check if GCP_SERVICE_ACCOUNT is set
+          if [ -z "$SERVICE_ACCOUNT" ]; then
+            echo "::error::Missing repository secret: GCP_SERVICE_ACCOUNT"
+            echo ""
+            echo "Add a secret named GCP_SERVICE_ACCOUNT with a service account email:"
+            echo "Example: my-service-account@my-project.iam.gserviceaccount.com"
+            exit 1
+          fi
+
+          # Validate GCP_SERVICE_ACCOUNT format (basic email pattern for service accounts)
+          if ! echo "$SERVICE_ACCOUNT" | grep -qE '^[^@]+@[^@]+\.iam\.gserviceaccount\.com$'; then
+            echo "::warning::GCP_SERVICE_ACCOUNT may have invalid format"
+            echo ""
+            echo "Expected format: SERVICE_ACCOUNT_NAME@PROJECT_ID.iam.gserviceaccount.com"
+            echo "Example: github-actions@my-project.iam.gserviceaccount.com"
+          fi
+          echo "✅ GCP_SERVICE_ACCOUNT format is valid"
+
+          echo ""
+          echo "✅ All GCP auth inputs validated successfully"
       
       - name: Authenticate to Google Cloud
         id: auth
@@ -197,6 +248,57 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
+
+      - name: Validate GCP auth inputs
+        id: validate-gcp-auth
+        shell: bash
+        env:
+          WIF_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          echo "Validating GCP auth inputs..."
+
+          # Check if GCP_WORKLOAD_IDENTITY_PROVIDER is set
+          if [ -z "$WIF_PROVIDER" ]; then
+            echo "::error::Missing repository secret: GCP_WORKLOAD_IDENTITY_PROVIDER"
+            echo ""
+            echo "Add a secret named GCP_WORKLOAD_IDENTITY_PROVIDER with the provider resource name:"
+            echo "Example: projects/123456789012/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+            exit 1
+          fi
+
+          # Validate GCP_WORKLOAD_IDENTITY_PROVIDER format
+          # Expected: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER
+          if ! echo "$WIF_PROVIDER" | grep -qE '^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$'; then
+            echo "::error::GCP_WORKLOAD_IDENTITY_PROVIDER has invalid format"
+            echo ""
+            echo "Expected format: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER"
+            echo "Example: projects/123456789012/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+            exit 1
+          fi
+          echo "✅ GCP_WORKLOAD_IDENTITY_PROVIDER format is valid"
+
+          # Check if GCP_SERVICE_ACCOUNT is set
+          if [ -z "$SERVICE_ACCOUNT" ]; then
+            echo "::error::Missing repository secret: GCP_SERVICE_ACCOUNT"
+            echo ""
+            echo "Add a secret named GCP_SERVICE_ACCOUNT with a service account email:"
+            echo "Example: my-service-account@my-project.iam.gserviceaccount.com"
+            exit 1
+          fi
+
+          # Validate GCP_SERVICE_ACCOUNT format (basic email pattern for service accounts)
+          if ! echo "$SERVICE_ACCOUNT" | grep -qE '^[^@]+@[^@]+\.iam\.gserviceaccount\.com$'; then
+            echo "::warning::GCP_SERVICE_ACCOUNT may have invalid format"
+            echo ""
+            echo "Expected format: SERVICE_ACCOUNT_NAME@PROJECT_ID.iam.gserviceaccount.com"
+            echo "Example: github-actions@my-project.iam.gserviceaccount.com"
+          fi
+          echo "✅ GCP_SERVICE_ACCOUNT format is valid"
+
+          echo ""
+          echo "✅ All GCP auth inputs validated successfully"
       
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
