@@ -10,8 +10,9 @@
 ## Current Status (Updated)
 
 ### ✅ COMPLETED - Already Merged/Closed
+
 | PR | Status | Action Taken |
-|----|--------|--------------|
+| ---- | -------- | -------------- |
 | **#143** | ✅ MERGED | Firebase 12.6.0 + workflow fix |
 | **#148** | ✅ MERGED | TypeScript 5.9.3 (functions) |
 | **#151** | ✅ CLOSED | Duplicate of #155 |
@@ -22,8 +23,9 @@
 | **#156** | ✅ MERGED | Vite 7.2.6 |
 
 ### ⏳ PENDING - Still Open
+
 | PR | Title | Status | Recommendation |
-|----|-------|--------|----------------|
+| ---- | ------- | -------- | ---------------- |
 | **#145** | @types/node 22→24 (root) | OPEN | ⚠️ Test TS compilation, then merge |
 | **#149** | @types/node 22→24 (functions) | OPEN | ⚠️ Test TS compilation, then merge |
 | **#146** | Express 4→5 | OPEN | 🔴 BREAKING - Close and create migration issue |
@@ -35,6 +37,7 @@
 ## Executive Summary
 
 This document provides a comprehensive review of PRs #143 through #156, including:
+
 - Classification of each PR by risk level and type
 - Identification of duplicate PRs that should be closed
 - Recommended merge order to ensure completeness and accuracy
@@ -42,12 +45,12 @@ This document provides a comprehensive review of PRs #143 through #156, includin
 
 ---
 
-## Detailed PR Analysis
+## PR Analysis by Risk Level
 
 ### ✅ Safe to Merge (Low Risk - Minor/Patch Updates)
 
 | PR | Title | Risk | Type | Files Changed |
-|----|-------|------|------|---------------|
+| ---- | ------- | ------ | ------ | --------------- |
 | **#143** | Firebase 12.5.0 → 12.6.0 + workflow fix | Low | Minor update + bugfix | package.json, package-lock.json, workflow YAML |
 | **#148** | TypeScript 5.8.3 → 5.9.3 in /functions | Low | Minor update | functions/package.json, functions/package-lock.json |
 | **#156** | Vite 7.2.4 → 7.2.6 | Low | Patch update | package.json, package-lock.json |
@@ -55,14 +58,14 @@ This document provides a comprehensive review of PRs #143 through #156, includin
 ### ⚠️ Needs Careful Review (Medium Risk)
 
 | PR | Title | Risk | Type | Concern |
-|----|-------|------|------|---------|
+| ---- | ------- | ------ | ------ | --------- |
 | **#145** | @types/node 22.19.1 → 24.10.1 | Medium | Major version jump | Type definitions may have breaking changes |
 | **#149** | @types/node 22.19.1 → 24.10.1 in /functions | Medium | Major version jump | Same concern as #145 for functions |
 
 ### 🔴 Breaking Changes (High Risk - Requires Migration Work)
 
 | PR | Title | Risk | Breaking Changes |
-|----|-------|------|------------------|
+| ---- | ------- | ------ | ------------------ |
 | **#146** | Express 4.21.2 → 5.1.0 | **HIGH** | Express 5.x has significant breaking changes (removed deprecated APIs, promise-based error handling, etc.) |
 | **#147** | react-router-dom 6.30.1 → 7.9.6 | **HIGH** | React Router 7.x has breaking changes (new routing paradigm, loader/action changes) |
 | **#150** | firebase-functions 6.6.0 → 7.0.0 in /functions | **HIGH** | Firebase Functions 7.x has breaking changes (new API patterns, Node.js version requirements) |
@@ -70,7 +73,7 @@ This document provides a comprehensive review of PRs #143 through #156, includin
 ### 🗑️ Duplicates (Close Without Merging)
 
 | PR | Title | Duplicate Of | Reason |
-|----|-------|--------------|--------|
+| ---- | ------- | -------------- | -------- |
 | **#151** | GCP auth validation + WIF documentation | #155 | PR #155 consolidates all GCP auth changes |
 | **#152** | GCP auth validation in workflow | #155 | PR #155 consolidates all GCP auth changes |
 | **#153** | GCP OIDC inputs validation | #155 | PR #155 consolidates all GCP auth changes |
@@ -79,17 +82,20 @@ This document provides a comprehensive review of PRs #143 through #156, includin
 ### 📦 Consolidation PR (Keep)
 
 | PR | Title | Contains | Recommendation |
-|----|-------|----------|----------------|
+| ---- | ------- | ---------- | ---------------- |
 | **#155** | Consolidate GCP auth validation workflows | GCP auth validation + docs/CI.md | ✅ This is the consolidation PR - keep and merge this one |
 
 ---
 
-## Detailed PR Analysis
+## Individual PR Details
 
 ### PR #143: Firebase 12.5.0 → 12.6.0 + Workflow Fix
+
 **Author:** Copilot  
-**Status:** ✅ Safe to merge  
+**Status:** ✅ Safe to merge
+
 **Changes:**
+
 - Updates `firebase` from 12.5.0 to 12.6.0 (minor version)
 - Fixes workflow YAML syntax issue (step name with colon)
 - Removes unused AI dependencies (`@google-cloud/vertexai`, `@google/genai`)
@@ -99,9 +105,12 @@ This document provides a comprehensive review of PRs #143 through #156, includin
 ---
 
 ### PR #145: @types/node 22.19.1 → 24.10.1
+
 **Author:** Dependabot  
-**Status:** ⚠️ Review carefully  
+**Status:** ⚠️ Review carefully
+
 **Changes:**
+
 - Updates TypeScript Node.js type definitions (root package)
 
 **Impact:** Medium risk - major version jump may introduce type errors. Test TypeScript compilation after merging.
@@ -109,9 +118,12 @@ This document provides a comprehensive review of PRs #143 through #156, includin
 ---
 
 ### PR #146: Express 4.21.2 → 5.1.0
+
 **Author:** Dependabot  
-**Status:** 🔴 **DO NOT MERGE WITHOUT MIGRATION**  
+**Status:** 🔴 **DO NOT MERGE WITHOUT MIGRATION**
+
 **Breaking Changes in Express 5.x:**
+
 - Removed `app.del()` (use `app.delete()`)
 - Removed `app.param(fn)` callback signature
 - Promise rejection handling changed
@@ -120,6 +132,7 @@ This document provides a comprehensive review of PRs #143 through #156, includin
 - Many deprecated methods removed
 
 **Action Required:**
+
 1. Review all Express usage in the codebase
 2. Update any deprecated API calls
 3. Test all API endpoints thoroughly
@@ -128,15 +141,19 @@ This document provides a comprehensive review of PRs #143 through #156, includin
 ---
 
 ### PR #147: react-router-dom 6.30.1 → 7.9.6
+
 **Author:** Dependabot  
-**Status:** 🔴 **DO NOT MERGE WITHOUT MIGRATION**  
+**Status:** 🔴 **DO NOT MERGE WITHOUT MIGRATION**
+
 **Breaking Changes in React Router 7.x:**
+
 - New data loading patterns (loaders/actions)
 - Route configuration changes
 - Navigation hooks updated
 - Error boundary handling changed
 
 **Action Required:**
+
 1. Review all routing code
 2. Update route configurations
 3. Test all navigation flows
@@ -145,9 +162,12 @@ This document provides a comprehensive review of PRs #143 through #156, includin
 ---
 
 ### PR #148: TypeScript 5.8.3 → 5.9.3 in /functions
+
 **Author:** Dependabot  
-**Status:** ✅ Safe to merge  
+**Status:** ✅ Safe to merge
+
 **Changes:**
+
 - Updates TypeScript in functions directory (minor version)
 
 **Impact:** Low risk - TypeScript minor versions are generally backward compatible
@@ -155,9 +175,12 @@ This document provides a comprehensive review of PRs #143 through #156, includin
 ---
 
 ### PR #149: @types/node 22.19.1 → 24.10.1 in /functions
+
 **Author:** Dependabot  
-**Status:** ⚠️ Review carefully  
+**Status:** ⚠️ Review carefully
+
 **Changes:**
+
 - Updates TypeScript Node.js type definitions (functions package)
 
 **Impact:** Medium risk - same concerns as #145
@@ -165,15 +188,19 @@ This document provides a comprehensive review of PRs #143 through #156, includin
 ---
 
 ### PR #150: firebase-functions 6.6.0 → 7.0.0 in /functions
+
 **Author:** Dependabot  
-**Status:** 🔴 **DO NOT MERGE WITHOUT MIGRATION**  
+**Status:** 🔴 **DO NOT MERGE WITHOUT MIGRATION**
+
 **Breaking Changes in Firebase Functions 7.x:**
+
 - New function configuration API
 - Requires Node.js 18 or higher
 - Authentication trigger changes
 - Callable function signature changes
 
 **Action Required:**
+
 1. Review all Cloud Functions code
 2. Update function definitions to new API
 3. Test all functions in emulator
@@ -182,6 +209,7 @@ This document provides a comprehensive review of PRs #143 through #156, includin
 ---
 
 ### PRs #151, #152, #153, #154: GCP Auth Validation (DUPLICATES)
+
 **Author:** Copilot  
 **Status:** 🗑️ Close without merging  
 **Reason:** These PRs all implement variations of GCP auth validation. PR #155 consolidates all these changes properly.
@@ -189,9 +217,12 @@ This document provides a comprehensive review of PRs #143 through #156, includin
 ---
 
 ### PR #155: Consolidate GCP Auth Validation Workflows
+
 **Author:** Copilot  
-**Status:** ✅ Merge this one  
+**Status:** ✅ Merge this one
+
 **Changes:**
+
 - Adds GCP auth input validation to build-and-deploy workflow
 - Creates comprehensive `docs/CI.md` documentation
 - Updates README with GCP auth instructions
@@ -202,9 +233,12 @@ This document provides a comprehensive review of PRs #143 through #156, includin
 ---
 
 ### PR #156: Vite 7.2.4 → 7.2.6
+
 **Author:** Dependabot  
-**Status:** ✅ Safe to merge  
+**Status:** ✅ Safe to merge
+
 **Changes:**
+
 - Patch update to Vite build tool
 
 **Impact:** Very low risk - patch version with bug fixes only
@@ -283,7 +317,7 @@ After Phase 2 completes successfully:
 
 ## Squash and Merge Instructions
 
-### For GitHub Web UI:
+### For GitHub Web UI
 
 1. Navigate to the PR
 2. Click the dropdown arrow next to "Merge pull request"
@@ -291,7 +325,7 @@ After Phase 2 completes successfully:
 4. Edit the commit message to match the suggested format above
 5. Click "Confirm squash and merge"
 
-### For GitHub CLI:
+### For GitHub CLI
 
 ```bash
 # Example for PR #143
@@ -339,14 +373,16 @@ After each merge:
 
 ## Remaining Actions
 
-### For Medium Risk PRs (#145, #149):
+### For Medium Risk PRs (#145, #149)
+
 ```bash
 # Test TypeScript first, then merge:
 gh pr merge 145 --squash --subject "chore(deps): update @types/node to 24.10.1 (#145)"
 gh pr merge 149 --squash --subject "chore(deps): update @types/node to 24.10.1 in functions (#149)"
 ```
 
-### For Breaking Change PRs (#146, #147, #150):
+### For Breaking Change PRs (#146, #147, #150)
+
 These require migration work and should be closed with comments linking to migration issues.
 
 ---
