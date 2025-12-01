@@ -106,7 +106,15 @@ enum OrderStatus {
 
 ## Sample Order Documents
 
+> **⚠️ Important:** These JSON samples are for **reference only** and show the data structure.
+> **Do NOT copy these directly** into Firestore Console or import tools.
+> The `createdAt`, `createdByUid`, and `createdByEmail` fields **must be set programmatically**
+> using the Firebase SDK (see [Bulk Operations Guidelines](#bulk-operations-guidelines) below).
+> Orders created without proper timestamp values will not appear in query results.
+
 ### Example 1: DAMUTH (Factory Order)
+
+The following shows the document structure. When creating orders programmatically, use `serverTimestamp()` for `createdAt`:
 
 ```json
 {
@@ -132,11 +140,21 @@ enum OrderStatus {
   "depositAmount": 1000.00,
   "status": "Factory Order",
   "options": "Premium Package, Navigation, Heated Seats",
-  "notes": "Customer prefers delivery on weekends",
-  "createdAt": "<Firestore Server Timestamp>",
-  "createdByUid": "abc123xyz",
-  "createdByEmail": "john.smith@priorityautomotive.com"
+  "notes": "Customer prefers delivery on weekends"
 }
+```
+
+**Note:** `createdAt`, `createdByUid`, and `createdByEmail` are omitted above because they must be set programmatically:
+
+```typescript
+import { serverTimestamp } from "firebase/firestore";
+
+const order = {
+  // ... other order fields from JSON above
+  createdAt: serverTimestamp(),
+  createdByUid: user.uid,
+  createdByEmail: user.email
+};
 ```
 
 ### Example 2: ALICE JOHNSON (Dealer Exchange)
@@ -159,12 +177,11 @@ enum OrderStatus {
   "sellingPrice": 51000.00,
   "depositAmount": 2000.00,
   "status": "Dealer Exchange",
-  "options": "F Sport Package, Mark Levinson Audio",
-  "createdAt": "<Firestore Server Timestamp>",
-  "createdByUid": "def456uvw",
-  "createdByEmail": "jane.doe@priorityautomotive.com"
+  "options": "F Sport Package, Mark Levinson Audio"
 }
 ```
+
+**Note:** `createdAt`, `createdByUid`, and `createdByEmail` must be set programmatically when adding documents (see Example 1 above for the code pattern).
 
 ---
 
