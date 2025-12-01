@@ -85,11 +85,13 @@ enum OrderStatus {
 ### Status Classification
 
 **Active Statuses** (orders not yet secured):
+
 - `Factory Order`
 - `Locate`
 - `Dealer Exchange`
 
 **Secured Statuses** (completed orders):
+
 - `Received` (legacy)
 - `Delivered` (legacy)
 - `Secured` (UI display only, stored as `Delivered` in database)
@@ -193,6 +195,7 @@ const userOwnOrdersQuery = query(
 ### Create Operations
 
 Any authenticated user can create an order, but must:
+
 1. Include required ownership fields: `createdByUid`, `createdByEmail`, `createdAt`
 2. Set `createdByUid` to their own UID
 3. Set `createdByEmail` to their own email (from auth token)
@@ -235,6 +238,7 @@ When bulk adding orders programmatically:
 
 3. **Server Timestamp**:
    Use `serverTimestamp()` from Firebase for `createdAt`:
+
    ```typescript
    import { serverTimestamp } from "firebase/firestore";
    
@@ -246,6 +250,7 @@ When bulk adding orders programmatically:
 
 4. **Ownership Fields**:
    Must match the authenticated user performing the bulk operation:
+
    ```typescript
    createdByUid: auth.currentUser.uid,
    createdByEmail: auth.currentUser.email,
@@ -315,7 +320,7 @@ interface AppUser {
 ## Key Files Reference
 
 | File | Purpose |
-|------|---------|
+| ------ | --------- |
 | `types.ts` | Order and AppUser TypeScript interfaces |
 | `constants.ts` | Status options, status colors, helper functions |
 | `firestore.rules` | Firestore security rules |
@@ -330,6 +335,7 @@ interface AppUser {
 ## Customer Name Conventions
 
 Customer names in the system follow these patterns:
+
 - **Full uppercase**: e.g., `"DAMUTH"`, `"SMITH"`
 - **Title case with full name**: e.g., `"ALICE JOHNSON"`, `"Bob Williams"`
 
