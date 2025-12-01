@@ -1,9 +1,9 @@
-# Dependabot configuration for automated dependency updates
-# Vehicle-in-Need — aggressively grouped to avoid PR spam
+# Dependabot configuration for Vehicle-in-Need
+# Grouped updates for root app + Firebase functions, no semver-major bumps.
 
 version: 2
 updates:
-  # Root npm dependencies (React, Firebase, Vite, etc.)
+  # Root npm dependencies (React, Vite, etc.)
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
@@ -12,17 +12,16 @@ updates:
       time: "05:00"
       timezone: "America/New_York"
 
-    # Keep this low so Dependabot can't flood you
     open-pull-requests-limit: 3
 
     groups:
-      # 1) One PR for ALL security updates at the root
+      # One PR for ALL security updates at the root
       root-security:
         applies-to: "security-updates"
         patterns:
           - "*"
 
-      # 2) One PR for ALL minor/patch version bumps (prod + dev)
+      # One PR for ALL minor/patch version updates at the root
       root-minor-patch:
         applies-to: "version-updates"
         update-types:
@@ -31,19 +30,14 @@ updates:
         patterns:
           - "*"
 
-      # (Optional) enable this later if you want majors grouped too
-      # root-majors:
-      #   applies-to: "version-updates"
-      #   update-types:
-      #     - "major"
-      #   patterns:
-      #     - "*"
+    # Ignore semver-major version updates at the root
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
 
     commit-message:
       prefix: "chore(deps)"
-    labels:
-      - "dependencies"
-      - "npm"
 
   # Firebase Cloud Functions dependencies
   - package-ecosystem: "npm"
@@ -54,17 +48,16 @@ updates:
       time: "05:00"
       timezone: "America/New_York"
 
-    # Separate cap for functions updates
     open-pull-requests-limit: 2
 
     groups:
-      # 1) One PR for ALL security updates under /functions
+      # One PR for ALL security updates under /functions
       functions-security:
         applies-to: "security-updates"
         patterns:
           - "*"
 
-      # 2) One PR for ALL minor/patch updates under /functions
+      # One PR for ALL minor/patch updates under /functions
       functions-minor-patch:
         applies-to: "version-updates"
         update-types:
@@ -73,22 +66,16 @@ updates:
         patterns:
           - "*"
 
-      # (Optional) majors for functions, if you want them grouped:
-      # functions-majors:
-      #   applies-to: "version-updates"
-      #   update-types:
-      #     - "major"
-      #   patterns:
-      #     - "*"
+    # Ignore semver-major version updates under /functions
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
 
     commit-message:
       prefix: "chore(deps)"
-    labels:
-      - "dependencies"
-      - "npm"
-      - "functions"
 
-  # GitHub Actions updates (monthly cadence)
+  # GitHub Actions updates (monthly)
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -97,17 +84,18 @@ updates:
       time: "05:00"
       timezone: "America/New_York"
 
-    # At most one Actions PR at a time
     open-pull-requests-limit: 1
 
     groups:
-      # One PR for ALL actions updates
       actions-all:
         patterns:
           - "*"
 
+    # Ignore semver-major version updates for actions
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+
     commit-message:
       prefix: "chore(ci)"
-    labels:
-      - "dependencies"
-      - "github-actions"
