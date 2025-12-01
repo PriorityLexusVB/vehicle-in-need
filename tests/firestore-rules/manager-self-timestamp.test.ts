@@ -1,6 +1,5 @@
 import { describe, it, beforeAll, afterAll, beforeEach } from 'vitest';
 import {
-  assertFails,
   assertSucceeds,
   RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
@@ -178,6 +177,111 @@ describe('Manager self-update timestamp - App.tsx flow', () => {
     await assertSucceeds(
       updateDoc(userRef, {
         updatedAt: now,
+      })
+    );
+  });
+
+  it('should allow manager with full document (all fields) to update own updatedAt', async () => {
+    // This tests the exact production scenario: a manager with ALL fields populated
+    const managerId = 'SsFh10SrFqfjRpIzJlN0GJ1hjRw2'; // Using actual UID pattern from production
+    
+    // Setup: Create manager user document with ALL fields that might exist in production
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const adminDb = context.firestore();
+      await setDoc(doc(adminDb, 'users', managerId), {
+        uid: managerId,
+        email: 'rob.brasco@priorityautomotive.com',
+        displayName: 'Rob Brasco',
+        isManager: true,
+        isActive: true,
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-06-01'),
+      });
+    });
+
+    // Test: Manager WITHOUT custom claim tries to do partial update
+    // This simulates the case where custom claims haven't been synced
+    const managerDb = testEnv
+      .authenticatedContext(managerId, { 
+        email: 'rob.brasco@priorityautomotive.com'
+        // NOTE: No isManager custom claim - Firestore document is source of truth
+      })
+      .firestore();
+    const userRef = doc(managerDb, 'users', managerId);
+    
+    const now = new Date();
+    await assertSucceeds(
+      updateDoc(userRef, {
+        updatedAt: now,
+      })
+    );
+  });
+
+  it('should allow manager with full document and custom claim to update own updatedAt', async () => {
+    // This tests with both custom claims AND full document
+    const managerId = 'SsFh10SrFqfjRpIzJlN0GJ1hjRw2';
+    
+    // Setup: Create manager user document with ALL fields
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const adminDb = context.firestore();
+      await setDoc(doc(adminDb, 'users', managerId), {
+        uid: managerId,
+        email: 'rob.brasco@priorityautomotive.com',
+        displayName: 'Rob Brasco',
+        isManager: true,
+        isActive: true,
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-06-01'),
+      });
+    });
+
+    // Test: Manager WITH custom claim tries to do partial update
+    const managerDb = testEnv
+      .authenticatedContext(managerId, { 
+        email: 'rob.brasco@priorityautomotive.com',
+        isManager: true  // Has custom claim
+      })
+      .firestore();
+    const userRef = doc(managerDb, 'users', managerId);
+    
+    const now = new Date();
+    await assertSucceeds(
+      updateDoc(userRef, {
+        updatedAt: now,
+      })
+    );
+  });
+
+  it('should allow manager to update displayName when it changed in Firebase Auth', async () => {
+    // This simulates when the user changes their display name in Google and logs in again
+    const managerId = 'manager123';
+    
+    // Setup: Create manager user document with old displayName
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const adminDb = context.firestore();
+      await setDoc(doc(adminDb, 'users', managerId), {
+        uid: managerId,
+        email: 'manager@priorityautomotive.com',
+        displayName: 'Old Manager Name',
+        isManager: true,
+        isActive: true,
+        createdAt: new Date('2024-01-01'),
+      });
+    });
+
+    // Test: Manager updates both updatedAt AND displayName
+    const managerDb = testEnv
+      .authenticatedContext(managerId, { 
+        email: 'manager@priorityautomotive.com',
+        isManager: true
+      })
+      .firestore();
+    const userRef = doc(managerDb, 'users', managerId);
+    
+    await assertSucceeds(
+      updateDoc(userRef, {
+        updatedAt: new Date(),
+        displayName: 'New Manager Name',
       })
     );
   });

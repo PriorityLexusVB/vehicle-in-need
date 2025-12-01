@@ -422,3 +422,63 @@ Both conventions are acceptable. The system performs case-insensitive search on 
 - **Secured statuses**: `Received`, `Delivered` (stored as these, displayed as "Secured")
 - **Required for bulk operations**: Ownership fields (`createdByUid`, `createdByEmail`, `createdAt`) must be set
 - **Permissions**: Managers can read all; non-managers can only read their own orders
+
+---
+
+## Troubleshooting: CSV-Imported Orders Not Appearing
+
+If orders imported via CSV or bulk upload are not appearing in the dashboard:
+
+### 1. Verify Orders Have Required Fields
+
+Every order must have these ownership fields:
+
+- `createdByUid` - The UID of the authenticated user who created the order
+- `createdByEmail` - The email of that user (must match their auth token)
+- `createdAt` - A Firestore timestamp (preferably server timestamp)
+
+**Without these fields, the order won't pass security rules and won't be visible.**
+
+### 2. Check Import Method
+
+**Client-side import (via authenticated user):**
+
+- The user must be authenticated and their email must be a Priority Automotive email
+- Use `serverTimestamp()` for `createdAt`
+- `createdByUid` and `createdByEmail` must match the authenticated user
+
+**Server-side import (Admin SDK):**
+
+- Admin SDK bypasses security rules, so any values can be used
+- Still MUST include `createdAt` as a Firestore Timestamp for ordering to work
+- The `createdByUid`/`createdByEmail` can be the admin user or a placeholder
+
+### 3. Verify Firestore Query
+
+The dashboard queries orders with:
+
+```typescript
+// For managers - fetch ALL orders
+query(collection(db, "orders"), orderBy("createdAt", "desc"))
+
+// For non-managers - fetch only their own orders  
+query(collection(db, "orders"), where("createdByUid", "==", user.uid), orderBy("createdAt", "desc"))
+```
+
+If `createdAt` is missing or not a valid Firestore Timestamp, orders may not appear in results.
+
+### 4. Check Security Rules Deployment
+
+Ensure Firestore rules are deployed to production:
+
+```bash
+firebase deploy --only firestore:rules
+```
+
+### 5. Verify Manager Permissions
+
+If the manager user can't see orders:
+
+1. Check if they have `isManager: true` in their Firestore user document
+2. Sync their custom claims: `npm run seed:managers:apply -- --emails user@priorityautomotive.com`
+3. Have the user log out and log back in to refresh their auth token
