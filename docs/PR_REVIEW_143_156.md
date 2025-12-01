@@ -1,8 +1,35 @@
 # PR Review: PRs 143-156 Analysis and Merge Instructions
 
 **Review Date:** December 1, 2025  
+**Last Updated:** December 1, 2025
 **Reviewed by:** Copilot Agent  
 **Total PRs:** 14 (PRs #143 through #156)
+
+---
+
+## Current Status (Updated)
+
+### ✅ COMPLETED - Already Merged/Closed
+| PR | Status | Action Taken |
+|----|--------|--------------|
+| **#143** | ✅ MERGED | Firebase 12.6.0 + workflow fix |
+| **#144** | ✅ MERGED | Squash merged |
+| **#148** | ✅ MERGED | TypeScript 5.9.3 (functions) |
+| **#151** | ✅ CLOSED | Duplicate of #155 |
+| **#152** | ✅ CLOSED | Duplicate of #155 |
+| **#153** | ✅ CLOSED | Duplicate of #155 |
+| **#154** | ✅ CLOSED | Duplicate of #155 |
+| **#155** | ✅ MERGED | GCP auth validation (consolidated) |
+| **#156** | ✅ MERGED | Vite 7.2.6 |
+
+### ⏳ PENDING - Still Open
+| PR | Title | Status | Recommendation |
+|----|-------|--------|----------------|
+| **#145** | @types/node 22→24 (root) | OPEN | ⚠️ Test TS compilation, then merge |
+| **#149** | @types/node 22→24 (functions) | OPEN | ⚠️ Test TS compilation, then merge |
+| **#146** | Express 4→5 | OPEN | 🔴 BREAKING - Close and create migration issue |
+| **#147** | React Router 6→7 | OPEN | 🔴 BREAKING - Close and create migration issue |
+| **#150** | firebase-functions 6→7 | OPEN | 🔴 BREAKING - Close and create migration issue |
 
 ---
 
@@ -16,7 +43,7 @@ This document provides a comprehensive review of PRs #143 through #156, includin
 
 ---
 
-## PR Classification
+## Original PR Classification
 
 ### ✅ Safe to Merge (Low Risk - Minor/Patch Updates)
 
@@ -296,20 +323,32 @@ After each merge:
 
 ## Summary Checklist
 
-- [ ] Close PR #151 (duplicate)
-- [ ] Close PR #152 (duplicate)
-- [ ] Close PR #153 (duplicate)
-- [ ] Close PR #154 (duplicate)
-- [ ] Squash and merge PR #143 (Firebase + workflow fix)
-- [ ] Squash and merge PR #156 (Vite patch)
-- [ ] Squash and merge PR #148 (TypeScript functions)
-- [ ] Squash and merge PR #155 (GCP auth validation)
-- [ ] Review and merge PR #145 (@types/node root)
-- [ ] Review and merge PR #149 (@types/node functions)
-- [ ] Create migration issue for Express 5.x (PR #146)
-- [ ] Create migration issue for React Router 7.x (PR #147)
-- [ ] Create migration issue for Firebase Functions 7.x (PR #150)
-- [ ] Close PRs #146, #147, #150 with migration issue references
+- [x] Close PR #151 (duplicate) ✅ DONE
+- [x] Close PR #152 (duplicate) ✅ DONE
+- [x] Close PR #153 (duplicate) ✅ DONE
+- [x] Close PR #154 (duplicate) ✅ DONE
+- [x] Squash and merge PR #143 (Firebase + workflow fix) ✅ DONE
+- [x] Squash and merge PR #156 (Vite patch) ✅ DONE
+- [x] Squash and merge PR #148 (TypeScript functions) ✅ DONE
+- [x] Squash and merge PR #155 (GCP auth validation) ✅ DONE
+- [ ] Review and merge PR #145 (@types/node root) ⏳ PENDING
+- [ ] Review and merge PR #149 (@types/node functions) ⏳ PENDING
+- [ ] Create migration issue for Express 5.x (PR #146) ⏳ PENDING
+- [ ] Create migration issue for React Router 7.x (PR #147) ⏳ PENDING
+- [ ] Create migration issue for Firebase Functions 7.x (PR #150) ⏳ PENDING
+- [ ] Close PRs #146, #147, #150 with migration issue references ⏳ PENDING
+
+## Remaining Actions
+
+### For Medium Risk PRs (#145, #149):
+```bash
+# Test TypeScript first, then merge:
+gh pr merge 145 --squash --subject "chore(deps): update @types/node to 24.10.1 (#145)"
+gh pr merge 149 --squash --subject "chore(deps): update @types/node to 24.10.1 in functions (#149)"
+```
+
+### For Breaking Change PRs (#146, #147, #150):
+These require migration work and should be closed with comments linking to migration issues.
 
 ---
 
