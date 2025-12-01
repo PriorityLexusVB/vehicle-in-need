@@ -1,5 +1,5 @@
 # Dependabot configuration for automated dependency updates
-# Documentation: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+# Vehicle-in-Need — aggressively grouped to avoid PR spam
 
 version: 2
 updates:
@@ -11,27 +11,34 @@ updates:
       day: "monday"
       time: "05:00"
       timezone: "America/New_York"
-    open-pull-requests-limit: 10
+
+    # Keep this low so Dependabot can't flood you
+    open-pull-requests-limit: 3
+
     groups:
-      # Group security updates together
-      security-updates:
-        applies-to: security-updates
+      # 1) One PR for ALL security updates at the root
+      root-security:
+        applies-to: "security-updates"
         patterns:
           - "*"
-      # Group minor and patch updates for production dependencies
-      production-deps:
-        applies-to: version-updates
-        dependency-type: "production"
+
+      # 2) One PR for ALL minor/patch version bumps (prod + dev)
+      root-minor-patch:
+        applies-to: "version-updates"
         update-types:
           - "minor"
           - "patch"
-      # Group minor and patch updates for dev dependencies
-      dev-deps:
-        applies-to: version-updates
-        dependency-type: "development"
-        update-types:
-          - "minor"
-          - "patch"
+        patterns:
+          - "*"
+
+      # (Optional) enable this later if you want majors grouped too
+      # root-majors:
+      #   applies-to: "version-updates"
+      #   update-types:
+      #     - "major"
+      #   patterns:
+      #     - "*"
+
     commit-message:
       prefix: "chore(deps)"
     labels:
@@ -46,21 +53,34 @@ updates:
       day: "monday"
       time: "05:00"
       timezone: "America/New_York"
-    open-pull-requests-limit: 5
+
+    # Separate cap for functions updates
+    open-pull-requests-limit: 2
+
     groups:
-      # Group security updates together
-      security-updates:
-        applies-to: security-updates
+      # 1) One PR for ALL security updates under /functions
+      functions-security:
+        applies-to: "security-updates"
         patterns:
           - "*"
-      # Group all non-breaking updates
-      functions-deps:
-        applies-to: version-updates
-        patterns:
-          - "*"
+
+      # 2) One PR for ALL minor/patch updates under /functions
+      functions-minor-patch:
+        applies-to: "version-updates"
         update-types:
           - "minor"
           - "patch"
+        patterns:
+          - "*"
+
+      # (Optional) majors for functions, if you want them grouped:
+      # functions-majors:
+      #   applies-to: "version-updates"
+      #   update-types:
+      #     - "major"
+      #   patterns:
+      #     - "*"
+
     commit-message:
       prefix: "chore(deps)"
     labels:
@@ -73,12 +93,19 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
-    open-pull-requests-limit: 5
+      day: "monday"
+      time: "05:00"
+      timezone: "America/New_York"
+
+    # At most one Actions PR at a time
+    open-pull-requests-limit: 1
+
     groups:
-      # Group all GitHub Actions updates
-      actions:
+      # One PR for ALL actions updates
+      actions-all:
         patterns:
           - "*"
+
     commit-message:
       prefix: "chore(ci)"
     labels:
