@@ -71,16 +71,22 @@ interface Order {
 
 ## Status Values (OrderStatus Enum)
 
+The `OrderStatus` enum serves both database storage and UI display purposes:
+
 ```typescript
 enum OrderStatus {
   FactoryOrder = 'Factory Order',    // Initial status - order placed with factory
   Locate = 'Locate',                 // Vehicle is being located
   DealerExchange = 'Dealer Exchange', // Vehicle coming from dealer exchange
-  Received = 'Received',             // Vehicle received (legacy - maps to Secured)
-  Delivered = 'Delivered',           // Vehicle delivered to customer (legacy - maps to Secured)
-  Secured = 'Secured',               // UI-only status for display purposes
+  Received = 'Received',             // Vehicle received (legacy - maps to Secured in UI)
+  Delivered = 'Delivered',           // Vehicle delivered to customer (legacy - maps to Secured in UI)
+  Secured = 'Secured',               // UI-only: used for display, database stores 'Delivered'
 }
 ```
+
+> **Note:** The `Secured` status exists in the enum for type safety when working with UI display logic.
+> When marking an order as secured, the database stores `'Delivered'` (not `'Secured'`).
+> The UI maps both `Received` and `Delivered` to display as "Secured".
 
 ### Status Classification
 
@@ -249,11 +255,15 @@ When bulk adding orders programmatically:
    ```
 
 4. **Ownership Fields**:
-   Must match the authenticated user performing the bulk operation:
+   Must match the authenticated user performing the bulk operation. Always null-check first:
 
    ```typescript
-   createdByUid: auth.currentUser.uid,
-   createdByEmail: auth.currentUser.email,
+   const user = auth.currentUser;
+   if (!user?.email) {
+     throw new Error("User must be authenticated");
+   }
+   createdByUid: user.uid,
+   createdByEmail: user.email,
    ```
 
 ### For Updating Existing Orders
@@ -266,13 +276,15 @@ When bulk updating orders:
 
 ### Example Bulk Add Script Pattern
 
+**Simple Sequential Approach:**
+
 ```typescript
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db, auth } from "./services/firebase";
 
 const bulkAddOrders = async (ordersData: Omit<Order, 'id' | 'createdAt' | 'createdByUid' | 'createdByEmail'>[]) => {
   const user = auth.currentUser;
-  if (!user || !user.email) {
+  if (!user?.email) {
     throw new Error("User must be authenticated");
   }
 
@@ -288,6 +300,48 @@ const bulkAddOrders = async (ordersData: Omit<Order, 'id' | 'createdAt' | 'creat
   }
 };
 ```
+
+**Batch Writes Approach (Recommended for Large Operations):**
+
+For better performance and atomicity when adding many orders, use Firestore batch writes:
+
+```typescript
+import { collection, writeBatch, doc, serverTimestamp } from "firebase/firestore";
+import { db, auth } from "./services/firebase";
+
+const bulkAddOrdersBatched = async (ordersData: Omit<Order, 'id' | 'createdAt' | 'createdByUid' | 'createdByEmail'>[]) => {
+  const user = auth.currentUser;
+  if (!user?.email) {
+    throw new Error("User must be authenticated");
+  }
+
+  // Firestore batches are limited to 500 operations
+  const BATCH_SIZE = 500;
+  
+  for (let i = 0; i < ordersData.length; i += BATCH_SIZE) {
+    const batch = writeBatch(db);
+    const chunk = ordersData.slice(i, i + BATCH_SIZE);
+    
+    chunk.forEach(orderData => {
+      const docRef = doc(collection(db, "orders"));
+      batch.set(docRef, {
+        ...orderData,
+        createdAt: serverTimestamp(),
+        createdByUid: user.uid,
+        createdByEmail: user.email,
+      });
+    });
+    
+    await batch.commit();
+  }
+};
+```
+
+> **Batch Writes Benefits:**
+>
+> - All operations in a batch succeed or fail together (atomicity)
+> - Better performance than sequential individual writes
+> - Firestore limit: 500 operations per batch
 
 ---
 
