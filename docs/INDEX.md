@@ -24,6 +24,7 @@ These are current, maintained operational guides:
 
 ## Development Documentation
 
+- [`CI.md`](CI.md) - GCP Workload Identity Federation setup for CI/CD workflows
 - [`CI_AND_MCP_DOCUMENTATION.md`](CI_AND_MCP_DOCUMENTATION.md) - CI/CD and Model Context Protocol setup
 - [`VERSION_TRACKING.md`](VERSION_TRACKING.md) - Deployment traceability and version management system
 - [`GITHUB_ISSUE_TEMPLATE.md`](GITHUB_ISSUE_TEMPLATE.md) - Template for creating GitHub issues

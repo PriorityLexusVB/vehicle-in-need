@@ -341,6 +341,7 @@ The repository includes a GitHub Actions workflow (`.github/workflows/build-and-
 **On push to main:**
 
 - Validates build configuration
+- Validates GCP auth inputs (secrets format)
 - Builds Docker image via Cloud Build
 - Pushes to Artifact Registry with git SHA tag
 - Validates image structure
@@ -357,8 +358,10 @@ The repository includes a GitHub Actions workflow (`.github/workflows/build-and-
 **Prerequisites:**
 
 - Configure GitHub secrets for Workload Identity Federation:
-  - `GCP_WORKLOAD_IDENTITY_PROVIDER`
-  - `GCP_SERVICE_ACCOUNT`
+  - `GCP_WORKLOAD_IDENTITY_PROVIDER` — format: `projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER`
+  - `GCP_SERVICE_ACCOUNT` — format: `service-account@PROJECT_ID.iam.gserviceaccount.com`
+
+See [docs/CI.md](./docs/CI.md) for detailed GCP authentication setup instructions, including how to create a Workload Identity Pool and Provider.
 
 See [DOCKER_BUILD_NOTES.md](./DOCKER_BUILD_NOTES.md) for detailed build and deployment procedures.
 
