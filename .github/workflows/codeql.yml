@@ -1,3 +1,12 @@
+# CodeQL Security Analysis Workflow
+#
+# IMPORTANT: This is an "advanced" CodeQL configuration.
+# You MUST disable the "Default setup" in GitHub Settings for this to work:
+#   Settings → Code security and analysis → Code scanning → Switch to advanced
+#
+# Using both default setup AND this workflow will cause errors:
+#   "CodeQL analyses from advanced configurations cannot be processed when the default setup is enabled."
+
 name: "CodeQL"
 
 on:

@@ -60,10 +60,14 @@ the following features:
 
 ### Recommended Settings
 
-5. **Code scanning** ✅
-   - Enable "Default" configuration OR use the CodeQL workflow added in this PR
-   - If using the workflow from this PR, select "Advanced" and GitHub will
-     detect the existing workflow
+5. **Code scanning** ⚠️ **Important: Disable Default Setup**
+   - This PR includes an advanced CodeQL workflow (`.github/workflows/codeql.yml`)
+   - **You cannot use both the default setup AND the advanced workflow simultaneously**
+   - To use the workflow from this PR:
+     1. Go to **Settings → Code security and analysis → Code scanning**
+     2. If "Default setup" is enabled, click **"Switch to advanced"** or disable it
+     3. The custom workflow in this PR will handle CodeQL analysis automatically
+   - The workflow will run on push/PR to main and weekly on schedule
 
 6. **Secret scanning** ✅
    - Detects accidentally committed secrets (API keys, tokens, etc.)
