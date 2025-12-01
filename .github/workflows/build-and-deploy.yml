@@ -92,17 +92,20 @@ jobs:
       
       - name: Validate GCP auth inputs
         shell: bash
+        env:
+          WIF_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
         run: |
           set -euo pipefail
-          if [ -z "${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}" ]; then
+          if [ -z "$WIF_PROVIDER" ]; then
             echo "ERROR: Missing secret GCP_WORKLOAD_IDENTITY_PROVIDER" >&2
             exit 1
           fi
-          if ! echo "${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}" | grep -qE '^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$'; then
+          if ! echo "$WIF_PROVIDER" | grep -qE '^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$'; then
             echo "ERROR: GCP_WORKLOAD_IDENTITY_PROVIDER has invalid format. Expected: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER" >&2
             exit 1
           fi
-          if [ -z "${{ secrets.GCP_SERVICE_ACCOUNT }}" ]; then
+          if [ -z "$SERVICE_ACCOUNT" ]; then
             echo "ERROR: Missing secret GCP_SERVICE_ACCOUNT" >&2
             exit 1
           fi
@@ -218,17 +221,20 @@ jobs:
       
       - name: Validate GCP auth inputs
         shell: bash
+        env:
+          WIF_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
         run: |
           set -euo pipefail
-          if [ -z "${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}" ]; then
+          if [ -z "$WIF_PROVIDER" ]; then
             echo "ERROR: Missing secret GCP_WORKLOAD_IDENTITY_PROVIDER" >&2
             exit 1
           fi
-          if ! echo "${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}" | grep -qE '^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$'; then
+          if ! echo "$WIF_PROVIDER" | grep -qE '^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$'; then
             echo "ERROR: GCP_WORKLOAD_IDENTITY_PROVIDER has invalid format. Expected: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER" >&2
             exit 1
           fi
-          if [ -z "${{ secrets.GCP_SERVICE_ACCOUNT }}" ]; then
+          if [ -z "$SERVICE_ACCOUNT" ]; then
             echo "ERROR: Missing secret GCP_SERVICE_ACCOUNT" >&2
             exit 1
           fi
