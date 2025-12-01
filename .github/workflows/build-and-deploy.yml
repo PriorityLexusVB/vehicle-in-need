@@ -90,6 +90,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Validate GCP auth inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}" ]; then
+            echo "ERROR: Missing secret GCP_WORKLOAD_IDENTITY_PROVIDER" >&2
+            exit 1
+          fi
+          if ! echo "${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}" | grep -qE '^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$'; then
+            echo "ERROR: GCP_WORKLOAD_IDENTITY_PROVIDER has invalid format. Expected: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER" >&2
+            exit 1
+          fi
+          if [ -z "${{ secrets.GCP_SERVICE_ACCOUNT }}" ]; then
+            echo "ERROR: Missing secret GCP_SERVICE_ACCOUNT" >&2
+            exit 1
+          fi
+          echo "✅ GCP auth inputs validated successfully"
+      
       - name: Authenticate to Google Cloud
         id: auth
         uses: google-github-actions/auth@v2
@@ -197,6 +215,24 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Validate GCP auth inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}" ]; then
+            echo "ERROR: Missing secret GCP_WORKLOAD_IDENTITY_PROVIDER" >&2
+            exit 1
+          fi
+          if ! echo "${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}" | grep -qE '^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$'; then
+            echo "ERROR: GCP_WORKLOAD_IDENTITY_PROVIDER has invalid format. Expected: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER" >&2
+            exit 1
+          fi
+          if [ -z "${{ secrets.GCP_SERVICE_ACCOUNT }}" ]; then
+            echo "ERROR: Missing secret GCP_SERVICE_ACCOUNT" >&2
+            exit 1
+          fi
+          echo "✅ GCP auth inputs validated successfully"
       
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
