@@ -8,6 +8,18 @@ import { getTestEnv, clearTestData } from './test-env';
 
 let testEnv: RulesTestEnvironment;
 
+/**
+ * Manager self-update timestamp tests
+ * 
+ * These tests verify that managers (and regular users) can update their own
+ * user documents with the `updatedAt` field, as done by App.tsx on login.
+ * 
+ * NOTE: Tests use `new Date()` instead of `serverTimestamp()` because:
+ * 1. The Firestore emulator accepts both Date objects and Timestamps
+ * 2. This matches the pattern used by all other tests in this codebase
+ * 3. The security rules don't validate timestamp type, just presence and allowed keys
+ * 4. Using Date provides predictable, deterministic test behavior
+ */
 describe('Manager self-update timestamp - App.tsx flow', () => {
   beforeAll(async () => {
     testEnv = await getTestEnv();
