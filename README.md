@@ -360,6 +360,107 @@ The repository includes a GitHub Actions workflow (`.github/workflows/build-and-
   - `GCP_WORKLOAD_IDENTITY_PROVIDER`
   - `GCP_SERVICE_ACCOUNT`
 
+#### GCP Workload Identity Federation Setup
+
+The workflow uses Google Cloud Workload Identity Federation for secure authentication without storing long-lived credentials. Below are the required steps and secret formats.
+
+**Required Repository Secrets:**
+
+| Secret Name | Description | Format |
+|-------------|-------------|--------|
+| `GCP_WORKLOAD_IDENTITY_PROVIDER` | Full resource name of the Workload Identity Pool Provider | `projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL_ID/providers/PROVIDER_ID` |
+| `GCP_SERVICE_ACCOUNT` | Service account email for Cloud Build and Cloud Run | `SERVICE_ACCOUNT_NAME@PROJECT_ID.iam.gserviceaccount.com` |
+
+**Optional Repository Secrets:**
+
+| Secret Name | Description | Format |
+|-------------|-------------|--------|
+| `GCP_PROJECT_NUMBER` | GCP project number (for reference) | `123456789012` |
+
+**Example Values:**
+
+```text
+GCP_WORKLOAD_IDENTITY_PROVIDER: projects/123456789012/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+GCP_SERVICE_ACCOUNT: cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com
+```
+
+**GCP Setup Steps:**
+
+1. **Create a Workload Identity Pool:**
+
+   ```bash
+   gcloud iam workload-identity-pools create "github-pool" \
+     --project="PROJECT_ID" \
+     --location="global" \
+     --display-name="GitHub Actions Pool"
+   ```
+
+2. **Create a Workload Identity Provider:**
+
+   ```bash
+   gcloud iam workload-identity-pools providers create-oidc "github-provider" \
+     --project="PROJECT_ID" \
+     --location="global" \
+     --workload-identity-pool="github-pool" \
+     --display-name="GitHub Provider" \
+     --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.repository=assertion.repository" \
+     --issuer-uri="https://token.actions.githubusercontent.com"
+   ```
+
+3. **Create or use an existing service account and grant permissions:**
+
+   ```bash
+   # Create service account (if needed)
+   gcloud iam service-accounts create cloud-build-deployer \
+     --project="PROJECT_ID" \
+     --display-name="Cloud Build Deployer"
+
+   # Grant required roles
+   gcloud projects add-iam-policy-binding PROJECT_ID \
+     --member="serviceAccount:cloud-build-deployer@PROJECT_ID.iam.gserviceaccount.com" \
+     --role="roles/cloudbuild.builds.editor"
+
+   gcloud projects add-iam-policy-binding PROJECT_ID \
+     --member="serviceAccount:cloud-build-deployer@PROJECT_ID.iam.gserviceaccount.com" \
+     --role="roles/run.admin"
+   ```
+
+4. **Bind the service account to the Workload Identity Pool:**
+
+   ```bash
+   gcloud iam service-accounts add-iam-policy-binding \
+     "cloud-build-deployer@PROJECT_ID.iam.gserviceaccount.com" \
+     --project="PROJECT_ID" \
+     --role="roles/iam.workloadIdentityUser" \
+     --member="principalSet://iam.googleapis.com/projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/attribute.repository/OWNER/REPO"
+   ```
+
+   Replace `OWNER/REPO` with your GitHub repository path (e.g., `PriorityLexusVB/vehicle-in-need`).
+
+5. **Get the Workload Identity Provider resource name:**
+
+   ```bash
+   gcloud iam workload-identity-pools providers describe github-provider \
+     --project="PROJECT_ID" \
+     --location="global" \
+     --workload-identity-pool="github-pool" \
+     --format="value(name)"
+   ```
+
+6. **Add secrets to GitHub repository:**
+   - Go to Repository Settings → Secrets and variables → Actions
+   - Add `GCP_WORKLOAD_IDENTITY_PROVIDER` with the full provider resource name
+   - Add `GCP_SERVICE_ACCOUNT` with the service account email
+
+**Validation:**
+
+The workflow includes a validation step that checks:
+
+- `GCP_WORKLOAD_IDENTITY_PROVIDER` is present and matches the expected format
+- `GCP_SERVICE_ACCOUNT` is present and looks like a valid service account email
+
+If secrets are missing or malformed, the workflow fails early with descriptive error messages.
+
 See [DOCKER_BUILD_NOTES.md](./DOCKER_BUILD_NOTES.md) for detailed build and deployment procedures.
 
 ### Environment Variables (Optional)
