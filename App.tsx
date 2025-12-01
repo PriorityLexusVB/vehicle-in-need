@@ -245,9 +245,22 @@ const App: React.FC = () => {
               console.log("Updated user document with updatedAt timestamp");
             } catch (firestoreError) {
               // This is non-critical - user can still use the app
+              // Log detailed info to help diagnose permission issues
               console.warn(
-                "Could not update user document timestamp:",
-                firestoreError
+                "%c⚠️ Could not update user document timestamp",
+                "color: #f59e0b; font-weight: bold;"
+              );
+              console.warn("Error details:", firestoreError);
+              console.warn("Update attempted:", JSON.stringify(updates));
+              console.warn("User document fields:", Object.keys(existingData));
+              console.warn("User isManager:", isManager);
+              console.warn(
+                "If this is a permission error, ensure Firestore rules are deployed:",
+                "firebase deploy --only firestore:rules"
+              );
+              console.warn(
+                "For managers, sync custom claims:",
+                "npm run seed:managers:apply -- --emails " + userEmail
               );
             }
 
