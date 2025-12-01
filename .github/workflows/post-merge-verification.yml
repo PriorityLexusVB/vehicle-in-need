@@ -52,7 +52,7 @@ jobs:
             echo "No Playwright config present; skipping E2E"
           fi
 
-      - name: Optional: Smoke-check staging URL
+      - name: "Optional: Smoke-check staging URL"
         if: ${{ env.STAGING_URL != '' }}
         run: |
           chmod +x scripts/check-staging.sh
