@@ -110,6 +110,10 @@ jobs:
             echo "::error::Missing repository secret: GCP_SERVICE_ACCOUNT"
             exit 1
           fi
+          if ! echo "$SA" | grep -qE '^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.iam\.gserviceaccount\.com$'; then
+            echo "::error::GCP_SERVICE_ACCOUNT has invalid format. Expected: SERVICE_ACCOUNT@PROJECT_ID.iam.gserviceaccount.com"
+            exit 1
+          fi
           echo "✅ GCP auth inputs validated successfully"
       
       - name: Authenticate to Google Cloud
@@ -238,6 +242,10 @@ jobs:
           fi
           if [ -z "$SA" ]; then
             echo "::error::Missing repository secret: GCP_SERVICE_ACCOUNT"
+            exit 1
+          fi
+          if ! echo "$SA" | grep -qE '^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.iam\.gserviceaccount\.com$'; then
+            echo "::error::GCP_SERVICE_ACCOUNT has invalid format. Expected: SERVICE_ACCOUNT@PROJECT_ID.iam.gserviceaccount.com"
             exit 1
           fi
           echo "✅ GCP auth inputs validated successfully"

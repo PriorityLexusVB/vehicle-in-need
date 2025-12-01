@@ -130,8 +130,9 @@ This outputs the full resource name to use for `GCP_WORKLOAD_IDENTITY_PROVIDER`.
 The workflow includes a pre-auth validation step that checks:
 
 1. **GCP_WORKLOAD_IDENTITY_PROVIDER** is not empty
-2. **GCP_WORKLOAD_IDENTITY_PROVIDER** matches the expected format
+2. **GCP_WORKLOAD_IDENTITY_PROVIDER** matches the expected resource-name format
 3. **GCP_SERVICE_ACCOUNT** is not empty
+4. **GCP_SERVICE_ACCOUNT** matches the expected service account email format
 
 If any validation fails, the workflow will exit early with a clear error message, preventing confusing `invalid_target` errors from the Google auth action.
 
@@ -149,6 +150,14 @@ The secret value doesn't match the expected pattern. Verify:
 - The project number is numeric (not the project ID string)
 - It contains `/locations/global/workloadIdentityPools/`
 - Pool and provider IDs are present
+
+### Error: "GCP_SERVICE_ACCOUNT has invalid format"
+
+The secret value doesn't match the expected service account email pattern. Verify:
+
+- It ends with `.iam.gserviceaccount.com`
+- The service account name (before `@`) contains only alphanumeric characters, dots, underscores, or hyphens
+- The project ID (after `@`) is valid
 
 ### Error: "invalid_target" from google-github-actions/auth
 
