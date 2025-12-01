@@ -19,7 +19,7 @@
   "devDependencies": {
     "@types/node": "^22.14.0",
     "firebase-functions-test": "^3.4.0",
-    "typescript": "~5.8.2"
+    "typescript": "~5.9.3"
   },
   "private": true
 }
