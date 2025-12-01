@@ -30,6 +30,10 @@ These are current, maintained operational guides:
 - [`GITHUB_ISSUE_TEMPLATE.md`](GITHUB_ISSUE_TEMPLATE.md) - Template for creating GitHub issues
 - [`DATA_MODEL_SUMMARY.md`](DATA_MODEL_SUMMARY.md) - Firestore data model for orders/deals (bulk operations guide)
 
+## PR Reviews
+
+- [`PR_REVIEW_143_156.md`](PR_REVIEW_143_156.md) - Analysis and merge instructions for PRs #143-156
+
 ## Archived Documentation
 
 The [`archive/`](archive/) directory contains historical documentation from previous fixes and investigations. These are kept for reference but are not actively maintained:
