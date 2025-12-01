@@ -106,7 +106,15 @@ enum OrderStatus {
 
 ## Sample Order Documents
 
+> **⚠️ Important:** These JSON samples are for **reference only** and show the data structure.
+> **Do NOT copy these directly** into Firestore Console or import tools.
+> The `createdAt`, `createdByUid`, and `createdByEmail` fields **must be set programmatically**
+> using the Firebase SDK (see [Bulk Operations Guidelines](#bulk-operations-guidelines) below).
+> Orders created without proper timestamp values will not appear in query results.
+
 ### Example 1: DAMUTH (Factory Order)
+
+The following shows the document structure. When creating orders programmatically, use `serverTimestamp()` for `createdAt`:
 
 ```json
 {
@@ -133,10 +141,16 @@ enum OrderStatus {
   "status": "Factory Order",
   "options": "Premium Package, Navigation, Heated Seats",
   "notes": "Customer prefers delivery on weekends",
-  "createdAt": "<Firestore Server Timestamp>",
   "createdByUid": "abc123xyz",
   "createdByEmail": "john.smith@priorityautomotive.com"
 }
+```
+
+**Note:** `createdAt` is omitted above because it must be set using `serverTimestamp()` in code:
+
+```typescript
+import { serverTimestamp } from "firebase/firestore";
+// createdAt: serverTimestamp()  // Set this when adding the document
 ```
 
 ### Example 2: ALICE JOHNSON (Dealer Exchange)
@@ -160,11 +174,12 @@ enum OrderStatus {
   "depositAmount": 2000.00,
   "status": "Dealer Exchange",
   "options": "F Sport Package, Mark Levinson Audio",
-  "createdAt": "<Firestore Server Timestamp>",
   "createdByUid": "def456uvw",
   "createdByEmail": "jane.doe@priorityautomotive.com"
 }
 ```
+
+**Note:** `createdAt` must be set using `serverTimestamp()` when adding documents programmatically.
 
 ---
 
