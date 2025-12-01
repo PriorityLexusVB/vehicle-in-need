@@ -140,17 +140,21 @@ The following shows the document structure. When creating orders programmaticall
   "depositAmount": 1000.00,
   "status": "Factory Order",
   "options": "Premium Package, Navigation, Heated Seats",
-  "notes": "Customer prefers delivery on weekends",
-  "createdByUid": "abc123xyz",
-  "createdByEmail": "john.smith@priorityautomotive.com"
+  "notes": "Customer prefers delivery on weekends"
 }
 ```
 
-**Note:** `createdAt` is omitted above because it must be set using `serverTimestamp()` in code:
+**Note:** `createdAt`, `createdByUid`, and `createdByEmail` are omitted above because they must be set programmatically:
 
 ```typescript
 import { serverTimestamp } from "firebase/firestore";
-// createdAt: serverTimestamp()  // Set this when adding the document
+
+const order = {
+  // ... other order fields from JSON above
+  createdAt: serverTimestamp(),
+  createdByUid: user.uid,
+  createdByEmail: user.email
+};
 ```
 
 ### Example 2: ALICE JOHNSON (Dealer Exchange)
@@ -173,13 +177,11 @@ import { serverTimestamp } from "firebase/firestore";
   "sellingPrice": 51000.00,
   "depositAmount": 2000.00,
   "status": "Dealer Exchange",
-  "options": "F Sport Package, Mark Levinson Audio",
-  "createdByUid": "def456uvw",
-  "createdByEmail": "jane.doe@priorityautomotive.com"
+  "options": "F Sport Package, Mark Levinson Audio"
 }
 ```
 
-**Note:** `createdAt` must be set using `serverTimestamp()` when adding documents programmatically.
+**Note:** `createdAt`, `createdByUid`, and `createdByEmail` must be set programmatically when adding documents (see Example 1 above for the code pattern).
 
 ---
 
