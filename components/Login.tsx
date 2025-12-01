@@ -231,10 +231,18 @@ const Login: React.FC = () => {
     
     // Detect iOS Safari and other browsers with storage partitioning issues
     // These browsers have problems with signInWithRedirect due to ITP/sessionStorage
-    const userAgent = navigator.userAgent.toLowerCase();
-    const isIOS = /iphone|ipad|ipod/.test(userAgent);
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    const hasStoragePartitioning = isIOS || (isSafari && !userAgent.includes('chrome'));
+    // Detection logic:
+    // - iOS: Always has storage partitioning issues with redirect
+    // - Safari on macOS: Has ITP that can cause issues with redirect
+    // - Chrome/Edge/Firefox on any platform: Generally safe to use redirect
+    const userAgent = navigator.userAgent;
+    const isIOS = /iPhone|iPad|iPod/i.test(userAgent);
+    // Safari detection: Contains Safari but NOT Chrome/Chromium/Edge/Firefox
+    const isChromiumBased = /Chrome|Chromium|CriOS|EdgiOS|Edg\//i.test(userAgent);
+    const isFirefox = /Firefox|FxiOS/i.test(userAgent);
+    const isSafari = /Safari/i.test(userAgent) && !isChromiumBased && !isFirefox;
+    // Storage partitioning affects iOS (regardless of browser) and Safari on macOS
+    const hasStoragePartitioning = isIOS || isSafari;
     
     // In Codespaces/preview environments, popups can be flaky due to cookie and focus policies;
     // prefer redirect first to avoid a popup-close loop.
@@ -246,8 +254,13 @@ const Login: React.FC = () => {
       isCodespaces,
       isIOS,
       isSafari,
+      isChromiumBased,
+      isFirefox,
       hasStoragePartitioning
     });
+    
+    // Helper message for iOS/Safari popup issues
+    const iosSafariPopupHint = "On iOS/Safari, please ensure popups are enabled in Settings > Safari > Block Pop-ups.";
     
     try {
       // For iOS/Safari: Always prefer popup to avoid storage partitioning issues
@@ -284,14 +297,12 @@ const Login: React.FC = () => {
         if (error.code === "auth/popup-blocked" || error.code === "auth/popup-closed-by-user") {
           setError({
             type: "generic",
-            message:
-              "The sign-in popup was blocked or closed. Please allow popups for this site and try again. On iOS, you may need to tap the button again.",
+            message: `The sign-in popup was blocked or closed. ${iosSafariPopupHint}`,
           });
         } else {
           setError({
             type: "generic",
-            message:
-              `Sign-in failed: ${error.message || "Please try again."}. If you're using Safari or iOS, please ensure popups are enabled.`,
+            message: `Sign-in failed: ${error.message || "Please try again."}. ${iosSafariPopupHint}`,
           });
         }
         setIsSigningIn(false);
