@@ -28,12 +28,15 @@ Dependabot has been configured to automatically create pull requests for depende
 
 CodeQL static analysis has been configured for automated security scanning:
 
-- **Languages analyzed:** JavaScript/TypeScript
+- **Languages analyzed:**
+  - `actions` - GitHub Actions workflows
+  - `javascript-typescript` - JavaScript and TypeScript code
+  - `python` - Python code (if any)
 - **Triggers:**
   - On push to `main` branch
   - On pull requests to `main` branch
-  - Weekly scheduled scan (Monday 5:00 AM UTC)
-- **Query suite:** `security-extended` for comprehensive coverage
+  - Weekly scheduled scan (Wednesdays at 21:44 UTC)
+- **Build mode:** `none` (no build required for interpreted languages)
 
 ## B. Must Be Enabled Manually in GitHub Settings
 
