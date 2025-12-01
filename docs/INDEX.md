@@ -27,6 +27,7 @@ These are current, maintained operational guides:
 - [`CI_AND_MCP_DOCUMENTATION.md`](CI_AND_MCP_DOCUMENTATION.md) - CI/CD and Model Context Protocol setup
 - [`VERSION_TRACKING.md`](VERSION_TRACKING.md) - Deployment traceability and version management system
 - [`GITHUB_ISSUE_TEMPLATE.md`](GITHUB_ISSUE_TEMPLATE.md) - Template for creating GitHub issues
+- [`DATA_MODEL_SUMMARY.md`](DATA_MODEL_SUMMARY.md) - Firestore data model for orders/deals (bulk operations guide)
 
 ## Archived Documentation
 
