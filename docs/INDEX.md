@@ -25,6 +25,7 @@ These are current, maintained operational guides:
 ## Development Documentation
 
 - [`CI_AND_MCP_DOCUMENTATION.md`](CI_AND_MCP_DOCUMENTATION.md) - CI/CD and Model Context Protocol setup
+- [`CI_GCP_AUTH.md`](CI_GCP_AUTH.md) - GCP authentication for CI/CD workflows (Workload Identity Federation)
 - [`VERSION_TRACKING.md`](VERSION_TRACKING.md) - Deployment traceability and version management system
 - [`GITHUB_ISSUE_TEMPLATE.md`](GITHUB_ISSUE_TEMPLATE.md) - Template for creating GitHub issues
 
@@ -56,6 +57,7 @@ vehicle-in-need/
 │   │   └── TAILWIND_CSS_SAFEGUARDS.md
 │   ├── archive/                 # Historical documentation (not actively maintained)
 │   ├── CI_AND_MCP_DOCUMENTATION.md
+│   ├── CI_GCP_AUTH.md           # GCP authentication setup (Workload Identity Federation)
 │   └── GITHUB_ISSUE_TEMPLATE.md
 ├── scripts/                     # Build and deployment scripts
 │   ├── verify-css-in-build.sh

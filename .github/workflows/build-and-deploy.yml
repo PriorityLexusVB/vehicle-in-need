@@ -90,6 +90,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Validate GCP auth inputs
+        id: validate-gcp-auth
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROVIDER="${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}"
+          SA="${{ secrets.GCP_SERVICE_ACCOUNT }}"
+          echo "Validating GCP auth inputs..."
+          if [ -z "$PROVIDER" ]; then
+            echo "::error::Missing repository secret: GCP_WORKLOAD_IDENTITY_PROVIDER"
+            exit 1
+          fi
+          if ! echo "$PROVIDER" | grep -qE '^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$'; then
+            echo "::error::GCP_WORKLOAD_IDENTITY_PROVIDER has invalid format. Expected: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER"
+            exit 1
+          fi
+          if [ -z "$SA" ]; then
+            echo "::error::Missing repository secret: GCP_SERVICE_ACCOUNT"
+            exit 1
+          fi
+          echo "✅ GCP auth inputs validated successfully"
+      
       - name: Authenticate to Google Cloud
         id: auth
         uses: google-github-actions/auth@v2
@@ -197,6 +219,28 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Validate GCP auth inputs
+        id: validate-gcp-auth
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROVIDER="${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}"
+          SA="${{ secrets.GCP_SERVICE_ACCOUNT }}"
+          echo "Validating GCP auth inputs..."
+          if [ -z "$PROVIDER" ]; then
+            echo "::error::Missing repository secret: GCP_WORKLOAD_IDENTITY_PROVIDER"
+            exit 1
+          fi
+          if ! echo "$PROVIDER" | grep -qE '^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$'; then
+            echo "::error::GCP_WORKLOAD_IDENTITY_PROVIDER has invalid format. Expected: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER"
+            exit 1
+          fi
+          if [ -z "$SA" ]; then
+            echo "::error::Missing repository secret: GCP_SERVICE_ACCOUNT"
+            exit 1
+          fi
+          echo "✅ GCP auth inputs validated successfully"
       
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
