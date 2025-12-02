@@ -190,6 +190,22 @@ const Login: React.FC = () => {
             message:
               "An internal error occurred. Please try refreshing the page or clearing your browser cache.",
           });
+        } else if (
+          error.code === "auth/missing-initial-state" ||
+          (error.message && error.message.includes("missing initial state"))
+        ) {
+          // This error occurs when using signInWithRedirect in Safari/iOS or other browsers
+          // with strict storage partitioning. The sessionStorage state is cleared before
+          // the redirect completes.
+          console.warn(
+            "%c⚠️ Login - Missing initial state error (storage partitioning)",
+            "color: #f59e0b; font-weight: bold;"
+          );
+          setError({
+            type: "generic",
+            message:
+              "Sign-in was interrupted due to browser privacy settings. Please tap 'Sign in with Google' again. If this persists, try using a different browser or disabling strict privacy mode.",
+          });
         } else {
           setError({
             type: "generic",
@@ -213,36 +229,87 @@ const Login: React.FC = () => {
     console.log("Current hostname:", window.location.hostname);
     console.log("Current href:", window.location.href);
     
+    // Detect iOS Safari and other browsers with storage partitioning issues
+    // These browsers have problems with signInWithRedirect due to ITP/sessionStorage
+    // Detection logic:
+    // - iOS: Always has storage partitioning issues with redirect
+    // - Safari on macOS: Has ITP that can cause issues with redirect
+    // - Chrome/Edge/Firefox on any platform: Generally safe to use redirect
+    const userAgent = navigator.userAgent;
+    const isIOS = /iPhone|iPad|iPod/i.test(userAgent);
+    // Safari detection: Contains Safari but NOT Chrome/Chromium/Edge/Firefox
+    const isChromiumBased = /Chrome|Chromium|CriOS|EdgiOS|Edg\//i.test(userAgent);
+    const isFirefox = /Firefox|FxiOS/i.test(userAgent);
+    const isSafari = /Safari/i.test(userAgent) && !isChromiumBased && !isFirefox;
+    // Storage partitioning affects iOS (regardless of browser) and Safari on macOS
+    const hasStoragePartitioning = isIOS || isSafari;
+    
+    // In Codespaces/preview environments, popups can be flaky due to cookie and focus policies;
+    // prefer redirect first to avoid a popup-close loop.
+    const isCodespaces =
+      typeof window !== "undefined" &&
+      window.location.hostname.endsWith(".app.github.dev");
+    
+    console.log("Environment detection:", {
+      isCodespaces,
+      isIOS,
+      isSafari,
+      isChromiumBased,
+      isFirefox,
+      hasStoragePartitioning
+    });
+    
+    // Helper message for iOS/Safari popup issues
+    const iosSafariPopupHint = "On iOS/Safari, please ensure popups are enabled in Settings > Safari > Block Pop-ups.";
+    
     try {
-      // In Codespaces/preview environments, popups can be flaky due to cookie and focus policies;
-      // prefer redirect first to avoid a popup-close loop.
-      const isCodespaces =
-        typeof window !== "undefined" &&
-        window.location.hostname.endsWith(".app.github.dev");
-      
-      console.log("Is Codespaces environment:", isCodespaces);
+      // For iOS/Safari: Always prefer popup to avoid storage partitioning issues
+      // For Codespaces: Always use redirect (popup fails there)
+      // For other environments: Try popup first, fall back to redirect
       
       if (isCodespaces) {
         console.log("Using redirect sign-in for Codespaces");
         await signInWithRedirect(auth, googleProvider);
         return; // navigation expected
       }
-
-      console.log("Attempting popup sign-in");
+      
+      if (hasStoragePartitioning) {
+        console.log("Using popup sign-in for iOS/Safari to avoid storage partitioning issues");
+      } else {
+        console.log("Attempting popup sign-in");
+      }
+      
       await signInWithPopup(auth, googleProvider);
       console.log("Popup sign-in successful");
     } catch (popupError) {
       const error = popupError as { code?: string; message?: string };
       console.warn(
-        "%c⚠️ Login - Popup sign-in failed, falling back to redirect",
+        "%c⚠️ Login - Popup sign-in failed",
         "color: #f59e0b; font-weight: bold;"
       );
       console.warn("Popup error code:", error.code);
       console.warn("Popup error message:", error.message);
       console.debug("Popup error detail:", popupError);
       
-      // If popup fails for any reason, try redirect.
-      // This will navigate away. Errors will be handled by getRedirectResult upon return.
+      // For iOS/Safari: Don't fall back to redirect as it will likely fail with storage issues
+      // Instead, show a more helpful error message
+      if (hasStoragePartitioning) {
+        if (error.code === "auth/popup-blocked" || error.code === "auth/popup-closed-by-user") {
+          setError({
+            type: "generic",
+            message: `The sign-in popup was blocked or closed. ${iosSafariPopupHint}`,
+          });
+        } else {
+          setError({
+            type: "generic",
+            message: `Sign-in failed: ${error.message || "Please try again."}. ${iosSafariPopupHint}`,
+          });
+        }
+        setIsSigningIn(false);
+        return;
+      }
+      
+      // For non-iOS/Safari: Fall back to redirect as before
       try {
         console.log("Attempting redirect sign-in as fallback");
         await signInWithRedirect(auth, googleProvider);

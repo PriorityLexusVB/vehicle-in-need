@@ -2,11 +2,44 @@
 
 ## Problem
 
-Users encounter "Missing or insufficient permissions" error when creating orders
-despite being authenticated.
+Users encounter "Missing or insufficient permissions" error when:
+
+1. **Creating orders** despite being authenticated
+2. **Updating their own user document** (e.g., updatedAt timestamp on login)
+3. **Listening to Firestore collections** (Write/Listen channel errors)
 
 ```text
 Error adding order: FirebaseError: Missing or insufficient permissions.
+Could not update user document timestamp: FirebaseError: Missing or insufficient permissions.
+```
+
+## Critical: Check Rules Deployment First
+
+**The most common cause of production permission errors is that Firestore rules
+haven't been deployed.** The Cloud Build deployment only deploys the app to
+Cloud Run - it does NOT deploy Firestore rules.
+
+### Deploy Firestore Rules
+
+```bash
+# Login to Firebase (if not already)
+firebase login
+
+# Use the correct project
+firebase use vehicles-in-need
+
+# Deploy Firestore rules
+firebase deploy --only firestore:rules
+```
+
+### Sync Manager Custom Claims (if manager permissions fail)
+
+```bash
+# Sync custom claims for a specific manager
+npm run seed:managers:apply -- --emails rob.brasco@priorityautomotive.com
+
+# Or sync all managers in MANAGER_EMAILS list
+npm run seed:managers:apply
 ```
 
 ## Quick Diagnosis Steps
@@ -233,7 +266,30 @@ firebase deploy --only firestore:rules
 npm run verify:rules
 ```
 
-### Cause 2: Auth State Race Condition
+### Cause 2: Manager Custom Claims Not Synced
+
+**Symptom:** Manager users get permission errors when:
+
+- Updating their own user document (e.g., `updatedAt` timestamp on login)
+- Reading all orders (falls back to only their own orders)
+- Reading all users
+
+**Root Cause:** The manager has `isManager: true` in their Firestore document
+but the Firebase Auth custom claim is not set. The Firestore rules have a
+fallback that reads the user document to check manager status, but this can
+be slower and may sometimes fail under high load.
+
+**Solution:** Sync custom claims using the admin script:
+
+```bash
+# For a specific user
+npm run seed:managers:apply -- --emails rob.brasco@priorityautomotive.com
+
+# For all users in MANAGER_EMAILS constant
+npm run seed:managers:apply
+```
+
+### Cause 3: Auth State Race Condition
 
 **Symptom:** Error occurs immediately after login, especially with popup sign-in.
 
