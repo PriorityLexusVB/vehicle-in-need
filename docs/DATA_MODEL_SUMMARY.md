@@ -399,7 +399,102 @@ interface AppUser {
 | `components/OrderForm.tsx` | Order creation form |
 | `components/OrderList.tsx` | Order display and filtering |
 | `components/OrderCard.tsx` | Individual order display |
+| `components/CSVUpload.tsx` | CSV import component (manager-only) |
+| `src/utils/csvParser.ts` | CSV parsing and order mapping utilities |
 | `services/firebase.ts` | Firebase configuration |
+
+---
+
+## CSV Import Feature
+
+Managers can bulk import orders from a CSV file through the "Import CSV" button on the dashboard.
+
+### CSV Format Requirements
+
+The CSV file must have a header row with the following column names (case-insensitive):
+
+| Column Name | Required | Maps To | Description |
+| ----------- | -------- | ------- | ----------- |
+| `CUSTOMER` | **Yes** | `customerName` | Customer's name (will be uppercased) |
+| `DATE` | No | `date` | Date in M/D or M/D/YY format (defaults to today) |
+| `SALES PERSON` | No | `salesperson` | Salesperson name (defaults to "Unknown") |
+| `DEPOSIT` | No | `depositAmount` | Deposit amount, e.g., "$1,000" (defaults to 0) |
+| `DEAL #` | No | `dealNumber` | Deal number (auto-generated as `CSV-[timestamp]-[index]` if missing; provide in CSV when possible) |
+| `MODEL #` | No | `modelNumber` | 4-character model code |
+| `YEAR` | No | `year` | Model year, 2-digit (00-99 → 2000-2099) or 4-digit (defaults to current year) |
+| `MODEL` | No | `model` | Model abbreviation (auto-expanded, see below) |
+| `EXT COLOR` | No | `exteriorColor1` | Exterior color code (defaults to "TBD") |
+| `INT COLOR` | No | `interiorColor1` | Interior color code (defaults to "TBD") |
+| `MANAGER` | No | `manager` | Manager initials (defaults to "Unknown") |
+| `OPTIONS` | No | `options` | Options/notes text (used to derive status, see below) |
+
+### Model Abbreviation Expansion
+
+The import automatically expands common model abbreviations:
+
+| Abbreviation | Expanded To |
+| ------------ | ----------- |
+| ES | Lexus ES |
+| IS | Lexus IS |
+| LS | Lexus LS |
+| LSH | Lexus LS Hybrid |
+| GX | Lexus GX |
+| LX | Lexus LX |
+| NX | Lexus NX |
+| NXH | Lexus NX Hybrid |
+| RX | Lexus RX |
+| RXH | Lexus RX Hybrid |
+| TX | Lexus TX |
+| UX | Lexus UX |
+| RC | Lexus RC |
+| LC | Lexus LC |
+
+### Status Derivation
+
+The order status is automatically derived from the OPTIONS column text. Keywords are checked in priority order (first match wins):
+
+1. Contains "LOCATE" → `Locate` status
+2. Contains "DEALER EXCHANGE" or "DEALER-EXCHANGE" → `Dealer Exchange` status
+3. Contains "INCOMING" or "HERE" → `Factory Order` status
+4. Default (no keywords matched) → `Factory Order` status
+
+> **Note:** If the OPTIONS text contains multiple keywords (e.g., "LOCATE AND DEALER EXCHANGE"), the first matching keyword based on the priority order above takes precedence.
+
+### Sample CSV
+
+```csv
+DATE,CUSTOMER,SALES PERSON,DEPOSIT,DEAL #,,MODEL #,YEAR,MODEL,EXT COLOR,INT COLOR,MANAGER,OPTIONS
+1/22,PAUL,JORDAN,"$1,000",,,9146,25,LSH,3R1,WHIT,GH,
+6/23,JOHNSON,JORDAN,"$1,000",52440,,9702,25,GX,223,20,,NEED BLK/BLK BS
+10/4,GREEN,JAY,"$1,000",80552,,9126,25,LS,85,,GH,LOCATE
+```
+
+### Default Values for Missing Fields
+
+When importing, the following defaults are applied:
+
+| Field | Default Value |
+| ----- | ------------- |
+| `status` | `Factory Order` (or derived from OPTIONS) |
+| `salesperson` | "Unknown" |
+| `manager` | "Unknown" |
+| `exteriorColor1` | "TBD" |
+| `interiorColor1` | "TBD" |
+| `msrp` | 0 |
+| `depositAmount` | 0 |
+| `notes` | "Imported from CSV on [date]" |
+| `date` | Today's date |
+| `year` | Current year |
+
+### Ownership Fields
+
+All imported orders automatically receive:
+
+- `createdByUid`: The importing manager's user ID
+- `createdByEmail`: The importing manager's email
+- `createdAt`: Server timestamp at import time
+
+This ensures imported orders appear in the "All Orders" list and are properly attributed.
 
 ---
 

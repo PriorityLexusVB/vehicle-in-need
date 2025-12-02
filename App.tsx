@@ -31,8 +31,11 @@ import SettingsPage from "./components/SettingsPage";
 import DashboardStats from "./components/DashboardStats";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ZeroManagerWarning from "./components/ZeroManagerWarning";
+import CSVUpload from "./components/CSVUpload";
+import { CSVOrderData } from "./src/utils/csvParser";
 import { PlusIcon } from "./components/icons/PlusIcon";
 import { CloseIcon } from "./components/icons/CloseIcon";
+import { UploadIcon } from "./components/icons/UploadIcon";
 import { useRegisterSW } from "virtual:pwa-register/react";
 
 // Type guard to verify if an error is a FirestoreError.
@@ -70,6 +73,7 @@ const App: React.FC = () => {
   const [allUsers, setAllUsers] = useState<AppUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isOrderFormVisible, setIsOrderFormVisible] = useState(false);
+  const [isCSVUploadVisible, setIsCSVUploadVisible] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const [stats, setStats] = useState({
     totalActive: 0,
@@ -686,6 +690,82 @@ const App: React.FC = () => {
     [handleAddOrder]
   );
 
+  const handleCSVUpload = useCallback(
+    async (csvOrders: CSVOrderData[]): Promise<{ success: number; failed: number }> => {
+      // Validate user is authenticated and has required fields
+      if (!user?.uid || !user?.email) {
+        console.error("Cannot upload CSV: User not authenticated");
+        throw new Error("User not authenticated");
+      }
+
+      // Additional check: Ensure Firebase auth current user matches our user state
+      const currentAuthUser = auth.currentUser;
+      if (!currentAuthUser || currentAuthUser.email !== user.email) {
+        console.error("Cannot upload CSV: Auth state mismatch");
+        throw new Error("Authentication error");
+      }
+
+      let success = 0;
+      let failed = 0;
+
+      if (import.meta.env.DEV) {
+        console.log("%c📤 CSV Upload - Starting bulk import", "color: #3b82f6; font-weight: bold;");
+        console.log("Orders to import:", csvOrders.length);
+      }
+
+      for (const csvOrder of csvOrders) {
+        try {
+          // Convert CSVOrderData to the format expected by Firestore
+          // Remove undefined values and source field (source is metadata, not part of Order type)
+          const orderPayload: Record<string, unknown> = {
+            salesperson: csvOrder.salesperson,
+            manager: csvOrder.manager,
+            date: csvOrder.date,
+            customerName: csvOrder.customerName,
+            dealNumber: csvOrder.dealNumber,
+            year: csvOrder.year,
+            model: csvOrder.model,
+            modelNumber: csvOrder.modelNumber,
+            exteriorColor1: csvOrder.exteriorColor1,
+            interiorColor1: csvOrder.interiorColor1,
+            msrp: csvOrder.msrp,
+            depositAmount: csvOrder.depositAmount,
+            status: csvOrder.status,
+            options: csvOrder.options,
+            notes: csvOrder.notes,
+            createdAt: serverTimestamp(),
+            createdByUid: user.uid,
+            createdByEmail: user.email,
+          };
+
+          // Add optional fields only if they have values
+          if (csvOrder.stockNumber) orderPayload.stockNumber = csvOrder.stockNumber;
+          if (csvOrder.vin) orderPayload.vin = csvOrder.vin;
+          if (csvOrder.exteriorColor2) orderPayload.exteriorColor2 = csvOrder.exteriorColor2;
+          if (csvOrder.exteriorColor3) orderPayload.exteriorColor3 = csvOrder.exteriorColor3;
+          if (csvOrder.interiorColor2) orderPayload.interiorColor2 = csvOrder.interiorColor2;
+          if (csvOrder.interiorColor3) orderPayload.interiorColor3 = csvOrder.interiorColor3;
+          if (csvOrder.sellingPrice !== undefined) orderPayload.sellingPrice = csvOrder.sellingPrice;
+          if (csvOrder.gross !== undefined) orderPayload.gross = csvOrder.gross;
+
+          await addDoc(collection(db, "orders"), orderPayload);
+          success++;
+        } catch (error) {
+          console.error(`Failed to import order for ${csvOrder.customerName}:`, error);
+          failed++;
+        }
+      }
+
+      if (import.meta.env.DEV) {
+        console.log("%c✅ CSV Upload Complete", "color: #10b981; font-weight: bold;");
+        console.log(`Success: ${success}, Failed: ${failed}`);
+      }
+
+      return { success, failed };
+    },
+    [user]
+  );
+
   const handleUpdateOrderStatus = useCallback(
     async (orderId: string, status: OrderStatus) => {
       if (!user?.isManager) return; // Security check
@@ -832,27 +912,68 @@ const App: React.FC = () => {
                     <h2 className="text-2xl font-bold text-slate-800">
                       All Orders
                     </h2>
-                    <button
-                      onClick={() => setIsOrderFormVisible((prev) => !prev)}
-                      className={`flex items-center gap-2 text-white font-bold py-2 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 ${
-                        isOrderFormVisible
-                          ? "bg-slate-600 hover:bg-slate-700"
-                          : "bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700"
-                      }`}
-                    >
-                      {isOrderFormVisible ? (
-                        <>
-                          <CloseIcon className="w-5 h-5" />
-                          <span>Cancel</span>
-                        </>
-                      ) : (
-                        <>
-                          <PlusIcon className="w-5 h-5" />
-                          <span>Add New Order</span>
-                        </>
-                      )}
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => {
+                          setIsCSVUploadVisible((prev) => !prev);
+                          if (!isCSVUploadVisible) {
+                            setIsOrderFormVisible(false);
+                          }
+                        }}
+                        className={`flex items-center gap-2 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 ${
+                          isCSVUploadVisible
+                            ? "bg-slate-600 hover:bg-slate-700"
+                            : "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700"
+                        }`}
+                      >
+                        {isCSVUploadVisible ? (
+                          <>
+                            <CloseIcon className="w-5 h-5" />
+                            <span>Cancel</span>
+                          </>
+                        ) : (
+                          <>
+                            <UploadIcon className="w-5 h-5" />
+                            <span>Import CSV</span>
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsOrderFormVisible((prev) => !prev);
+                          if (!isOrderFormVisible) {
+                            setIsCSVUploadVisible(false);
+                          }
+                        }}
+                        className={`flex items-center gap-2 text-white font-bold py-2 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 ${
+                          isOrderFormVisible
+                            ? "bg-slate-600 hover:bg-slate-700"
+                            : "bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700"
+                        }`}
+                      >
+                        {isOrderFormVisible ? (
+                          <>
+                            <CloseIcon className="w-5 h-5" />
+                            <span>Cancel</span>
+                          </>
+                        ) : (
+                          <>
+                            <PlusIcon className="w-5 h-5" />
+                            <span>Add New Order</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
+                  {isCSVUploadVisible && (
+                    <div className="mb-8 animate-fade-in-down">
+                      <CSVUpload
+                        onUpload={handleCSVUpload}
+                        currentUser={user}
+                        onClose={() => setIsCSVUploadVisible(false)}
+                      />
+                    </div>
+                  )}
                   {isOrderFormVisible && (
                     <div className="mb-8 animate-fade-in-down">
                       <OrderForm
