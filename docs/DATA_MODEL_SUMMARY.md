@@ -414,7 +414,7 @@ Managers can bulk import orders from a CSV file through the "Import CSV" button 
 The CSV file must have a header row with the following column names (case-insensitive):
 
 | Column Name | Required | Maps To | Description |
-|-------------|----------|---------|-------------|
+| ----------- | -------- | ------- | ----------- |
 | `CUSTOMER` | **Yes** | `customerName` | Customer's name (will be uppercased) |
 | `DATE` | No | `date` | Date in M/D or M/D/YY format (defaults to today) |
 | `SALES PERSON` | No | `salesperson` | Salesperson name (defaults to "Unknown") |
@@ -433,7 +433,7 @@ The CSV file must have a header row with the following column names (case-insens
 The import automatically expands common model abbreviations:
 
 | Abbreviation | Expanded To |
-|--------------|-------------|
+| ------------ | ----------- |
 | ES | Lexus ES |
 | IS | Lexus IS |
 | LS | Lexus LS |
@@ -474,7 +474,7 @@ DATE,CUSTOMER,SALES PERSON,DEPOSIT,DEAL #,,MODEL #,YEAR,MODEL,EXT COLOR,INT COLO
 When importing, the following defaults are applied:
 
 | Field | Default Value |
-|-------|---------------|
+| ----- | ------------- |
 | `status` | `Factory Order` (or derived from OPTIONS) |
 | `salesperson` | "Unknown" |
 | `manager` | "Unknown" |
