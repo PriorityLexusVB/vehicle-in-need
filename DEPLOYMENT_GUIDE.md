@@ -225,10 +225,10 @@ run in region `us-west1` and are deployed separately from the Cloud Run frontend
 
 ### Functions Overview
 
-| Function | Description | Endpoint |
-|----------|-------------|----------|
-| `setManagerRole` | Toggle manager status for users | `https://us-west1-vehicles-in-need.cloudfunctions.net/setManagerRole` |
-| `disableUser` | Enable/disable user accounts | `https://us-west1-vehicles-in-need.cloudfunctions.net/disableUser` |
+| Function         | Description                      | Endpoint                                                              |
+|------------------|----------------------------------|-----------------------------------------------------------------------|
+| `setManagerRole` | Toggle manager status for users  | `https://us-west1-vehicles-in-need.cloudfunctions.net/setManagerRole` |
+| `disableUser`    | Enable/disable user accounts     | `https://us-west1-vehicles-in-need.cloudfunctions.net/disableUser`    |
 
 ### Prerequisites
 
