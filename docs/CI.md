@@ -15,7 +15,7 @@ The CI/CD workflow uses Google Cloud Workload Identity Federation for secure aut
 The following secrets must be configured in your GitHub repository (Settings → Secrets and variables → Actions):
 
 | Secret Name | Description | Required |
-|-------------|-------------|----------|
+| ----------- | ----------- | -------- |
 | `GCP_WORKLOAD_IDENTITY_PROVIDER` | Full resource name of the Workload Identity Provider | Yes |
 | `GCP_SERVICE_ACCOUNT` | Service account email to impersonate | Yes |
 | `GCP_PROJECT_NUMBER` | GCP project number (12-digit number) | Optional |
