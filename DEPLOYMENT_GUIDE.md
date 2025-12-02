@@ -217,6 +217,86 @@ Required roles:
 - `roles/logging.logWriter` - Write logs
 - `roles/secretmanager.secretAccessor` - Access API keys
 
+## Firebase Cloud Functions Deployment
+
+The application uses Firebase Cloud Functions (v2) for secure backend operations
+that require elevated privileges (e.g., modifying user roles). These functions
+run in region `us-west1` and are deployed separately from the Cloud Run frontend.
+
+### Functions Overview
+
+| Function         | Description                      | Endpoint                                                              |
+|------------------|----------------------------------|-----------------------------------------------------------------------|
+| `setManagerRole` | Toggle manager status for users  | `https://us-west1-vehicles-in-need.cloudfunctions.net/setManagerRole` |
+| `disableUser`    | Enable/disable user accounts     | `https://us-west1-vehicles-in-need.cloudfunctions.net/disableUser`    |
+
+### Prerequisites
+
+- Firebase CLI installed: `npm install -g firebase-tools`
+- Authenticated with Firebase: `firebase login`
+- Access to the `vehicles-in-need` project
+
+### Deploy Functions
+
+```bash
+# Build and deploy all functions
+npm run deploy:functions
+
+# Dry run (verify what would be deployed without actually deploying)
+npm run deploy:functions:dry-run
+```
+
+### Manual Deployment
+
+```bash
+cd functions
+npm install
+npm run build
+cd ..
+firebase deploy --only functions --project vehicles-in-need
+```
+
+### Required Permissions
+
+The Cloud Functions service account needs:
+
+- `roles/cloudfunctions.developer` - Deploy functions
+- `roles/firebase.admin` - Access Firebase Auth and Firestore
+- `roles/iam.serviceAccountUser` - Impersonate service accounts
+
+### Security Model
+
+The `setManagerRole` function:
+
+1. **Authenticates** the caller via Firebase Auth token
+2. **Authorizes** by checking `isManager` custom claim or Firestore document
+3. **Validates** input (target UID must be non-empty, isManager must be boolean)
+4. **Prevents self-modification** (cannot change own manager status)
+5. **Prevents lockout** (cannot demote the last manager)
+6. **Updates atomically** both custom claims and Firestore document
+7. **Logs** all actions to `adminAuditLogs` collection
+
+### Troubleshooting Functions
+
+**CORS Errors:**
+The functions use `onCall` which automatically handles CORS for Firebase SDK
+clients. If you see CORS errors:
+
+1. Verify the function is deployed: Check Firebase Console → Functions
+2. Ensure the frontend uses `httpsCallable` (not direct HTTP requests)
+3. Check that the function region matches: `us-west1`
+
+**404 Not Found:**
+This means the function is not deployed. Run:
+
+```bash
+npm run deploy:functions
+```
+
+**Permission Denied:**
+Verify the caller has manager privileges (either `isManager` custom claim or
+`isManager: true` in their Firestore user document).
+
 ## Architecture
 
 ### Build Pipeline
