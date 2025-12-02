@@ -60,16 +60,16 @@ github-actions-deployer@my-project.iam.gserviceaccount.com
 
 The workflow includes a pre-authentication validation step that checks:
 
-1. **GCP_WORKLOAD_IDENTITY_PROVIDER** is not empty
-2. **GCP_WORKLOAD_IDENTITY_PROVIDER** matches the expected resource-name format
-3. **GCP_SERVICE_ACCOUNT** is not empty
+1. **GCP_WORKLOAD_IDENTITY_PROVIDER** is not empty  
+2. **GCP_WORKLOAD_IDENTITY_PROVIDER** matches the expected resource-name format  
+3. **GCP_SERVICE_ACCOUNT** is not empty  
 4. **GCP_SERVICE_ACCOUNT** matches the expected service account email format
 
 If any validation fails, the workflow will exit early with a clear error message, preventing confusing `invalid_target` errors from the Google auth action.
 
 ## Step-by-Step: Configure Workload Identity Federation in GCP
 
-Follow these steps to set up Workload Identity Federation for GitHub Actions:
+Follow these steps to set up Workload Identity Federation for GitHub Actions.
 
 ### 1. Get Your Project Number
 
@@ -172,10 +172,10 @@ projects/123456789012/locations/global/workloadIdentityPools/github-pool/provide
 
 ### 8. Configure GitHub Repository Secrets
 
-1. Go to your repository on GitHub
-2. Navigate to Settings → Secrets and variables → Actions
+1. Go to your repository on GitHub  
+2. Navigate to Settings → Secrets and variables → Actions  
 3. Add the following secrets:
-   - `GCP_WORKLOAD_IDENTITY_PROVIDER`: The full provider resource name from step 7
+   - `GCP_WORKLOAD_IDENTITY_PROVIDER`: The full provider resource name from step 7  
    - `GCP_SERVICE_ACCOUNT`: `github-actions-deployer@YOUR_PROJECT_ID.iam.gserviceaccount.com`
 
 ## Troubleshooting
@@ -188,25 +188,25 @@ The secret is not configured. Add it in **Settings → Secrets and variables →
 
 The secret value doesn't match the expected pattern. Verify:
 
-- It starts with `projects/`
-- The project number is numeric (12 digits, not the project ID string)
-- It contains `/locations/global/workloadIdentityPools/`
+- It starts with `projects/`  
+- The project number is numeric (12 digits, not the project ID string)  
+- It contains `/locations/global/workloadIdentityPools/`  
 - Pool and provider IDs are present
 
 ### Error: "GCP_SERVICE_ACCOUNT may have invalid format"
 
 The secret value doesn't match the expected service account email pattern. Verify:
 
-- It ends with `.iam.gserviceaccount.com`
-- The service account name (before `@`) is valid
+- It ends with `.iam.gserviceaccount.com`  
+- The service account name (before `@`) is valid  
 - The project ID (after `@`) is correct
 
 ### Error: "invalid_target" from google-github-actions/auth
 
 This error typically occurs when:
 
-- The `GCP_WORKLOAD_IDENTITY_PROVIDER` secret is missing or malformed
-- The provider resource name format is incorrect
+- The `GCP_WORKLOAD_IDENTITY_PROVIDER` secret is missing or malformed  
+- The provider resource name format is incorrect  
 - The Workload Identity Pool or Provider doesn't exist
 
 **Solution:** Verify the secret value matches the exact format:
@@ -216,7 +216,7 @@ This error typically occurs when:
 
 This error occurs when:
 
-- The service account binding is not configured correctly
+- The service account binding is not configured correctly  
 - The repository is not in the allowed list
 
 **Solution:** Verify the workload identity user binding (step 6) includes your repository.
@@ -229,14 +229,14 @@ The service account may not have the required IAM roles. Verify the roles in Ste
 
 The build-and-deploy workflow:
 
-- **Triggers on push to `main`**: Builds and pushes container image
-- **Triggers on pull_request to `main`**: Validates build configuration only (no GCP auth needed)
-- **Manual deployment**: Use `workflow_dispatch` with `deploy=true` to deploy to Cloud Run
+- Triggers on push to `main`: Builds and pushes container image  
+- Triggers on pull_request to `main`: Validates build configuration only (no GCP auth needed)  
+- Manual deployment: Use `workflow_dispatch` with `deploy=true` to deploy to Cloud Run
 
 The workflow validates GCP authentication inputs before attempting to authenticate, providing clear error messages if secrets are missing or malformed.
 
 ## References
 
-- [google-github-actions/auth](https://github.com/google-github-actions/auth) — GitHub Action for GCP authentication
-- [Workload Identity Federation](https://cloud.google.com/iam/docs/workload-identity-federation) — GCP documentation
+- [google-github-actions/auth](https://github.com/google-github-actions/auth) — GitHub Action for GCP authentication  
+- [Workload Identity Federation](https://cloud.google.com/iam/docs/workload-identity-federation) — GCP documentation  
 - [Configuring Workload Identity Federation for GitHub Actions](https://cloud.google.com/blog/products/identity-security/enabling-keyless-authentication-from-github-actions)
