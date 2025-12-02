@@ -279,7 +279,15 @@ but the Firebase Auth custom claim is not set. The Firestore rules have a
 fallback that reads the user document to check manager status, but this can
 be slower and may sometimes fail under high load.
 
-**Solution:** Sync custom claims using the admin script:
+**Solution:**
+
+For **newly promoted managers** (promoted via the User Management UI):
+The app now automatically syncs both Firestore and custom claims when a manager
+toggles another user's role. The affected user simply needs to sign out and
+sign back in to receive their updated permissions.
+
+For **legacy or bootstrap cases** (first-time setup, repair, or drift):
+Use the admin script to sync custom claims:
 
 ```bash
 # For a specific user
@@ -288,6 +296,10 @@ npm run seed:managers:apply -- --emails rob.brasco@priorityautomotive.com
 # For all users in MANAGER_EMAILS constant
 npm run seed:managers:apply
 ```
+
+> **Note:** The CLI scripts are now primarily for bootstrapping the first
+> manager, repairing drift, or bulk operations. Day-to-day role management
+> is handled entirely within the app via the User Management page.
 
 ### Cause 3: Auth State Race Condition
 

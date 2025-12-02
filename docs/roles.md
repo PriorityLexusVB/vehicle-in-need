@@ -9,6 +9,15 @@ The application has two types of users:
 1. **Managers**: Can view all orders, manage user roles, and deactivate users
 2. **Non-managers (Regular Users)**: Can only view and manage their own orders
 
+**Key Feature:** The application is **fully self-contained** for role management. When a
+manager toggles another user's role via the User Management UI, the app automatically
+updates both:
+
+1. The Firebase Auth custom claim (`isManager`)
+2. The Firestore user document (`users/{uid}.isManager`)
+
+No external CLI scripts are required for day-to-day role management.
+
 ## Role Concepts
 
 ### Manager Role
@@ -132,11 +141,22 @@ All role and status changes are logged to the `adminAuditLogs` collection with:
 - Timestamp
 - Success/failure status
 
-## Recovery Tools
+## CLI Tools (Bootstrap & Recovery)
+
+> **Note:** These CLI scripts are primarily for **bootstrapping the first manager**,
+> **repairing drift**, or **bulk operations**. Day-to-day role management is handled
+> entirely within the app via the User Management page.
+
+### When to Use CLI Scripts
+
+1. **Initial Setup**: When deploying the app for the first time and no managers exist yet
+2. **Recovery**: When custom claims become out of sync with Firestore
+3. **Bulk Operations**: When you need to update multiple users at once
+4. **Automation**: In CI/CD pipelines or automated maintenance scripts
 
 ### Using the CLI Script
 
-If you need to grant manager access to a user outside of the UI (e.g., during initial setup or recovery), you can use the `set-manager-custom-claims.mjs` script:
+If you need to grant manager access outside of the UI, use the `set-manager-custom-claims.mjs` script:
 
 ```bash
 # Dry run (no changes)
@@ -157,7 +177,9 @@ node scripts/set-manager-custom-claims.mjs --project vehicles-in-need --apply --
 
 ### Initial Manager Setup
 
-For a new deployment, add the initial manager email to the `MANAGER_EMAILS` array in `constants.ts`. When that user first signs in, they will automatically be granted manager status.
+For a new deployment, use the CLI script to grant the first manager role. Once
+at least one manager exists, all subsequent role management can be done through
+the User Management UI.
 
 ## Security Rules
 
