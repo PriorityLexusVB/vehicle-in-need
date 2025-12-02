@@ -7,6 +7,25 @@
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 
+/**
+ * Type guard for Firebase HttpsError
+ */
+interface HttpsErrorLike {
+  code: string;
+  message: string;
+}
+
+function isHttpsError(error: unknown): error is HttpsErrorLike {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    "message" in error &&
+    typeof (error as HttpsErrorLike).code === "string" &&
+    typeof (error as HttpsErrorLike).message === "string"
+  );
+}
+
 // Mock Firebase Admin SDK before importing the function
 jest.mock("firebase-admin/app", () => ({
   initializeApp: jest.fn(() => ({})),
@@ -61,6 +80,15 @@ mockWhere.mockReturnValue({
   get: jest.fn().mockResolvedValue({ size: 2 }), // Default: 2 managers exist
 });
 
+/**
+ * Helper to get a fresh function reference after module reset
+ * This is necessary because Firebase Functions cache module-level state
+ */
+function getSetManagerRole() {
+  jest.resetModules();
+  return require("../index").setManagerRole;
+}
+
 describe("setManagerRole", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -68,30 +96,23 @@ describe("setManagerRole", () => {
 
   describe("Authentication", () => {
     it("should throw unauthenticated error when no auth context", async () => {
-      // Re-import the function
-      jest.resetModules();
-      const { setManagerRole } = require("../index");
+      const setManagerRole = getSetManagerRole();
       
-      // Create a mock request without auth
       const mockRequest = {
         data: { uid: "target-uid", isManager: true },
         auth: undefined,
         rawRequest: {} as unknown,
       };
 
-      try {
-        await setManagerRole.run(mockRequest);
-        fail("Should have thrown an error");
-      } catch (error: unknown) {
-        expect((error as { code: string }).code).toBe("unauthenticated");
-      }
+      await expect(setManagerRole.run(mockRequest)).rejects.toMatchObject({
+        code: "unauthenticated",
+      });
     });
   });
 
   describe("Input Validation", () => {
     it("should throw invalid-argument when uid is missing", async () => {
-      jest.resetModules();
-      const { setManagerRole } = require("../index");
+      const setManagerRole = getSetManagerRole();
       
       const mockRequest = {
         data: { isManager: true },
@@ -99,17 +120,13 @@ describe("setManagerRole", () => {
         rawRequest: {} as unknown,
       };
 
-      try {
-        await setManagerRole.run(mockRequest);
-        fail("Should have thrown an error");
-      } catch (error: unknown) {
-        expect((error as { code: string }).code).toBe("invalid-argument");
-      }
+      await expect(setManagerRole.run(mockRequest)).rejects.toMatchObject({
+        code: "invalid-argument",
+      });
     });
 
     it("should throw invalid-argument when isManager is not boolean", async () => {
-      jest.resetModules();
-      const { setManagerRole } = require("../index");
+      const setManagerRole = getSetManagerRole();
       
       const mockRequest = {
         data: { uid: "target-uid", isManager: "true" },
@@ -117,24 +134,19 @@ describe("setManagerRole", () => {
         rawRequest: {} as unknown,
       };
 
-      try {
-        await setManagerRole.run(mockRequest);
-        fail("Should have thrown an error");
-      } catch (error: unknown) {
-        expect((error as { code: string }).code).toBe("invalid-argument");
-      }
+      await expect(setManagerRole.run(mockRequest)).rejects.toMatchObject({
+        code: "invalid-argument",
+      });
     });
 
     it("should throw invalid-argument when uid is empty string", async () => {
-      jest.resetModules();
-      
       // Setup mock for validateManagerAccess to return valid manager
       mockAuth.getUser.mockResolvedValueOnce({
         email: "caller@test.com",
         customClaims: { isManager: true },
       });
       
-      const { setManagerRole } = require("../index");
+      const setManagerRole = getSetManagerRole();
       
       const mockRequest = {
         data: { uid: "", isManager: true },
@@ -142,21 +154,14 @@ describe("setManagerRole", () => {
         rawRequest: {} as unknown,
       };
 
-      try {
-        await setManagerRole.run(mockRequest);
-        fail("Should have thrown an error");
-      } catch (error: unknown) {
-        expect((error as { code: string }).code).toBe("invalid-argument");
-      }
+      await expect(setManagerRole.run(mockRequest)).rejects.toMatchObject({
+        code: "invalid-argument",
+      });
     });
   });
 
   describe("Authorization", () => {
     it("should throw permission-denied when caller is not a manager", async () => {
-      // This test verifies that a non-manager cannot call setManagerRole
-      // We need to set up the mock BEFORE resetting the modules since
-      // the mock factory runs during module initialization
-      
       // Clear all mocks and set up the specific return values
       jest.clearAllMocks();
       
@@ -174,9 +179,7 @@ describe("setManagerRole", () => {
         data: () => ({ isManager: false }),
       });
       
-      // Re-import to get fresh function reference
-      jest.resetModules();
-      const { setManagerRole } = require("../index");
+      const setManagerRole = getSetManagerRole();
       
       const mockRequest = {
         data: { uid: "target-uid", isManager: true },
@@ -184,24 +187,19 @@ describe("setManagerRole", () => {
         rawRequest: {} as unknown,
       };
 
-      try {
-        await setManagerRole.run(mockRequest);
-        fail("Should have thrown an error");
-      } catch (error: unknown) {
-        expect((error as { code: string }).code).toBe("permission-denied");
-      }
+      await expect(setManagerRole.run(mockRequest)).rejects.toMatchObject({
+        code: "permission-denied",
+      });
     });
 
     it("should throw failed-precondition when trying to modify own role", async () => {
-      jest.resetModules();
-      
       // Setup: caller is a manager
       mockAuth.getUser.mockResolvedValueOnce({
         email: "caller@test.com",
         customClaims: { isManager: true },
       });
       
-      const { setManagerRole } = require("../index");
+      const setManagerRole = getSetManagerRole();
       
       const mockRequest = {
         data: { uid: "caller-uid", isManager: false },
@@ -211,18 +209,19 @@ describe("setManagerRole", () => {
 
       try {
         await setManagerRole.run(mockRequest);
-        fail("Should have thrown an error");
-      } catch (error: unknown) {
-        expect((error as { code: string }).code).toBe("failed-precondition");
-        expect((error as { message: string }).message).toContain("your own manager status");
+        throw new Error("Expected function to throw");
+      } catch (error) {
+        expect(isHttpsError(error)).toBe(true);
+        if (isHttpsError(error)) {
+          expect(error.code).toBe("failed-precondition");
+          expect(error.message).toContain("your own manager status");
+        }
       }
     });
   });
 
   describe("Last Manager Protection", () => {
     it("should throw failed-precondition when demoting the last manager", async () => {
-      jest.resetModules();
-      
       // Setup: caller is a manager
       mockAuth.getUser
         .mockResolvedValueOnce({
@@ -247,7 +246,7 @@ describe("setManagerRole", () => {
         get: jest.fn().mockResolvedValue({ size: 1 }),
       });
       
-      const { setManagerRole } = require("../index");
+      const setManagerRole = getSetManagerRole();
       
       const mockRequest = {
         data: { uid: "target-uid", isManager: false },
@@ -257,18 +256,19 @@ describe("setManagerRole", () => {
 
       try {
         await setManagerRole.run(mockRequest);
-        fail("Should have thrown an error");
-      } catch (error: unknown) {
-        expect((error as { code: string }).code).toBe("failed-precondition");
-        expect((error as { message: string }).message).toContain("last manager");
+        throw new Error("Expected function to throw");
+      } catch (error) {
+        expect(isHttpsError(error)).toBe(true);
+        if (isHttpsError(error)) {
+          expect(error.code).toBe("failed-precondition");
+          expect(error.message).toContain("last manager");
+        }
       }
     });
   });
 
   describe("Successful Operations", () => {
     it("should successfully promote a user to manager", async () => {
-      jest.resetModules();
-      
       // Setup: caller is a manager
       mockAuth.getUser
         .mockResolvedValueOnce({
@@ -293,7 +293,7 @@ describe("setManagerRole", () => {
       mockUpdate.mockResolvedValueOnce(undefined);
       mockAdd.mockResolvedValueOnce({ id: "audit-log-id" });
       
-      const { setManagerRole } = require("../index");
+      const setManagerRole = getSetManagerRole();
       
       const mockRequest = {
         data: { uid: "target-uid", isManager: true },
@@ -316,8 +316,6 @@ describe("setManagerRole", () => {
     });
 
     it("should create user document if it doesn't exist when setting manager role", async () => {
-      jest.resetModules();
-      
       // Setup: caller is a manager
       mockAuth.getUser
         .mockResolvedValueOnce({
@@ -341,7 +339,7 @@ describe("setManagerRole", () => {
       mockSet.mockResolvedValueOnce(undefined);
       mockAdd.mockResolvedValueOnce({ id: "audit-log-id" });
       
-      const { setManagerRole } = require("../index");
+      const setManagerRole = getSetManagerRole();
       
       const mockRequest = {
         data: { uid: "target-uid", isManager: true },
