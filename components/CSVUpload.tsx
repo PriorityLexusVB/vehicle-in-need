@@ -64,10 +64,13 @@ const CSVUpload: React.FC<CSVUploadProps> = ({ onUpload, currentUser, onClose })
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setState(prev => ({ ...prev, dragActive: false }));
 
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileSelect(e.dataTransfer.files[0]);
+    try {
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleFileSelect(e.dataTransfer.files[0]);
+      }
+    } finally {
+      setState(prev => ({ ...prev, dragActive: false }));
     }
   }, [handleFileSelect]);
 

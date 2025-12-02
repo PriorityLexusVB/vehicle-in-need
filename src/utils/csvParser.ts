@@ -184,6 +184,15 @@ export function parseDeposit(depositStr: string): number {
 
 /**
  * Derive order status from the options/notes text.
+ * 
+ * Priority order for status detection (first match wins):
+ * 1. LOCATE → Locate status
+ * 2. DEALER EXCHANGE / DEALER-EXCHANGE → Dealer Exchange status
+ * 3. INCOMING / HERE → Factory Order status
+ * 4. Default → Factory Order status
+ * 
+ * Note: If options text contains multiple keywords (e.g., "LOCATE AND DEALER EXCHANGE"),
+ * the first matching keyword takes precedence based on the priority order above.
  */
 export function deriveStatus(options: string): OrderStatus {
   const normalizedOptions = options.toUpperCase();
@@ -356,16 +365,36 @@ export function parseCSVToOrders(csvContent: string): ParseCSVResult {
     // Convert to order data
     const currentYear = new Date().getFullYear().toString();
     const year = parsedRow.year.trim() || currentYear;
-    const fullYear = year.length === 2 ? `20${year}` : year;
+    
+    // Handle year conversion with validation
+    // Only support 2-digit years in the range "00" to "99", mapped to 2000-2099
+    let fullYear: string;
+    if (year.length === 2) {
+      const yearNum = parseInt(year, 10);
+      if (isNaN(yearNum) || yearNum < 0 || yearNum > 99) {
+        result.warnings.push(`Row ${rowIndex}: 2-digit year "${year}" is invalid. Using current year.`);
+        fullYear = currentYear;
+      } else {
+        fullYear = `20${year.padStart(2, '0')}`;
+      }
+    } else {
+      fullYear = year;
+    }
+    
     const modelAbbr = parsedRow.model.trim();
     const fullModel = expandModelName(modelAbbr);
+    
+    // Generate a unique deal number if not provided
+    // Format: CSV-[timestamp]-[row number padded to 4 digits] for uniqueness
+    // Using rowIndex which includes header offset for consistency
+    const dealNumber = parsedRow.dealNumber.trim() || `CSV-${Date.now()}-${String(rowIndex).padStart(4, '0')}`;
 
     const orderData: CSVOrderData = {
       salesperson: parsedRow.salesPerson.trim() || 'Unknown',
       manager: parsedRow.manager.trim() || 'Unknown',
       date: parseDate(parsedRow.date),
       customerName: parsedRow.customer.trim().toUpperCase(),
-      dealNumber: parsedRow.dealNumber.trim() || `CSV-${Date.now()}-${i}`,
+      dealNumber,
       stockNumber: '',
       vin: '',
       year: fullYear,

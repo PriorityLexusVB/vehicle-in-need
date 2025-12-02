@@ -419,14 +419,14 @@ The CSV file must have a header row with the following column names (case-insens
 | `DATE` | No | `date` | Date in M/D or M/D/YY format (defaults to today) |
 | `SALES PERSON` | No | `salesperson` | Salesperson name (defaults to "Unknown") |
 | `DEPOSIT` | No | `depositAmount` | Deposit amount, e.g., "$1,000" (defaults to 0) |
-| `DEAL #` | No | `dealNumber` | Deal number (auto-generated if missing) |
+| `DEAL #` | No | `dealNumber` | Deal number (auto-generated as `CSV-[timestamp]-[index]` if missing; provide in CSV when possible) |
 | `MODEL #` | No | `modelNumber` | 4-character model code |
-| `YEAR` | No | `year` | Model year, 2 or 4 digits (defaults to current year) |
+| `YEAR` | No | `year` | Model year, 2-digit (00-99 → 2000-2099) or 4-digit (defaults to current year) |
 | `MODEL` | No | `model` | Model abbreviation (auto-expanded, see below) |
 | `EXT COLOR` | No | `exteriorColor1` | Exterior color code (defaults to "TBD") |
 | `INT COLOR` | No | `interiorColor1` | Interior color code (defaults to "TBD") |
 | `MANAGER` | No | `manager` | Manager initials (defaults to "Unknown") |
-| `OPTIONS` | No | `options` | Options/notes text |
+| `OPTIONS` | No | `options` | Options/notes text (used to derive status, see below) |
 
 ### Model Abbreviation Expansion
 
@@ -451,12 +451,14 @@ The import automatically expands common model abbreviations:
 
 ### Status Derivation
 
-The order status is automatically derived from the OPTIONS column:
+The order status is automatically derived from the OPTIONS column text. Keywords are checked in priority order (first match wins):
 
-- Contains "LOCATE" → `Locate` status
-- Contains "DEALER EXCHANGE" → `Dealer Exchange` status
-- Contains "INCOMING" or "HERE" → `Factory Order` status
-- Default → `Factory Order` status
+1. Contains "LOCATE" → `Locate` status
+2. Contains "DEALER EXCHANGE" or "DEALER-EXCHANGE" → `Dealer Exchange` status
+3. Contains "INCOMING" or "HERE" → `Factory Order` status
+4. Default (no keywords matched) → `Factory Order` status
+
+> **Note:** If the OPTIONS text contains multiple keywords (e.g., "LOCATE AND DEALER EXCHANGE"), the first matching keyword based on the priority order above takes precedence.
 
 ### Sample CSV
 
