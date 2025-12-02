@@ -996,6 +996,11 @@ The application uses a secure two-tier authorization system:
    - Role changes via Settings page persist across logins
    - The `MANAGER_EMAILS` constant is for informational logging only; it does NOT automatically grant manager status
 
+3. **Self-Contained Role Management** - The app handles role changes automatically:
+   - When a manager toggles another user's role via the UI, both Firestore and Firebase Auth custom claims are updated
+   - No CLI scripts are required for day-to-day role management
+   - CLI scripts are available for bootstrapping, recovery, and bulk operations
+
 **User Document Fields:**
 
 | Field | Type | Description |
@@ -1022,9 +1027,10 @@ Option 1: Use the Settings page (recommended):
 1. Log in as an existing manager
 2. Navigate to User Management (`/#/admin`)
 3. Find the user and toggle their manager role switch
-4. Change persists immediately in Firestore
+4. The change is saved automatically (both Firestore and custom claims are updated)
+5. The promoted user must sign out and sign back in for permissions to take effect
 
-Option 2: Using admin script:
+Option 2: Using admin script (for bootstrap or recovery):
 
 ```bash
 npm run seed:managers:apply -- --emails newmanager@priorityautomotive.com
@@ -1046,6 +1052,10 @@ npm run seed:managers:dry-run -- --emails first.manager@priorityautomotive.com
 # Apply the change
 npm run seed:managers:apply -- --emails first.manager@priorityautomotive.com
 ```
+
+> **Note:** Once at least one manager exists, all subsequent role management
+> can be done through the User Management UI. CLI scripts are primarily for
+> bootstrapping, recovery, or bulk operations.
 
 **Security Safeguards:**
 
