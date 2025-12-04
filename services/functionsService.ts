@@ -146,12 +146,22 @@ export function parseFirebaseFunctionError(error: unknown): string {
         return "The specified user was not found.";
       case "functions/internal":
         return "An unexpected error occurred. Please try again.";
+      case "functions/unavailable":
+        return "The server is temporarily unavailable. Please try again in a few moments.";
       default:
         return functionError.message || "An error occurred. Please try again.";
     }
   }
   
   if (error instanceof Error) {
+    // Check for common network/CORS errors that indicate the function might not be deployed
+    const errorMessage = error.message.toLowerCase();
+    if (errorMessage.includes("cors") || 
+        errorMessage.includes("network") || 
+        errorMessage.includes("failed to fetch") ||
+        errorMessage.includes("load failed")) {
+      return "Unable to connect to the server. The Cloud Functions may not be deployed. Please contact your administrator.";
+    }
     return error.message;
   }
   
