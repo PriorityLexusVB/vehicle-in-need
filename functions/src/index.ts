@@ -14,6 +14,25 @@ import { getAuth } from "firebase-admin/auth";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 
+/**
+ * CORS configuration for allowed origins
+ * Production and development origins that can call these functions
+ * 
+ * Note: These origins are hardcoded because:
+ * 1. The production URL is deterministic (Cloud Run deployment)
+ * 2. Development origins are standard localhost ports
+ * 
+ * For multi-environment deployments, consider using Firebase Functions
+ * environment configuration via `functions.config()` or environment variables.
+ */
+const ALLOWED_ORIGINS = [
+  "https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app",
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:3000",
+];
+
 // Initialize Firebase Admin
 const app = initializeApp();
 const auth = getAuth(app);
@@ -142,7 +161,10 @@ async function countManagers(): Promise<number> {
  * - Updates both custom claims AND Firestore document atomically
  */
 export const setManagerRole = onCall<SetManagerRoleData>(
-  { region: "us-west1" },
+  { 
+    region: "us-west1",
+    cors: ALLOWED_ORIGINS,
+  },
   async (request) => {
     const { auth: authContext, data } = request;
 
@@ -301,7 +323,10 @@ export const setManagerRole = onCall<SetManagerRoleData>(
  * - Updates Firestore with isActive, disabledAt, disabledBy fields
  */
 export const disableUser = onCall<DisableUserData>(
-  { region: "us-west1" },
+  { 
+    region: "us-west1",
+    cors: ALLOWED_ORIGINS,
+  },
   async (request) => {
     const { auth: authContext, data } = request;
 
