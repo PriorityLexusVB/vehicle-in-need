@@ -40,7 +40,7 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOr
   const isSecured = isSecuredStatus(order.status);
   const isActive = !isSecured;
 
-  // Pre-compute model number for summary row to avoid duplicate calls
+  // Format model number once for conditional rendering
   const modelNumberDisplay = formatModelNumber(order);
 
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
