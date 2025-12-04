@@ -17,6 +17,13 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 /**
  * CORS configuration for allowed origins
  * Production and development origins that can call these functions
+ * 
+ * Note: These origins are hardcoded because:
+ * 1. The production URL is deterministic (Cloud Run deployment)
+ * 2. Development origins are standard localhost ports
+ * 
+ * For multi-environment deployments, consider using Firebase Functions
+ * environment configuration via `functions.config()` or environment variables.
  */
 const ALLOWED_ORIGINS = [
   "https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app",
