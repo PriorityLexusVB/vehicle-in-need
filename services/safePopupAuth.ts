@@ -20,9 +20,11 @@ import {
 } from "firebase/auth";
 
 /**
- * Error codes that indicate COOP-related popup issues
+ * Error codes from Firebase that indicate popup handling failures.
+ * These codes can result from COOP restrictions blocking window.closed access,
+ * causing the popup to appear closed prematurely.
  */
-const COOP_RELATED_ERROR_CODES = [
+const POPUP_HANDLING_ERROR_CODES = [
   "auth/popup-closed-by-user",
   "auth/popup-blocked",
   "auth/cancelled-popup-request",
@@ -46,7 +48,7 @@ function isCOOPRelatedError(error: unknown): boolean {
  * Check if error code suggests popup handling failure
  */
 function isPopupHandlingError(error: { code?: string }): boolean {
-  return COOP_RELATED_ERROR_CODES.includes(error.code ?? "");
+  return POPUP_HANDLING_ERROR_CODES.includes(error.code ?? "");
 }
 
 /**
@@ -111,20 +113,27 @@ export async function safeSignInWithPopup(
     onFallbackToRedirect,
   } = options;
 
-  // Temporarily override console.error to suppress COOP errors if requested
+  // Temporarily override console.error to suppress COOP errors if requested.
+  // This only filters errors that match specific COOP-related patterns AND occur
+  // during this popup auth operation (the override is scoped to this function).
   const originalConsoleError = console.error;
+  const popupOperationId = `popup-auth-${Date.now()}`;
+  
   if (suppressCOOPErrors) {
     console.error = (...args: unknown[]) => {
       const message = args.join(" ");
-      if (
-        message.includes("Cross-Origin-Opener-Policy") ||
-        message.includes("window.closed")
-      ) {
+      // Only suppress errors that are specifically about COOP and window.closed
+      // These patterns match Firebase SDK's internal popup polling errors
+      const isCOOPWindowClosedError =
+        message.includes("Cross-Origin-Opener-Policy") &&
+        message.includes("window.closed");
+      
+      if (isCOOPWindowClosedError) {
         // Suppress COOP-related errors - these are expected in strict COOP environments
         // and don't affect functionality when we handle them properly
         if (import.meta.env.DEV) {
           console.debug(
-            "[SafePopupAuth] Suppressed COOP-related console error"
+            `[SafePopupAuth:${popupOperationId}] Suppressed COOP window.closed error`
           );
         }
         return;
@@ -222,10 +231,13 @@ export async function safeSignInWithPopup(
  * @returns 'popup' if popup is likely to work, 'redirect' otherwise
  */
 export function getRecommendedAuthMethod(): "popup" | "redirect" {
+  // Guard against SSR environments where window/navigator may not exist
+  if (typeof window === "undefined" || typeof navigator === "undefined") {
+    return "popup"; // Default for SSR
+  }
+
   // In Codespaces/preview environments, popup is often problematic
-  const isCodespaces =
-    typeof window !== "undefined" &&
-    window.location.hostname.endsWith(".app.github.dev");
+  const isCodespaces = window.location.hostname.endsWith(".app.github.dev");
 
   if (isCodespaces) {
     return "redirect";

@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   safeSignInWithPopup,
   getRecommendedAuthMethod,
-  SafePopupAuthOptions,
 } from "../safePopupAuth";
 
 // Mock Firebase auth module
@@ -147,7 +146,6 @@ describe("safeSignInWithPopup", () => {
   it("suppresses COOP errors when suppressCOOPErrors is true", async () => {
     vi.mocked(signInWithPopup).mockResolvedValueOnce(mockCredential);
     const originalConsoleError = console.error;
-    const mockConsoleError = vi.fn();
 
     // The function temporarily overrides console.error
     // After the function completes, console.error should be restored
