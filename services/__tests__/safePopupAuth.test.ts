@@ -2,16 +2,22 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   safeSignInWithPopup,
   getRecommendedAuthMethod,
+  signInWithPopupCOOPSafe,
+  type PopupAuthMessage,
 } from "../safePopupAuth";
 
 // Mock Firebase auth module
 vi.mock("firebase/auth", () => ({
   signInWithPopup: vi.fn(),
   signInWithRedirect: vi.fn(),
+  signInWithCredential: vi.fn(),
+  GoogleAuthProvider: {
+    credential: vi.fn(),
+  },
 }));
 
 // Import mocked functions
-import { signInWithPopup, signInWithRedirect } from "firebase/auth";
+import { signInWithPopup, signInWithRedirect, signInWithCredential, GoogleAuthProvider } from "firebase/auth";
 import type { Auth, AuthProvider, UserCredential } from "firebase/auth";
 
 // Mock auth and provider
@@ -286,5 +292,347 @@ describe("getRecommendedAuthMethod", () => {
     const result = getRecommendedAuthMethod();
 
     expect(result).toBe("popup");
+  });
+});
+
+describe("signInWithPopupCOOPSafe", () => {
+  const mockAuthWithConfig = {
+    name: "test-auth",
+    app: {
+      name: "test-app",
+      options: {
+        authDomain: "test.firebaseapp.com",
+        apiKey: "test-api-key",
+      },
+    },
+  } as unknown as Auth;
+
+  const mockGoogleProvider = {
+    providerId: "google.com",
+    customParameters: { prompt: "select_account" },
+  } as unknown as AuthProvider;
+
+  const originalWindow = global.window;
+  let mockWindowOpen: ReturnType<typeof vi.fn>;
+  let mockPopupWindow: { close: ReturnType<typeof vi.fn>; closed: boolean; focus: ReturnType<typeof vi.fn> };
+  let messageEventListeners: ((event: MessageEvent) => void)[] = [];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useFakeTimers();
+    messageEventListeners = [];
+    mockPopupWindow = {
+      close: vi.fn(),
+      closed: false,
+      focus: vi.fn(),
+    };
+    mockWindowOpen = vi.fn().mockReturnValue(mockPopupWindow);
+
+    // Mock window with all needed properties
+    Object.defineProperty(global, "window", {
+      value: {
+        location: {
+          origin: "https://example.com",
+          hostname: "example.com",
+        },
+        screen: {
+          width: 1920,
+          height: 1080,
+        },
+        open: mockWindowOpen,
+        addEventListener: vi.fn((event: string, handler: (event: MessageEvent) => void) => {
+          if (event === "message") {
+            messageEventListeners.push(handler);
+          }
+        }),
+        removeEventListener: vi.fn((event: string, handler: (event: MessageEvent) => void) => {
+          if (event === "message") {
+            const index = messageEventListeners.indexOf(handler);
+            if (index > -1) {
+              messageEventListeners.splice(index, 1);
+            }
+          }
+        }),
+      },
+      writable: true,
+    });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    Object.defineProperty(global, "window", {
+      value: originalWindow,
+      writable: true,
+    });
+  });
+
+  /**
+   * Helper to simulate a postMessage from the popup
+   */
+  function simulatePostMessage(message: PopupAuthMessage, origin = "https://example.com") {
+    const event = new MessageEvent("message", {
+      data: message,
+      origin,
+    });
+    messageEventListeners.forEach((handler) => handler(event));
+  }
+
+  it("returns error when Firebase config is missing", async () => {
+    const authWithoutConfig = {
+      name: "test-auth",
+      app: { name: "test-app", options: {} },
+    } as unknown as Auth;
+
+    const result = await signInWithPopupCOOPSafe(authWithoutConfig, mockGoogleProvider);
+
+    expect(result.success).toBe(false);
+    expect(result.error?.code).toBe("auth/invalid-config");
+  });
+
+  it("returns error when popup is blocked", async () => {
+    mockWindowOpen.mockReturnValueOnce(null);
+
+    const result = await signInWithPopupCOOPSafe(mockAuthWithConfig, mockGoogleProvider);
+
+    expect(result.success).toBe(false);
+    expect(result.error?.code).toBe("auth/popup-blocked");
+  });
+
+  it("opens popup with correct URL parameters", async () => {
+    // Start the auth flow but don't await it yet
+    const authPromise = signInWithPopupCOOPSafe(mockAuthWithConfig, mockGoogleProvider);
+
+    // Check that window.open was called with the correct URL
+    expect(mockWindowOpen).toHaveBeenCalledTimes(1);
+    const openArgs = mockWindowOpen.mock.calls[0];
+    const url = new URL(openArgs[0]);
+    
+    expect(url.hostname).toBe("test.firebaseapp.com");
+    expect(url.pathname).toBe("/__/auth/handler");
+    expect(url.searchParams.get("apiKey")).toBe("test-api-key");
+    expect(url.searchParams.get("providerId")).toBe("google.com");
+    expect(url.searchParams.get("authType")).toBe("signInViaPopup");
+
+    // Clean up by simulating a close message
+    simulatePostMessage({ type: "popup-closing" });
+    vi.advanceTimersByTime(2000);
+    await authPromise;
+  });
+
+  it("handles auth-success message and signs in with credential", async () => {
+    const mockUserCredential = {
+      user: { uid: "test-uid", email: "test@example.com" },
+      providerId: "google.com",
+      operationType: "signIn",
+    } as unknown as UserCredential;
+
+    vi.mocked(GoogleAuthProvider.credential).mockReturnValue({} as ReturnType<typeof GoogleAuthProvider.credential>);
+    vi.mocked(signInWithCredential).mockResolvedValue(mockUserCredential);
+
+    const authPromise = signInWithPopupCOOPSafe(mockAuthWithConfig, mockGoogleProvider);
+
+    // Simulate auth success message from popup
+    simulatePostMessage({
+      type: "auth-success",
+      payload: {
+        idToken: "test-id-token",
+        accessToken: "test-access-token",
+      },
+    });
+
+    const result = await authPromise;
+
+    expect(result.success).toBe(true);
+    expect(result.credential).toBe(mockUserCredential);
+    expect(result.usedRedirectFallback).toBe(false);
+    expect(GoogleAuthProvider.credential).toHaveBeenCalledWith("test-id-token", "test-access-token");
+    expect(signInWithCredential).toHaveBeenCalled();
+  });
+
+  it("handles popup-closing message with grace period", async () => {
+    const authPromise = signInWithPopupCOOPSafe(mockAuthWithConfig, mockGoogleProvider, {
+      closeGracePeriod: 1500,
+    });
+
+    // Simulate popup closing
+    simulatePostMessage({ type: "popup-closing" });
+
+    // Advance time past the grace period
+    vi.advanceTimersByTime(2000);
+
+    const result = await authPromise;
+
+    expect(result.success).toBe(false);
+    expect(result.error?.code).toBe("auth/popup-closed-by-user");
+  });
+
+  it("allows auth-success within grace period after popup-closing", async () => {
+    const mockUserCredential = {
+      user: { uid: "test-uid", email: "test@example.com" },
+    } as unknown as UserCredential;
+
+    vi.mocked(GoogleAuthProvider.credential).mockReturnValue({} as ReturnType<typeof GoogleAuthProvider.credential>);
+    vi.mocked(signInWithCredential).mockResolvedValue(mockUserCredential);
+
+    const authPromise = signInWithPopupCOOPSafe(mockAuthWithConfig, mockGoogleProvider, {
+      closeGracePeriod: 1500,
+    });
+
+    // Simulate popup closing
+    simulatePostMessage({ type: "popup-closing" });
+
+    // Before grace period ends, receive auth success
+    vi.advanceTimersByTime(500);
+    simulatePostMessage({
+      type: "auth-success",
+      payload: { idToken: "test-token" },
+    });
+
+    const result = await authPromise;
+
+    expect(result.success).toBe(true);
+    expect(result.credential).toBe(mockUserCredential);
+  });
+
+  it("handles auth-error message from popup", async () => {
+    const authPromise = signInWithPopupCOOPSafe(mockAuthWithConfig, mockGoogleProvider);
+
+    // Simulate auth error from popup
+    simulatePostMessage({
+      type: "auth-error",
+      payload: {
+        error: "User denied access",
+        errorCode: "auth/access-denied",
+      },
+    });
+
+    const result = await authPromise;
+
+    expect(result.success).toBe(false);
+    expect(result.error?.message).toBe("User denied access");
+    expect(result.error?.code).toBe("auth/access-denied");
+  });
+
+  it("times out after configured timeout", async () => {
+    const authPromise = signInWithPopupCOOPSafe(mockAuthWithConfig, mockGoogleProvider, {
+      timeout: 5000,
+    });
+
+    // Advance time past the timeout
+    vi.advanceTimersByTime(6000);
+
+    const result = await authPromise;
+
+    expect(result.success).toBe(false);
+    expect(result.error?.code).toBe("auth/timeout");
+  });
+
+  it("calls onPopupOpen callback when popup opens", async () => {
+    const onPopupOpen = vi.fn();
+
+    const authPromise = signInWithPopupCOOPSafe(mockAuthWithConfig, mockGoogleProvider, {
+      onPopupOpen,
+    });
+
+    expect(onPopupOpen).toHaveBeenCalledTimes(1);
+    expect(mockPopupWindow.focus).toHaveBeenCalled();
+
+    // Clean up
+    simulatePostMessage({ type: "popup-closing" });
+    vi.advanceTimersByTime(2000);
+    await authPromise;
+  });
+
+  it("calls onPopupClose callback when popup closes", async () => {
+    const onPopupClose = vi.fn();
+
+    const authPromise = signInWithPopupCOOPSafe(mockAuthWithConfig, mockGoogleProvider, {
+      onPopupClose,
+    });
+
+    simulatePostMessage({ type: "popup-closing" });
+    expect(onPopupClose).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(2000);
+    await authPromise;
+  });
+
+  it("calls onAuthSuccess callback when auth succeeds", async () => {
+    const mockUserCredential = {
+      user: { uid: "test-uid" },
+    } as unknown as UserCredential;
+
+    vi.mocked(GoogleAuthProvider.credential).mockReturnValue({} as ReturnType<typeof GoogleAuthProvider.credential>);
+    vi.mocked(signInWithCredential).mockResolvedValue(mockUserCredential);
+
+    const onAuthSuccess = vi.fn();
+
+    const authPromise = signInWithPopupCOOPSafe(mockAuthWithConfig, mockGoogleProvider, {
+      onAuthSuccess,
+    });
+
+    simulatePostMessage({
+      type: "auth-success",
+      payload: { idToken: "test-token" },
+    });
+
+    await authPromise;
+
+    expect(onAuthSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores messages from unexpected origins", async () => {
+    const mockUserCredential = {
+      user: { uid: "test-uid" },
+    } as unknown as UserCredential;
+
+    vi.mocked(GoogleAuthProvider.credential).mockReturnValue({} as ReturnType<typeof GoogleAuthProvider.credential>);
+    vi.mocked(signInWithCredential).mockResolvedValue(mockUserCredential);
+
+    const authPromise = signInWithPopupCOOPSafe(mockAuthWithConfig, mockGoogleProvider, {
+      timeout: 1000,
+    });
+
+    // Send message from unexpected origin - should be ignored
+    simulatePostMessage(
+      { type: "auth-success", payload: { idToken: "malicious-token" } },
+      "https://malicious-site.com"
+    );
+
+    // The auth should not complete from the malicious message
+    // Advance time to trigger timeout
+    vi.advanceTimersByTime(1500);
+
+    const result = await authPromise;
+
+    expect(result.success).toBe(false);
+    expect(result.error?.code).toBe("auth/timeout");
+    expect(signInWithCredential).not.toHaveBeenCalled();
+  });
+
+  it("returns error when auth-success has no tokens", async () => {
+    const authPromise = signInWithPopupCOOPSafe(mockAuthWithConfig, mockGoogleProvider);
+
+    simulatePostMessage({
+      type: "auth-success",
+      payload: {}, // No tokens
+    });
+
+    const result = await authPromise;
+
+    expect(result.success).toBe(false);
+    expect(result.error?.code).toBe("auth/no-credential");
+  });
+
+  it("cleans up message listener after completion", async () => {
+    const authPromise = signInWithPopupCOOPSafe(mockAuthWithConfig, mockGoogleProvider);
+
+    // Simulate timeout to complete the auth flow
+    vi.advanceTimersByTime(130000);
+
+    await authPromise;
+
+    // Verify removeEventListener was called
+    expect(window.removeEventListener).toHaveBeenCalled();
   });
 });
