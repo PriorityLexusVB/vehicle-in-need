@@ -94,14 +94,15 @@
             }
           }
 
-          // Last resort: if window.opener exists, try to get its origin
-          // (may fail due to COOP, that's okay)
+          // Last resort: try to access window.opener.location.origin.
+          // This will always throw under strict COOP (Cross-Origin-Opener-Policy),
+          // which is expected. The try-catch gracefully handles this failure.
           try {
             if (window.opener && window.opener.location && window.opener.location.origin) {
               return window.opener.location.origin;
             }
           } catch (e) {
-            // COOP blocks cross-origin access
+            // Expected to fail under COOP - silently continue to fallback
           }
 
           // Default to same origin (assuming callback is same-origin as app)

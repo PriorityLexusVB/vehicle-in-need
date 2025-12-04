@@ -515,11 +515,9 @@ export async function signInWithPopupCOOPSafe(
      * Message event handler
      */
     messageHandler = (event: MessageEvent) => {
-      // Validate origin
+      // Validate origin - only accept messages from expected origins
       if (!isValidOrigin(event.origin, expectedOrigins)) {
-        if (event.origin !== window.location.origin) {
-          return; // Ignore messages from unexpected origins
-        }
+        return; // Ignore messages from unexpected origins
       }
 
       // Validate message structure
@@ -582,6 +580,8 @@ export async function signInWithPopupCOOPSafe(
     authUrl.searchParams.set("appName", auth.app.name);
     authUrl.searchParams.set("authType", "signInViaPopup");
     authUrl.searchParams.set("redirectUrl", callbackUrl);
+    // Note: Firebase auth handler version parameter. This value is used by Firebase's
+    // auth widget and is stable across minor SDK updates. Update if auth widget changes.
     authUrl.searchParams.set("v", "10.0.0");
     authUrl.searchParams.set("providerId", provider.providerId);
     if (Object.keys(customParams).length > 0) {
