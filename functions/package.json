@@ -15,10 +15,12 @@
     "node": "20"
   },
   "dependencies": {
+    "cors": "^2.8.5",
     "firebase-admin": "^13.0.2",
     "firebase-functions": "^6.3.2"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/jest": "^29.5.14",
     "@types/node": "^24.10.1",
     "firebase-functions-test": "^3.4.0",
