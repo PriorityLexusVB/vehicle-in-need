@@ -4,6 +4,7 @@ import { ACTIVE_STATUS_OPTIONS, isSecuredStatus } from '../constants';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
 import StatusBadge from './StatusBadge';
 import { TrashIcon } from './icons/TrashIcon';
+import { formatSalesperson, formatDeposit, formatExtColor, formatModelNumber } from '../src/utils/orderCardFormatters';
 
 interface OrderCardProps {
   order: Order;
@@ -39,6 +40,9 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOr
   const isSecured = isSecuredStatus(order.status);
   const isActive = !isSecured;
 
+  // Format model number once for conditional rendering
+  const modelNumberDisplay = formatModelNumber(order);
+
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newStatus = e.target.value as OrderStatus;
     onUpdateStatus(order.id, newStatus);
@@ -66,6 +70,23 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOr
             </h3>
             <p className="text-sm text-slate-500 font-medium">
                 {order.year} {order.model}
+            </p>
+            {/* Summary row for at-a-glance details */}
+            <p 
+              className="text-xs text-slate-400 mt-0.5 flex flex-wrap items-center gap-x-1"
+              data-testid="order-card-summary-row"
+            >
+              <span data-testid="order-card-summary-salesperson">{formatSalesperson(order)}</span>
+              <span aria-hidden="true">•</span>
+              <span data-testid="order-card-summary-deposit">Deposit: {formatDeposit(order)}</span>
+              <span aria-hidden="true">•</span>
+              <span data-testid="order-card-summary-ext-color">{formatExtColor(order)}</span>
+              {modelNumberDisplay && (
+                <>
+                  <span aria-hidden="true">•</span>
+                  <span data-testid="order-card-summary-model">{modelNumberDisplay}</span>
+                </>
+              )}
             </p>
             <div className="mt-2">
                 <StatusBadge status={order.status} />
