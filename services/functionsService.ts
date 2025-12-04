@@ -173,7 +173,7 @@ export function parseFirebaseFunctionError(error: unknown): string {
       errorMessage.includes("network") || 
       errorMessage.includes("failed to fetch") ||
       errorMessage.includes("load failed") ||
-      errorMessage.includes("fetch") && errorMessage.includes("failed");
+      (errorMessage.includes("fetch") && errorMessage.includes("failed"));
     
     if (isNetworkError || hasNetworkErrorPattern) {
       return "Unable to connect to the server. The Cloud Functions may not be deployed. Please contact your administrator.";

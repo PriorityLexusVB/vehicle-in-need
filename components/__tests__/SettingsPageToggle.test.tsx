@@ -157,4 +157,47 @@ describe('SettingsPage Manager Toggle Functionality', () => {
       expect(callSetManagerRole).toHaveBeenCalled();
     });
   });
+
+  it('should display error message when toggle fails', async () => {
+    vi.mocked(callSetManagerRole).mockRejectedValue(new Error('Network error'));
+    
+    render(
+      <SettingsPage
+        users={mockUsers}
+        currentUser={mockCurrentUser}
+        onUpdateUserRole={mockOnUpdateUserRole}
+      />
+    );
+
+    const toggle = screen.getByTestId('manager-toggle-user-2');
+    fireEvent.click(toggle);
+    
+    await waitFor(() => {
+      expect(screen.getByText(/An error occurred/)).toBeInTheDocument();
+      expect(mockOnUpdateUserRole).not.toHaveBeenCalled();
+    });
+  });
+
+  it('should clear loading state when toggle fails', async () => {
+    vi.mocked(callSetManagerRole).mockRejectedValue(new Error('Network error'));
+    
+    render(
+      <SettingsPage
+        users={mockUsers}
+        currentUser={mockCurrentUser}
+        onUpdateUserRole={mockOnUpdateUserRole}
+      />
+    );
+
+    const toggle = screen.getByTestId('manager-toggle-user-2') as HTMLInputElement;
+    fireEvent.click(toggle);
+    
+    // Wait for the error to be handled and loading to clear
+    await waitFor(() => {
+      expect(screen.getByText(/An error occurred/)).toBeInTheDocument();
+    });
+    
+    // Toggle should not be disabled (loading cleared)
+    expect(toggle.disabled).toBe(false);
+  });
 });

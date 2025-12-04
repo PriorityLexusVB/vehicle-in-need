@@ -87,6 +87,21 @@ describe('parseFirebaseFunctionError', () => {
         'Unable to connect to the server. The Cloud Functions may not be deployed. Please contact your administrator.'
       );
     });
+
+    it('handles error with name "NetworkError"', () => {
+      const error = new Error('Connection failed');
+      Object.defineProperty(error, 'name', { value: 'NetworkError' });
+      expect(parseFirebaseFunctionError(error)).toBe(
+        'Unable to connect to the server. The Cloud Functions may not be deployed. Please contact your administrator.'
+      );
+    });
+
+    it('handles error with "fetch" and "failed" appearing separately', () => {
+      const error = new Error('fetch operation has failed');
+      expect(parseFirebaseFunctionError(error)).toBe(
+        'Unable to connect to the server. The Cloud Functions may not be deployed. Please contact your administrator.'
+      );
+    });
   });
 
   describe('Generic errors', () => {
