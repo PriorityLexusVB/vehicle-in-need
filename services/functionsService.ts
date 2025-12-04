@@ -155,11 +155,27 @@ export function parseFirebaseFunctionError(error: unknown): string {
   
   if (error instanceof Error) {
     // Check for common network/CORS errors that indicate the function might not be deployed
+    // These errors typically occur when:
+    // 1. The Cloud Function doesn't exist (returns 404 without CORS headers)
+    // 2. Network connectivity issues
+    // 3. Firewall or proxy blocking the request
     const errorMessage = error.message.toLowerCase();
-    if (errorMessage.includes("cors") || 
-        errorMessage.includes("network") || 
-        errorMessage.includes("failed to fetch") ||
-        errorMessage.includes("load failed")) {
+    const errorName = error.name.toLowerCase();
+    
+    // TypeError is often thrown for fetch failures in browsers
+    const isNetworkError = error instanceof TypeError || 
+                          errorName === "typeerror" ||
+                          errorName === "networkerror";
+    
+    // Check for common network/CORS error message patterns
+    const hasNetworkErrorPattern = 
+      errorMessage.includes("cors") || 
+      errorMessage.includes("network") || 
+      errorMessage.includes("failed to fetch") ||
+      errorMessage.includes("load failed") ||
+      errorMessage.includes("fetch") && errorMessage.includes("failed");
+    
+    if (isNetworkError || hasNetworkErrorPattern) {
       return "Unable to connect to the server. The Cloud Functions may not be deployed. Please contact your administrator.";
     }
     return error.message;
