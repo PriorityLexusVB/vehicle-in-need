@@ -2,9 +2,12 @@ import React, { useState, useEffect } from "react";
 import {
   signInWithRedirect,
   getRedirectResult,
-  signInWithPopup,
 } from "firebase/auth";
 import { auth, googleProvider, firebaseConfig } from "../services/firebase";
+import {
+  safeSignInWithPopup,
+  getRecommendedAuthMethod,
+} from "../services/safePopupAuth";
 import { GoogleIcon } from "./icons/GoogleIcon";
 
 // A sub-component for the specific error. This keeps things clean.
@@ -244,13 +247,13 @@ const Login: React.FC = () => {
     // Storage partitioning affects iOS (regardless of browser) and Safari on macOS
     const hasStoragePartitioning = isIOS || isSafari;
     
-    // In Codespaces/preview environments, popups can be flaky due to cookie and focus policies;
-    // prefer redirect first to avoid a popup-close loop.
-    const isCodespaces =
-      typeof window !== "undefined" &&
+    // Determine recommended auth method based on environment
+    const recommendedMethod = getRecommendedAuthMethod();
+    const isCodespaces = recommendedMethod === "redirect" && 
       window.location.hostname.endsWith(".app.github.dev");
     
     console.log("Environment detection:", {
+      recommendedMethod,
       isCodespaces,
       isIOS,
       isSafari,
@@ -263,79 +266,98 @@ const Login: React.FC = () => {
     const iosSafariPopupHint = "On iOS/Safari, please ensure popups are enabled in Settings > Safari > Block Pop-ups.";
     
     try {
-      // For iOS/Safari: Always prefer popup to avoid storage partitioning issues
       // For Codespaces: Always use redirect (popup fails there)
-      // For other environments: Try popup first, fall back to redirect
-      
       if (isCodespaces) {
         console.log("Using redirect sign-in for Codespaces");
         await signInWithRedirect(auth, googleProvider);
         return; // navigation expected
       }
       
+      // Use safe popup sign-in with COOP error handling
+      // This suppresses COOP-related console errors from Firebase SDK
       if (hasStoragePartitioning) {
         console.log("Using popup sign-in for iOS/Safari to avoid storage partitioning issues");
       } else {
-        console.log("Attempting popup sign-in");
+        console.log("Attempting popup sign-in with COOP error handling");
       }
       
-      await signInWithPopup(auth, googleProvider);
-      console.log("Popup sign-in successful");
-    } catch (popupError) {
-      const error = popupError as { code?: string; message?: string };
+      const result = await safeSignInWithPopup(auth, googleProvider, {
+        // For iOS/Safari, don't fall back to redirect as it causes storage issues
+        fallbackToRedirect: !hasStoragePartitioning,
+        suppressCOOPErrors: true,
+        onPopupStart: () => {
+          console.log("Popup auth started");
+        },
+        onFallbackToRedirect: () => {
+          console.log("Falling back to redirect due to popup issues");
+        },
+      });
+      
+      if (result.success) {
+        console.log("Sign-in successful");
+        if (result.usedRedirectFallback) {
+          console.log("(used redirect fallback)");
+        }
+        return;
+      }
+      
+      // Handle popup failure
+      const error = result.error;
       console.warn(
         "%c⚠️ Login - Popup sign-in failed",
         "color: #f59e0b; font-weight: bold;"
       );
-      console.warn("Popup error code:", error.code);
-      console.warn("Popup error message:", error.message);
-      console.debug("Popup error detail:", popupError);
+      console.warn("Popup error code:", error?.code);
+      console.warn("Popup error message:", error?.message);
       
-      // For iOS/Safari: Don't fall back to redirect as it will likely fail with storage issues
-      // Instead, show a more helpful error message
+      // For iOS/Safari: Show a more helpful error message
       if (hasStoragePartitioning) {
-        if (error.code === "auth/popup-blocked" || error.code === "auth/popup-closed-by-user") {
+        if (error?.code === "auth/popup-blocked" || error?.code === "auth/popup-closed-by-user") {
           setError({
             type: "generic",
             message: `The sign-in popup was blocked or closed. ${iosSafariPopupHint}`,
           });
+        } else if (error?.code === "auth/unauthorized-domain") {
+          setError({ type: "unauthorized-domain", message: "" });
         } else {
           setError({
             type: "generic",
-            message: `Sign-in failed: ${error.message || "Please try again."}. ${iosSafariPopupHint}`,
+            message: `Sign-in failed: ${error?.message || "Please try again."}. ${iosSafariPopupHint}`,
           });
         }
         setIsSigningIn(false);
         return;
       }
       
-      // For non-iOS/Safari: Fall back to redirect as before
-      try {
-        console.log("Attempting redirect sign-in as fallback");
-        await signInWithRedirect(auth, googleProvider);
-        // Navigation expected, so no further action here
-      } catch (redirectError) {
-        const redirError = redirectError as { code?: string; message?: string };
-        // This catch is only for errors *initiating* the redirect.
-        console.error(
-          "%c❌ Login - Authentication Initiation Error (Redirect)",
-          "color: #ef4444; font-weight: bold;",
-          redirectError
-        );
-        console.error("Redirect error code:", redirError.code);
-        console.error("Redirect error message:", redirError.message);
-        
-        if (redirError.code === "auth/unauthorized-domain") {
-          setError({ type: "unauthorized-domain", message: "" });
-        } else {
-          setError({
-            type: "generic",
-            message:
-              "Failed to start the sign-in process. Please check your connection and try again.",
-          });
-        }
-        setIsSigningIn(false);
+      // Handle other errors
+      if (error?.code === "auth/unauthorized-domain") {
+        setError({ type: "unauthorized-domain", message: "" });
+      } else {
+        setError({
+          type: "generic",
+          message: `Sign-in failed: ${error?.message || "Please try again."}`,
+        });
       }
+      setIsSigningIn(false);
+    } catch (unexpectedError) {
+      // This catch handles unexpected errors not caught by safeSignInWithPopup
+      const error = unexpectedError as { code?: string; message?: string };
+      console.error(
+        "%c❌ Login - Unexpected Authentication Error",
+        "color: #ef4444; font-weight: bold;",
+        unexpectedError
+      );
+      
+      if (error.code === "auth/unauthorized-domain") {
+        setError({ type: "unauthorized-domain", message: "" });
+      } else {
+        setError({
+          type: "generic",
+          message:
+            "Failed to start the sign-in process. Please check your connection and try again.",
+        });
+      }
+      setIsSigningIn(false);
     }
   };
 
