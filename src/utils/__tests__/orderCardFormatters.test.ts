@@ -56,6 +56,11 @@ describe('orderCardFormatters', () => {
       expect(formatDeposit(order)).toBe('No deposit');
     });
 
+    it('returns No deposit when amount is negative', () => {
+      const order = createOrder({ depositAmount: -500 });
+      expect(formatDeposit(order)).toBe('No deposit');
+    });
+
     it('returns No deposit when amount is not a number', () => {
       const order = createOrder({ depositAmount: undefined as unknown as number });
       expect(formatDeposit(order)).toBe('No deposit');

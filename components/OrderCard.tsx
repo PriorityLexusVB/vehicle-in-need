@@ -40,6 +40,9 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOr
   const isSecured = isSecuredStatus(order.status);
   const isActive = !isSecured;
 
+  // Pre-compute model number for summary row to avoid duplicate calls
+  const modelNumberDisplay = formatModelNumber(order);
+
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newStatus = e.target.value as OrderStatus;
     onUpdateStatus(order.id, newStatus);
@@ -78,10 +81,10 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOr
               <span data-testid="order-card-summary-deposit">Deposit: {formatDeposit(order)}</span>
               <span aria-hidden="true">•</span>
               <span data-testid="order-card-summary-ext-color">{formatExtColor(order)}</span>
-              {formatModelNumber(order) && (
+              {modelNumberDisplay && (
                 <>
                   <span aria-hidden="true">•</span>
-                  <span data-testid="order-card-summary-model">{formatModelNumber(order)}</span>
+                  <span data-testid="order-card-summary-model">{modelNumberDisplay}</span>
                 </>
               )}
             </p>

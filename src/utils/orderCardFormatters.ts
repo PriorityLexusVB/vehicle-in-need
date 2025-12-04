@@ -14,10 +14,10 @@ export const formatSalesperson = (order: Order): string => {
 
 /**
  * Formats the deposit amount for display
- * Returns 'No deposit' if deposit is 0 or not set
+ * Returns 'No deposit' if deposit is 0, negative, or not set
  */
 export const formatDeposit = (order: Order): string => {
-  if (typeof order.depositAmount !== 'number' || order.depositAmount === 0) {
+  if (typeof order.depositAmount !== 'number' || order.depositAmount <= 0) {
     return 'No deposit';
   }
   return `$${order.depositAmount.toLocaleString()}`;
