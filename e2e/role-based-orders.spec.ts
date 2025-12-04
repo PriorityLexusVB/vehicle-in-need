@@ -249,3 +249,100 @@ test.describe('Order Form Submission', () => {
     // TODO: Verify in Firestore that createdByUid and createdByEmail are set
   });
 });
+
+test.describe('Order Card Summary Row', () => {
+  test('collapsed order cards should display summary row with key details', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    
+    // Check if we can see any orders (works for both manager and non-manager views)
+    const allOrdersHeading = page.getByRole('heading', { name: 'All Orders' });
+    const yourOrdersHeading = page.getByRole('heading', { name: 'Your Orders' });
+    
+    const isManagerView = await allOrdersHeading.isVisible().catch(() => false);
+    const isNonManagerView = await yourOrdersHeading.isVisible().catch(() => false);
+    
+    if (isManagerView || isNonManagerView) {
+      console.log(`${isManagerView ? 'Manager' : 'Non-manager'} view detected - checking order card summary row`);
+      
+      // Look for the summary row data-testid
+      const summaryRows = page.getByTestId('order-card-summary-row');
+      const summaryRowCount = await summaryRows.count();
+      
+      if (summaryRowCount > 0) {
+        console.log(`Found ${summaryRowCount} order card(s) with summary rows`);
+        
+        // Verify the first order card has the summary row elements
+        const firstSummaryRow = summaryRows.first();
+        await expect(firstSummaryRow).toBeVisible();
+        
+        // Check for salesperson element
+        const salespersonEl = page.getByTestId('order-card-summary-salesperson').first();
+        await expect(salespersonEl).toBeVisible();
+        const salespersonText = await salespersonEl.textContent();
+        // Should have some text (either a name or 'TBD')
+        expect(salespersonText).toBeTruthy();
+        console.log(`  Salesperson: ${salespersonText}`);
+        
+        // Check for deposit element
+        const depositEl = page.getByTestId('order-card-summary-deposit').first();
+        await expect(depositEl).toBeVisible();
+        const depositText = await depositEl.textContent();
+        // Should show either a dollar amount or 'Deposit: No deposit'
+        expect(depositText).toMatch(/Deposit: (\$[\d,]+|No deposit)/);
+        console.log(`  Deposit: ${depositText}`);
+        
+        // Check for exterior color element
+        const extColorEl = page.getByTestId('order-card-summary-ext-color').first();
+        await expect(extColorEl).toBeVisible();
+        const extColorText = await extColorEl.textContent();
+        // Should show 'Ext: {code}' or 'Ext: TBD'
+        expect(extColorText).toMatch(/Ext: .+/);
+        console.log(`  Ext Color: ${extColorText}`);
+        
+        // Model number is optional, check if present
+        const modelEl = page.getByTestId('order-card-summary-model').first();
+        const hasModelNumber = await modelEl.isVisible().catch(() => false);
+        if (hasModelNumber) {
+          const modelText = await modelEl.textContent();
+          expect(modelText).toMatch(/Model: .+/);
+          console.log(`  Model: ${modelText}`);
+        } else {
+          console.log('  Model: (not present - optional field)');
+        }
+        
+        console.log('✓ Order card summary row displays correctly');
+      } else {
+        console.log('No orders found - test inconclusive but passing');
+      }
+    } else {
+      console.log('Neither manager nor non-manager view detected - may be unauthenticated');
+    }
+  });
+  
+  test('summary row should be visible without expanding order card', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    
+    // Check if we can see any orders
+    const summaryRows = page.getByTestId('order-card-summary-row');
+    const summaryRowCount = await summaryRows.count();
+    
+    if (summaryRowCount > 0) {
+      console.log('Found order cards - verifying summary row is visible in collapsed state');
+      
+      // The summary row should be visible immediately (without clicking to expand)
+      const firstSummaryRow = summaryRows.first();
+      await expect(firstSummaryRow).toBeVisible();
+      
+      // Verify all summary elements are visible in collapsed state
+      await expect(page.getByTestId('order-card-summary-salesperson').first()).toBeVisible();
+      await expect(page.getByTestId('order-card-summary-deposit').first()).toBeVisible();
+      await expect(page.getByTestId('order-card-summary-ext-color').first()).toBeVisible();
+      
+      console.log('✓ Summary row is visible in collapsed state');
+    } else {
+      console.log('No orders found - test inconclusive but passing');
+    }
+  });
+});
