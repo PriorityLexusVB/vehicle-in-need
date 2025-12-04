@@ -47,7 +47,7 @@ Continue development or merge when ready. No cleanup needed.
 The following 13 branches are 1 commit behind `main` but show 100+ commits "ahead" — this typically indicates:
 
 - Work that was superseded by other changes
-- Branches created from an older state of main
+- Branches created from an older state of `main`
 - Experimental work that was abandoned
 
 | Branch | Pattern | Likely Status |
