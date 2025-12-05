@@ -6,7 +6,6 @@ import {
 import { auth, googleProvider, firebaseConfig } from "../services/firebase";
 import {
   safeSignInWithPopup,
-  signInWithPopupCOOPSafe,
   getRecommendedAuthMethod,
 } from "../services/safePopupAuth";
 import { GoogleIcon } from "./icons/GoogleIcon";
@@ -274,96 +273,41 @@ const Login: React.FC = () => {
         return; // navigation expected
       }
       
-      // Use COOP-safe popup sign-in to avoid window.closed polling issues
-      // This uses postMessage-based communication instead of polling window.closed
-      if (hasStoragePartitioning) {
-        console.log("Using COOP-safe popup for iOS/Safari to avoid storage partitioning issues");
-      } else {
-        console.log("Attempting COOP-safe popup sign-in");
-      }
+      // Use Firebase's standard signInWithPopup wrapped with COOP error suppression.
+      // Note: The COOP "window.closed" console warnings are harmless - they're just
+      // logging errors from Firebase SDK's internal polling, but the actual auth
+      // flow still works correctly. We suppress these to avoid confusing users.
+      console.log("Attempting popup sign-in");
       
-      // First, try the COOP-safe popup method that uses postMessage
-      const coopSafeResult = await signInWithPopupCOOPSafe(auth, googleProvider, {
-        timeout: 120000, // 2 minute timeout
-        closeGracePeriod: 1500, // 1.5 second grace period for auth-success after popup close
-        onPopupOpen: () => {
-          console.log("COOP-safe popup opened");
+      const result = await safeSignInWithPopup(auth, googleProvider, {
+        // For iOS/Safari, don't fall back to redirect (storage partitioning issues)
+        fallbackToRedirect: !hasStoragePartitioning,
+        // Suppress COOP-related console.error messages that don't affect functionality
+        suppressCOOPErrors: true,
+        onPopupStart: () => {
+          console.log("Popup auth started");
         },
-        onPopupClose: () => {
-          console.log("COOP-safe popup closed");
-        },
-        onAuthSuccess: () => {
-          console.log("COOP-safe popup auth success");
+        onFallbackToRedirect: () => {
+          console.log("Falling back to redirect due to popup issues");
         },
       });
       
-      if (coopSafeResult.success) {
-        console.log("Sign-in successful via COOP-safe popup");
+      if (result.success) {
+        console.log("Sign-in successful via popup");
+        if (result.usedRedirectFallback) {
+          console.log("(used redirect fallback)");
+        }
         return;
       }
       
-      // If COOP-safe popup failed with a config error, fall back to standard approach
-      if (coopSafeResult.error?.code === "auth/invalid-config") {
-        console.log("COOP-safe popup not available, falling back to standard popup");
-        const result = await safeSignInWithPopup(auth, googleProvider, {
-          fallbackToRedirect: !hasStoragePartitioning,
-          suppressCOOPErrors: true,
-          onPopupStart: () => {
-            console.log("Standard popup auth started");
-          },
-          onFallbackToRedirect: () => {
-            console.log("Falling back to redirect due to popup issues");
-          },
-        });
-        
-        if (result.success) {
-          console.log("Sign-in successful via standard popup");
-          if (result.usedRedirectFallback) {
-            console.log("(used redirect fallback)");
-          }
-          return;
-        }
-        
-        // Use the standard popup result for error handling
-        const error = result.error;
-        if (hasStoragePartitioning) {
-          if (error?.code === "auth/popup-blocked" || error?.code === "auth/popup-closed-by-user") {
-            setError({
-              type: "generic",
-              message: `The sign-in popup was blocked or closed. ${iosSafariPopupHint}`,
-            });
-          } else if (error?.code === "auth/unauthorized-domain") {
-            setError({ type: "unauthorized-domain", message: "" });
-          } else {
-            setError({
-              type: "generic",
-              message: `Sign-in failed: ${error?.message || "Please try again."}. ${iosSafariPopupHint}`,
-            });
-          }
-          setIsSigningIn(false);
-          return;
-        }
-        
-        if (error?.code === "auth/unauthorized-domain") {
-          setError({ type: "unauthorized-domain", message: "" });
-        } else {
-          setError({
-            type: "generic",
-            message: `Sign-in failed: ${error?.message || "Please try again."}`,
-          });
-        }
-        setIsSigningIn(false);
-        return;
-      }
-      
-      // Handle COOP-safe popup failure
-      const error = coopSafeResult.error;
+      // Handle popup failure
+      const error = result.error;
       console.warn(
-        "%c⚠️ Login - COOP-safe popup sign-in failed",
+        "%c⚠️ Login - Popup sign-in failed",
         "color: #f59e0b; font-weight: bold;"
       );
-      console.warn("Popup error code:", error?.code);
-      console.warn("Popup error message:", error?.message);
+      console.warn("Error code:", error?.code);
+      console.warn("Error message:", error?.message);
       
       // For iOS/Safari: Show a more helpful error message
       if (hasStoragePartitioning) {

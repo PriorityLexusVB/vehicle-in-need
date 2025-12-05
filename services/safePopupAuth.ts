@@ -1,25 +1,23 @@
 /**
  * Safe Popup Authentication Service
  *
- * This module provides a COOP-safe popup authentication mechanism that avoids
- * polling `window.closed`, which is blocked under strict Cross-Origin-Opener-Policy
- * (COOP) configurations.
+ * This module provides COOP-safe popup authentication that handles the
+ * Cross-Origin-Opener-Policy (COOP) console errors gracefully.
  *
  * The issue: Under stricter COOP configurations, Firebase's internal polling of
  * `window.closed` on the popup window is blocked, causing console errors like:
  * "Cross-Origin-Opener-Policy policy would block the window.closed call."
  *
- * The solution: We use a postMessage-based communication pattern between the
- * popup and opener, completely avoiding window.closed polling:
- * 1. Open a popup that initiates OAuth with Firebase
- * 2. The popup redirects to our callback page after auth
- * 3. The callback page posts auth result back via postMessage
- * 4. The opener completes sign-in using signInWithCredential
+ * The solution: We use Firebase's standard `signInWithPopup` with console error
+ * suppression. The COOP "window.closed" console warnings are harmless - they don't
+ * affect the actual authentication flow. We simply suppress these noisy errors
+ * to avoid confusing users while the auth flow continues to work correctly.
  *
  * This approach:
- * - Eliminates COOP console errors
+ * - Uses Firebase's proven popup authentication mechanism
+ * - Suppresses harmless COOP console errors
+ * - Falls back to redirect auth if popup fails (optional)
  * - Works across all browser configurations
- * - Maintains existing UX and error semantics
  */
 
 import {
@@ -28,8 +26,6 @@ import {
   UserCredential,
   signInWithPopup,
   signInWithRedirect,
-  GoogleAuthProvider,
-  signInWithCredential,
 } from "firebase/auth";
 
 /**
@@ -276,6 +272,7 @@ export function getRecommendedAuthMethod(): "popup" | "redirect" {
 
 /**
  * Message types for popup-to-opener communication
+ * @deprecated Part of deprecated signInWithPopupCOOPSafe API
  */
 export interface PopupAuthMessage {
   type: "auth-success" | "auth-error" | "popup-closing";
@@ -288,32 +285,8 @@ export interface PopupAuthMessage {
 }
 
 /**
- * Validates the origin of a postMessage event
- */
-function isValidOrigin(origin: string, expectedOrigins: string[]): boolean {
-  return expectedOrigins.some((expected) => origin === expected);
-}
-
-/**
- * Gets expected origins for postMessage validation
- * Includes the current origin and Firebase auth domain
- */
-function getExpectedOrigins(authDomain?: string): string[] {
-  const origins: string[] = [];
-
-  if (typeof window !== "undefined" && window.location.origin) {
-    origins.push(window.location.origin);
-  }
-
-  if (authDomain) {
-    origins.push(`https://${authDomain}`);
-  }
-
-  return origins;
-}
-
-/**
  * Options for COOP-safe popup authentication
+ * @deprecated Part of deprecated signInWithPopupCOOPSafe API
  */
 export interface COOPSafePopupOptions {
   /**
@@ -346,277 +319,41 @@ export interface COOPSafePopupOptions {
 }
 
 /**
- * COOP-safe popup authentication using postMessage communication.
- *
- * This function completely avoids window.closed polling by using postMessage
- * to communicate between the popup and opener. The flow is:
- *
- * 1. Open popup with Firebase OAuth handler URL
- * 2. User completes OAuth in popup
- * 3. Firebase redirects to our callback page
- * 4. Callback page extracts tokens and posts message to opener
- * 5. Opener receives message and completes sign-in with signInWithCredential
- *
- * If the user closes the popup, the beforeunload handler in the callback page
- * posts a "popup-closing" message, which (after a grace period) triggers rejection.
- *
+ * @deprecated This function is deprecated and should not be used.
+ * 
+ * The custom COOP-safe popup approach using Firebase's internal `/__/auth/handler`
+ * URL does not work correctly - the auth handler is designed for Firebase SDK's
+ * internal popup mechanism and doesn't properly redirect to custom callback pages.
+ * 
+ * Instead, use `safeSignInWithPopup` which wraps Firebase's standard `signInWithPopup`
+ * with COOP console error suppression. The COOP "window.closed" console warnings
+ * are harmless and don't affect the actual authentication flow.
+ * 
+ * This function is kept for backwards compatibility but will be removed in a future
+ * version.
+ * 
  * @param auth - Firebase Auth instance
  * @param provider - Auth provider (must be GoogleAuthProvider)
  * @param options - Configuration options
- * @returns Promise resolving to SafePopupAuthResult
+ * @returns Promise resolving to SafePopupAuthResult (always fails with auth/invalid-config)
  */
 export async function signInWithPopupCOOPSafe(
-  auth: Auth,
-  provider: AuthProvider,
-  options: COOPSafePopupOptions = {}
+  _auth: Auth,
+  _provider: AuthProvider,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _options: COOPSafePopupOptions = {}
 ): Promise<SafePopupAuthResult> {
-  const {
-    timeout = 120000,
-    closeGracePeriod = 1500,
-    onPopupOpen,
-    onPopupClose,
-    onAuthSuccess,
-  } = options;
-
-  // Get Firebase config for building OAuth URL
-  const authDomain = (auth.app.options as { authDomain?: string }).authDomain;
-  const apiKey = (auth.app.options as { apiKey?: string }).apiKey;
-
-  if (!authDomain || !apiKey) {
-    return {
-      success: false,
-      error: Object.assign(new Error("Missing Firebase configuration"), {
-        code: "auth/invalid-config",
-      }),
-      usedRedirectFallback: false,
-    };
-  }
-
-  const expectedOrigins = getExpectedOrigins(authDomain);
-
-  return new Promise((resolve) => {
-    let hasResolved = false;
-    let popupWindow: Window | null = null;
-    let messageHandler: ((event: MessageEvent) => void) | null = null;
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    let closeGraceTimeoutId: ReturnType<typeof setTimeout> | null = null;
-
-    /**
-     * Cleanup function to remove all listeners and timeouts
-     */
-    const cleanup = () => {
-      if (messageHandler) {
-        window.removeEventListener("message", messageHandler);
-        messageHandler = null;
-      }
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        timeoutId = null;
-      }
-      if (closeGraceTimeoutId) {
-        clearTimeout(closeGraceTimeoutId);
-        closeGraceTimeoutId = null;
-      }
-      // Best effort popup close (may fail due to COOP, that's fine)
-      try {
-        if (popupWindow && !popupWindow.closed) {
-          popupWindow.close();
-        }
-      } catch {
-        // Ignore COOP-related access errors
-      }
-      popupWindow = null;
-    };
-
-    /**
-     * Resolve and cleanup
-     */
-    const doResolve = (result: SafePopupAuthResult) => {
-      if (hasResolved) return;
-      hasResolved = true;
-      cleanup();
-      resolve(result);
-    };
-
-    /**
-     * Handle successful authentication
-     */
-    const handleAuthSuccess = async (payload?: PopupAuthMessage["payload"]) => {
-      // Clear any pending close grace timeout
-      if (closeGraceTimeoutId) {
-        clearTimeout(closeGraceTimeoutId);
-        closeGraceTimeoutId = null;
-      }
-
-      onAuthSuccess?.();
-
-      if (!payload?.idToken && !payload?.accessToken) {
-        doResolve({
-          success: false,
-          error: Object.assign(new Error("No credential received from popup"), {
-            code: "auth/no-credential",
-          }),
-          usedRedirectFallback: false,
-        });
-        return;
-      }
-
-      try {
-        // Create OAuth credential from the tokens
-        const credential = GoogleAuthProvider.credential(
-          payload.idToken ?? null,
-          payload.accessToken ?? null
-        );
-
-        // Sign in with the credential
-        const userCredential = await signInWithCredential(auth, credential);
-
-        if (import.meta.env.DEV) {
-          console.log(
-            "%c✅ COOPSafePopup - Sign-in successful via postMessage",
-            "color: #10b981; font-weight: bold;"
-          );
-        }
-
-        doResolve({
-          success: true,
-          credential: userCredential,
-          usedRedirectFallback: false,
-        });
-      } catch (error) {
-        const typedError = error as Error & { code?: string };
-        doResolve({
-          success: false,
-          error: typedError,
-          usedRedirectFallback: false,
-        });
-      }
-    };
-
-    /**
-     * Handle popup closing message with grace period
-     */
-    const handlePopupClosing = () => {
-      onPopupClose?.();
-
-      // Give a grace period for auth-success to arrive
-      closeGraceTimeoutId = setTimeout(() => {
-        doResolve({
-          success: false,
-          error: Object.assign(new Error("Popup was closed by user"), {
-            code: "auth/popup-closed-by-user",
-          }),
-          usedRedirectFallback: false,
-        });
-      }, closeGracePeriod);
-    };
-
-    /**
-     * Message event handler
-     */
-    messageHandler = (event: MessageEvent) => {
-      // Validate origin - only accept messages from expected origins
-      if (!isValidOrigin(event.origin, expectedOrigins)) {
-        return; // Ignore messages from unexpected origins
-      }
-
-      // Validate message structure
-      const message = event.data as PopupAuthMessage;
-      if (!message || typeof message !== "object" || !message.type) {
-        return;
-      }
-
-      if (import.meta.env.DEV) {
-        console.log(
-          "%c📨 COOPSafePopup - Received message:",
-          "color: #3b82f6;",
-          message.type
-        );
-      }
-
-      switch (message.type) {
-        case "auth-success":
-          handleAuthSuccess(message.payload);
-          break;
-        case "auth-error":
-          doResolve({
-            success: false,
-            error: Object.assign(
-              new Error(message.payload?.error || "Authentication failed"),
-              { code: message.payload?.errorCode || "auth/popup-error" }
-            ),
-            usedRedirectFallback: false,
-          });
-          break;
-        case "popup-closing":
-          handlePopupClosing();
-          break;
-      }
-    };
-
-    window.addEventListener("message", messageHandler);
-
-    // Set up overall timeout
-    timeoutId = setTimeout(() => {
-      doResolve({
-        success: false,
-        error: Object.assign(new Error("Authentication timed out"), {
-          code: "auth/timeout",
-        }),
-        usedRedirectFallback: false,
-      });
-    }, timeout);
-
-    // Build OAuth popup URL
-    const callbackUrl = `${window.location.origin}/auth-popup-callback.html`;
-
-    // Get custom parameters from provider
-    const googleProvider = provider as GoogleAuthProvider;
-    const customParams = googleProvider.customParameters || {};
-
-    // Build the popup URL using Firebase's auth handler
-    const authUrl = new URL(`https://${authDomain}/__/auth/handler`);
-    authUrl.searchParams.set("apiKey", apiKey);
-    authUrl.searchParams.set("appName", auth.app.name);
-    authUrl.searchParams.set("authType", "signInViaPopup");
-    authUrl.searchParams.set("redirectUrl", callbackUrl);
-    // Note: Firebase auth handler version parameter. This value is used by Firebase's
-    // auth widget and is stable across minor SDK updates. Update if auth widget changes.
-    authUrl.searchParams.set("v", "10.0.0");
-    authUrl.searchParams.set("providerId", provider.providerId);
-    if (Object.keys(customParams).length > 0) {
-      authUrl.searchParams.set("customParameters", JSON.stringify(customParams));
-    }
-
-    // Calculate popup position
-    const width = 500;
-    const height = 600;
-    const left = Math.max(0, (window.screen.width - width) / 2);
-    const top = Math.max(0, (window.screen.height - height) / 2);
-    const popupFeatures = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`;
-
-    // Open the popup
-    popupWindow = window.open(authUrl.toString(), "firebaseAuthPopup", popupFeatures);
-
-    if (!popupWindow) {
-      doResolve({
-        success: false,
-        error: Object.assign(new Error("Popup was blocked"), {
-          code: "auth/popup-blocked",
-        }),
-        usedRedirectFallback: false,
-      });
-      return;
-    }
-
-    onPopupOpen?.();
-    popupWindow.focus();
-
-    if (import.meta.env.DEV) {
-      console.log(
-        "%c🔐 COOPSafePopup - Popup opened, waiting for postMessage",
-        "color: #3b82f6; font-weight: bold;"
-      );
-    }
-  });
+  // This function is deprecated - always return an error to trigger fallback
+  console.warn(
+    "%c⚠️ signInWithPopupCOOPSafe is deprecated. Use safeSignInWithPopup instead.",
+    "color: #f59e0b; font-weight: bold;"
+  );
+  return {
+    success: false,
+    error: Object.assign(
+      new Error("signInWithPopupCOOPSafe is deprecated. Use safeSignInWithPopup instead."),
+      { code: "auth/invalid-config" }
+    ),
+    usedRedirectFallback: false,
+  };
 }
