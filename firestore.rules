@@ -153,6 +153,13 @@ service cloud.firestore {
           && resource.data.createdByUid == request.auth.uid;
       }
 
+      // Helper: Check if status field is being changed
+      function isStatusChanged() {
+        return resource != null
+          && ('status' in request.resource.data)
+          && request.resource.data.status != resource.data.status;
+      }
+
       // CREATE:
       // Authenticated user can create an order but must set ownership fields correctly.
       // Enforce required fields and simple schema constraints.
@@ -170,8 +177,9 @@ service cloud.firestore {
       allow read: if isOrderOwner() || isManager();
 
       // UPDATE:
-      // - Managers can update any order (via custom claims or Firestore document).
-      // - Owners can update limited mutable fields (e.g. status, notes) without changing ownership.
+      // - Managers can update any order (via custom claims or Firestore document),
+      //   including changing status (secure/unsecure actions).
+      // - Owners can update limited mutable fields EXCEPT status (status changes are manager-only).
       allow update: if isManager();
       allow update: if isOrderOwner()
         // Ownership must remain unchanged
@@ -181,7 +189,9 @@ service cloud.firestore {
         && request.resource.data.createdByEmail == resource.data.createdByEmail
         // Restrict which keys owner may touch (cannot add/remove ownership fields or other protected fields)
         && request.resource.data.keys().hasOnly(resource.data.keys())
-        // Optional: owners can only change these fields
+        // STATUS CHANGES ARE MANAGER-ONLY: Owners cannot change status field
+        && !isStatusChanged()
+        // Optional: validate status is still a valid value (unchanged)
         && request.resource.data.status in ['Factory Order', 'Locate', 'Dealer Exchange', 'Received', 'Delivered'];
 
       // DELETE: Managers only (via custom claims or Firestore document).

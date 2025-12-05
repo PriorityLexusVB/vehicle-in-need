@@ -328,20 +328,40 @@ describe('Firestore Security Rules - Orders Collection', () => {
       );
     });
 
-    it('should allow owner to update allowed fields (status, notes)', async () => {
+    it('should allow owner to update allowed fields (notes) but NOT status', async () => {
       const userId = 'user123';
       const userDb = testEnv
         .authenticatedContext(userId, { email: 'user@example.com' })
         .firestore();
       const orderRef = doc(userDb, 'orders', 'order123');
       
+      // Owner can update notes without changing status
       await assertSucceeds(
         updateDoc(orderRef, {
           createdByUid: 'user123',
           createdByEmail: 'user@example.com',
           createdAt: new Date(),
-          status: 'Locate',
+          status: 'Factory Order', // Same status - not a change
           notes: 'Updated by owner',
+        })
+      );
+    });
+
+    it('should deny owner changing status (status changes are manager-only)', async () => {
+      const userId = 'user123';
+      const userDb = testEnv
+        .authenticatedContext(userId, { email: 'user@example.com' })
+        .firestore();
+      const orderRef = doc(userDb, 'orders', 'order123');
+      
+      // Owner cannot change status - this is a manager-only action
+      await assertFails(
+        updateDoc(orderRef, {
+          createdByUid: 'user123',
+          createdByEmail: 'user@example.com',
+          createdAt: new Date(),
+          status: 'Locate', // Different status - not allowed for non-managers
+          notes: 'Original notes',
         })
       );
     });
@@ -711,6 +731,156 @@ describe('Firestore Security Rules - Orders Collection', () => {
       );
       
       await assertFails(getDocs(ordersQuery));
+    });
+  });
+
+  describe('Manager-Only Status Changes (Secure/Unsecure Actions)', () => {
+    // Tests that verify only managers can change order status.
+    // This is essential for the Secure/Unsecure feature which is manager-only.
+    
+    beforeEach(async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const adminDb = context.firestore();
+        
+        // Create a manager with custom claims
+        await setDoc(doc(adminDb, 'users', 'manager123'), {
+          email: 'manager@example.com',
+          displayName: 'Manager',
+          isManager: true,
+        });
+        
+        // Create a regular user (order owner)
+        await setDoc(doc(adminDb, 'users', 'user123'), {
+          email: 'user@example.com',
+          displayName: 'Regular User',
+          isManager: false,
+        });
+        
+        // Create an active order
+        await setDoc(doc(adminDb, 'orders', 'activeOrder'), {
+          createdByUid: 'user123',
+          createdByEmail: 'user@example.com',
+          createdAt: new Date(),
+          status: 'Factory Order',
+          notes: 'Test order',
+        });
+        
+        // Create a secured order
+        await setDoc(doc(adminDb, 'orders', 'securedOrder'), {
+          createdByUid: 'user123',
+          createdByEmail: 'user@example.com',
+          createdAt: new Date(),
+          status: 'Delivered',
+          notes: 'Secured order',
+        });
+      });
+    });
+
+    it('should allow manager to mark order as secured (status -> Delivered)', async () => {
+      const managerDb = testEnv
+        .authenticatedContext('manager123', { 
+          email: 'manager@example.com',
+          isManager: true
+        })
+        .firestore();
+      
+      const orderRef = doc(managerDb, 'orders', 'activeOrder');
+      
+      // Manager can change status from Factory Order to Delivered (secure action)
+      await assertSucceeds(
+        updateDoc(orderRef, {
+          createdByUid: 'user123',
+          createdByEmail: 'user@example.com',
+          createdAt: new Date(),
+          status: 'Delivered',
+          notes: 'Test order',
+        })
+      );
+    });
+
+    it('should allow manager to unsecure order (status Delivered -> Factory Order)', async () => {
+      const managerDb = testEnv
+        .authenticatedContext('manager123', { 
+          email: 'manager@example.com',
+          isManager: true
+        })
+        .firestore();
+      
+      const orderRef = doc(managerDb, 'orders', 'securedOrder');
+      
+      // Manager can change status from Delivered to Factory Order (unsecure action)
+      await assertSucceeds(
+        updateDoc(orderRef, {
+          createdByUid: 'user123',
+          createdByEmail: 'user@example.com',
+          createdAt: new Date(),
+          status: 'Factory Order',
+          notes: 'Secured order',
+        })
+      );
+    });
+
+    it('should deny non-manager owner from marking order as secured', async () => {
+      const userDb = testEnv
+        .authenticatedContext('user123', { 
+          email: 'user@example.com'
+        })
+        .firestore();
+      
+      const orderRef = doc(userDb, 'orders', 'activeOrder');
+      
+      // Owner cannot change status - this is a manager-only action
+      await assertFails(
+        updateDoc(orderRef, {
+          createdByUid: 'user123',
+          createdByEmail: 'user@example.com',
+          createdAt: new Date(),
+          status: 'Delivered',
+          notes: 'Test order',
+        })
+      );
+    });
+
+    it('should deny non-manager owner from unsecuring order', async () => {
+      const userDb = testEnv
+        .authenticatedContext('user123', { 
+          email: 'user@example.com'
+        })
+        .firestore();
+      
+      const orderRef = doc(userDb, 'orders', 'securedOrder');
+      
+      // Owner cannot change status - this is a manager-only action
+      await assertFails(
+        updateDoc(orderRef, {
+          createdByUid: 'user123',
+          createdByEmail: 'user@example.com',
+          createdAt: new Date(),
+          status: 'Factory Order',
+          notes: 'Secured order',
+        })
+      );
+    });
+
+    it('should allow owner to update notes without changing status', async () => {
+      const userDb = testEnv
+        .authenticatedContext('user123', { 
+          email: 'user@example.com'
+        })
+        .firestore();
+      
+      const orderRef = doc(userDb, 'orders', 'activeOrder');
+      
+      // Owner can update notes as long as status remains unchanged
+      await assertSucceeds(
+        updateDoc(orderRef, {
+          createdByUid: 'user123',
+          createdByEmail: 'user@example.com',
+          createdAt: new Date(),
+          status: 'Factory Order', // Same as original
+          notes: 'Updated notes by owner',
+        })
+      );
     });
   });
 });
