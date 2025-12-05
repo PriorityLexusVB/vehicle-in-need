@@ -335,7 +335,9 @@ describe('Firestore Security Rules - Orders Collection', () => {
         .firestore();
       const orderRef = doc(userDb, 'orders', 'order123');
       
-      // Owner can update notes without changing status
+      // Owner can update notes when status remains unchanged.
+      // STATUS CHANGES ARE MANAGER-ONLY - this test verifies the owner can still
+      // update other fields as long as they don't change the status field.
       await assertSucceeds(
         updateDoc(orderRef, {
           createdByUid: 'user123',

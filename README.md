@@ -694,8 +694,9 @@ Security rules tests validate the Firestore security rules using the Firebase em
 - **User updates** - Role and email immutability
 - **Order creation** - Ownership enforcement, required fields
 - **Order access** - Manager vs. owner permissions
-- **Order updates** - Field immutability, manager privileges
+- **Order updates** - Field immutability, manager privileges, status change restrictions
 - **Order deletion** - Manager-only deletion
+- **Manager-only status changes** - Secure/unsecure actions restricted to managers
 
 **Run rules tests:**
 
@@ -713,6 +714,7 @@ Unit tests are written using Vitest and Testing Library. They cover critical com
 - **ProtectedRoute** - Route protection logic for manager-only pages
 - **SettingsPage** - User management and role toggle functionality
 - **VersionBadge** - Version display component
+- **SecuredStatus** - Order secured/unsecured status transitions, permission enforcement
 
 **Run unit tests:**
 
@@ -936,7 +938,22 @@ Users designated as managers can:
 - View all orders from all users
 - Access the "User Management" settings page
 - Toggle manager permissions for other users
+- Mark orders as Secured (completed)
+- Mark secured orders as Unsecured (revert if marked by mistake)
 - Cannot change their own role (security safeguard)
+
+### Order Status Management (Manager-Only)
+
+Status-changing actions are restricted to managers only for security and accountability:
+
+- **Mark Secured**: Changes an active order to secured status (moves to Secured History tab)
+- **Mark as Unsecured**: Reverts a secured order back to active status (moves to Active Orders tab)
+  - This action is intended for cases where an order was secured by mistake
+  - A confirmation dialog is shown before the action is performed
+  - The order status changes to "Factory Order" (initial active status)
+  - Dashboard metrics update automatically
+
+Non-managers can view orders they created but cannot change order status.
 
 ### Accessing User Management
 
