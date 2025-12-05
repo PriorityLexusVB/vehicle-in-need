@@ -52,7 +52,13 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOr
 
   /**
    * Handle the unsecure action with confirmation.
-   * Only managers can unsecure orders - this moves the order back to Factory Order status.
+   * Only managers can unsecure orders.
+   * 
+   * Design Decision: When unsecuring, orders always return to 'Factory Order' status
+   * because it's the default initial status for new orders. This provides a consistent
+   * baseline from which managers can then manually set the appropriate status if needed.
+   * Alternative approaches like remembering the previous status would add complexity
+   * without clear benefit for the typical "accidental secure" use case.
    */
   const handleUnsecureConfirm = () => {
     // Transition from Secured/Delivered/Received to Factory Order (initial active status)
