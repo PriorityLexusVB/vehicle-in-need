@@ -2,99 +2,92 @@
 
 This document provides an overview of the repository's branch health, identifying branches that are ready for merge, work-in-progress branches, and stale/diverged branches that should be considered for cleanup.
 
+## Current Analysis Mode
+
+**MODE: ANALYSIS_ONLY** (Default)
+
+- No commands that modify history or files will be executed
+- Safe rebase/sync actions require explicit opt-in with `MODE: APPLY_SAFE_ACTIONS`
+
+## Primary Branch
+
+**Primary Branch:** `main`
+
+All ahead/behind calculations are relative to the `main` branch.
+
 ## Summary
 
 | Category | Count | Action |
 | --- | --- | --- |
-| Ready for Merge | 2 | Review and merge |
-| WIP/Draft | 2 | Continue work or close |
-| Stale/Diverged | 13 | Recommend cleanup |
+| ACTIVE / IN USE | 1 | Continue work |
+| READY TO MERGE | 0 | None at this time |
+| ALREADY MERGED / REDUNDANT | 0 | None at this time |
+| STALE / LIKELY SAFE TO DELETE | 0 | Previous stale branches cleaned up |
+| NEEDS HUMAN REVIEW | 0 | None at this time |
 
-## Ready for Merge (Tests Clean)
+**Total Local Branches (excluding primary):** 1
 
-These branches have passing tests and are ready for review and merge:
+## Branch Health Table
 
-| Branch | PR | Tests | Description |
-| --- | --- | --- | --- |
-| `dependabot/npm_and_yarn/functions/functions-security-d0f6e8601e` | [#184](https://github.com/PriorityLexusVB/vehicle-in-need/pull/184) | 149 pass | Security update: jws 4.0.0 → 4.0.1 |
-| `dependabot/npm_and_yarn/root-security-d0f6e8601e` | [#185](https://github.com/PriorityLexusVB/vehicle-in-need/pull/185) | 140 pass | Security update: jws 4.0.0 → 4.0.1 |
+| Branch | Ahead/Behind vs main | Last Updated | Short Purpose | Status Category | Recommendation |
+| --- | --- | --- | --- | --- | --- |
+| `copilot/analyze-branch-health` | 1 ahead, 0 behind | 2025-12-04 | Branch health analysis task | ACTIVE / IN USE | Complete work and open/finalize PR |
 
-**Security Advisory:** Both PRs fix [GHSA-869p-cjfg-cm3x](https://github.com/advisories/GHSA-869p-cjfg-cm3x) - a vulnerability in the `jws` package where `createSign` and `createVerify` did not require a non-empty secret when using HMAC algorithms.
+## Per-Branch Analysis
 
-### Recommended Action
+### copilot/analyze-branch-health
 
-Merge both dependabot PRs to address the security vulnerability:
+- **Name:** copilot/analyze-branch-health
+- **Ahead/Behind:** 1 commit ahead, 0 commits behind main
+- **Last Updated:** 2025-12-04 23:20:14 UTC
+- **Status:** ACTIVE / IN USE
+- **Unique Commits:**
+  - `097a31e` - Initial plan (empty commit for branch setup)
+- **Purpose:** This branch was created to perform branch health analysis and cleanup recommendations
 
-1. Review PR #184 (functions directory jws update)
-2. Review PR #185 (root directory jws update)
-3. Merge after CI passes
+**Recommendation:** Complete the branch health analysis work and finalize the PR once done.
 
-## Skipped (WIP/Draft)
+## Previous Cleanup Status
 
-These branches are work-in-progress and were skipped from the merge-ready assessment:
+The following branches have been **successfully cleaned up** since the last report:
 
-| Branch | PR | Title | Status |
-| --- | --- | --- | --- |
-| `copilot/fix-manager-toggle-functionality` | [#183](https://github.com/PriorityLexusVB/vehicle-in-need/pull/183) | Improve error handling for Cloud Functions connection failures | In Review |
-| `copilot/update-collapsed-order-card` | [#182](https://github.com/PriorityLexusVB/vehicle-in-need/pull/182) | Add summary row to collapsed order cards for at-a-glance details | In Review |
+### Previously Stale Branches (Now Removed)
 
-### Recommended Action
-
-Continue development or merge when ready. No cleanup needed.
-
-## Stale/Diverged Branches
-
-The following 13 branches are 1 commit behind `main` but show 100+ commits "ahead" — this typically indicates:
-
-- Work that was superseded by other changes
-- Branches created from an older state of `main`
-- Experimental work that was abandoned
-
-| Branch | Pattern | Likely Status |
+| Branch | Pattern | Previous Status |
 | --- | --- | --- |
-| `copilot/fix-ci-failures-docs-ci-md` | fix-* | Superseded |
-| `copilot/fix-docs-ci-md-lint` | fix-* | Superseded |
-| `copilot/fix-markdown-lint-errors-ci-docs` | fix-* | Superseded |
-| `copilot/fixdocs-ci-md-lint` | fix-* | Superseded |
-| `copilot/harden-auth-validation-workflow` | harden-* | Superseded |
-| `copilot/harden-auth-validation-workflow-again` | harden-* | Superseded |
-| `copilot/harden-gcp-auth-validation` | harden-* | Superseded |
-| `copilot/harden-gcp-auth-validation-again` | harden-* | Superseded |
-| `copilot/merge-paste-firestore-rules` | merge-* | Superseded |
-| `copilot/paste-firestore-rules-files` | paste-* | Superseded |
-| `copilot/sub-pr-165` | sub-pr-* | Superseded |
-| `copilot/sub-pr-166` | sub-pr-* | Superseded |
-| `copilot/sub-pr-166-again` | sub-pr-* | Superseded |
+| ~~`copilot/fix-ci-failures-docs-ci-md`~~ | fix-* | Cleaned up |
+| ~~`copilot/fix-docs-ci-md-lint`~~ | fix-* | Cleaned up |
+| ~~`copilot/fix-markdown-lint-errors-ci-docs`~~ | fix-* | Cleaned up |
+| ~~`copilot/fixdocs-ci-md-lint`~~ | fix-* | Cleaned up |
+| ~~`copilot/harden-auth-validation-workflow`~~ | harden-* | Cleaned up |
+| ~~`copilot/harden-auth-validation-workflow-again`~~ | harden-* | Cleaned up |
+| ~~`copilot/harden-gcp-auth-validation`~~ | harden-* | Cleaned up |
+| ~~`copilot/harden-gcp-auth-validation-again`~~ | harden-* | Cleaned up |
+| ~~`copilot/merge-paste-firestore-rules`~~ | merge-* | Cleaned up |
+| ~~`copilot/paste-firestore-rules-files`~~ | paste-* | Cleaned up |
+| ~~`copilot/sub-pr-165`~~ | sub-pr-* | Cleaned up |
+| ~~`copilot/sub-pr-166`~~ | sub-pr-* | Cleaned up |
+| ~~`copilot/sub-pr-166-again`~~ | sub-pr-* | Cleaned up |
 
-### Recommended Action
+### Previously WIP Branches (Now Merged/Cleaned)
 
-**Clean up stale branches** to reduce repository clutter:
+| Branch | PR | Previous Status |
+| --- | --- | --- |
+| ~~`copilot/fix-manager-toggle-functionality`~~ | #183 | Merged or closed |
+| ~~`copilot/update-collapsed-order-card`~~ | #182 | Merged or closed |
 
-```bash
-# Delete stale branches (run from repository root)
-# Note: Review each branch before deletion to confirm it's no longer needed
+### Previously Ready-to-Merge (Now Merged)
 
-# Fix-related branches
-git push origin --delete copilot/fix-ci-failures-docs-ci-md
-git push origin --delete copilot/fix-docs-ci-md-lint
-git push origin --delete copilot/fix-markdown-lint-errors-ci-docs
-git push origin --delete copilot/fixdocs-ci-md-lint
+| Branch | PR | Description |
+| --- | --- | --- |
+| ~~`dependabot/npm_and_yarn/functions/functions-security-d0f6e8601e`~~ | #184 | Security update merged |
+| ~~`dependabot/npm_and_yarn/root-security-d0f6e8601e`~~ | #185 | Security update merged |
 
-# Harden-related branches
-git push origin --delete copilot/harden-auth-validation-workflow
-git push origin --delete copilot/harden-auth-validation-workflow-again
-git push origin --delete copilot/harden-gcp-auth-validation
-git push origin --delete copilot/harden-gcp-auth-validation-again
+## Recommended Next Steps
 
-# Firestore rules branches
-git push origin --delete copilot/merge-paste-firestore-rules
-git push origin --delete copilot/paste-firestore-rules-files
-
-# Sub-PR branches
-git push origin --delete copilot/sub-pr-165
-git push origin --delete copilot/sub-pr-166
-git push origin --delete copilot/sub-pr-166-again
-```
+1. **For ACTIVE branches:** Continue development work and finalize PRs when ready
+2. **No cleanup needed:** All previously identified stale branches have been cleaned up
+3. **Repository is healthy:** Only 2 remote branches exist (main + this working branch)
 
 ## Branch Naming Conventions
 
@@ -109,7 +102,16 @@ For future reference, the repository uses the following branch naming patterns:
 | `fix/*` | Bug fixes |
 | `setup/*` | Configuration/setup changes |
 
+## Final Summary
+
+- **High-level status:** 1 branch analyzed; 1 active, 0 ready to merge, 0 stale, 0 needs review
+- **Actions TAKEN:** Analysis only (default mode) - no modifications made
+- **Permissions & errors:** None - all read-only operations completed successfully
+- **Repository health:** ✅ Excellent - all previous stale branches have been cleaned up
+
 ## Report Generated
 
-- **Date:** 2025-12-04
-- **Generated by:** Automated branch curation process
+- **Date:** 2025-12-04 23:20 UTC
+- **Generated by:** Automated branch health analysis
+- **Primary Branch:** main (last commit: `6c5bb16` on 2025-12-04 18:18:16 -0500)
+- **Analysis Mode:** ANALYSIS_ONLY (default)
