@@ -279,4 +279,214 @@ describe("Secured Status Feature", () => {
       expect(mockOnUpdateStatus).toHaveBeenCalledWith(order.id, OrderStatus.Delivered);
     });
   });
+
+  describe("Unsecure Action (Mark as Unsecured)", () => {
+    it("shows Mark as Unsecured button for secured orders when user is manager", async () => {
+      const user = userEvent.setup();
+      const order = createMockOrder({ status: OrderStatus.Delivered });
+
+      render(
+        <OrderCard
+          order={order}
+          onUpdateStatus={mockOnUpdateStatus}
+          onDeleteOrder={mockOnDeleteOrder}
+          currentUser={mockManagerUser}
+        />
+      );
+
+      // Expand the card
+      const expandButton = screen.getByRole("button", { name: /toggle order details/i });
+      await user.click(expandButton);
+
+      // Should show Mark as Unsecured button
+      expect(screen.getByRole("button", { name: /mark as unsecured/i })).toBeInTheDocument();
+    });
+
+    it("does NOT show Mark as Unsecured button for non-manager users", async () => {
+      const user = userEvent.setup();
+      const order = createMockOrder({ status: OrderStatus.Delivered });
+
+      render(
+        <OrderCard
+          order={order}
+          onUpdateStatus={mockOnUpdateStatus}
+          onDeleteOrder={mockOnDeleteOrder}
+          currentUser={mockNonManagerUser}
+        />
+      );
+
+      // Expand the card
+      const expandButton = screen.getByRole("button", { name: /toggle order details/i });
+      await user.click(expandButton);
+
+      // Should NOT show Mark as Unsecured button for non-managers
+      expect(screen.queryByRole("button", { name: /mark as unsecured/i })).not.toBeInTheDocument();
+    });
+
+    it("does NOT show Mark as Unsecured button for active orders", async () => {
+      const user = userEvent.setup();
+      const order = createMockOrder({ status: OrderStatus.FactoryOrder });
+
+      render(
+        <OrderCard
+          order={order}
+          onUpdateStatus={mockOnUpdateStatus}
+          onDeleteOrder={mockOnDeleteOrder}
+          currentUser={mockManagerUser}
+        />
+      );
+
+      // Expand the card
+      const expandButton = screen.getByRole("button", { name: /toggle order details/i });
+      await user.click(expandButton);
+
+      // Should NOT show Mark as Unsecured button for active orders
+      expect(screen.queryByRole("button", { name: /mark as unsecured/i })).not.toBeInTheDocument();
+    });
+
+    it("shows confirmation dialog when Mark as Unsecured is clicked", async () => {
+      const user = userEvent.setup();
+      const order = createMockOrder({ status: OrderStatus.Delivered });
+
+      render(
+        <OrderCard
+          order={order}
+          onUpdateStatus={mockOnUpdateStatus}
+          onDeleteOrder={mockOnDeleteOrder}
+          currentUser={mockManagerUser}
+        />
+      );
+
+      // Expand the card
+      const expandButton = screen.getByRole("button", { name: /toggle order details/i });
+      await user.click(expandButton);
+
+      // Click Mark as Unsecured
+      const unsecureButton = screen.getByRole("button", { name: /mark as unsecured/i });
+      await user.click(unsecureButton);
+
+      // Should show confirmation dialog
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+      expect(screen.getByText("Confirm Unsecure Action")).toBeInTheDocument();
+      expect(screen.getByText(/order will move back to/i)).toBeInTheDocument();
+    });
+
+    it("closes confirmation dialog when Cancel is clicked", async () => {
+      const user = userEvent.setup();
+      const order = createMockOrder({ status: OrderStatus.Delivered });
+
+      render(
+        <OrderCard
+          order={order}
+          onUpdateStatus={mockOnUpdateStatus}
+          onDeleteOrder={mockOnDeleteOrder}
+          currentUser={mockManagerUser}
+        />
+      );
+
+      // Expand and click unsecure
+      const expandButton = screen.getByRole("button", { name: /toggle order details/i });
+      await user.click(expandButton);
+      const unsecureButton = screen.getByRole("button", { name: /mark as unsecured/i });
+      await user.click(unsecureButton);
+
+      // Click Cancel
+      const cancelButton = screen.getByRole("button", { name: /cancel/i });
+      await user.click(cancelButton);
+
+      // Dialog should be closed and onUpdateStatus should NOT be called
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(mockOnUpdateStatus).not.toHaveBeenCalled();
+    });
+
+    it("calls onUpdateStatus with Factory Order when unsecure is confirmed", async () => {
+      const user = userEvent.setup();
+      const order = createMockOrder({ status: OrderStatus.Delivered });
+
+      render(
+        <OrderCard
+          order={order}
+          onUpdateStatus={mockOnUpdateStatus}
+          onDeleteOrder={mockOnDeleteOrder}
+          currentUser={mockManagerUser}
+        />
+      );
+
+      // Expand and click unsecure
+      const expandButton = screen.getByRole("button", { name: /toggle order details/i });
+      await user.click(expandButton);
+      const unsecureButton = screen.getByRole("button", { name: /mark as unsecured/i });
+      await user.click(unsecureButton);
+
+      // Confirm the action
+      const confirmButton = screen.getByRole("button", { name: /yes, mark as unsecured/i });
+      await user.click(confirmButton);
+
+      // Should call onUpdateStatus with Factory Order status
+      expect(mockOnUpdateStatus).toHaveBeenCalledWith(order.id, OrderStatus.FactoryOrder);
+    });
+
+    it("works with legacy Received status as well", async () => {
+      const user = userEvent.setup();
+      const order = createMockOrder({ status: OrderStatus.Received });
+
+      render(
+        <OrderCard
+          order={order}
+          onUpdateStatus={mockOnUpdateStatus}
+          onDeleteOrder={mockOnDeleteOrder}
+          currentUser={mockManagerUser}
+        />
+      );
+
+      // Expand the card
+      const expandButton = screen.getByRole("button", { name: /toggle order details/i });
+      await user.click(expandButton);
+
+      // Should show Mark as Unsecured button for legacy Received status
+      expect(screen.getByRole("button", { name: /mark as unsecured/i })).toBeInTheDocument();
+    });
+  });
+
+  describe("Manager Permission Enforcement", () => {
+    it("non-manager cannot see Mark Secured button", async () => {
+      const user = userEvent.setup();
+      const order = createMockOrder({ status: OrderStatus.FactoryOrder });
+
+      render(
+        <OrderCard
+          order={order}
+          onUpdateStatus={mockOnUpdateStatus}
+          onDeleteOrder={mockOnDeleteOrder}
+          currentUser={mockNonManagerUser}
+        />
+      );
+
+      const expandButton = screen.getByRole("button", { name: /toggle order details/i });
+      await user.click(expandButton);
+
+      expect(screen.queryByRole("button", { name: /mark secured/i })).not.toBeInTheDocument();
+    });
+
+    it("non-manager cannot see status change dropdown", async () => {
+      const user = userEvent.setup();
+      const order = createMockOrder({ status: OrderStatus.FactoryOrder });
+
+      render(
+        <OrderCard
+          order={order}
+          onUpdateStatus={mockOnUpdateStatus}
+          onDeleteOrder={mockOnDeleteOrder}
+          currentUser={mockNonManagerUser}
+        />
+      );
+
+      const expandButton = screen.getByRole("button", { name: /toggle order details/i });
+      await user.click(expandButton);
+
+      // Non-manager should see status text but not dropdown
+      expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+      expect(screen.getByText(/status:/i)).toBeInTheDocument();
+    });
+  });
 });

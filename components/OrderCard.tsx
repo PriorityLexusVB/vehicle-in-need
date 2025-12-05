@@ -4,6 +4,7 @@ import { ACTIVE_STATUS_OPTIONS, isSecuredStatus } from '../constants';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
 import StatusBadge from './StatusBadge';
 import { TrashIcon } from './icons/TrashIcon';
+import { UndoIcon } from './icons/UndoIcon';
 import { formatSalesperson, formatDeposit, formatExtColor, formatModelNumber } from '../src/utils/orderCardFormatters';
 
 interface OrderCardProps {
@@ -22,6 +23,7 @@ const DetailItem: React.FC<{label: string, children: React.ReactNode}> = ({ labe
 
 const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOrder, currentUser }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showUnsecureConfirm, setShowUnsecureConfirm] = useState(false);
 
   // Display color codes directly (no longer looking up from vehicleOptions)
   const exteriorColors = [
@@ -46,6 +48,16 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOr
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newStatus = e.target.value as OrderStatus;
     onUpdateStatus(order.id, newStatus);
+  };
+
+  /**
+   * Handle the unsecure action with confirmation.
+   * Only managers can unsecure orders - this moves the order back to Factory Order status.
+   */
+  const handleUnsecureConfirm = () => {
+    // Transition from Secured/Delivered/Received to Factory Order (initial active status)
+    onUpdateStatus(order.id, OrderStatus.FactoryOrder);
+    setShowUnsecureConfirm(false);
   };
 
   return (
@@ -137,6 +149,16 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOr
                            Mark Secured
                         </button>
                     )}
+                    {/* "Mark as Unsecured" button for managers on secured orders - reverts to active status */}
+                    {currentUser?.isManager && isSecured && (
+                        <button 
+                          onClick={() => setShowUnsecureConfirm(true)}
+                          className="flex items-center gap-1.5 text-sm border-2 border-amber-500 text-amber-700 hover:bg-amber-50 font-semibold py-2 px-3 rounded-lg transition-colors"
+                        >
+                           <UndoIcon className="w-4 h-4" />
+                           Mark as Unsecured
+                        </button>
+                    )}
                     {currentUser?.isManager && (
                         <button onClick={() => onDeleteOrder(order.id)} className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-800 font-medium py-2 px-3 rounded-lg hover:bg-red-50 transition-colors">
                             <TrashIcon className="w-4 h-4 text-red-500" />
@@ -188,6 +210,46 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus, onDeleteOr
                         )}
                     </div>
                 )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Confirmation dialog for unsecure action */}
+      {showUnsecureConfirm && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="unsecure-dialog-title"
+        >
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md mx-4">
+            <h3 id="unsecure-dialog-title" className="text-lg font-bold text-slate-800 mb-3">
+              Confirm Unsecure Action
+            </h3>
+            <p className="text-sm text-slate-600 mb-4">
+              Are you sure you want to mark this order as unsecured?
+            </p>
+            <ul className="text-sm text-slate-600 mb-4 list-disc list-inside space-y-1">
+              <li>The order will move back to <strong>Active Orders</strong></li>
+              <li>Status will change to <strong>Factory Order</strong></li>
+              <li>Dashboard metrics will update accordingly</li>
+            </ul>
+            <p className="text-xs text-amber-600 font-medium mb-4">
+              This action is typically used when an order was marked as secured by mistake.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowUnsecureConfirm(false)}
+                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUnsecureConfirm}
+                className="px-4 py-2 text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-lg shadow-sm transition-colors"
+              >
+                Yes, Mark as Unsecured
+              </button>
             </div>
           </div>
         </div>
