@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Order, OrderStatus, AppUser } from '../types';
-import { STATUS_OPTIONS, YEARS } from '../constants';
+import { ACTIVE_STATUS_OPTIONS, YEARS } from '../constants';
 import { PlusIcon } from './icons/PlusIcon';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
 
@@ -134,7 +134,9 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
     }
   };
 
-  const activeStatusOptions = STATUS_OPTIONS.filter(s => s !== OrderStatus.Delivered && s !== OrderStatus.Received);
+  // Use ACTIVE_STATUS_OPTIONS directly instead of filtering STATUS_OPTIONS
+  // ACTIVE_STATUS_OPTIONS now only contains Factory Order and Dealer Exchange (Locate removed)
+  const activeStatusOptions = ACTIVE_STATUS_OPTIONS;
   const inputClass = (name: keyof typeof formState) => `block w-full p-2.5 border ${errors[name] ? 'border-red-500' : 'border-slate-300'} rounded-lg shadow-sm focus:ring-sky-500 focus:border-sky-500 sm:text-sm transition-colors`;
   const moneyInputClass = (name: keyof typeof formState) => `pl-8 block w-full p-2.5 border ${errors[name] ? 'border-red-500' : 'border-slate-300'} rounded-lg focus:ring-sky-500 focus:border-sky-500 sm:text-sm transition-colors`;
 

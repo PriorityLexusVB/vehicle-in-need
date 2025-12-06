@@ -214,4 +214,29 @@ describe("OrderList", () => {
 
     expect(screen.getByText(/no orders found/i)).toBeInTheDocument();
   });
+
+  it("only shows Factory Order and Dealer Exchange filter buttons (Locate removed)", () => {
+    render(
+      <OrderList
+        orders={mockOrders}
+        onUpdateStatus={mockOnUpdateStatus}
+        onDeleteOrder={mockOnDeleteOrder}
+        currentUser={mockManagerUser}
+      />
+    );
+
+    // Get all filter buttons (they are in the filter area with specific styling)
+    const allActiveBtn = screen.getByRole("button", { name: /all active/i });
+    expect(allActiveBtn).toBeInTheDocument();
+    
+    // Factory Order and Dealer Exchange filter buttons should exist
+    const factoryOrderBtns = screen.getAllByRole("button", { name: /factory order/i });
+    expect(factoryOrderBtns.length).toBeGreaterThan(0);
+    
+    const dealerExchangeBtns = screen.getAllByRole("button", { name: /dealer exchange/i });
+    expect(dealerExchangeBtns.length).toBeGreaterThan(0);
+
+    // Should NOT have any Locate button - neither filter nor any other kind
+    expect(screen.queryByRole("button", { name: /^locate$/i })).not.toBeInTheDocument();
+  });
 });
