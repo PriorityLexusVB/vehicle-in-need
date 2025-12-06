@@ -2,6 +2,10 @@ import type { Timestamp } from "firebase/firestore";
 
 export enum OrderStatus {
   FactoryOrder = 'Factory Order',
+  // Legacy status: Locate is no longer selectable in the UI for new orders,
+  // but is retained for backward compatibility with existing database records.
+  // Existing orders with this status will display correctly, but users cannot
+  // select this option when creating new orders or changing status.
   Locate = 'Locate',
   DealerExchange = 'Dealer Exchange',
   Received = 'Received',

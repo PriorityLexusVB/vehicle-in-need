@@ -133,12 +133,13 @@ describe('parseDeposit', () => {
 });
 
 describe('deriveStatus', () => {
-  it('returns Locate for LOCATE keyword', () => {
-    expect(deriveStatus('LOCATE')).toBe(OrderStatus.Locate);
+  // Legacy: LOCATE keyword now maps to FactoryOrder since Locate status is no longer selectable
+  it('returns FactoryOrder for LOCATE keyword (legacy mapping)', () => {
+    expect(deriveStatus('LOCATE')).toBe(OrderStatus.FactoryOrder);
   });
 
-  it('returns Locate for locate in sentence', () => {
-    expect(deriveStatus('NEED TO LOCATE')).toBe(OrderStatus.Locate);
+  it('returns FactoryOrder for locate in sentence (legacy mapping)', () => {
+    expect(deriveStatus('NEED TO LOCATE')).toBe(OrderStatus.FactoryOrder);
   });
 
   it('returns DealerExchange for DEALER EXCHANGE keyword', () => {
@@ -157,8 +158,8 @@ describe('deriveStatus', () => {
     expect(deriveStatus('SOME OTHER TEXT')).toBe(OrderStatus.FactoryOrder);
   });
 
-  it('is case insensitive', () => {
-    expect(deriveStatus('locate')).toBe(OrderStatus.Locate);
+  it('is case insensitive for LOCATE (legacy mapping)', () => {
+    expect(deriveStatus('locate')).toBe(OrderStatus.FactoryOrder);
   });
 });
 
@@ -302,8 +303,9 @@ describe('parseCSVToOrders', () => {
 
   it('derives status from options', () => {
     const result = parseCSVToOrders(sampleCSV);
+    // Legacy: LOCATE keyword now maps to FactoryOrder since Locate status is no longer selectable
     const greenOrder = result.orders.find(o => o.customerName === 'GREEN');
-    expect(greenOrder?.status).toBe(OrderStatus.Locate);
+    expect(greenOrder?.status).toBe(OrderStatus.FactoryOrder);
 
     const hillOrder = result.orders.find(o => o.customerName === 'HILL');
     expect(hillOrder?.status).toBe(OrderStatus.FactoryOrder);
@@ -393,8 +395,9 @@ PAUL,JORDAN
     });
 
     // Verify status derivation for specific entries
+    // Legacy: LOCATE keyword now maps to FactoryOrder since Locate status is no longer selectable
     const shookOrder = result.orders.find(o => o.customerName === 'SHOOK');
-    expect(shookOrder?.status).toBe(OrderStatus.Locate);
+    expect(shookOrder?.status).toBe(OrderStatus.FactoryOrder);
 
     const riceOrder = result.orders.find(o => o.customerName === 'RICE');
     expect(riceOrder?.status).toBe(OrderStatus.FactoryOrder);
