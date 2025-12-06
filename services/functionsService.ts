@@ -164,25 +164,22 @@ export function parseFirebaseFunctionError(error: unknown): string {
     const errorMessage = error.message.toLowerCase();
     const errorName = error.name.toLowerCase();
     
+    // Specific CORS error detection (check first for more specific message)
+    if (errorMessage.includes("cors")) {
+      return "CORS error: Unable to call Cloud Function. The functions may not be deployed with the latest CORS configuration. Please contact your administrator or try again later.";
+    }
+    
     // TypeError is often thrown for fetch failures in browsers
     const isNetworkError = error instanceof TypeError || 
                           errorName === "typeerror" ||
                           errorName === "networkerror";
     
-    // Check for common network/CORS error message patterns
+    // Check for other network error patterns
     const hasNetworkErrorPattern = 
-      errorMessage.includes("cors") || 
       errorMessage.includes("network") || 
       errorMessage.includes("failed to fetch") ||
       errorMessage.includes("load failed") ||
       (errorMessage.includes("fetch") && errorMessage.includes("failed"));
-    
-    // Specific CORS error detection
-    const isCorsError = errorMessage.includes("cors");
-    
-    if (isCorsError) {
-      return "CORS error: Unable to call Cloud Function. The functions may not be deployed with the latest CORS configuration. Please contact your administrator or try again later.";
-    }
     
     if (isNetworkError || hasNetworkErrorPattern) {
       return "Unable to connect to the server. The Cloud Functions may not be deployed. Please contact your administrator.";
