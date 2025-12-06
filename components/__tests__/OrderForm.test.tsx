@@ -85,4 +85,15 @@ describe('OrderForm', () => {
     expect(errors.length).toBeGreaterThan(0);
     expect(mockOnAddOrder).not.toHaveBeenCalled();
   });
+
+  it('renders only Factory Order and Dealer Exchange status buttons (Locate removed)', () => {
+    render(<OrderForm onAddOrder={mockOnAddOrder} currentUser={mockUser} />);
+    
+    // Should have Factory Order and Dealer Exchange status buttons
+    expect(screen.getByRole('button', { name: /factory order/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /dealer exchange/i })).toBeInTheDocument();
+    
+    // Should NOT have Locate status button (removed per product requirements)
+    expect(screen.queryByRole('button', { name: /^locate$/i })).not.toBeInTheDocument();
+  });
 });
