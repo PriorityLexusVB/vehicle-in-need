@@ -5,34 +5,40 @@ This directory contains Firebase Cloud Functions for the Vehicle Order Tracker a
 ## Functions Overview
 
 ### 1. `setManagerRole`
+
 **Purpose:** Toggle manager status for users  
 **Region:** us-west1  
 **CORS:** Configured with explicit allowed origins  
 **Auth:** Requires manager privileges
 
 **Use Cases:**
+
 - Promote users to manager role
 - Demote managers to regular users
 - Administrative user management
 
 **Security:**
+
 - Caller must be authenticated
 - Caller must have manager privileges
 - Cannot modify own role
 - Cannot demote the last manager (lockout prevention)
 
 ### 2. `disableUser`
+
 **Purpose:** Enable or disable user accounts  
 **Region:** us-west1  
 **CORS:** Configured with explicit allowed origins  
 **Auth:** Requires manager privileges
 
 **Use Cases:**
+
 - Temporarily disable user accounts
 - Re-enable previously disabled accounts
 - Administrative user management
 
 **Security:**
+
 - Caller must be authenticated
 - Caller must have manager privileges
 - Cannot disable own account
@@ -47,7 +53,7 @@ Both functions are configured with explicit CORS origins to ensure secure cross-
 The following origins are permitted to call these functions:
 
 - **Production:** `https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app`
-- **Local Development:** 
+- **Local Development:**
   - `http://localhost:5173` (Vite dev server default)
   - `http://localhost:3000` (alternative dev port)
   - `http://127.0.0.1:5173`
@@ -108,6 +114,7 @@ cd functions && npm run serve
 ```
 
 The functions will be available at:
+
 - `http://localhost:5001/vehicles-in-need/us-west1/setManagerRole`
 - `http://localhost:5001/vehicles-in-need/us-west1/disableUser`
 
@@ -150,11 +157,13 @@ After deployment, verify the functions are working:
 **Symptom:** Browser console shows CORS error: "No 'Access-Control-Allow-Origin' header"
 
 **Causes:**
+
 1. Functions not deployed with latest CORS configuration
 2. Origin URL doesn't exactly match (check protocol, domain, port)
 3. Browser cache issue
 
 **Solutions:**
+
 1. Redeploy functions: `npm run deploy:functions`
 2. Verify origin URL exactly matches entry in `ALLOWED_ORIGINS` (no trailing slash)
 3. Clear browser cache and hard refresh (Ctrl+Shift+R)
@@ -166,11 +175,13 @@ After deployment, verify the functions are working:
 **Symptom:** "Permission denied" or "Unauthenticated" errors
 
 **Causes:**
+
 1. User not authenticated
 2. User doesn't have manager privileges
 3. Custom claims not set or expired
 
 **Solutions:**
+
 1. Verify user is logged in
 2. Check user has `isManager: true` in custom claims (Firebase Console → Authentication)
 3. Have user sign out and sign back in to refresh token
@@ -181,11 +192,13 @@ After deployment, verify the functions are working:
 **Symptom:** Function call fails with 404 or "not found"
 
 **Causes:**
+
 1. Functions not deployed
 2. Wrong function name or region
 3. Firebase project mismatch
 
 **Solutions:**
+
 1. Deploy functions: `npm run deploy:functions`
 2. Verify function name matches: `setManagerRole`, `disableUser`
 3. Confirm region is `us-west1`
@@ -204,6 +217,7 @@ npm run test:watch
 ```
 
 Tests cover:
+
 - Authentication validation
 - Input validation
 - Authorization checks
@@ -274,6 +288,7 @@ Client (Browser) → Firebase SDK → Cloud Function → Firebase Admin SDK
 ### Error Handling
 
 Functions use Firebase HttpsError for standardized error responses:
+
 - `unauthenticated`: User not logged in
 - `permission-denied`: User lacks required privileges
 - `invalid-argument`: Invalid input data
@@ -286,6 +301,7 @@ Functions use Firebase HttpsError for standardized error responses:
 ### Firebase Console
 
 View function logs:
+
 1. Firebase Console → Functions
 2. Select function (setManagerRole or disableUser)
 3. View logs tab
@@ -293,17 +309,20 @@ View function logs:
 ### Log Formats
 
 **Audit Log:**
+
 ```
 [AUDIT] setManagerRole by admin@example.com on user@example.com: 
   {"isManager":false} -> {"isManager":true} (success: true)
 ```
 
 **Operation Log:**
+
 ```
 [setManagerRole] admin@example.com changed user@example.com manager status: false -> true
 ```
 
 **Error Log:**
+
 ```
 Error in setManagerRole: [error details]
 ```
@@ -318,6 +337,7 @@ Error in setManagerRole: [error details]
 ## Support
 
 For issues or questions:
+
 1. Check this README and troubleshooting section
 2. Review Firebase Functions logs
 3. Check browser console for client-side errors

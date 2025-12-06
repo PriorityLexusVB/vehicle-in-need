@@ -5,6 +5,7 @@
 The manager role toggle in the admin User Management view (`/#/admin`) was failing due to a CORS error when calling the `setManagerRole` Cloud Function.
 
 **Error Message:**
+
 ```
 Access to fetch at 'https://us-west1-vehicles-in-need.cloudfunctions.net/setManagerRole' 
 from origin 'https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app' 
@@ -43,6 +44,7 @@ export const setManagerRole = onCall<SetManagerRoleData>(
 ```
 
 Firebase Functions v2's `onCall` functions with the `cors` option automatically handle:
+
 - ✅ Preflight OPTIONS requests
 - ✅ Access-Control-Allow-Origin headers (dynamic based on request origin)
 - ✅ Access-Control-Allow-Methods (POST, OPTIONS)
@@ -124,6 +126,7 @@ After deployment, verify the fix:
 ### 3. Check Browser Console
 
 Open browser DevTools (F12) → Console tab:
+
 - ❌ Should NOT see: "CORS policy" errors
 - ❌ Should NOT see: "Failed to load resource"
 - ✅ Should see: Normal Firebase SDK logs (if enabled)
@@ -131,6 +134,7 @@ Open browser DevTools (F12) → Console tab:
 ### 4. Monitor Function Logs
 
 In Firebase Console → Functions → Select function → Logs tab:
+
 - Look for successful execution logs
 - Check for any CORS-related warnings or errors
 - Verify audit logs are being written
@@ -140,11 +144,13 @@ In Firebase Console → Functions → Select function → Logs tab:
 ### Issue: Still seeing CORS errors after deployment
 
 **Possible Causes:**
+
 1. Deployment didn't complete successfully
 2. Browser cache is serving old content
 3. Origin URL doesn't exactly match CORS configuration
 
 **Solutions:**
+
 1. Re-deploy functions and verify completion
 2. Hard refresh browser (Ctrl+Shift+R or Cmd+Shift+R)
 3. Clear browser cache completely
@@ -154,11 +160,13 @@ In Firebase Console → Functions → Select function → Logs tab:
 ### Issue: "Function not found" error
 
 **Possible Causes:**
+
 1. Functions not deployed
 2. Wrong project selected
 3. Wrong region specified
 
 **Solutions:**
+
 1. Deploy functions: `npm run deploy:functions`
 2. Verify project: `firebase use vehicles-in-need`
 3. Check function URLs include `us-west1` region
@@ -166,11 +174,13 @@ In Firebase Console → Functions → Select function → Logs tab:
 ### Issue: "Permission denied" error
 
 **Possible Causes:**
+
 1. User not authenticated
 2. User doesn't have manager privileges
 3. Custom claims not refreshed
 
 **Solutions:**
+
 1. Ensure user is logged in
 2. Verify user has `isManager: true` custom claim in Firebase Console
 3. Have user sign out and sign back in to refresh token
@@ -181,11 +191,13 @@ In Firebase Console → Functions → Select function → Logs tab:
 ### 1. Enhanced Documentation
 
 **File: `functions/src/index.ts`**
+
 - Added comprehensive CORS configuration comments
 - Improved JSDoc comments for functions
 - Added troubleshooting notes
 
 **File: `functions/README.md`** (New)
+
 - Complete documentation for Cloud Functions
 - CORS configuration explanation
 - Deployment guide
@@ -193,6 +205,7 @@ In Firebase Console → Functions → Select function → Logs tab:
 - Security best practices
 
 **File: `README.md`**
+
 - Added "Deploy Cloud Functions" section
 - Deployment instructions
 - CORS troubleshooting reference
@@ -200,17 +213,20 @@ In Firebase Console → Functions → Select function → Logs tab:
 ### 2. Improved Error Handling
 
 **File: `services/functionsService.ts`**
+
 - Added specific CORS error detection
 - Provides actionable error messages
 - Distinguishes CORS errors from general network errors
 
 **Example Error Messages:**
+
 - CORS Error: "CORS error: Unable to call Cloud Function. The functions may not be deployed with the latest CORS configuration. Please contact your administrator or try again later."
 - Network Error: "Unable to connect to the server. The Cloud Functions may not be deployed. Please contact your administrator."
 
 ### 3. Test Updates
 
 **File: `services/__tests__/functionsService.test.ts`**
+
 - Updated test to match new CORS error message
 - All tests passing (198/198 frontend, 9/9 functions)
 
@@ -234,12 +250,13 @@ In Firebase Console → Functions → Select function → Logs tab:
 ## Additional Resources
 
 - **Functions Documentation**: [`functions/README.md`](functions/README.md)
-- **Firebase Functions v2 Docs**: https://firebase.google.com/docs/functions/callable
-- **CORS in Cloud Functions**: https://firebase.google.com/docs/functions/http-events
+- **Firebase Functions v2 Docs**: <https://firebase.google.com/docs/functions/callable>
+- **CORS in Cloud Functions**: <https://firebase.google.com/docs/functions/http-events>
 
 ## Support
 
 For issues or questions:
+
 1. Check this document and troubleshooting section
 2. Review [`functions/README.md`](functions/README.md)
 3. Check Firebase Functions logs in console

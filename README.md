@@ -446,6 +446,7 @@ The app can be deployed to any container platform or static hosting service:
 The application uses Firebase Cloud Functions for manager role management and user account administration. These functions must be deployed separately from the frontend.
 
 **Functions Overview:**
+
 - `setManagerRole` - Toggle manager status for users (requires manager privileges)
 - `disableUser` - Enable/disable user accounts (requires manager privileges)
 
@@ -466,10 +467,12 @@ firebase deploy --only functions --project vehicles-in-need
 **CORS Configuration:**
 
 The functions are configured with explicit CORS origins to allow secure cross-origin requests:
+
 - Production: `https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app`
 - Local development: `localhost:5173`, `localhost:3000`, and `127.0.0.1` variants
 
 **Important:** If you encounter CORS errors in the admin dashboard when toggling manager roles:
+
 1. Verify functions are deployed with the latest code
 2. Check that the origin URL exactly matches the CORS configuration
 3. See `functions/README.md` for detailed troubleshooting
@@ -477,6 +480,7 @@ The functions are configured with explicit CORS origins to allow secure cross-or
 **Post-Deployment Verification:**
 
 After deploying functions:
+
 1. Navigate to Firebase Console → Functions
 2. Verify both `setManagerRole` and `disableUser` are listed as `us-west1` functions
 3. Test from admin dashboard (`/#/admin`) by toggling a user's manager status
