@@ -185,14 +185,12 @@ export function parseDeposit(depositStr: string): number {
 /**
  * Derive order status from the options/notes text.
  * 
- * Priority order for status detection (first match wins):
- * 1. DEALER EXCHANGE / DEALER-EXCHANGE → Dealer Exchange status
- * 2. INCOMING / HERE → Factory Order status
- * 3. LOCATE → Factory Order status (legacy: Locate status is no longer used, mapped to Factory Order)
- * 4. Default → Factory Order status
+ * Returns:
+ * - Dealer Exchange status for "DEALER EXCHANGE" or "DEALER-EXCHANGE" keywords
+ * - Factory Order status for all other cases (including "LOCATE", "INCOMING", "HERE" keywords)
  * 
  * Note: The Locate status has been removed from the UI. CSV imports with "LOCATE" keywords
- * will now be mapped to Factory Order status instead.
+ * will now be mapped to Factory Order status instead of the former Locate status.
  */
 export function deriveStatus(options: string): OrderStatus {
   const normalizedOptions = options.toUpperCase();
@@ -200,15 +198,9 @@ export function deriveStatus(options: string): OrderStatus {
   if (normalizedOptions.includes('DEALER EXCHANGE') || normalizedOptions.includes('DEALER-EXCHANGE')) {
     return OrderStatus.DealerExchange;
   }
-  if (normalizedOptions.includes('INCOMING') || normalizedOptions.includes('HERE')) {
-    return OrderStatus.FactoryOrder;
-  }
-  // Legacy: LOCATE keyword now maps to Factory Order since Locate status is no longer selectable
-  if (normalizedOptions.includes('LOCATE')) {
-    return OrderStatus.FactoryOrder;
-  }
   
-  // Default to Factory Order
+  // All other cases default to Factory Order
+  // This includes INCOMING, HERE, LOCATE keywords and any other text
   return OrderStatus.FactoryOrder;
 }
 
