@@ -1,6 +1,8 @@
 import { OrderStatus } from './types';
 
 // All status options (used for filtering - includes legacy for backwards compatibility)
+// Note: Locate is included for backward compatibility with existing database records
+// but is no longer selectable in the UI for new orders.
 export const STATUS_OPTIONS = [
   OrderStatus.FactoryOrder,
   OrderStatus.Locate,
@@ -10,9 +12,11 @@ export const STATUS_OPTIONS = [
 ];
 
 // Active status options for dropdowns and filters (excludes terminal states Received/Delivered/Secured)
+// Note: Locate status has been removed per product requirements - only Factory Order and Dealer Exchange
+// are now selectable. Existing orders with Locate status will display correctly but the status
+// cannot be selected for new orders or when changing status.
 export const ACTIVE_STATUS_OPTIONS = [
   OrderStatus.FactoryOrder,
-  OrderStatus.Locate,
   OrderStatus.DealerExchange,
 ];
 

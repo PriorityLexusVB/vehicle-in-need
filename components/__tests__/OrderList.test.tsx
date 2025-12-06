@@ -42,7 +42,7 @@ describe("OrderList", () => {
       customerName: "Bob Johnson",
       year: "2024",
       model: "Lexus NX 350",
-      status: OrderStatus.Locate,
+      status: OrderStatus.DealerExchange,
       date: "2024-01-20",
       salesperson: "Charlie",
       createdAt: new Date(),
@@ -129,11 +129,11 @@ describe("OrderList", () => {
       />
     );
 
-    // Click the "Locate" filter button (no select in current UI); disambiguate if multiple role="button" matches by taking the first pill
-    const locateFilterBtn = screen.getAllByRole("button", { name: /locate/i })[0];
-    await user.click(locateFilterBtn);
+    // Click the "Dealer Exchange" filter button (Locate removed from UI)
+    const dealerExchangeFilterBtn = screen.getAllByRole("button", { name: /dealer exchange/i })[0];
+    await user.click(dealerExchangeFilterBtn);
 
-    // Should only show orders with Locate status
+    // Should only show orders with Dealer Exchange status
     expect(screen.getByText("Bob Johnson")).toBeInTheDocument();
     expect(screen.queryByText("John Doe")).not.toBeInTheDocument();
   });
