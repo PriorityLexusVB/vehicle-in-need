@@ -346,6 +346,6 @@ For issues or questions:
 
 ---
 
-**Last Updated:** 2024  
+**Last Updated:** December 2025  
 **Firebase Functions Version:** v2 (firebase-functions 6.6.0)  
 **Node Version:** 20
