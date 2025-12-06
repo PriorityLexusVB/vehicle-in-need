@@ -12,42 +12,42 @@
 import { initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
-import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
 
 /**
  * CORS configuration for allowed origins
- * 
+ *
  * This array specifies which origins are allowed to call these Cloud Functions.
  * Firebase Functions v2 `onCall` functions handle CORS automatically when the
  * `cors` option is provided, including preflight OPTIONS requests.
- * 
+ *
  * **Important:** After updating this list, you must redeploy the functions:
  *   ```bash
  *   cd functions && npm run build && cd .. && firebase deploy --only functions --project vehicles-in-need
  *   ```
- * 
+ *
  * **Allowed Origins:**
  * - Production: Cloud Run app deployed at us-west1
  * - Development: Local development servers (Vite default port 5173, common alt port 3000)
- * 
+ *
  * **CORS Behavior:**
  * - Preflight OPTIONS requests are automatically handled by Firebase Functions
  * - The Access-Control-Allow-Origin header is set dynamically based on the request origin
  * - Only origins in this list will receive successful CORS responses
  * - Invalid origins will result in CORS errors in the browser
- * 
+ *
  * **Troubleshooting CORS Issues:**
  * 1. Verify the origin URL exactly matches (including protocol, no trailing slash)
  * 2. Ensure functions are deployed with the latest code containing this configuration
  * 3. Clear browser cache and try again
  * 4. Check browser console for the exact origin being sent in the request
  * 5. Verify the Firebase Functions logs for any CORS-related warnings
- * 
+ *
  * **Security Note:**
  * - Never use `cors: true` in production as it allows ALL origins
  * - Always specify explicit origins for production deployments
  * - Keep this list minimal to reduce attack surface
- * 
+ *
  * For multi-environment deployments, consider using Firebase Functions
  * environment configuration via `defineString()` from `firebase-functions/params`.
  */
@@ -157,8 +157,8 @@ async function writeAuditLog(entry: AuditLogEntry): Promise<void> {
     await db.collection(AUDIT_LOGS_COLLECTION).add(entry);
     console.log(
       `[AUDIT] ${entry.action} by ${entry.performedByEmail} on ${entry.targetEmail}: ` +
-      `${JSON.stringify(entry.previousValue)} -> ${JSON.stringify(entry.newValue)} ` +
-      `(success: ${entry.success})`
+        `${JSON.stringify(entry.previousValue)} -> ${JSON.stringify(entry.newValue)} ` +
+        `(success: ${entry.success})`
     );
   } catch (error) {
     // Log audit failure but don't fail the main operation
@@ -187,7 +187,7 @@ async function countManagers(): Promise<number> {
  * - Access-Control-Allow-Origin headers
  * - Access-Control-Allow-Methods (POST, OPTIONS)
  * - Access-Control-Allow-Headers (Content-Type, Authorization)
- * 
+ *
  * The CORS configuration ensures only requests from allowed origins can call this function.
  * Requests from other origins will fail with a CORS error at the browser level.
  *
@@ -196,11 +196,11 @@ async function countManagers(): Promise<number> {
  * - Caller must be a manager (isManager custom claim or Firestore document)
  * - Cannot modify own role (prevents self-demotion/promotion)
  * - Cannot demote the last manager (lockout prevention)
- * 
+ *
  * **Data Updates:**
  * - Updates both Firebase Auth custom claims AND Firestore document
  * - Writes comprehensive audit logs for all attempts (success and failure)
- * 
+ *
  * @param request - CallableRequest containing auth context and data
  * @param request.data.uid - Target user's UID to modify
  * @param request.data.isManager - New manager status (true to promote, false to demote)
@@ -208,11 +208,11 @@ async function countManagers(): Promise<number> {
  * @throws HttpsError with appropriate error code for various failure scenarios
  */
 export const setManagerRole = onCall<SetManagerRoleData>(
-  { 
+  {
     region: "us-west1",
-    cors: ALLOWED_ORIGINS,  // Explicit CORS configuration for allowed origins
+    cors: ALLOWED_ORIGINS, // Explicit CORS configuration for allowed origins
   },
-  async (request) => {
+  async (request: CallableRequest<SetManagerRoleData>) => {
     const { auth: authContext, data } = request;
 
     // Validate authentication
@@ -237,7 +237,12 @@ export const setManagerRole = onCall<SetManagerRoleData>(
     }
 
     // Validate manager access
-    const { isValid, callerEmail, callerIsManager, error: accessError } = await validateManagerAccess(callerUid);
+    const {
+      isValid,
+      callerEmail,
+      callerIsManager,
+      error: accessError,
+    } = await validateManagerAccess(callerUid);
     if (!isValid) {
       throw new HttpsError("permission-denied", accessError || "Permission denied.");
     }
@@ -330,8 +335,8 @@ export const setManagerRole = onCall<SetManagerRoleData>(
         // Log sync failure for manual reconciliation
         console.error(
           `[SYNC_FAILURE] Claims updated but Firestore failed for ${targetUid}. ` +
-          `Claims isManager=${newIsManager}, Firestore may be out of sync. ` +
-          `Run reconciliation script to fix.`,
+            `Claims isManager=${newIsManager}, Firestore may be out of sync. ` +
+            `Run reconciliation script to fix.`,
           firestoreError
         );
         throw firestoreError;
@@ -343,7 +348,7 @@ export const setManagerRole = onCall<SetManagerRoleData>(
 
       console.log(
         `[setManagerRole] ${callerEmail} changed ${targetEmail} manager status: ` +
-        `${currentIsManager} -> ${newIsManager}`
+          `${currentIsManager} -> ${newIsManager}`
       );
 
       return {
@@ -367,18 +372,18 @@ export const setManagerRole = onCall<SetManagerRoleData>(
  * This function uses the same CORS configuration as setManagerRole, allowing
  * calls from specified production and development origins. Firebase Functions v2
  * automatically handles CORS preflight requests and sets appropriate headers.
- * 
+ *
  * **Authorization Requirements:**
  * - Caller must be authenticated (Firebase Auth)
  * - Caller must be a manager
  * - Cannot disable own account (prevents self-lockout)
  * - Cannot disable the only active manager (prevents system lockout)
- * 
+ *
  * **Data Updates:**
  * - Updates Firebase Auth disabled flag
  * - Updates Firestore with isActive, disabledAt, disabledBy fields
  * - Writes comprehensive audit logs
- * 
+ *
  * @param request - CallableRequest containing auth context and data
  * @param request.data.uid - Target user's UID to disable/enable
  * @param request.data.disabled - Whether to disable (true) or enable (false) the account
@@ -386,11 +391,11 @@ export const setManagerRole = onCall<SetManagerRoleData>(
  * @throws HttpsError with appropriate error code for various failure scenarios
  */
 export const disableUser = onCall<DisableUserData>(
-  { 
+  {
     region: "us-west1",
-    cors: ALLOWED_ORIGINS,  // Explicit CORS configuration for allowed origins
+    cors: ALLOWED_ORIGINS, // Explicit CORS configuration for allowed origins
   },
-  async (request) => {
+  async (request: CallableRequest<DisableUserData>) => {
     const { auth: authContext, data } = request;
 
     // Validate authentication
@@ -415,7 +420,12 @@ export const disableUser = onCall<DisableUserData>(
     }
 
     // Validate manager access
-    const { isValid, callerEmail, callerIsManager, error: accessError } = await validateManagerAccess(callerUid);
+    const {
+      isValid,
+      callerEmail,
+      callerIsManager,
+      error: accessError,
+    } = await validateManagerAccess(callerUid);
     if (!isValid) {
       throw new HttpsError("permission-denied", accessError || "Permission denied.");
     }
