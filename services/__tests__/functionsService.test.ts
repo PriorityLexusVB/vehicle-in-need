@@ -63,7 +63,7 @@ describe('parseFirebaseFunctionError', () => {
     it('handles error with "cors" in message', () => {
       const error = new Error('CORS error: blocked');
       expect(parseFirebaseFunctionError(error)).toBe(
-        'Unable to connect to the server. The Cloud Functions may not be deployed. Please contact your administrator.'
+        'CORS error: Unable to call Cloud Function. The functions may not be deployed with the latest CORS configuration. Please contact your administrator or try again later.'
       );
     });
 
