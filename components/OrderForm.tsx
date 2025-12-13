@@ -50,6 +50,11 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
+  // Constants for year validation - calculated once per component mount
+  const currentYear = new Date().getFullYear();
+  const minYear = 1900;
+  const maxYear = currentYear + 2;
+
   const validate = () => {
     const newErrors: Partial<Record<keyof typeof formState, string>> = {};
     if (!formState.salesperson) newErrors.salesperson = 'Salesperson is required';
@@ -61,9 +66,6 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
     if (!formState.options) newErrors.options = 'Options are required';
 
     // Validate year field
-    const currentYear = new Date().getFullYear();
-    const minYear = 1900;
-    const maxYear = currentYear + 2;
     const yearNum = parseInt(formState.year, 10);
     
     if (!formState.year) {
@@ -203,7 +205,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
         <div className="space-y-4">
              <h3 className="text-base font-semibold text-slate-600 border-b pb-2">Vehicle Specification</h3>
              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <FormField label="Year*" id="year" error={errors.year} hint={`${new Date().getFullYear() - 25}–${new Date().getFullYear() + 2}`}>
+                <FormField label="Year*" id="year" error={errors.year} hint={`${minYear}–${maxYear}`}>
                     <input 
                       type="text" 
                       id="year" 
@@ -213,7 +215,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
                       className={inputClass('year')}
                       inputMode="numeric"
                       maxLength={4}
-                      placeholder={new Date().getFullYear().toString()}
+                      placeholder={currentYear.toString()}
                     />
                 </FormField>
                 <div className="sm:col-span-2">
