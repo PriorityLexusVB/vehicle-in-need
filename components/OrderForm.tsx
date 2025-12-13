@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Order, OrderStatus, AppUser } from '../types';
 import { ACTIVE_STATUS_OPTIONS } from '../constants';
 import { PlusIcon } from './icons/PlusIcon';
@@ -9,6 +9,9 @@ interface OrderFormProps {
   currentUser?: AppUser | null;
 }
 
+// Helper to get current year - extracted for reuse
+const getCurrentYear = () => new Date().getFullYear();
+
 const getInitialFormState = (currentUser?: AppUser | null) => ({
   salesperson: currentUser?.displayName || '',
   manager: '',
@@ -17,7 +20,7 @@ const getInitialFormState = (currentUser?: AppUser | null) => ({
   stockNumber: '',
   dealNumber: '',
   vin: '',
-  year: new Date().getFullYear().toString(),
+  year: getCurrentYear().toString(),
   model: '',
   modelNumber: '',
   exteriorColor1: '',
@@ -50,10 +53,15 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  // Constants for year validation - calculated once per component mount
-  const currentYear = new Date().getFullYear();
-  const minYear = 1900;
-  const maxYear = currentYear + 2;
+  // Constants for year validation - memoized to avoid recalculation on every render
+  const { currentYear, minYear, maxYear } = useMemo(() => {
+    const currentYear = getCurrentYear();
+    return {
+      currentYear,
+      minYear: 1900,
+      maxYear: currentYear + 2,
+    };
+  }, []);
 
   const validate = () => {
     const newErrors: Partial<Record<keyof typeof formState, string>> = {};
