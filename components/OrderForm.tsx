@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Order, OrderStatus, AppUser } from '../types';
-import { ACTIVE_STATUS_OPTIONS, YEARS } from '../constants';
+import { ACTIVE_STATUS_OPTIONS } from '../constants';
 import { PlusIcon } from './icons/PlusIcon';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
 
@@ -17,7 +17,7 @@ const getInitialFormState = (currentUser?: AppUser | null) => ({
   stockNumber: '',
   dealNumber: '',
   vin: '',
-  year: YEARS[0],
+  year: new Date().getFullYear().toString(),
   model: '',
   modelNumber: '',
   exteriorColor1: '',
@@ -59,6 +59,20 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
     if (!formState.dealNumber) newErrors.dealNumber = 'Deal # is required';
     if (!formState.modelNumber) newErrors.modelNumber = 'Model # is required';
     if (!formState.options) newErrors.options = 'Options are required';
+
+    // Validate year field
+    const currentYear = new Date().getFullYear();
+    const minYear = 1900;
+    const maxYear = currentYear + 2;
+    const yearNum = parseInt(formState.year, 10);
+    
+    if (!formState.year) {
+      newErrors.year = 'Year is required';
+    } else if (!/^\d{4}$/.test(formState.year)) {
+      newErrors.year = 'Year must be a 4-digit number';
+    } else if (isNaN(yearNum) || yearNum < minYear || yearNum > maxYear) {
+      newErrors.year = `Year must be between ${minYear} and ${maxYear}`;
+    }
 
     // Validate exterior and interior color codes with explicit else-if logic
     if (!formState.exteriorColor1) {
@@ -189,10 +203,18 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
         <div className="space-y-4">
              <h3 className="text-base font-semibold text-slate-600 border-b pb-2">Vehicle Specification</h3>
              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <FormField label="Year*" id="year">
-                    <select id="year" name="year" value={formState.year} onChange={handleChange} className={inputClass('year')}>
-                        {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
-                    </select>
+                <FormField label="Year*" id="year" error={errors.year} hint={`${new Date().getFullYear() - 25}–${new Date().getFullYear() + 2}`}>
+                    <input 
+                      type="text" 
+                      id="year" 
+                      name="year" 
+                      value={formState.year} 
+                      onChange={handleChange} 
+                      className={inputClass('year')}
+                      inputMode="numeric"
+                      maxLength={4}
+                      placeholder={new Date().getFullYear().toString()}
+                    />
                 </FormField>
                 <div className="sm:col-span-2">
                      <FormField label="Model*" id="model" error={errors.model}>

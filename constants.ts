@@ -61,8 +61,6 @@ export function isActiveStatus(status: OrderStatus): boolean {
   return !isSecuredStatus(status);
 }
 
-export const YEARS = ['2025', '2024', '2023'];
-
 // A list of known manager emails for INFORMATIONAL LOGGING ONLY.
 // All emails should be lowercase and use the @priorityautomotive.com domain.
 // 
