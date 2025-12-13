@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Order, OrderStatus, AppUser } from '../types';
-import { ACTIVE_STATUS_OPTIONS, YEARS } from '../constants';
+import { ACTIVE_STATUS_OPTIONS } from '../constants';
 import { PlusIcon } from './icons/PlusIcon';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
 
@@ -8,6 +8,9 @@ interface OrderFormProps {
   onAddOrder: (order: Omit<Order, 'id'>) => Promise<boolean>;
   currentUser?: AppUser | null;
 }
+
+// Helper to get current year - extracted for reuse
+const getCurrentYear = () => new Date().getFullYear();
 
 const getInitialFormState = (currentUser?: AppUser | null) => ({
   salesperson: currentUser?.displayName || '',
@@ -17,7 +20,7 @@ const getInitialFormState = (currentUser?: AppUser | null) => ({
   stockNumber: '',
   dealNumber: '',
   vin: '',
-  year: YEARS[0],
+  year: getCurrentYear().toString(),
   model: '',
   modelNumber: '',
   exteriorColor1: '',
@@ -50,6 +53,16 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
+  // Constants for year validation - memoized to avoid recalculation on every render
+  const { currentYear, minYear, maxYear } = useMemo(() => {
+    const currentYear = getCurrentYear();
+    return {
+      currentYear,
+      minYear: 1900,
+      maxYear: currentYear + 2,
+    };
+  }, []);
+
   const validate = () => {
     const newErrors: Partial<Record<keyof typeof formState, string>> = {};
     if (!formState.salesperson) newErrors.salesperson = 'Salesperson is required';
@@ -59,6 +72,18 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
     if (!formState.dealNumber) newErrors.dealNumber = 'Deal # is required';
     if (!formState.modelNumber) newErrors.modelNumber = 'Model # is required';
     if (!formState.options) newErrors.options = 'Options are required';
+
+    // Validate year field
+    if (!formState.year) {
+      newErrors.year = 'Year is required';
+    } else if (!/^\d{4}$/.test(formState.year)) {
+      newErrors.year = 'Year must be a 4-digit number';
+    } else {
+      const yearNum = parseInt(formState.year, 10);
+      if (yearNum < minYear || yearNum > maxYear) {
+        newErrors.year = `Year must be between ${minYear} and ${maxYear}`;
+      }
+    }
 
     // Validate exterior and interior color codes with explicit else-if logic
     if (!formState.exteriorColor1) {
@@ -189,10 +214,18 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
         <div className="space-y-4">
              <h3 className="text-base font-semibold text-slate-600 border-b pb-2">Vehicle Specification</h3>
              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <FormField label="Year*" id="year">
-                    <select id="year" name="year" value={formState.year} onChange={handleChange} className={inputClass('year')}>
-                        {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
-                    </select>
+                <FormField label="Year*" id="year" error={errors.year} hint={`${minYear}–${maxYear}`}>
+                    <input 
+                      type="text" 
+                      id="year" 
+                      name="year" 
+                      value={formState.year} 
+                      onChange={handleChange} 
+                      className={inputClass('year')}
+                      inputMode="numeric"
+                      maxLength={4}
+                      placeholder={currentYear.toString()}
+                    />
                 </FormField>
                 <div className="sm:col-span-2">
                      <FormField label="Model*" id="model" error={errors.model}>
