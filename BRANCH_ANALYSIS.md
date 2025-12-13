@@ -84,7 +84,7 @@ These branches differ only in their dependency updates:
 
 **Recommendation:**
 - ✅ **MERGE**: `copilot/sub-pr-166` (includes security updates - higher priority)
-- ❌ **DELETE**: `copilot/sub-pr-165` (express update can be done separately via dependabot)
+- ❌ **DELETE**: `copilot/sub-pr-165` (express update can be done separately via Dependabot)
 
 ### 3. Active Feature Branch - CORS Error Handling
 
