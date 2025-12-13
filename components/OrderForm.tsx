@@ -66,14 +66,15 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
     if (!formState.options) newErrors.options = 'Options are required';
 
     // Validate year field
-    const yearNum = parseInt(formState.year, 10);
-    
     if (!formState.year) {
       newErrors.year = 'Year is required';
     } else if (!/^\d{4}$/.test(formState.year)) {
       newErrors.year = 'Year must be a 4-digit number';
-    } else if (isNaN(yearNum) || yearNum < minYear || yearNum > maxYear) {
-      newErrors.year = `Year must be between ${minYear} and ${maxYear}`;
+    } else {
+      const yearNum = parseInt(formState.year, 10);
+      if (yearNum < minYear || yearNum > maxYear) {
+        newErrors.year = `Year must be between ${minYear} and ${maxYear}`;
+      }
     }
 
     // Validate exterior and interior color codes with explicit else-if logic
