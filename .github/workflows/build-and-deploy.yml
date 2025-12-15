@@ -56,7 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      
+
       - name: Validate Dockerfile
         run: |
           if [ ! -f Dockerfile ]; then
@@ -64,7 +64,7 @@ jobs:
             exit 1
           fi
           echo "✅ Dockerfile found"
-          
+
       - name: Validate cloudbuild.yaml
         run: |
           if [ ! -f cloudbuild.yaml ]; then
@@ -72,7 +72,7 @@ jobs:
             exit 1
           fi
           echo "✅ cloudbuild.yaml found"
-          
+
       - name: Check for conflict markers
         run: |
           if grep -r '<<<<<<< \|=======$\|>>>>>>> ' --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --exclude-dir=node_modules .; then
@@ -86,7 +86,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: validate
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
+
     steps:
       - uses: actions/checkout@v6
 
@@ -96,86 +96,133 @@ jobs:
         env:
           WIF_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          SA_KEY: ${{ secrets.GCP_SA_KEY }}
         run: |
           set -euo pipefail
           echo "Validating GCP auth inputs..."
 
-          # Check if GCP_WORKLOAD_IDENTITY_PROVIDER is set
-          if [ -z "$WIF_PROVIDER" ]; then
-            echo "::error::Missing repository secret: GCP_WORKLOAD_IDENTITY_PROVIDER"
+          # Check for authentication methods (WIF or Service Account Key)
+          HAS_WIF=false
+          HAS_SA_KEY=false
+
+          if [ -n "$WIF_PROVIDER" ] && [ -n "$SERVICE_ACCOUNT" ]; then
+            HAS_WIF=true
+          fi
+
+          if [ -n "$SA_KEY" ]; then
+            HAS_SA_KEY=true
+          fi
+
+          # At least one method must be available
+          if [ "$HAS_WIF" = false ] && [ "$HAS_SA_KEY" = false ]; then
+            echo "::error::No GCP authentication configured"
             echo ""
-            echo "Add a secret named GCP_WORKLOAD_IDENTITY_PROVIDER with the provider resource name:"
-            echo "Example: projects/123456789012/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+            echo "Configure one of the following authentication methods:"
+            echo "  1. Workload Identity Federation (recommended):"
+            echo "     - GCP_WORKLOAD_IDENTITY_PROVIDER"
+            echo "     - GCP_SERVICE_ACCOUNT"
+            echo "  2. Service Account Key:"
+            echo "     - GCP_SA_KEY"
             exit 1
           fi
 
-          # Validate GCP_WORKLOAD_IDENTITY_PROVIDER format
-          # Expected: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER
-          if ! echo "$WIF_PROVIDER" | grep -qE '^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$'; then
-            echo "::error::GCP_WORKLOAD_IDENTITY_PROVIDER has invalid format"
-            echo ""
-            echo "Expected format: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER"
-            echo "Example: projects/123456789012/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
-            exit 1
-          fi
-          echo "✅ GCP_WORKLOAD_IDENTITY_PROVIDER format is valid"
+          # Validate WIF if provided
+          if [ "$HAS_WIF" = true ]; then
+            echo "Validating Workload Identity Federation credentials..."
 
-          # Check if GCP_SERVICE_ACCOUNT is set
-          if [ -z "$SERVICE_ACCOUNT" ]; then
-            echo "::error::Missing repository secret: GCP_SERVICE_ACCOUNT"
-            echo ""
-            echo "Add a secret named GCP_SERVICE_ACCOUNT with a service account email:"
-            echo "Example: my-service-account@my-project.iam.gserviceaccount.com"
-            exit 1
+            # Validate GCP_WORKLOAD_IDENTITY_PROVIDER format
+            if ! echo "$WIF_PROVIDER" | grep -qE '^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$'; then
+              echo "::warning::GCP_WORKLOAD_IDENTITY_PROVIDER has invalid format"
+              echo "Expected format: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER"
+              HAS_WIF=false
+            else
+              echo "✅ GCP_WORKLOAD_IDENTITY_PROVIDER format is valid"
+            fi
+
+            # Validate GCP_SERVICE_ACCOUNT format
+            if ! echo "$SERVICE_ACCOUNT" | grep -qE '^[^@]+@[^@]+\.iam\.gserviceaccount\.com$'; then
+              echo "::warning::GCP_SERVICE_ACCOUNT may have invalid format"
+              echo "Expected format: SERVICE_ACCOUNT_NAME@PROJECT_ID.iam.gserviceaccount.com"
+            else
+              echo "✅ GCP_SERVICE_ACCOUNT format is valid"
+            fi
           fi
 
-          # Validate GCP_SERVICE_ACCOUNT format (basic email pattern for service accounts)
-          if ! echo "$SERVICE_ACCOUNT" | grep -qE '^[^@]+@[^@]+\.iam\.gserviceaccount\.com$'; then
-            echo "::warning::GCP_SERVICE_ACCOUNT may have invalid format"
-            echo ""
-            echo "Expected format: SERVICE_ACCOUNT_NAME@PROJECT_ID.iam.gserviceaccount.com"
-            echo "Example: github-actions@my-project.iam.gserviceaccount.com"
-          fi
-          echo "✅ GCP_SERVICE_ACCOUNT format is valid"
+          # Set outputs for downstream steps
+          echo "use_wif=$HAS_WIF" >> $GITHUB_OUTPUT
+          echo "use_sa_key=$HAS_SA_KEY" >> $GITHUB_OUTPUT
 
-          echo ""
-          echo "✅ All GCP auth inputs validated successfully"
-      
-      - name: Authenticate to Google Cloud
-        id: auth
+          if [ "$HAS_WIF" = true ]; then
+            echo "Will attempt Workload Identity Federation authentication"
+          fi
+
+          if [ "$HAS_SA_KEY" = true ]; then
+            echo "Will use Service Account Key authentication"
+          fi
+
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        id: auth-wif
+        if: steps.validate-gcp-auth.outputs.use_wif == 'true'
+        continue-on-error: true
         uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-          
+
+      - name: Authenticate to Google Cloud (Service Account Key)
+        id: auth-sa-key
+        if: steps.auth-wif.outcome != 'success' && steps.validate-gcp-auth.outputs.use_sa_key == 'true'
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Check authentication status
+        run: |
+          if [ "${{ steps.auth-wif.outcome }}" = "success" ]; then
+            echo "✅ Authenticated using Workload Identity Federation"
+          elif [ "${{ steps.auth-sa-key.outcome }}" = "success" ]; then
+            echo "✅ Authenticated using Service Account Key"
+          else
+            echo "::error::All authentication methods failed"
+            echo ""
+            if [ "${{ steps.validate-gcp-auth.outputs.use_wif }}" = "true" ]; then
+              echo "Workload Identity Federation failed - the pool or provider may not exist or be disabled"
+              echo "To fix:"
+              echo "  1. Verify the pool and provider exist in GCP"
+              echo "  2. Or configure GCP_SA_KEY secret as a fallback"
+              echo "  3. See docs/CI.md for setup instructions"
+            fi
+            exit 1
+          fi
+
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v3
-        
+
       - name: Configure Docker for Artifact Registry
         run: |
           gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
-          
+
       - name: Submit build to Cloud Build
         id: build
         run: |
           # Use the full GitHub SHA for the build, converted to short form
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           echo "Using SHORT_SHA: $SHORT_SHA (from commit: ${{ github.sha }})"
-          
+
           BUILD_ID=$(gcloud builds submit \
             --config cloudbuild.yaml \
             --substitutions=SHORT_SHA=$SHORT_SHA,_REGION=${{ env.GCP_REGION }},_SERVICE=${{ env.SERVICE_NAME }} \
             --format='value(id)')
-          
+
           echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
           echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
           echo "✅ Cloud Build submitted: $BUILD_ID"
-          
+
       - name: Wait for build completion
         run: |
           echo "Waiting for build ${{ steps.build.outputs.build_id }} to complete..."
           gcloud builds log ${{ steps.build.outputs.build_id }} --stream
-          
+
       - name: Verify build status
         run: |
           STATUS=$(gcloud builds describe ${{ steps.build.outputs.build_id }} --format='value(status)')
@@ -184,12 +231,12 @@ jobs:
             exit 1
           fi
           echo "✅ Build succeeded"
-          
+
       - name: Verify image in Artifact Registry
         run: |
           IMAGE_PATH="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.SERVICE_NAME }}"
           SHORT_SHA="${{ steps.build.outputs.short_sha }}"
-          
+
           echo "Checking for image at: $IMAGE_PATH"
           if gcloud artifacts docker images list $IMAGE_PATH --limit=1 | grep -q "$SHORT_SHA"; then
             echo "✅ Image found in Artifact Registry with tag: $SHORT_SHA"
@@ -197,32 +244,32 @@ jobs:
             echo "❌ Image not found in Artifact Registry"
             exit 1
           fi
-          
+
       - name: Inspect image structure (validation)
         run: |
           SHORT_SHA="${{ steps.build.outputs.short_sha }}"
           IMAGE_PATH="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.SERVICE_NAME }}:$SHORT_SHA"
-          
+
           echo "Pulling image for inspection..."
           docker pull $IMAGE_PATH
-          
+
           echo "Inspecting image structure..."
           docker inspect $IMAGE_PATH > /tmp/image-inspect.json
-          
+
           LAYERS=$(jq -r '.[0].RootFS.Layers | length' /tmp/image-inspect.json)
           echo "Number of layers: $LAYERS"
-          
+
           if [ "$LAYERS" -gt 0 ]; then
             echo "✅ Image has valid layer structure ($LAYERS layers)"
           else
             echo "❌ Image has no layers - this indicates a structural problem"
             exit 1
           fi
-          
+
       - name: Generate deployment command
         run: |
           SHORT_SHA="${{ steps.build.outputs.short_sha }}"
-          
+
           echo "### Deployment Command" >> $GITHUB_STEP_SUMMARY
           echo '```bash' >> $GITHUB_STEP_SUMMARY
           echo "gcloud run deploy ${{ env.SERVICE_NAME }} \\" >> $GITHUB_STEP_SUMMARY
@@ -232,7 +279,7 @@ jobs:
           echo "  --allow-unauthenticated \\" >> $GITHUB_STEP_SUMMARY
           echo "  --set-env-vars=NODE_ENV=production,APP_VERSION=$SHORT_SHA,BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          
+
           echo "### Deployed Version" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit SHA**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Short SHA**: $SHORT_SHA" >> $GITHUB_STEP_SUMMARY
@@ -245,7 +292,7 @@ jobs:
     needs: build
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy == 'true'
     environment: production
-    
+
     steps:
       - uses: actions/checkout@v6
 
@@ -255,81 +302,129 @@ jobs:
         env:
           WIF_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          SA_KEY: ${{ secrets.GCP_SA_KEY }}
         run: |
           set -euo pipefail
           echo "Validating GCP auth inputs..."
 
-          # Check if GCP_WORKLOAD_IDENTITY_PROVIDER is set
-          if [ -z "$WIF_PROVIDER" ]; then
-            echo "::error::Missing repository secret: GCP_WORKLOAD_IDENTITY_PROVIDER"
+          # Check for authentication methods (WIF or Service Account Key)
+          HAS_WIF=false
+          HAS_SA_KEY=false
+
+          if [ -n "$WIF_PROVIDER" ] && [ -n "$SERVICE_ACCOUNT" ]; then
+            HAS_WIF=true
+          fi
+
+          if [ -n "$SA_KEY" ]; then
+            HAS_SA_KEY=true
+          fi
+
+          # At least one method must be available
+          if [ "$HAS_WIF" = false ] && [ "$HAS_SA_KEY" = false ]; then
+            echo "::error::No GCP authentication configured"
             echo ""
-            echo "Add a secret named GCP_WORKLOAD_IDENTITY_PROVIDER with the provider resource name:"
-            echo "Example: projects/123456789012/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+            echo "Configure one of the following authentication methods:"
+            echo "  1. Workload Identity Federation (recommended):"
+            echo "     - GCP_WORKLOAD_IDENTITY_PROVIDER"
+            echo "     - GCP_SERVICE_ACCOUNT"
+            echo "  2. Service Account Key:"
+            echo "     - GCP_SA_KEY"
             exit 1
           fi
 
-          # Validate GCP_WORKLOAD_IDENTITY_PROVIDER format
-          # Expected: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER
-          if ! echo "$WIF_PROVIDER" | grep -qE '^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$'; then
-            echo "::error::GCP_WORKLOAD_IDENTITY_PROVIDER has invalid format"
-            echo ""
-            echo "Expected format: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER"
-            echo "Example: projects/123456789012/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
-            exit 1
-          fi
-          echo "✅ GCP_WORKLOAD_IDENTITY_PROVIDER format is valid"
+          # Validate WIF if provided
+          if [ "$HAS_WIF" = true ]; then
+            echo "Validating Workload Identity Federation credentials..."
 
-          # Check if GCP_SERVICE_ACCOUNT is set
-          if [ -z "$SERVICE_ACCOUNT" ]; then
-            echo "::error::Missing repository secret: GCP_SERVICE_ACCOUNT"
-            echo ""
-            echo "Add a secret named GCP_SERVICE_ACCOUNT with a service account email:"
-            echo "Example: my-service-account@my-project.iam.gserviceaccount.com"
-            exit 1
+            # Validate GCP_WORKLOAD_IDENTITY_PROVIDER format
+            if ! echo "$WIF_PROVIDER" | grep -qE '^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$'; then
+              echo "::warning::GCP_WORKLOAD_IDENTITY_PROVIDER has invalid format"
+              echo "Expected format: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER"
+              HAS_WIF=false
+            else
+              echo "✅ GCP_WORKLOAD_IDENTITY_PROVIDER format is valid"
+            fi
+
+            # Validate GCP_SERVICE_ACCOUNT format
+            if ! echo "$SERVICE_ACCOUNT" | grep -qE '^[^@]+@[^@]+\.iam\.gserviceaccount\.com$'; then
+              echo "::warning::GCP_SERVICE_ACCOUNT may have invalid format"
+              echo "Expected format: SERVICE_ACCOUNT_NAME@PROJECT_ID.iam.gserviceaccount.com"
+            else
+              echo "✅ GCP_SERVICE_ACCOUNT format is valid"
+            fi
           fi
 
-          # Validate GCP_SERVICE_ACCOUNT format (basic email pattern for service accounts)
-          if ! echo "$SERVICE_ACCOUNT" | grep -qE '^[^@]+@[^@]+\.iam\.gserviceaccount\.com$'; then
-            echo "::warning::GCP_SERVICE_ACCOUNT may have invalid format"
-            echo ""
-            echo "Expected format: SERVICE_ACCOUNT_NAME@PROJECT_ID.iam.gserviceaccount.com"
-            echo "Example: github-actions@my-project.iam.gserviceaccount.com"
-          fi
-          echo "✅ GCP_SERVICE_ACCOUNT format is valid"
+          # Set outputs for downstream steps
+          echo "use_wif=$HAS_WIF" >> $GITHUB_OUTPUT
+          echo "use_sa_key=$HAS_SA_KEY" >> $GITHUB_OUTPUT
 
-          echo ""
-          echo "✅ All GCP auth inputs validated successfully"
-      
-      - name: Authenticate to Google Cloud
+          if [ "$HAS_WIF" = true ]; then
+            echo "Will attempt Workload Identity Federation authentication"
+          fi
+
+          if [ "$HAS_SA_KEY" = true ]; then
+            echo "Will use Service Account Key authentication"
+          fi
+
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        id: auth-wif
+        if: steps.validate-gcp-auth.outputs.use_wif == 'true'
+        continue-on-error: true
         uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-          
+
+      - name: Authenticate to Google Cloud (Service Account Key)
+        id: auth-sa-key
+        if: steps.auth-wif.outcome != 'success' && steps.validate-gcp-auth.outputs.use_sa_key == 'true'
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Check authentication status
+        run: |
+          if [ "${{ steps.auth-wif.outcome }}" = "success" ]; then
+            echo "✅ Authenticated using Workload Identity Federation"
+          elif [ "${{ steps.auth-sa-key.outcome }}" = "success" ]; then
+            echo "✅ Authenticated using Service Account Key"
+          else
+            echo "::error::All authentication methods failed"
+            echo ""
+            if [ "${{ steps.validate-gcp-auth.outputs.use_wif }}" = "true" ]; then
+              echo "Workload Identity Federation failed - the pool or provider may not exist or be disabled"
+              echo "To fix:"
+              echo "  1. Verify the pool and provider exist in GCP"
+              echo "  2. Or configure GCP_SA_KEY secret as a fallback"
+              echo "  3. See docs/CI.md for setup instructions"
+            fi
+            exit 1
+          fi
+
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v3
-        
+
       - name: Deploy to Cloud Run
         run: |
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          
+
           gcloud run deploy ${{ env.SERVICE_NAME }} \
             --image=${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.SERVICE_NAME }}:$SHORT_SHA \
             --region=${{ env.GCP_REGION }} \
             --platform=managed \
             --allow-unauthenticated \
             --set-env-vars=NODE_ENV=production,APP_VERSION=$SHORT_SHA,BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-            
+
       - name: Verify deployment
         run: |
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          
+
           SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
             --region=${{ env.GCP_REGION }} \
             --format='value(status.url)')
-          
+
           echo "Service deployed at: $SERVICE_URL"
-          
+
           # Health check
           if curl -f "$SERVICE_URL/health"; then
             echo "✅ Health check passed"
@@ -337,11 +432,11 @@ jobs:
             echo "❌ Health check failed"
             exit 1
           fi
-          
+
           # Status check
           VERSION=$(curl -s "$SERVICE_URL/api/status" | jq -r '.version')
           echo "Deployed version: $VERSION"
-          
+
           if [ "$VERSION" = "$SHORT_SHA" ]; then
             echo "✅ Version matches deployment"
           else

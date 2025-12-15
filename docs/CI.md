@@ -1,24 +1,45 @@
-# CI/CD Configuration for GCP Workload Identity Federation
+# CI/CD Configuration for GCP Authentication
 
-This document describes how to configure the required GitHub repository secrets for the Build-and-Deploy workflow (`.github/workflows/build-and-deploy.yml`) which uses GCP Workload Identity Federation for authentication.
+This document describes how to configure the required GitHub repository secrets for the Build-and-Deploy workflow (`.github/workflows/build-and-deploy.yml`) which supports multiple GCP authentication methods.
 
 ## Overview
 
-The CI/CD workflow uses Google Cloud Workload Identity Federation for secure authentication. This approach eliminates the need for long-lived service account keys, which improves security by:
+The CI/CD workflow supports two authentication methods with automatic fallback:
 
-- Removing the risk of key leakage
+1. **Workload Identity Federation (Recommended)** - Keyless authentication using OIDC tokens
+2. **Service Account Key (Fallback)** - Traditional JSON key-based authentication
+
+### Workload Identity Federation Benefits
+
+- Removes the risk of key leakage
 - Automatically expiring credentials
-- Providing fine-grained access control per repository
+- Fine-grained access control per repository
+- No key rotation required
 
-## Required Repository Secrets
+### Service Account Key Fallback
 
-The following secrets must be configured in your GitHub repository (Settings → Secrets and variables → Actions):
+If Workload Identity Federation is not configured or fails (e.g., pool/provider doesn't exist), the workflow automatically falls back to service account key authentication if available.
+
+## Authentication Methods
+
+### Method 1: Workload Identity Federation (Recommended)
+
+Configure these secrets for keyless authentication:
 
 | Secret Name | Description | Required |
 | --- | --- | --- |
 | `GCP_WORKLOAD_IDENTITY_PROVIDER` | Full resource name of the Workload Identity Provider | Yes |
 | `GCP_SERVICE_ACCOUNT` | Service account email to impersonate | Yes |
-| `GCP_PROJECT_NUMBER` | GCP project number (12-digit number) | Optional |
+
+### Method 2: Service Account Key (Fallback)
+
+Configure this secret as a fallback or alternative:
+
+| Secret Name | Description | Required |
+| --- | --- | --- |
+| `GCP_SA_KEY` | Service account JSON key (entire file contents) | Optional |
+
+**Note**: You only need one authentication method configured. The workflow will try WIF first, then fall back to SA key if needed.
 
 ### GCP_WORKLOAD_IDENTITY_PROVIDER
 
@@ -55,6 +76,26 @@ SERVICE_ACCOUNT_NAME@PROJECT_ID.iam.gserviceaccount.com
 ```text
 github-actions-deployer@my-project.iam.gserviceaccount.com
 ```
+
+### GCP_SA_KEY
+
+The complete JSON key file contents for a service account. Use this as a fallback if Workload Identity Federation is not configured.
+
+**How to obtain:**
+
+```bash
+gcloud iam service-accounts keys create sa-key.json \
+  --iam-account=SERVICE_ACCOUNT_EMAIL
+
+# Copy the entire contents of sa-key.json
+cat sa-key.json
+```
+
+**GitHub Secret Value:**
+
+Paste the entire JSON key file contents (including `{` and `}`) as the secret value.
+
+**Security Note:** Service account keys should be rotated regularly. Consider using Workload Identity Federation instead for better security.
 
 ## Input Validation
 
@@ -205,12 +246,29 @@ The secret value doesn't match the expected service account email pattern. Verif
 
 This error typically occurs when:
 
-- The `GCP_WORKLOAD_IDENTITY_PROVIDER` secret is missing or malformed  
-- The provider resource name format is incorrect  
-- The Workload Identity Pool or Provider doesn't exist
+- The `GCP_WORKLOAD_IDENTITY_PROVIDER` secret is missing or malformed
+- The provider resource name format is incorrect
+- The Workload Identity Pool or Provider doesn't exist, is disabled, or has been deleted
 
-**Solution:** Verify the secret value matches the exact format:
-`projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER`
+**Solutions:**
+
+1. **Verify the pool and provider exist:**
+   ```bash
+   gcloud iam workload-identity-pools describe github-pool \
+     --location=global \
+     --project=YOUR_PROJECT_ID
+
+   gcloud iam workload-identity-pools providers describe github-provider \
+     --location=global \
+     --workload-identity-pool=github-pool \
+     --project=YOUR_PROJECT_ID
+   ```
+
+2. **Use Service Account Key as fallback:**
+   If you cannot fix the Workload Identity Pool, configure `GCP_SA_KEY` secret with a service account JSON key. The workflow will automatically fall back to this method.
+
+3. **Recreate the pool and provider:**
+   Follow steps 2-7 in the "Step-by-Step: Configure Workload Identity Federation in GCP" section above.
 
 ### Error: "Permission denied" or "Unable to impersonate service account"
 
@@ -229,11 +287,19 @@ The service account may not have the required IAM roles. Verify the roles in Ste
 
 The build-and-deploy workflow:
 
-- Triggers on push to `main`: Builds and pushes container image  
-- Triggers on pull_request to `main`: Validates build configuration only (no GCP auth needed)  
+- Triggers on push to `main`: Builds and pushes container image
+- Triggers on pull_request to `main`: Validates build configuration only (no GCP auth needed)
 - Manual deployment: Use `workflow_dispatch` with `deploy=true` to deploy to Cloud Run
 
-The workflow validates GCP authentication inputs before attempting to authenticate, providing clear error messages if secrets are missing or malformed.
+### Authentication Flow
+
+The workflow validates GCP authentication inputs and uses the following priority:
+
+1. **Attempt Workload Identity Federation** - If `GCP_WORKLOAD_IDENTITY_PROVIDER` and `GCP_SERVICE_ACCOUNT` are configured
+2. **Fall back to Service Account Key** - If WIF fails or is not configured, and `GCP_SA_KEY` is available
+3. **Fail with clear error message** - If no authentication method works
+
+This ensures maximum reliability while providing clear troubleshooting guidance.
 
 ## References
 
