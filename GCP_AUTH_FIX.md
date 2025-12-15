@@ -57,12 +57,12 @@ If you want to use the more secure WIF method, follow these steps:
    ```bash
    gcloud iam workload-identity-pools describe github-pool \
      --location=global \
-     --project=gen-lang-client-0615287333
+     --project=YOUR_PROJECT_ID
 
    gcloud iam workload-identity-pools providers describe github-provider \
      --location=global \
      --workload-identity-pool=github-pool \
-     --project=gen-lang-client-0615287333
+     --project=YOUR_PROJECT_ID
    ```
 
 2. **If they don't exist, create them:**
@@ -76,7 +76,7 @@ If you need a quick fix or cannot set up WIF, use a service account key:
 1. **Create a service account key:**
    ```bash
    gcloud iam service-accounts keys create sa-key.json \
-     --iam-account=github-actions-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com
+     --iam-account=SERVICE_ACCOUNT_NAME@YOUR_PROJECT_ID.iam.gserviceaccount.com
    ```
 
 2. **Add to GitHub Secrets:**
