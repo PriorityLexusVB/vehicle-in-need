@@ -17,11 +17,16 @@ This document provides testing instructions to verify the authentication fallbac
 
 ```
 Validating GCP auth inputs...
+Validating Workload Identity Federation credentials...
+✅ GCP_WORKLOAD_IDENTITY_PROVIDER format is valid
+✅ GCP_SERVICE_ACCOUNT format is valid
 Will attempt Workload Identity Federation authentication
 ✅ Authenticated using Workload Identity Federation
 ```
 
 **Status:** ✅ Should work if WIF is properly configured
+
+**Note:** The above shows key output lines. Full output includes additional authentication step details.
 
 ---
 
@@ -109,6 +114,12 @@ Workload Identity Federation failed - the pool or provider may not exist or be d
 To fix:
   1. Verify the pool and provider exist in GCP
   2. Or configure GCP_SA_KEY secret as a fallback
+  3. See docs/CI.md for setup instructions
+
+Service Account Key authentication failed - the key may be invalid or missing required permissions
+To fix:
+  1. Ensure the GCP_SA_KEY secret contains a valid service account key JSON
+  2. Verify the service account has the necessary IAM roles (Cloud Build Editor, Artifact Registry Writer)
   3. See docs/CI.md for setup instructions
 ```
 
