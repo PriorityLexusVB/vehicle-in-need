@@ -132,18 +132,23 @@ jobs:
 
             # Validate GCP_WORKLOAD_IDENTITY_PROVIDER format
             if ! echo "$WIF_PROVIDER" | grep -qE '^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$'; then
-              echo "::warning::GCP_WORKLOAD_IDENTITY_PROVIDER has invalid format"
+              echo "::error::GCP_WORKLOAD_IDENTITY_PROVIDER has invalid format"
               echo "Expected format: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER"
-              HAS_WIF=false
+              if [ "$HAS_SA_KEY" = false ]; then
+                exit 1
+              else
+                echo "Will attempt Service Account Key authentication as fallback"
+                HAS_WIF=false
+              fi
             else
               echo "✅ GCP_WORKLOAD_IDENTITY_PROVIDER format is valid"
             fi
 
             # Validate GCP_SERVICE_ACCOUNT format
-            if ! echo "$SERVICE_ACCOUNT" | grep -qE '^[^@]+@[^@]+\.iam\.gserviceaccount\.com$'; then
+            if [ "$HAS_WIF" = true ] && ! echo "$SERVICE_ACCOUNT" | grep -qE '^[^@]+@[^@]+\.iam\.gserviceaccount\.com$'; then
               echo "::warning::GCP_SERVICE_ACCOUNT may have invalid format"
               echo "Expected format: SERVICE_ACCOUNT_NAME@PROJECT_ID.iam.gserviceaccount.com"
-            else
+            elif [ "$HAS_WIF" = true ]; then
               echo "✅ GCP_SERVICE_ACCOUNT format is valid"
             fi
           fi
@@ -171,7 +176,7 @@ jobs:
 
       - name: Authenticate to Google Cloud (Service Account Key)
         id: auth-sa-key
-        if: steps.auth-wif.outcome != 'success' && steps.validate-gcp-auth.outputs.use_sa_key == 'true'
+        if: steps.auth-wif.outcome == 'failure' && steps.validate-gcp-auth.outputs.use_sa_key == 'true'
         uses: google-github-actions/auth@v3
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
@@ -190,6 +195,12 @@ jobs:
               echo "To fix:"
               echo "  1. Verify the pool and provider exist in GCP"
               echo "  2. Or configure GCP_SA_KEY secret as a fallback"
+              echo "  3. See docs/CI.md for setup instructions"
+            elif [ "${{ steps.validate-gcp-auth.outputs.use_sa_key }}" = "true" ]; then
+              echo "Service Account Key authentication failed - the key may be invalid or missing required permissions"
+              echo "To fix:"
+              echo "  1. Ensure the GCP_SA_KEY secret contains a valid service account key JSON"
+              echo "  2. Verify the service account has the necessary IAM roles (Cloud Build Editor, Artifact Registry Writer)"
               echo "  3. See docs/CI.md for setup instructions"
             fi
             exit 1
@@ -338,18 +349,23 @@ jobs:
 
             # Validate GCP_WORKLOAD_IDENTITY_PROVIDER format
             if ! echo "$WIF_PROVIDER" | grep -qE '^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$'; then
-              echo "::warning::GCP_WORKLOAD_IDENTITY_PROVIDER has invalid format"
+              echo "::error::GCP_WORKLOAD_IDENTITY_PROVIDER has invalid format"
               echo "Expected format: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER"
-              HAS_WIF=false
+              if [ "$HAS_SA_KEY" = false ]; then
+                exit 1
+              else
+                echo "Will attempt Service Account Key authentication as fallback"
+                HAS_WIF=false
+              fi
             else
               echo "✅ GCP_WORKLOAD_IDENTITY_PROVIDER format is valid"
             fi
 
             # Validate GCP_SERVICE_ACCOUNT format
-            if ! echo "$SERVICE_ACCOUNT" | grep -qE '^[^@]+@[^@]+\.iam\.gserviceaccount\.com$'; then
+            if [ "$HAS_WIF" = true ] && ! echo "$SERVICE_ACCOUNT" | grep -qE '^[^@]+@[^@]+\.iam\.gserviceaccount\.com$'; then
               echo "::warning::GCP_SERVICE_ACCOUNT may have invalid format"
               echo "Expected format: SERVICE_ACCOUNT_NAME@PROJECT_ID.iam.gserviceaccount.com"
-            else
+            elif [ "$HAS_WIF" = true ]; then
               echo "✅ GCP_SERVICE_ACCOUNT format is valid"
             fi
           fi
@@ -377,7 +393,7 @@ jobs:
 
       - name: Authenticate to Google Cloud (Service Account Key)
         id: auth-sa-key
-        if: steps.auth-wif.outcome != 'success' && steps.validate-gcp-auth.outputs.use_sa_key == 'true'
+        if: steps.auth-wif.outcome == 'failure' && steps.validate-gcp-auth.outputs.use_sa_key == 'true'
         uses: google-github-actions/auth@v3
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
@@ -396,6 +412,12 @@ jobs:
               echo "To fix:"
               echo "  1. Verify the pool and provider exist in GCP"
               echo "  2. Or configure GCP_SA_KEY secret as a fallback"
+              echo "  3. See docs/CI.md for setup instructions"
+            elif [ "${{ steps.validate-gcp-auth.outputs.use_sa_key }}" = "true" ]; then
+              echo "Service Account Key authentication failed - the key may be invalid or missing required permissions"
+              echo "To fix:"
+              echo "  1. Ensure the GCP_SA_KEY secret contains a valid service account key JSON"
+              echo "  2. Verify the service account has the necessary IAM roles (Cloud Build Editor, Artifact Registry Writer)"
               echo "  3. See docs/CI.md for setup instructions"
             fi
             exit 1

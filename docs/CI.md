@@ -39,7 +39,7 @@ Configure this secret as a fallback or alternative:
 | --- | --- | --- |
 | `GCP_SA_KEY` | Service account JSON key (entire file contents) | Optional |
 
-**Note**: You only need one authentication method configured. The workflow will try WIF first, then fall back to SA key if needed.
+**Note**: Only one authentication method is required for the workflow to function. However, configuring both Workload Identity Federation and Service Account Key is recommended for maximum reliability, as the workflow will automatically use WIF as the primary method and fall back to the SA key if needed.
 
 ### GCP_WORKLOAD_IDENTITY_PROVIDER
 

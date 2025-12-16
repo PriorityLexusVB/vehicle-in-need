@@ -15,6 +15,12 @@ invalid_target: The target service indicated by the "audience" parameters is inv
 
 ### Option 1: Use Service Account Key (Fastest)
 
+**Prerequisites**: Ensure the service account has the necessary IAM roles:
+- `roles/cloudbuild.builds.editor` (Cloud Build Editor)
+- `roles/artifactregistry.writer` (Artifact Registry Writer)
+- `roles/run.admin` (Cloud Run Admin, if deploying)
+- `roles/iam.serviceAccountUser` (Service Account User)
+
 1. **Create a service account key:**
    ```bash
    gcloud iam service-accounts keys create sa-key.json \
