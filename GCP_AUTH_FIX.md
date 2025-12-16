@@ -11,6 +11,7 @@ This might either be because the pool or provider is disabled or deleted or beca
 ```
 
 **Root Cause:** The Workload Identity Pool or Provider configured in the `GCP_WORKLOAD_IDENTITY_PROVIDER` secret either:
+
 - Doesn't exist in GCP
 - Has been deleted
 - Is disabled
@@ -21,11 +22,13 @@ This might either be because the pool or provider is disabled or deleted or beca
 Modified the workflow to support **automatic fallback authentication** with two methods:
 
 ### 1. Workload Identity Federation (Primary - Recommended)
+
 - Keyless authentication using OIDC tokens
 - More secure (no long-lived credentials)
 - Requires: `GCP_WORKLOAD_IDENTITY_PROVIDER` and `GCP_SERVICE_ACCOUNT` secrets
 
 ### 2. Service Account Key (Fallback)
+
 - Traditional JSON key-based authentication
 - Automatically used if WIF fails or is not configured
 - Requires: `GCP_SA_KEY` secret
@@ -54,6 +57,7 @@ Modified the workflow to support **automatic fallback authentication** with two 
 If you want to use the more secure WIF method, follow these steps:
 
 1. **Verify the pool and provider exist:**
+
    ```bash
    gcloud iam workload-identity-pools describe github-pool \
      --location=global \
@@ -66,6 +70,7 @@ If you want to use the more secure WIF method, follow these steps:
    ```
 
 2. **If they don't exist, create them:**
+
    Follow the complete setup instructions in `docs/CI.md` section:
    "Step-by-Step: Configure Workload Identity Federation in GCP"
 
@@ -74,6 +79,7 @@ If you want to use the more secure WIF method, follow these steps:
 If you need a quick fix or cannot set up WIF, use a service account key:
 
 1. **Create a service account key:**
+
    ```bash
    gcloud iam service-accounts keys create sa-key.json \
      --iam-account=SERVICE_ACCOUNT_NAME@YOUR_PROJECT_ID.iam.gserviceaccount.com
@@ -85,6 +91,7 @@ If you need a quick fix or cannot set up WIF, use a service account key:
    - Paste the entire contents of `sa-key.json` (including `{` and `}`)
 
 3. **Delete the local key file:**
+
    ```bash
    rm sa-key.json
    ```
@@ -94,6 +101,7 @@ If you need a quick fix or cannot set up WIF, use a service account key:
 ### Option C: Use Both (Recommended)
 
 For maximum reliability, configure both methods:
+
 - WIF will be tried first (more secure)
 - SA key will be used as fallback if WIF fails
 
@@ -110,12 +118,14 @@ After applying the fix, the workflow will:
 ## Security Considerations
 
 ### Workload Identity Federation (Recommended)
+
 - ✅ No long-lived credentials
 - ✅ Automatic credential rotation
 - ✅ Fine-grained access control
 - ✅ No key management required
 
 ### Service Account Key (Fallback)
+
 - ⚠️ Long-lived credentials (should be rotated every 90 days)
 - ⚠️ Risk of key leakage
 - ⚠️ Manual key management required
@@ -134,6 +144,7 @@ To test the fix without waiting for a push to main:
 5. Click "Run workflow"
 
 The workflow will:
+
 - ✅ Validate the build configuration
 - ✅ Attempt authentication (WIF then SA key)
 - ✅ Report which method succeeded

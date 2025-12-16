@@ -253,6 +253,7 @@ This error typically occurs when:
 **Solutions:**
 
 1. **Verify the pool and provider exist:**
+
    ```bash
    gcloud iam workload-identity-pools describe github-pool \
      --location=global \
@@ -265,9 +266,11 @@ This error typically occurs when:
    ```
 
 2. **Use Service Account Key as fallback:**
+
    If you cannot fix the Workload Identity Pool, configure `GCP_SA_KEY` secret with a service account JSON key. The workflow will automatically fall back to this method.
 
 3. **Recreate the pool and provider:**
+
    Follow steps 2-7 in the "Step-by-Step: Configure Workload Identity Federation in GCP" section above.
 
 ### Error: "Permission denied" or "Unable to impersonate service account"

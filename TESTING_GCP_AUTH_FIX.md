@@ -7,12 +7,14 @@ This document provides testing instructions to verify the authentication fallbac
 ### Scenario 1: WIF Only (Primary Path)
 
 **Setup:**
+
 - Configure `GCP_WORKLOAD_IDENTITY_PROVIDER` secret
 - Configure `GCP_SERVICE_ACCOUNT` secret
 - Do NOT configure `GCP_SA_KEY` secret
 - Ensure WIF pool and provider exist in GCP
 
 **Expected Result:**
+
 ```
 Validating GCP auth inputs...
 Will attempt Workload Identity Federation authentication
@@ -26,11 +28,13 @@ Will attempt Workload Identity Federation authentication
 ### Scenario 2: WIF Fails, SA Key Fallback (Fix Target)
 
 **Setup:**
+
 - Configure `GCP_WORKLOAD_IDENTITY_PROVIDER` secret (with non-existent pool)
 - Configure `GCP_SERVICE_ACCOUNT` secret
 - Configure `GCP_SA_KEY` secret with valid service account JSON
 
 **Expected Result:**
+
 ```
 Validating GCP auth inputs...
 Will attempt Workload Identity Federation authentication
@@ -45,11 +49,13 @@ Will use Service Account Key authentication
 ### Scenario 3: SA Key Only
 
 **Setup:**
+
 - Do NOT configure `GCP_WORKLOAD_IDENTITY_PROVIDER` secret
 - Do NOT configure `GCP_SERVICE_ACCOUNT` secret
 - Configure `GCP_SA_KEY` secret
 
 **Expected Result:**
+
 ```
 Validating GCP auth inputs...
 Will use Service Account Key authentication
@@ -63,9 +69,11 @@ Will use Service Account Key authentication
 ### Scenario 4: No Authentication Configured (Validation Failure)
 
 **Setup:**
+
 - Do NOT configure any GCP secrets
 
 **Expected Result:**
+
 ```
 Validating GCP auth inputs...
 ::error::No GCP authentication configured
@@ -85,10 +93,12 @@ Configure one of the following authentication methods:
 ### Scenario 5: Both Methods Fail (All Auth Exhausted)
 
 **Setup:**
+
 - Configure invalid `GCP_WORKLOAD_IDENTITY_PROVIDER` (non-existent pool)
 - Configure invalid `GCP_SA_KEY` (malformed JSON)
 
 **Expected Result:**
+
 ```
 Validating GCP auth inputs...
 Will attempt Workload Identity Federation authentication
@@ -111,6 +121,7 @@ To fix:
 ### Option A: Test in GitHub Actions
 
 1. **Trigger a workflow run:**
+
    ```
    Go to: Actions → Build and Push Container (Cloud Build) → Run workflow
    Branch: copilot/fix-action-job-issues
@@ -149,12 +160,14 @@ act --dryrun
 ## Expected Behavior Changes
 
 ### Before Fix
+
 - ❌ Workflow fails immediately when WIF auth fails
 - ❌ No fallback mechanism
 - ❌ Error message is cryptic (`invalid_target`)
 - ❌ Workflow cannot proceed even if SA key is available
 
 ### After Fix
+
 - ✅ Workflow tries WIF, then falls back to SA key
 - ✅ Build continues if any auth method succeeds
 - ✅ Clear error messages explaining what failed
@@ -180,19 +193,23 @@ After testing, verify:
 ## Troubleshooting Test Failures
 
 ### Test fails at validation step
+
 - Check that secrets are correctly configured in repository settings
 - Verify secret names match exactly (case-sensitive)
 
 ### WIF auth step hangs or times out
+
 - This is normal if the pool doesn't exist
 - Workflow should automatically proceed to SA key step
 
 ### SA key auth fails
+
 - Verify the JSON is complete and valid
 - Check that the service account has required permissions
 - Ensure the project ID in the JSON matches the target project
 
 ### Build fails after successful auth
+
 - This is unrelated to the auth fix
 - Check build logs for specific error messages
 - May be related to Cloud Build configuration or Dockerfile issues
