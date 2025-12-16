@@ -5,6 +5,7 @@ This is a **TL;DR** guide to fix the failing GitHub Actions workflow. For comple
 ## Problem
 
 GitHub Actions workflow failing with:
+
 ```
 invalid_target: The target service indicated by the "audience" parameters is invalid.
 ```
@@ -16,12 +17,14 @@ invalid_target: The target service indicated by the "audience" parameters is inv
 ### Option 1: Use Service Account Key (Fastest)
 
 **Prerequisites**: Ensure the service account has the necessary IAM roles:
+
 - `roles/cloudbuild.builds.editor` (Cloud Build Editor)
 - `roles/artifactregistry.writer` (Artifact Registry Writer)
 - `roles/run.admin` (Cloud Run Admin, if deploying)
 - `roles/iam.serviceAccountUser` (Service Account User)
 
 1. **Create a service account key:**
+
    ```bash
    gcloud iam service-accounts keys create sa-key.json \
      --iam-account=YOUR_SERVICE_ACCOUNT@YOUR_PROJECT.iam.gserviceaccount.com
@@ -35,6 +38,7 @@ invalid_target: The target service indicated by the "audience" parameters is inv
    - Click "Add secret"
 
 3. **Clean up:**
+
    ```bash
    rm sa-key.json  # Delete local file immediately
    ```
@@ -52,11 +56,13 @@ invalid_target: The target service indicated by the "audience" parameters is inv
 If you want to use the more secure WIF method:
 
 1. **Check if pool exists:**
+
    ```bash
    gcloud iam workload-identity-pools list --location=global
    ```
 
 2. **If not found, create it:**
+
    Follow the complete setup in `docs/CI.md` section:
    "Step-by-Step: Configure Workload Identity Federation in GCP"
 
@@ -70,6 +76,7 @@ If you want to use the more secure WIF method:
 ## What Changed
 
 The workflow now:
+
 - ✅ Tries Workload Identity Federation first
 - ✅ Falls back to Service Account Key if WIF fails
 - ✅ Provides clear error messages
@@ -80,11 +87,13 @@ The workflow now:
 After applying the fix, look for these messages in the workflow logs:
 
 **Success with WIF:**
+
 ```
 ✅ Authenticated using Workload Identity Federation
 ```
 
 **Success with SA Key (fallback):**
+
 ```
 ✅ Authenticated using Service Account Key
 ```
@@ -112,6 +121,7 @@ After applying the fix, look for these messages in the workflow logs:
 ## Summary
 
 **One command fix:**
+
 ```bash
 # Create key + add to GitHub secrets as GCP_SA_KEY
 gcloud iam service-accounts keys create sa-key.json --iam-account=YOUR_SA@YOUR_PROJECT.iam.gserviceaccount.com
