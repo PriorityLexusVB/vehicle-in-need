@@ -27,6 +27,7 @@ main (496b679) ─────────────────────�
 ## Branch Categories
 
 ### 🔴 DELETE - Duplicates (3 branches)
+
 ```
 copilot/fix-ci-failures-docs-ci-md  ─┬─ KEEP (most descriptive name)
                                      │
@@ -36,6 +37,7 @@ copilot/fixdocs-ci-md-lint  ─────────┴─ DELETE (100% ident
 ```
 
 ### 🔴 DELETE - Near-Duplicate (1 branch)
+
 ```
 copilot/sub-pr-166  ─────────────────┬─ KEEP (security updates)
                                      │
@@ -43,12 +45,14 @@ copilot/sub-pr-165  ─────────────────┴─ DE
 ```
 
 ### 🟡 DELETE - Stale (2 branches)
+
 ```
 copilot/merge-paste-firestore-rules  ───── DELETE (only "Initial plan")
 copilot/paste-firestore-rules-files  ───── DELETE (only "Initial plan")
 ```
 
 ### ✅ KEEP/MERGE (4 branches)
+
 ```
 1. copilot/sub-pr-166 ───────────────────── MERGE (priority: HIGH)
 2. copilot/fix-ci-failures-docs-ci-md ───── MERGE (priority: MEDIUM)
@@ -86,6 +90,7 @@ main ●
 ## File Change Overlap
 
 ### High Overlap (Modified by 6+ branches)
+
 - `package.json` / `package-lock.json` - ALL branches
 - `firestore.rules` - 6 branches
 - `components/Login.tsx` - 6 branches
@@ -93,12 +98,14 @@ main ●
 - `DEPLOYMENT_GUIDE.md` - 6 branches
 
 ### Medium Overlap (Modified by 3-5 branches)
+
 - `App.tsx` - 4 branches
 - `docs/CI.md` - 3 branches (duplicates)
 - `components/OrderCard.tsx` - 6 branches
 - `constants.ts` - 6 branches
 
 ### Low Overlap (Modified by 1-2 branches)
+
 - Most test files
 - Individual component files
 - Documentation in `docs/` directory
@@ -106,16 +113,19 @@ main ●
 ## Merge Conflict Risk Assessment
 
 ### 🔴 HIGH RISK
+
 **Files:** `package.json`, `package-lock.json`
 **Branches:** ALL (especially sub-pr-165, sub-pr-166, fix-cors-error-manager-role)
 **Mitigation:** Merge in priority order, regenerate lock files after each merge
 
 ### 🟡 MEDIUM RISK
+
 **Files:** `firestore.rules`, `components/Login.tsx`, `App.tsx`
 **Branches:** 4-6 branches modify these
 **Mitigation:** Manual review required during merge
 
 ### 🟢 LOW RISK
+
 **Files:** Documentation files, test files
 **Branches:** Various
 **Mitigation:** Standard merge process
@@ -157,7 +167,7 @@ START
 ## Summary Statistics
 
 | Metric | Value |
-|--------|-------|
+| ------ | ----- |
 | Total branches analyzed | 9 |
 | Branches to delete | 5 (56%) |
 | Branches to merge | 4 (44%) |
@@ -179,5 +189,6 @@ START
 ---
 
 See also:
+
 - [BRANCH_ANALYSIS.md](./BRANCH_ANALYSIS.md) - Detailed analysis
 - [BRANCH_ANALYSIS_SUMMARY.md](./BRANCH_ANALYSIS_SUMMARY.md) - Quick reference

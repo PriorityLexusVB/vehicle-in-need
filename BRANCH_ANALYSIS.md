@@ -21,7 +21,7 @@ This document provides a detailed analysis of 9 open branches in the repository,
 ### Branch Details
 
 | Branch Name | Head Commit | Status | Files Changed | Ahead of Main |
-|------------|-------------|--------|---------------|---------------|
+| ----------- | ----------- | ------ | ------------- | ------------- |
 | `copilot/fix-ci-failures-docs-ci-md` | 8c97139 | DUPLICATE | 38 | 84 commits |
 | `copilot/fix-docs-ci-md-lint` | 6939dbf | DUPLICATE | 38 | 84 commits |
 | `copilot/fixdocs-ci-md-lint` | db36d69 | DUPLICATE | 38 | 84 commits |
@@ -37,24 +37,28 @@ This document provides a detailed analysis of 9 open branches in the repository,
 ### 1. Duplicate Branches - CI Documentation Fixes
 
 **Branches:**
+
 - `copilot/fix-ci-failures-docs-ci-md`
 - `copilot/fix-docs-ci-md-lint`
 - `copilot/fixdocs-ci-md-lint`
 
 **Analysis:**
 These three branches are **100% identical**. They all:
+
 - Fix markdown table formatting in `docs/CI.md` (changing `| --- |` to `| ----------- |`)
 - Make identical changes to 38 files
 - Have 84 commits ahead of main
 - All have "Initial plan" as their latest commit
 
 **Key Changes:**
+
 - Fix markdown lint errors in `docs/CI.md`
 - Update documentation files (CORS_FIX_DEPLOYMENT.md, DEPLOYMENT_GUIDE.md)
 - Remove deprecated components (CSVUpload, SecuredStatus, SettingsPageToggle tests)
 - Update firestore rules and configuration files
 
 **Recommendation:**
+
 - ✅ **MERGE ONE**: Keep `copilot/fix-ci-failures-docs-ci-md` (most descriptive name)
 - ❌ **DELETE**: `copilot/fix-docs-ci-md-lint`
 - ❌ **DELETE**: `copilot/fixdocs-ci-md-lint`
@@ -62,27 +66,32 @@ These three branches are **100% identical**. They all:
 ### 2. Nearly Duplicate Branches - Sub-PRs
 
 **Branches:**
+
 - `copilot/sub-pr-165` (express dependency update)
 - `copilot/sub-pr-166` (root security group update)
 
 **Analysis:**
 These branches differ only in their dependency updates:
+
 - **sub-pr-165**: Updates express from 4.21.2 to 4.22.1 (3 files changed between them)
 - **sub-pr-166**: Updates root-security group dependencies (3 files changed between them)
 - Both are 83-84 commits ahead of main
 - Both have "Initial plan" as their latest commit
 
 **Common Changes:**
+
 - 45 files modified identically
 - Remove CSV upload functionality
 - Update documentation
 - Fix firestore rules and tests
 
 **Dependency Updates:**
+
 - **sub-pr-165**: `functions/package-lock.json` with express update
 - **sub-pr-166**: `package-lock.json` with security updates
 
 **Recommendation:**
+
 - ✅ **MERGE**: `copilot/sub-pr-166` (includes security updates - higher priority)
 - ❌ **DELETE**: `copilot/sub-pr-165` (express update can be done separately via Dependabot)
 
@@ -92,41 +101,48 @@ These branches differ only in their dependency updates:
 
 **Analysis:**
 This is the most actively developed branch with unique features:
+
 - 92 commits ahead of main (most recent changes)
 - Last meaningful commit: "Update last updated date to December 2025"
 - Only 2 files changed: `package.json` and `package-lock.json`
 - Includes significant dependency updates and CORS error handling improvements
 
 **Key Features:**
+
 - Enhanced CORS error handling for Cloud Functions
 - Manager role management improvements
 - Comprehensive deployment documentation
 - Multiple dependency updates merged from main
 
 **Recommendation:**
+
 - ✅ **KEEP ACTIVE**: Continue development, do not merge yet
 - ⚠️ **NEEDS REVIEW**: Has many commits merged from main, may need rebase
 
 ### 4. Stale Branches - Firestore Rules
 
 **Branches:**
+
 - `copilot/merge-paste-firestore-rules`
 - `copilot/paste-firestore-rules-files`
 
 **Analysis:**
 These branches appear to be abandoned or superseded:
+
 - Both have "Initial plan" as their only new commit
 - 56 and 129 files changed respectively
 - Very old compared to other branches
 - May contain outdated approaches to firestore rules
 
 **Changes:**
+
 - Large-scale modifications to firestore rules
 - Workflow file changes
 - Multiple documentation updates
 - Component and service modifications
 
 **Recommendation:**
+
 - ❌ **DELETE**: `copilot/merge-paste-firestore-rules` (likely superseded)
 - ❌ **DELETE**: `copilot/paste-firestore-rules-files` (likely superseded)
 - ⚠️ **NOTE**: Verify no valuable work is lost before deletion
@@ -139,6 +155,7 @@ These branches appear to be abandoned or superseded:
 This is the current working branch for this analysis.
 
 **Recommendation:**
+
 - ✅ **MERGE**: After completing this analysis and review
 
 ## File-Level Analysis
@@ -148,12 +165,14 @@ This is the current working branch for this analysis.
 The following files appear in changes across multiple branches:
 
 **Documentation Files (Most Common):**
+
 - `docs/CI.md` - Modified in 3 duplicate branches
 - `README.md` - Modified in 6 branches
 - `DEPLOYMENT_GUIDE.md` - Modified in 6 branches
 - `CORS_FIX_DEPLOYMENT.md` - Deleted in 6 branches
 
 **Code Files (Most Common):**
+
 - `package.json` / `package-lock.json` - Modified in all branches (dependency updates)
 - `components/Login.tsx` - Modified in 6 branches
 - `firestore.rules` - Modified in 6 branches
@@ -162,11 +181,13 @@ The following files appear in changes across multiple branches:
 ### Conflict Potential
 
 **High Risk of Merge Conflicts:**
+
 - `package.json` and `package-lock.json` (all branches)
 - `firestore.rules` (6 branches)
 - `components/Login.tsx` (6 branches)
 
 **Medium Risk:**
+
 - Documentation files in `docs/` directory
 - Test files in `components/__tests__/`
 
@@ -175,6 +196,7 @@ The following files appear in changes across multiple branches:
 ### Phase 1: Clean Up Duplicates (Immediate)
 
 1. **DELETE** duplicate CI fix branches (keep one):
+
    ```bash
    git branch -D copilot/fix-docs-ci-md-lint
    git push origin --delete copilot/fix-docs-ci-md-lint
@@ -184,12 +206,14 @@ The following files appear in changes across multiple branches:
    ```
 
 2. **DELETE** duplicate sub-PR branch:
+
    ```bash
    git branch -D copilot/sub-pr-165
    git push origin --delete copilot/sub-pr-165
    ```
 
 3. **DELETE** stale firestore branches (after verification):
+
    ```bash
    git branch -D copilot/merge-paste-firestore-rules
    git push origin --delete copilot/merge-paste-firestore-rules
@@ -242,12 +266,15 @@ The following files appear in changes across multiple branches:
 ## Risk Assessment
 
 ### Low Risk Deletions
+
 - The 3 duplicate CI documentation branches are 100% safe to delete (keep one)
 - Sub-PR-165 is safe to delete as it only differs by one dependency update
 
 ### Medium Risk Deletions
+
 - The two firestore rules branches may contain valuable work
 - **RECOMMENDATION**: Create backup tags before deletion:
+
   ```bash
   git tag archive/merge-paste-firestore-rules copilot/merge-paste-firestore-rules
   git tag archive/paste-firestore-rules-files copilot/paste-firestore-rules-files
