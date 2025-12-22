@@ -5,6 +5,7 @@
 ## 🎯 Executive Summary
 
 Out of 9 open branches analyzed:
+
 - **3 are duplicates** (can safely delete 2)
 - **2 are near-duplicates** (can safely delete 1)
 - **2 are stale** (recommend deletion after verification)
@@ -14,25 +15,30 @@ Out of 9 open branches analyzed:
 ## 🔴 DELETE IMMEDIATELY (Low Risk)
 
 ### Duplicate CI Documentation Fixes
+
 ```bash
 # Keep: copilot/fix-ci-failures-docs-ci-md
 # Delete these 2 duplicates:
 git push origin --delete copilot/fix-docs-ci-md-lint
 git push origin --delete copilot/fixdocs-ci-md-lint
 ```
+
 **Reason**: 100% identical to the branch we're keeping
 
 ### Superseded Sub-PR
+
 ```bash
 # Keep: copilot/sub-pr-166 (has security updates)
 # Delete this one:
 git push origin --delete copilot/sub-pr-165
 ```
+
 **Reason**: Only difference is an express dependency update that can be done via Dependabot
 
 ## 🟡 DELETE AFTER REVIEW (Medium Risk)
 
 ### Stale Firestore Rules Branches
+
 ```bash
 # Create backup tags first:
 git tag archive/merge-paste-firestore-rules copilot/merge-paste-firestore-rules
@@ -43,26 +49,31 @@ git push origin --tags
 git push origin --delete copilot/merge-paste-firestore-rules
 git push origin --delete copilot/paste-firestore-rules-files
 ```
+
 **Reason**: Only have "Initial plan" commits, appear abandoned
 
 ## ✅ MERGE IN THIS ORDER
 
 ### 1. copilot/sub-pr-166 (HIGH PRIORITY)
+
 - **Contains**: Security dependency updates
 - **Risk**: Package file conflicts
 - **Action**: Merge first to get security fixes in
 
 ### 2. copilot/fix-ci-failures-docs-ci-md (MEDIUM PRIORITY)
+
 - **Contains**: CI documentation lint fixes
 - **Risk**: Documentation conflicts
 - **Action**: Merge after sub-pr-166
 
 ### 3. copilot/fix-cors-error-manager-role (MEDIUM PRIORITY - NEEDS REBASE)
+
 - **Contains**: Active CORS error handling feature
 - **Risk**: Many commits, needs rebase
 - **Action**: Rebase on main after other merges, then merge
 
 ### 4. copilot/compare-open-branches (LOW PRIORITY)
+
 - **Contains**: This analysis document
 - **Risk**: None
 - **Action**: Merge after cleanup complete
@@ -70,7 +81,7 @@ git push origin --delete copilot/paste-firestore-rules-files
 ## 📊 Quick Stats
 
 | Status | Count | Action |
-|--------|-------|--------|
+| ------ | ----- | ------ |
 | Duplicates | 3 | Delete 2, Keep 1 |
 | Near-Duplicates | 2 | Delete 1, Keep 1 |
 | Stale | 2 | Delete both |
