@@ -116,8 +116,8 @@ This is the most actively developed branch with unique features:
 
 **Recommendation:**
 
-- ✅ **KEEP ACTIVE**: Continue development, do not merge yet
-- ⚠️ **NEEDS REVIEW**: Has many commits merged from main, may need rebase
+- ✅ **MERGE**: Ready to merge as the third branch in the Phase 2 merge strategy
+- ⚠️ **NEEDS REVIEW**: Has many commits merged from main, may need rebase before merging
 
 ### 4. Stale Branches - Firestore Rules
 
@@ -198,28 +198,35 @@ The following files appear in changes across multiple branches:
 1. **DELETE** duplicate CI fix branches (keep one):
 
    ```bash
-   git branch -D copilot/fix-docs-ci-md-lint
    git push origin --delete copilot/fix-docs-ci-md-lint
+   git branch -d copilot/fix-docs-ci-md-lint
    
-   git branch -D copilot/fixdocs-ci-md-lint
    git push origin --delete copilot/fixdocs-ci-md-lint
+   git branch -d copilot/fixdocs-ci-md-lint
    ```
 
 2. **DELETE** duplicate sub-PR branch:
 
    ```bash
-   git branch -D copilot/sub-pr-165
    git push origin --delete copilot/sub-pr-165
+   git branch -d copilot/sub-pr-165
    ```
 
 3. **DELETE** stale firestore branches (after verification):
 
    ```bash
-   git branch -D copilot/merge-paste-firestore-rules
-   git push origin --delete copilot/merge-paste-firestore-rules
+   # Create backup tags first
+   git tag archive/merge-paste-firestore-rules copilot/merge-paste-firestore-rules
+   git tag archive/paste-firestore-rules-files copilot/paste-firestore-rules-files
+   git push origin --tags
    
-   git branch -D copilot/paste-firestore-rules-files
+   # Delete remote branches
+   git push origin --delete copilot/merge-paste-firestore-rules
    git push origin --delete copilot/paste-firestore-rules-files
+   
+   # Delete local branches
+   git branch -d copilot/merge-paste-firestore-rules
+   git branch -d copilot/paste-firestore-rules-files
    ```
 
 ### Phase 2: Merge Priority Order
