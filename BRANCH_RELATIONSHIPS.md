@@ -91,7 +91,7 @@ main ●
 
 ### High Overlap (Modified by 6+ branches)
 
-- `package.json` / `package-lock.json` - ALL branches
+- `package.json` / `package-lock.json` - 8 of 9 branches (all except `copilot/compare-open-branches`)
 - `firestore.rules` - 6 branches
 - `components/Login.tsx` - 6 branches
 - `README.md` - 6 branches
@@ -115,13 +115,13 @@ main ●
 ### 🔴 HIGH RISK
 
 **Files:** `package.json`, `package-lock.json`
-**Branches:** ALL (especially sub-pr-165, sub-pr-166, fix-cors-error-manager-role)
+**Branches:** 8 of 9 branches (especially sub-pr-165, sub-pr-166, fix-cors-error-manager-role)
 **Mitigation:** Merge in priority order, regenerate lock files after each merge
 
 ### 🟡 MEDIUM RISK
 
 **Files:** `firestore.rules`, `components/Login.tsx`, `App.tsx`
-**Branches:** 4-6 branches modify these
+**Branches:** 6 branches modify firestore.rules and Login.tsx; 4 branches modify App.tsx
 **Mitigation:** Manual review required during merge
 
 ### 🟢 LOW RISK
