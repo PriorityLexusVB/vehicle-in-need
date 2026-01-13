@@ -38,10 +38,7 @@ const getFirebaseErrorCode = (error: unknown): string | null => {
   return typeof code === "string" ? code : null;
 };
 
-const formatNotesError = (
-  error: unknown,
-  action: "load" | "add"
-): string => {
+const formatNotesError = (error: unknown, action: "load" | "add"): string => {
   const code = getFirebaseErrorCode(error);
   const suffix = code ? ` (${code})` : "";
 
