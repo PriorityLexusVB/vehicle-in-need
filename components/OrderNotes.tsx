@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useId, useMemo, useState } from "react";
 import type { OrderNote, AppUser, OrderNoteRole } from "../types";
 import {
   addOrderNote,
@@ -31,6 +31,8 @@ const OrderNotes: React.FC<OrderNotesProps> = ({ orderId, currentUser }) => {
   const [notes, setNotes] = useState<OrderNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  const noteInputId = useId();
 
   const [newText, setNewText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -163,10 +165,14 @@ const OrderNotes: React.FC<OrderNotesProps> = ({ orderId, currentUser }) => {
 
       {canAdd && (
         <form onSubmit={handleAdd} className="mt-3">
-          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+          <label
+            htmlFor={noteInputId}
+            className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1"
+          >
             Add Note
           </label>
           <textarea
+            id={noteInputId}
             value={newText}
             onChange={(e) => setNewText(e.target.value)}
             rows={3}
@@ -191,7 +197,7 @@ const OrderNotes: React.FC<OrderNotesProps> = ({ orderId, currentUser }) => {
 
       {!canAdd && (
         <p className="mt-3 text-xs text-slate-400">
-          Only managers/admin can add notes.
+          Only managers can add notes.
         </p>
       )}
     </div>
