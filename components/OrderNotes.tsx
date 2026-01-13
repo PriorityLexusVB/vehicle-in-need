@@ -27,6 +27,53 @@ const roleLabel = (role?: OrderNoteRole) => {
   return "User";
 };
 
+type FirebaseishError = {
+  code?: unknown;
+  message?: unknown;
+};
+
+const getFirebaseErrorCode = (error: unknown): string | null => {
+  if (!error || typeof error !== "object") return null;
+  const { code } = error as FirebaseishError;
+  return typeof code === "string" ? code : null;
+};
+
+const formatNotesError = (
+  error: unknown,
+  action: "load" | "add"
+): string => {
+  const code = getFirebaseErrorCode(error);
+  const suffix = code ? ` (${code})` : "";
+
+  if (code === "permission-denied") {
+    return action === "add"
+      ? `Permission denied — only managers can add notes${suffix}.`
+      : `Permission denied — you don’t have access to these notes${suffix}.`;
+  }
+
+  if (code === "unauthenticated") {
+    return action === "add"
+      ? `You must be signed in to add notes${suffix}.`
+      : `You must be signed in to view notes${suffix}.`;
+  }
+
+  if (code === "failed-precondition") {
+    return `Notes query requires an index${suffix}. Please contact support.`;
+  }
+
+  if (code === "unavailable") {
+    return `Service temporarily unavailable${suffix}. Please try again.`;
+  }
+
+  if (code === "deadline-exceeded") {
+    return `Request timed out${suffix}. Please try again.`;
+  }
+
+  return action === "add"
+    ? `Failed to add note${suffix}. Please try again.`
+    : `Unable to load notes right now${suffix}.`;
+};
+
 const OrderNotes: React.FC<OrderNotesProps> = ({ orderId, currentUser }) => {
   const [notes, setNotes] = useState<OrderNote[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,7 +118,7 @@ const OrderNotes: React.FC<OrderNotesProps> = ({ orderId, currentUser }) => {
       },
       (error) => {
         console.error("Failed to load order notes", error);
-        setLoadError("Unable to load notes right now.");
+        setLoadError(formatNotesError(error, "load"));
         setLoading(false);
       }
     );
@@ -112,7 +159,7 @@ const OrderNotes: React.FC<OrderNotesProps> = ({ orderId, currentUser }) => {
       setNewText("");
     } catch (error) {
       console.error("Failed to add order note", error);
-      setSubmitError("Failed to add note. Please try again.");
+      setSubmitError(formatNotesError(error, "add"));
     } finally {
       setIsSubmitting(false);
     }
@@ -127,7 +174,11 @@ const OrderNotes: React.FC<OrderNotesProps> = ({ orderId, currentUser }) => {
         {loading && <span className="text-xs text-slate-400">Loading…</span>}
       </div>
 
-      {loadError && <p className="text-sm text-red-600">{loadError}</p>}
+      {loadError && (
+        <div className="text-sm text-red-600">
+          <p>{loadError}</p>
+        </div>
+      )}
 
       {!loadError && notes.length === 0 && !loading && (
         <p className="text-sm text-slate-500">No notes yet.</p>
