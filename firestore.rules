@@ -196,6 +196,45 @@ service cloud.firestore {
 
       // DELETE: Managers only (via custom claims or Firestore document).
       allow delete: if isManager();
+
+      /****************************************
+       * Order Notes Subcollection
+       * /orders/{orderId}/notes/{noteId}
+       ****************************************/
+      match /notes/{noteId} {
+
+        function canReadOrder() {
+          return isSignedIn()
+            && (
+              isManager()
+              || get(/databases/$(database)/documents/orders/$(orderId)).data.createdByUid == request.auth.uid
+            );
+        }
+
+        allow read: if canReadOrder();
+
+        // Append-only: only managers can create notes, no updates/deletes from client.
+        allow create: if isManager()
+          && request.resource.data.keys().hasOnly([
+            'text',
+            'createdAt',
+            'createdByUid',
+            'createdByName',
+            'createdByEmail',
+            'createdByRole'
+          ])
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 2000
+          && request.resource.data.createdByUid == request.auth.uid
+          && request.resource.data.createdByName is string
+          && request.resource.data.createdByName.size() > 0
+          && request.resource.data.createdByRole == 'manager'
+          // createdByEmail is optional, but if provided must match token email
+          && (!('createdByEmail' in request.resource.data) || request.resource.data.createdByEmail == request.auth.token.email);
+
+        allow update, delete: if false;
+      }
     }
   }
 }

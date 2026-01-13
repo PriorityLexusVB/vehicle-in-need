@@ -1,18 +1,18 @@
 import type { Timestamp } from "firebase/firestore";
 
 export enum OrderStatus {
-  FactoryOrder = 'Factory Order',
+  FactoryOrder = "Factory Order",
   // Legacy status: Locate is no longer selectable in the UI for new orders,
   // but is retained for backward compatibility with existing database records.
   // Existing orders with this status will display correctly, but users cannot
   // select this option when creating new orders or changing status.
-  Locate = 'Locate',
-  DealerExchange = 'Dealer Exchange',
-  Received = 'Received',
-  Delivered = 'Delivered',
+  Locate = "Locate",
+  DealerExchange = "Dealer Exchange",
+  Received = "Received",
+  Delivered = "Delivered",
   // Note: Secured is a UI-only status that maps legacy 'Received' and 'Delivered' for display
   // The database still stores 'Delivered' when marking an order as secured
-  Secured = 'Secured',
+  Secured = "Secured",
 }
 
 export interface Order {
@@ -43,6 +43,12 @@ export interface Order {
   createdAt?: Timestamp; // Firestore server timestamp for ordering
   createdByUid?: string; // UID of user who created the order
   createdByEmail?: string; // Email of user who created the order
+
+  // Denormalized note preview fields (written by managers when adding process notes)
+  latestNoteText?: string;
+  latestNoteAt?: Timestamp;
+  latestNoteByUid?: string;
+  latestNoteByName?: string;
 }
 
 export interface AppUser {
@@ -60,4 +66,16 @@ export interface AppUser {
   createdAt?: Timestamp;
   /** Timestamp when the user document was last updated */
   updatedAt?: Timestamp;
+}
+
+export type OrderNoteRole = "user" | "manager" | "admin";
+
+export interface OrderNote {
+  id: string;
+  text: string;
+  createdAt?: Timestamp;
+  createdByUid?: string;
+  createdByName?: string;
+  createdByEmail?: string;
+  createdByRole?: OrderNoteRole;
 }
