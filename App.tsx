@@ -21,7 +21,12 @@ import {
 } from "firebase/firestore";
 import { db, auth } from "./services/firebase";
 import { Order, OrderStatus, AppUser } from "./types";
-import { MANAGER_EMAILS, USERS_COLLECTION, isSecuredStatus, isActiveStatus } from "./constants";
+import {
+  MANAGER_EMAILS,
+  USERS_COLLECTION,
+  isSecuredStatus,
+  isActiveStatus,
+} from "./constants";
 import Header from "./components/Header";
 import OrderForm from "./components/OrderForm";
 import OrderList from "./components/OrderList";
@@ -41,24 +46,27 @@ import { useRegisterSW } from "virtual:pwa-register/react";
 // Type guard to verify if an error is a FirestoreError.
 // Checks for FirestoreError-specific properties to distinguish from generic errors.
 const isFirestoreError = (error: unknown): error is FirestoreError => {
-  if (typeof error !== 'object' || error === null) return false;
+  if (typeof error !== "object" || error === null) return false;
   const err = error as Record<string, unknown>;
   // FirestoreError has code (string), message (string), and name properties
   return (
-    typeof err.code === 'string' &&
-    typeof err.message === 'string' &&
-    typeof err.name === 'string'
+    typeof err.code === "string" &&
+    typeof err.message === "string" &&
+    typeof err.name === "string"
   );
 };
 
 // Helper function to map Firestore QuerySnapshot documents to Order objects.
 // Defined outside component to avoid recreation on every render.
-const mapDocsToOrders = (querySnapshot: QuerySnapshot<DocumentData>): Order[] => {
+const mapDocsToOrders = (
+  querySnapshot: QuerySnapshot<DocumentData>,
+): Order[] => {
   return querySnapshot.docs.map(
-    (docSnapshot) => ({
-      ...docSnapshot.data(),
-      id: docSnapshot.id,
-    } as Order)
+    (docSnapshot) =>
+      ({
+        ...docSnapshot.data(),
+        id: docSnapshot.id,
+      }) as Order,
   );
 };
 
@@ -115,7 +123,7 @@ const App: React.FC = () => {
 
           console.log(
             "%c👤 Auth Flow - User Document Fetch",
-            "color: #10b981; font-weight: bold;"
+            "color: #10b981; font-weight: bold;",
           );
           console.log("User email:", userEmail);
           console.log("User UID:", authUser.uid);
@@ -128,7 +136,7 @@ const App: React.FC = () => {
             console.error(
               "%c❌ Firestore Error - Failed to fetch user document",
               "color: #ef4444; font-weight: bold;",
-              firestoreError
+              firestoreError,
             );
             // Create a minimal user object from auth data only - always set isManager to false
             // since we can't verify their status. They can still use non-manager features.
@@ -151,21 +159,22 @@ const App: React.FC = () => {
             // Users must be promoted to manager by an existing manager via the Settings page
             // or by running the set-manager-custom-claims.mjs admin script.
             console.log(
-              "NEW USER - Creating user document with isManager: false"
+              "NEW USER - Creating user document with isManager: false",
             );
-            
+
             // Check if user is in MANAGER_EMAILS for informational logging
             const shouldBeManager = MANAGER_EMAILS.includes(
-              userEmail.toLowerCase()
+              userEmail.toLowerCase(),
             );
             if (shouldBeManager) {
               console.log(
                 "%c📋 User is in MANAGER_EMAILS list",
-                "color: #f59e0b; font-weight: bold;"
+                "color: #f59e0b; font-weight: bold;",
               );
               console.log(
                 "To grant manager permissions, an existing manager must promote this user via Settings, " +
-                "or run: npm run seed:managers:apply -- --emails " + userEmail
+                  "or run: npm run seed:managers:apply -- --emails " +
+                  userEmail,
               );
             }
 
@@ -178,7 +187,7 @@ const App: React.FC = () => {
               createdAt: serverTimestamp(),
               updatedAt: serverTimestamp(),
             };
-            
+
             appUser = {
               uid: authUser.uid,
               email: userEmail,
@@ -190,13 +199,13 @@ const App: React.FC = () => {
               await setDoc(userDocRef, newUserDoc);
               console.log(
                 "%c✅ Created new user document successfully",
-                "color: #10b981; font-weight: bold;"
+                "color: #10b981; font-weight: bold;",
               );
             } catch (firestoreError) {
               console.error(
                 "%c❌ Firestore Error - Failed to create user document",
                 "color: #ef4444; font-weight: bold;",
-                firestoreError
+                firestoreError,
               );
               // Continue with the in-memory user object - they can still use non-manager features
               console.warn("Proceeding with in-memory user object");
@@ -208,7 +217,7 @@ const App: React.FC = () => {
             let isManager = existingData.isManager;
             console.log(
               "EXISTING USER - Firestore document data:",
-              existingData
+              existingData,
             );
             console.log("Fetched isManager from Firestore:", isManager);
 
@@ -219,17 +228,18 @@ const App: React.FC = () => {
             if (typeof isManager !== "boolean") {
               isManager = false;
               console.log(
-                "MIGRATION - isManager was not boolean, setting to false"
+                "MIGRATION - isManager was not boolean, setting to false",
               );
               // Check if user should be a manager for informational logging
               if (MANAGER_EMAILS.includes(userEmail.toLowerCase())) {
                 console.log(
                   "%c📋 User is in MANAGER_EMAILS list but cannot self-elevate",
-                  "color: #f59e0b; font-weight: bold;"
+                  "color: #f59e0b; font-weight: bold;",
                 );
                 console.log(
                   "To grant manager permissions, an existing manager must promote this user via Settings, " +
-                  "or run: npm run seed:managers:apply -- --emails " + userEmail
+                    "or run: npm run seed:managers:apply -- --emails " +
+                    userEmail,
                 );
               }
             }
@@ -238,7 +248,7 @@ const App: React.FC = () => {
             const updates: Record<string, unknown> = {
               updatedAt: serverTimestamp(),
             };
-            
+
             // Update displayName if it changed from Firebase Auth
             if (existingData.displayName !== authUser.displayName) {
               updates.displayName = authUser.displayName;
@@ -252,7 +262,7 @@ const App: React.FC = () => {
               // Log detailed info to help diagnose permission issues
               console.warn(
                 "%c⚠️ Could not update user document timestamp",
-                "color: #f59e0b; font-weight: bold;"
+                "color: #f59e0b; font-weight: bold;",
               );
               console.warn("Error details:", firestoreError);
               console.warn("Update attempted:", JSON.stringify(updates));
@@ -260,11 +270,11 @@ const App: React.FC = () => {
               console.warn("User isManager:", isManager);
               console.warn(
                 "If this is a permission error, ensure Firestore rules are deployed:",
-                "firebase deploy --only firestore:rules"
+                "firebase deploy --only firestore:rules",
               );
               console.warn(
                 "For managers, sync custom claims:",
-                "npm run seed:managers:apply -- --emails " + userEmail
+                "npm run seed:managers:apply -- --emails " + userEmail,
               );
             }
 
@@ -278,7 +288,7 @@ const App: React.FC = () => {
 
           console.log(
             "%c✅ Auth Complete - Final AppUser State",
-            "color: #10b981; font-weight: bold;"
+            "color: #10b981; font-weight: bold;",
           );
           console.log("isManager:", appUser.isManager);
           console.log("displayName:", appUser.displayName);
@@ -288,23 +298,23 @@ const App: React.FC = () => {
           if (import.meta.env.DEV) {
             console.log(
               "%c🔍 Admin Nav Render Check",
-              "color: #8b5cf6; font-weight: bold;"
+              "color: #8b5cf6; font-weight: bold;",
             );
             console.log(
               `Will render admin navigation: ${
                 appUser.isManager ? "YES" : "NO"
-              }`
+              }`,
             );
             if (appUser.isManager) {
               console.log("✓ Manager user should see:");
               console.log(
-                "  - Navigation pill with Dashboard/User Management links"
+                "  - Navigation pill with Dashboard/User Management links",
               );
               console.log("  - Gear icon link to /#/admin in header");
               console.log("  - Active orders count");
             } else {
               console.log(
-                "✗ Non-manager user will NOT see admin navigation elements"
+                "✗ Non-manager user will NOT see admin navigation elements",
               );
             }
           }
@@ -315,12 +325,12 @@ const App: React.FC = () => {
             // Domain restriction: Only @priorityautomotive.com emails are allowed.
             console.log(
               "%c⛔ Domain Restriction - Signing out user",
-              "color: #f59e0b; font-weight: bold;"
+              "color: #f59e0b; font-weight: bold;",
             );
             console.log("User email:", authUser.email);
             await signOut(auth);
             alert(
-              "Access denied. Please use a '@priorityautomotive.com' email address."
+              "Access denied. Please use a '@priorityautomotive.com' email address.",
             );
           }
           setUser(null);
@@ -329,12 +339,12 @@ const App: React.FC = () => {
         console.error(
           "%c❌ Critical Auth Error",
           "color: #ef4444; font-weight: bold;",
-          error
+          error,
         );
         // On critical error, sign out and show error
         setUser(null);
         alert(
-          "An unexpected error occurred during sign-in. Please try again or contact support if this persists."
+          "An unexpected error occurred during sign-in. Please try again or contact support if this persists.",
         );
       } finally {
         setIsLoading(false);
@@ -388,11 +398,10 @@ const App: React.FC = () => {
         totalActive: 0,
         awaitingAction: 0,
         securedLast30Days: 0,
-      }
+      },
     );
     setStats(newStats);
   }, []);
-
 
   useEffect(() => {
     if (!user) {
@@ -420,25 +429,25 @@ const App: React.FC = () => {
     // For managers: First try to fetch ALL orders
     // For non-managers: Only fetch their own orders
     const isManagerQuery = user.isManager;
-    
+
     // Query for user's own orders (used as fallback for managers or primary for non-managers)
     const userOwnOrdersQuery = query(
       collection(db, "orders"),
       where("createdByUid", "==", user.uid),
-      orderBy("createdAt", "desc")
+      orderBy("createdAt", "desc"),
     );
 
     // Query for all orders (manager-only)
     const allOrdersQuery = query(
       collection(db, "orders"),
-      orderBy("createdAt", "desc")
+      orderBy("createdAt", "desc"),
     );
 
     // Helper to log permission error details for debugging
-    const logPermissionErrorDetails = (queryType: 'manager' | 'user') => {
+    const logPermissionErrorDetails = (queryType: "manager" | "user") => {
       console.error(
         "%c🔐 Permission Error Details",
-        "color: #f59e0b; font-weight: bold;"
+        "color: #f59e0b; font-weight: bold;",
       );
       console.error("User UID:", user.uid);
       console.error("User email:", user.email);
@@ -454,20 +463,20 @@ const App: React.FC = () => {
 
       console.warn(
         "%c⚠️ Manager permissions issue - falling back to user's own orders",
-        "color: #f59e0b; font-weight: bold;"
+        "color: #f59e0b; font-weight: bold;",
       );
       console.info(
-        "To resolve: Run the set-manager-custom-claims.mjs script to sync custom claims"
+        "To resolve: Run the set-manager-custom-claims.mjs script to sync custom claims",
       );
-      
+
       // Show user-facing warning only once per session
       if (!fallbackWarningShown.current) {
         fallbackWarningShown.current = true;
         setPermissionError(
-          "Unable to load all orders. Showing only your orders. Please contact an administrator to update your permissions."
+          "Unable to load all orders. Showing only your orders. Please contact an administrator to update your permissions.",
         );
       }
-      
+
       // Set up fallback listener for user's own orders
       unsubscribeOrdersFallback = onSnapshot(
         userOwnOrdersQuery,
@@ -479,12 +488,12 @@ const App: React.FC = () => {
           console.error(
             "%c❌ Critical: Fallback orders query also failed",
             "color: #ef4444; font-weight: bold;",
-            fallbackError
+            fallbackError,
           );
           setPermissionError(
-            "Unable to load orders. Please try refreshing the page or contact support."
+            "Unable to load orders. Please try refreshing the page or contact support.",
           );
-        }
+        },
       );
     };
 
@@ -493,40 +502,45 @@ const App: React.FC = () => {
     // - permission-denied for managers: Falls back to user's own orders (likely missing custom claims)
     // - permission-denied for non-managers: Shows permission error message
     // - Other errors (network, etc.): Shows generic error message
-    const handleOrdersError = (error: unknown, queryType: 'manager' | 'user') => {
+    const handleOrdersError = (
+      error: unknown,
+      queryType: "manager" | "user",
+    ) => {
       // Log error details for debugging
       console.error(
         `%c❌ Error fetching orders (${queryType} query)`,
-        "color: #ef4444; font-weight: bold;"
+        "color: #ef4444; font-weight: bold;",
       );
-      
+
       // Verify error is a FirestoreError before accessing its properties
       if (!isFirestoreError(error)) {
-        console.error('Unexpected error type:', error);
-        setPermissionError('An unexpected error occurred. Please try refreshing the page.');
+        console.error("Unexpected error type:", error);
+        setPermissionError(
+          "An unexpected error occurred. Please try refreshing the page.",
+        );
         return;
       }
 
       console.error("Error code:", error.code);
       console.error("Error message:", error.message);
-      
+
       if (error.code === "permission-denied") {
         logPermissionErrorDetails(queryType);
-        
+
         // For managers with Firestore isManager=true but missing custom claims,
         // fall back to querying only their own orders instead of failing completely
-        if (queryType === 'manager' && user.isManager) {
+        if (queryType === "manager" && user.isManager) {
           setupManagerFallback();
         } else {
           // Non-manager permission error or other permission issues
           setPermissionError(
-            "Unable to load orders due to a permissions error. Please try refreshing the page or contact support."
+            "Unable to load orders due to a permissions error. Please try refreshing the page or contact support.",
           );
         }
       } else {
         // Network or other non-permission errors
         setPermissionError(
-          "Unable to load orders. Please check your internet connection and try again."
+          "Unable to load orders. Please check your internet connection and try again.",
         );
       }
     };
@@ -540,7 +554,7 @@ const App: React.FC = () => {
           const ordersData = mapDocsToOrders(querySnapshot);
           processOrdersData(ordersData);
         },
-        (error) => handleOrdersError(error, 'manager')
+        (error) => handleOrdersError(error, "manager"),
       );
     } else {
       // Non-manager: Only fetch their own orders
@@ -550,7 +564,7 @@ const App: React.FC = () => {
           const ordersData = mapDocsToOrders(querySnapshot);
           processOrdersData(ordersData);
         },
-        (error) => handleOrdersError(error, 'user')
+        (error) => handleOrdersError(error, "user"),
       );
     }
 
@@ -558,39 +572,39 @@ const App: React.FC = () => {
     if (user.isManager) {
       const usersQuery = query(
         collection(db, USERS_COLLECTION),
-        orderBy("displayName", "asc")
+        orderBy("displayName", "asc"),
       );
       unsubscribeUsers = onSnapshot(
         usersQuery,
         (querySnapshot) => {
           const usersData: AppUser[] = querySnapshot.docs.map(
-            (docSnapshot) => docSnapshot.data() as AppUser
+            (docSnapshot) => docSnapshot.data() as AppUser,
           );
           setAllUsers(usersData);
         },
         (error) => {
           // Verify error is a FirestoreError before accessing its properties
           if (!isFirestoreError(error)) {
-            console.error('Unexpected error type:', error);
+            console.error("Unexpected error type:", error);
             return;
           }
-          
+
           console.error(
             "%c❌ Error fetching users from Firestore",
-            "color: #ef4444; font-weight: bold;"
+            "color: #ef4444; font-weight: bold;",
           );
           console.error("Error code:", error.code);
           console.error("Error message:", error.message);
-          
+
           if (error.code === "permission-denied") {
             console.error(
               "%c🔐 Users Permission Error - Manager may need custom claims",
-              "color: #f59e0b; font-weight: bold;"
+              "color: #f59e0b; font-weight: bold;",
             );
             // Don't show a separate error - the orders error message is enough
             // Just log for debugging
           }
-        }
+        },
       );
     }
 
@@ -599,19 +613,24 @@ const App: React.FC = () => {
       unsubscribeOrdersFallback?.();
       unsubscribeUsers?.();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- processOrdersData is stable (useCallback with []), mapDocsToOrders/isFirestoreError are module-level functions
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- processOrdersData is stable (useCallback with []), mapDocsToOrders/isFirestoreError are module-level functions
   }, [user]);
 
   const handleAddOrder = useCallback(
     async (newOrder: Omit<Order, "id">): Promise<boolean> => {
       // Validate user is authenticated and has required fields
       if (!user?.uid || !user?.email) {
-        console.error("Cannot create order: User not authenticated or missing required fields", {
-          hasUser: !!user,
-          hasUid: !!user?.uid,
-          hasEmail: !!user?.email,
-        });
-        alert("Cannot create order: You must be logged in. Please refresh the page and try again.");
+        console.error(
+          "Cannot create order: User not authenticated or missing required fields",
+          {
+            hasUser: !!user,
+            hasUid: !!user?.uid,
+            hasEmail: !!user?.email,
+          },
+        );
+        alert(
+          "Cannot create order: You must be logged in. Please refresh the page and try again.",
+        );
         return false;
       }
 
@@ -629,7 +648,9 @@ const App: React.FC = () => {
           authEmail: currentAuthUser.email,
           appEmail: user.email,
         });
-        alert("Authentication sync error: Please refresh the page and try again.");
+        alert(
+          "Authentication sync error: Please refresh the page and try again.",
+        );
         return false;
       }
 
@@ -651,37 +672,47 @@ const App: React.FC = () => {
 
         // Debug: Log the exact payload being sent (development only to avoid production overhead)
         if (import.meta.env.DEV) {
-          console.log("%c📝 Creating Order - Payload Details", "color: #3b82f6; font-weight: bold;");
+          console.log(
+            "%c📝 Creating Order - Payload Details",
+            "color: #3b82f6; font-weight: bold;",
+          );
           console.log("User authenticated:", !!user.uid);
           console.log("Email present:", !!user.email);
           console.log("Auth current user synced:", !!currentAuthUser.uid);
           console.log("Email match:", currentAuthUser.email === user.email);
           console.log("Order Status:", orderPayload.status);
-          console.log("Payload has createdAt:", 'createdAt' in finalOrder);
+          console.log("Payload has createdAt:", "createdAt" in finalOrder);
           console.log("Payload keys (count):", Object.keys(finalOrder).length);
           console.log("Full payload (createdAt will be server timestamp):", {
             ...finalOrder,
-            createdAt: "[SERVER_TIMESTAMP]"
+            createdAt: "[SERVER_TIMESTAMP]",
           });
         }
 
         await addDoc(collection(db, "orders"), finalOrder);
-        
+
         if (import.meta.env.DEV) {
-          console.log("%c✅ Order created successfully", "color: #10b981; font-weight: bold;");
+          console.log(
+            "%c✅ Order created successfully",
+            "color: #10b981; font-weight: bold;",
+          );
         }
         return true;
       } catch (error) {
         console.error("Error adding order: ", error);
-        
+
         // Provide more specific error messages based on the error
         if (error instanceof Error) {
           if (error.message.includes("Missing or insufficient permissions")) {
-            alert("Failed to add order: Permission denied. Please ensure you're logged in and try again.");
+            alert(
+              "Failed to add order: Permission denied. Please ensure you're logged in and try again.",
+            );
           } else {
             // Log full error for debugging but show generic message to user
             console.error("Detailed error:", error.message);
-            alert("Failed to add order. Please try again or contact support if the issue persists.");
+            alert(
+              "Failed to add order. Please try again or contact support if the issue persists.",
+            );
           }
         } else {
           alert("Failed to add order. Please try again.");
@@ -689,7 +720,7 @@ const App: React.FC = () => {
         return false;
       }
     },
-    [user]
+    [user],
   );
 
   const handleAddOrderAndCloseForm = useCallback(
@@ -700,11 +731,13 @@ const App: React.FC = () => {
       }
       return success;
     },
-    [handleAddOrder]
+    [handleAddOrder],
   );
 
   const handleCSVUpload = useCallback(
-    async (csvOrders: CSVOrderData[]): Promise<{ success: number; failed: number }> => {
+    async (
+      csvOrders: CSVOrderData[],
+    ): Promise<{ success: number; failed: number }> => {
       // Validate user is authenticated and has required fields
       if (!user?.uid || !user?.email) {
         console.error("Cannot upload CSV: User not authenticated");
@@ -722,7 +755,10 @@ const App: React.FC = () => {
       let failed = 0;
 
       if (import.meta.env.DEV) {
-        console.log("%c📤 CSV Upload - Starting bulk import", "color: #3b82f6; font-weight: bold;");
+        console.log(
+          "%c📤 CSV Upload - Starting bulk import",
+          "color: #3b82f6; font-weight: bold;",
+        );
         console.log("Orders to import:", csvOrders.length);
       }
 
@@ -752,31 +788,43 @@ const App: React.FC = () => {
           };
 
           // Add optional fields only if they have values
-          if (csvOrder.stockNumber) orderPayload.stockNumber = csvOrder.stockNumber;
+          if (csvOrder.stockNumber)
+            orderPayload.stockNumber = csvOrder.stockNumber;
           if (csvOrder.vin) orderPayload.vin = csvOrder.vin;
-          if (csvOrder.exteriorColor2) orderPayload.exteriorColor2 = csvOrder.exteriorColor2;
-          if (csvOrder.exteriorColor3) orderPayload.exteriorColor3 = csvOrder.exteriorColor3;
-          if (csvOrder.interiorColor2) orderPayload.interiorColor2 = csvOrder.interiorColor2;
-          if (csvOrder.interiorColor3) orderPayload.interiorColor3 = csvOrder.interiorColor3;
-          if (csvOrder.sellingPrice !== undefined) orderPayload.sellingPrice = csvOrder.sellingPrice;
+          if (csvOrder.exteriorColor2)
+            orderPayload.exteriorColor2 = csvOrder.exteriorColor2;
+          if (csvOrder.exteriorColor3)
+            orderPayload.exteriorColor3 = csvOrder.exteriorColor3;
+          if (csvOrder.interiorColor2)
+            orderPayload.interiorColor2 = csvOrder.interiorColor2;
+          if (csvOrder.interiorColor3)
+            orderPayload.interiorColor3 = csvOrder.interiorColor3;
+          if (csvOrder.sellingPrice !== undefined)
+            orderPayload.sellingPrice = csvOrder.sellingPrice;
           if (csvOrder.gross !== undefined) orderPayload.gross = csvOrder.gross;
 
           await addDoc(collection(db, "orders"), orderPayload);
           success++;
         } catch (error) {
-          console.error(`Failed to import order for ${csvOrder.customerName}:`, error);
+          console.error(
+            `Failed to import order for ${csvOrder.customerName}:`,
+            error,
+          );
           failed++;
         }
       }
 
       if (import.meta.env.DEV) {
-        console.log("%c✅ CSV Upload Complete", "color: #10b981; font-weight: bold;");
+        console.log(
+          "%c✅ CSV Upload Complete",
+          "color: #10b981; font-weight: bold;",
+        );
         console.log(`Success: ${success}, Failed: ${failed}`);
       }
 
       return { success, failed };
     },
-    [user]
+    [user],
   );
 
   const handleUpdateOrderStatus = useCallback(
@@ -790,7 +838,67 @@ const App: React.FC = () => {
         alert("Failed to update status. Please try again.");
       }
     },
-    [user]
+    [user],
+  );
+
+  const handleUpdateOrderDetails = useCallback(
+    async (
+      orderId: string,
+      updates: Partial<
+        Pick<
+          Order,
+          | "salesperson"
+          | "manager"
+          | "date"
+          | "customerName"
+          | "stockNumber"
+          | "dealNumber"
+          | "vin"
+          | "year"
+          | "model"
+          | "modelNumber"
+          | "exteriorColor1"
+          | "exteriorColor2"
+          | "exteriorColor3"
+          | "interiorColor1"
+          | "interiorColor2"
+          | "interiorColor3"
+          | "msrp"
+          | "sellingPrice"
+          | "gross"
+          | "depositAmount"
+          | "options"
+          | "notes"
+        >
+      >,
+    ): Promise<boolean> => {
+      if (!user?.isManager) return false; // Security check
+
+      // Extra safety: do not allow edits on secured orders.
+      const existingOrder = orders.find((o) => o.id === orderId);
+      if (existingOrder && isSecuredStatus(existingOrder.status)) {
+        alert("This order is secured and cannot be edited.");
+        return false;
+      }
+
+      try {
+        const sanitizedUpdates: Record<string, unknown> = { ...updates };
+        Object.keys(sanitizedUpdates).forEach((key) => {
+          if (sanitizedUpdates[key] === undefined) {
+            delete sanitizedUpdates[key];
+          }
+        });
+
+        const orderDocRef = doc(db, "orders", orderId);
+        await updateDoc(orderDocRef, sanitizedUpdates);
+        return true;
+      } catch (error) {
+        console.error("Error updating order details: ", error);
+        alert("Failed to update order. Please try again.");
+        return false;
+      }
+    },
+    [user, orders],
   );
 
   const handleDeleteOrder = useCallback(
@@ -798,7 +906,7 @@ const App: React.FC = () => {
       if (!user?.isManager) return; // Security check
       if (
         window.confirm(
-          "Are you sure you want to delete this order? This action cannot be undone."
+          "Are you sure you want to delete this order? This action cannot be undone.",
         )
       ) {
         try {
@@ -809,7 +917,7 @@ const App: React.FC = () => {
         }
       }
     },
-    [user]
+    [user],
   );
 
   const handleUpdateUserRole = useCallback(
@@ -817,22 +925,22 @@ const App: React.FC = () => {
       if (!user?.isManager || user.uid === uid) return; // Security check
       // Optimistically update local state after backend function succeeds
       // Called from SettingsPage after successful backend update
-      setAllUsers(prev => 
-        prev.map(u => u.uid === uid ? { ...u, isManager } : u)
+      setAllUsers((prev) =>
+        prev.map((u) => (u.uid === uid ? { ...u, isManager } : u)),
       );
     },
-    [user]
+    [user],
   );
 
   const handleUserStatusChange = useCallback(
     (uid: string, isActive: boolean) => {
       if (!user?.isManager || user.uid === uid) return; // Security check
       // Update allUsers state to reflect the change
-      setAllUsers(prev => 
-        prev.map(u => u.uid === uid ? { ...u, isActive } : u)
+      setAllUsers((prev) =>
+        prev.map((u) => (u.uid === uid ? { ...u, isActive } : u)),
       );
     },
-    [user]
+    [user],
   );
 
   const handleLogout = async () => {
@@ -882,7 +990,7 @@ const App: React.FC = () => {
           isCurrentUserManager={user.isManager}
         />
         {permissionError && (
-          <div 
+          <div
             role="alert"
             aria-live="polite"
             className="mb-4 p-4 bg-amber-50 border border-amber-300 rounded-lg flex items-start gap-3"
@@ -998,6 +1106,7 @@ const App: React.FC = () => {
                   <OrderList
                     orders={orders}
                     onUpdateStatus={handleUpdateOrderStatus}
+                    onUpdateOrderDetails={handleUpdateOrderDetails}
                     onDeleteOrder={handleDeleteOrder}
                     currentUser={user}
                   />
@@ -1028,6 +1137,7 @@ const App: React.FC = () => {
                     <OrderList
                       orders={orders}
                       onUpdateStatus={handleUpdateOrderStatus}
+                      onUpdateOrderDetails={handleUpdateOrderDetails}
                       onDeleteOrder={handleDeleteOrder}
                       currentUser={user}
                     />

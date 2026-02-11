@@ -52,6 +52,7 @@ describe("OrderList", () => {
   ] as Order[];
 
   const mockOnUpdateStatus = vi.fn();
+  const mockOnUpdateOrderDetails = vi.fn().mockResolvedValue(true);
   const mockOnDeleteOrder = vi.fn();
 
   beforeEach(() => {
@@ -63,9 +64,10 @@ describe("OrderList", () => {
       <OrderList
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
+        onUpdateOrderDetails={mockOnUpdateOrderDetails}
         onDeleteOrder={mockOnDeleteOrder}
         currentUser={mockManagerUser}
-      />
+      />,
     );
 
     // Should show active orders by default (not secured)
@@ -79,9 +81,10 @@ describe("OrderList", () => {
       <OrderList
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
+        onUpdateOrderDetails={mockOnUpdateOrderDetails}
         onDeleteOrder={mockOnDeleteOrder}
         currentUser={mockManagerUser}
-      />
+      />,
     );
 
     const searchInput = screen.getByPlaceholderText(/search/i);
@@ -98,9 +101,10 @@ describe("OrderList", () => {
       <OrderList
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
+        onUpdateOrderDetails={mockOnUpdateOrderDetails}
         onDeleteOrder={mockOnDeleteOrder}
         currentUser={mockManagerUser}
-      />
+      />,
     );
 
     // Default is active tab
@@ -124,13 +128,16 @@ describe("OrderList", () => {
       <OrderList
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
+        onUpdateOrderDetails={mockOnUpdateOrderDetails}
         onDeleteOrder={mockOnDeleteOrder}
         currentUser={mockManagerUser}
-      />
+      />,
     );
 
     // Click the "Dealer Exchange" filter button (Locate removed from UI)
-    const dealerExchangeFilterBtn = screen.getAllByRole("button", { name: /dealer exchange/i })[0];
+    const dealerExchangeFilterBtn = screen.getAllByRole("button", {
+      name: /dealer exchange/i,
+    })[0];
     await user.click(dealerExchangeFilterBtn);
 
     // Should only show orders with Dealer Exchange status
@@ -144,9 +151,10 @@ describe("OrderList", () => {
       <OrderList
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
+        onUpdateOrderDetails={mockOnUpdateOrderDetails}
         onDeleteOrder={mockOnDeleteOrder}
         currentUser={mockManagerUser}
-      />
+      />,
     );
 
     const searchInput = screen.getByPlaceholderText(/search/i);
@@ -160,21 +168,23 @@ describe("OrderList", () => {
       <OrderList
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
+        onUpdateOrderDetails={mockOnUpdateOrderDetails}
         onDeleteOrder={mockOnDeleteOrder}
         currentUser={mockManagerUser}
-      />
+      />,
     );
 
     // Dynamic active order count using current UI label 'Active Orders <count>'
     const activeCount = mockOrders.filter(
-      (o) => o.status !== OrderStatus.Delivered && o.status !== OrderStatus.Received
+      (o) =>
+        o.status !== OrderStatus.Delivered && o.status !== OrderStatus.Received,
     ).length;
     const activeTabRegex = new RegExp(
       `^Active\\s*Orders\\s*${activeCount}$`,
-      "i"
+      "i",
     );
     expect(
-      screen.getByRole("button", { name: activeTabRegex })
+      screen.getByRole("button", { name: activeTabRegex }),
     ).toBeInTheDocument();
   });
 
@@ -183,22 +193,24 @@ describe("OrderList", () => {
       <OrderList
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
+        onUpdateOrderDetails={mockOnUpdateOrderDetails}
         onDeleteOrder={mockOnDeleteOrder}
         currentUser={mockManagerUser}
-      />
+      />,
     );
 
     // Dynamic secured order count using current UI label 'Secured History <count>'
     // Secured includes legacy Received and Delivered statuses
     const securedCount = mockOrders.filter(
-      (o) => o.status === OrderStatus.Delivered || o.status === OrderStatus.Received
+      (o) =>
+        o.status === OrderStatus.Delivered || o.status === OrderStatus.Received,
     ).length;
     const securedTabRegex = new RegExp(
       `^Secured\\s*History\\s*${securedCount}$`,
-      "i"
+      "i",
     );
     expect(
-      screen.getByRole("button", { name: securedTabRegex })
+      screen.getByRole("button", { name: securedTabRegex }),
     ).toBeInTheDocument();
   });
 
@@ -207,9 +219,10 @@ describe("OrderList", () => {
       <OrderList
         orders={[]}
         onUpdateStatus={mockOnUpdateStatus}
+        onUpdateOrderDetails={mockOnUpdateOrderDetails}
         onDeleteOrder={mockOnDeleteOrder}
         currentUser={mockManagerUser}
-      />
+      />,
     );
 
     expect(screen.getByText(/no orders found/i)).toBeInTheDocument();
@@ -220,23 +233,30 @@ describe("OrderList", () => {
       <OrderList
         orders={mockOrders}
         onUpdateStatus={mockOnUpdateStatus}
+        onUpdateOrderDetails={mockOnUpdateOrderDetails}
         onDeleteOrder={mockOnDeleteOrder}
         currentUser={mockManagerUser}
-      />
+      />,
     );
 
     // Get all filter buttons (they are in the filter area with specific styling)
     const allActiveBtn = screen.getByRole("button", { name: /all active/i });
     expect(allActiveBtn).toBeInTheDocument();
-    
+
     // Factory Order and Dealer Exchange filter buttons should exist
-    const factoryOrderBtns = screen.getAllByRole("button", { name: /factory order/i });
+    const factoryOrderBtns = screen.getAllByRole("button", {
+      name: /factory order/i,
+    });
     expect(factoryOrderBtns.length).toBeGreaterThan(0);
-    
-    const dealerExchangeBtns = screen.getAllByRole("button", { name: /dealer exchange/i });
+
+    const dealerExchangeBtns = screen.getAllByRole("button", {
+      name: /dealer exchange/i,
+    });
     expect(dealerExchangeBtns.length).toBeGreaterThan(0);
 
     // Should NOT have any Locate button - neither filter nor any other kind
-    expect(screen.queryByRole("button", { name: /^locate$/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^locate$/i }),
+    ).not.toBeInTheDocument();
   });
 });
