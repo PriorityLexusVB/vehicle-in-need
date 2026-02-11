@@ -4,7 +4,15 @@ import userEvent from "@testing-library/user-event";
 import OrderCard from "../OrderCard";
 import StatusBadge from "../StatusBadge";
 import { Order, OrderStatus, AppUser } from "../../types";
-import { normalizeStatusForUI, isSecuredStatus, isActiveStatus } from "../../constants";
+import {
+  normalizeStatusForUI,
+  isSecuredStatus,
+  isActiveStatus,
+} from "../../constants";
+
+vi.mock("../OrderNotes", () => ({
+  default: () => null,
+}));
 
 describe("Secured Status Feature", () => {
   const mockManagerUser: AppUser = {
@@ -21,27 +29,29 @@ describe("Secured Status Feature", () => {
     isManager: false,
   };
 
-  const createMockOrder = (overrides: Partial<Order> = {}): Order => ({
-    id: "test-order-1",
-    customerName: "Test Customer",
-    year: "2024",
-    model: "Lexus RX 350",
-    status: OrderStatus.FactoryOrder,
-    date: "2024-01-15",
-    salesperson: "Alice",
-    manager: "Bob",
-    dealNumber: "DEAL-001",
-    stockNumber: "STOCK-001",
-    modelNumber: "MODEL-001",
-    exteriorColor1: "EXT-001",
-    interiorColor1: "INT-001",
-    msrp: 50000,
-    depositAmount: 1000,
-    options: "Test options",
-    ...overrides,
-  } as Order);
+  const createMockOrder = (overrides: Partial<Order> = {}): Order =>
+    ({
+      id: "test-order-1",
+      customerName: "Test Customer",
+      year: "2024",
+      model: "Lexus RX 350",
+      status: OrderStatus.FactoryOrder,
+      date: "2024-01-15",
+      salesperson: "Alice",
+      manager: "Bob",
+      dealNumber: "DEAL-001",
+      stockNumber: "STOCK-001",
+      modelNumber: "MODEL-001",
+      exteriorColor1: "EXT-001",
+      interiorColor1: "INT-001",
+      msrp: 50000,
+      depositAmount: 1000,
+      options: "Test options",
+      ...overrides,
+    }) as Order;
 
   const mockOnUpdateStatus = vi.fn();
+  const mockOnUpdateOrderDetails = vi.fn().mockResolvedValue(true);
   const mockOnDeleteOrder = vi.fn();
 
   beforeEach(() => {
@@ -50,21 +60,31 @@ describe("Secured Status Feature", () => {
 
   describe("normalizeStatusForUI", () => {
     it("maps Received status to Secured", () => {
-      expect(normalizeStatusForUI(OrderStatus.Received)).toBe(OrderStatus.Secured);
+      expect(normalizeStatusForUI(OrderStatus.Received)).toBe(
+        OrderStatus.Secured,
+      );
     });
 
     it("maps Delivered status to Secured", () => {
-      expect(normalizeStatusForUI(OrderStatus.Delivered)).toBe(OrderStatus.Secured);
+      expect(normalizeStatusForUI(OrderStatus.Delivered)).toBe(
+        OrderStatus.Secured,
+      );
     });
 
     it("returns Secured status unchanged", () => {
-      expect(normalizeStatusForUI(OrderStatus.Secured)).toBe(OrderStatus.Secured);
+      expect(normalizeStatusForUI(OrderStatus.Secured)).toBe(
+        OrderStatus.Secured,
+      );
     });
 
     it("returns other statuses unchanged", () => {
-      expect(normalizeStatusForUI(OrderStatus.FactoryOrder)).toBe(OrderStatus.FactoryOrder);
+      expect(normalizeStatusForUI(OrderStatus.FactoryOrder)).toBe(
+        OrderStatus.FactoryOrder,
+      );
       expect(normalizeStatusForUI(OrderStatus.Locate)).toBe(OrderStatus.Locate);
-      expect(normalizeStatusForUI(OrderStatus.DealerExchange)).toBe(OrderStatus.DealerExchange);
+      expect(normalizeStatusForUI(OrderStatus.DealerExchange)).toBe(
+        OrderStatus.DealerExchange,
+      );
     });
   });
 
@@ -128,17 +148,22 @@ describe("Secured Status Feature", () => {
         <OrderCard
           order={order}
           onUpdateStatus={mockOnUpdateStatus}
+          onUpdateOrderDetails={mockOnUpdateOrderDetails}
           onDeleteOrder={mockOnDeleteOrder}
           currentUser={mockManagerUser}
-        />
+        />,
       );
 
       // Expand the card
-      const expandButton = screen.getByRole("button", { name: /toggle order details/i });
+      const expandButton = screen.getByRole("button", {
+        name: /toggle order details/i,
+      });
       await user.click(expandButton);
 
       // Should show Mark Secured button
-      expect(screen.getByRole("button", { name: /mark secured/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /mark secured/i }),
+      ).toBeInTheDocument();
     });
 
     it("does NOT show Mark Received or Mark Delivered buttons", async () => {
@@ -149,18 +174,25 @@ describe("Secured Status Feature", () => {
         <OrderCard
           order={order}
           onUpdateStatus={mockOnUpdateStatus}
+          onUpdateOrderDetails={mockOnUpdateOrderDetails}
           onDeleteOrder={mockOnDeleteOrder}
           currentUser={mockManagerUser}
-        />
+        />,
       );
 
       // Expand the card
-      const expandButton = screen.getByRole("button", { name: /toggle order details/i });
+      const expandButton = screen.getByRole("button", {
+        name: /toggle order details/i,
+      });
       await user.click(expandButton);
 
       // Should NOT show old buttons
-      expect(screen.queryByRole("button", { name: /mark as received/i })).not.toBeInTheDocument();
-      expect(screen.queryByRole("button", { name: /mark as delivered/i })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /mark as received/i }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /mark as delivered/i }),
+      ).not.toBeInTheDocument();
     });
 
     it("calls onUpdateStatus with Delivered when Mark Secured is clicked", async () => {
@@ -171,21 +203,29 @@ describe("Secured Status Feature", () => {
         <OrderCard
           order={order}
           onUpdateStatus={mockOnUpdateStatus}
+          onUpdateOrderDetails={mockOnUpdateOrderDetails}
           onDeleteOrder={mockOnDeleteOrder}
           currentUser={mockManagerUser}
-        />
+        />,
       );
 
       // Expand the card
-      const expandButton = screen.getByRole("button", { name: /toggle order details/i });
+      const expandButton = screen.getByRole("button", {
+        name: /toggle order details/i,
+      });
       await user.click(expandButton);
 
       // Click Mark Secured
-      const markSecuredButton = screen.getByRole("button", { name: /mark secured/i });
+      const markSecuredButton = screen.getByRole("button", {
+        name: /mark secured/i,
+      });
       await user.click(markSecuredButton);
 
       // Should call onUpdateStatus with Delivered (the DB value for secured)
-      expect(mockOnUpdateStatus).toHaveBeenCalledWith(order.id, OrderStatus.Delivered);
+      expect(mockOnUpdateStatus).toHaveBeenCalledWith(
+        order.id,
+        OrderStatus.Delivered,
+      );
     });
 
     it("does not show Mark Secured button for secured orders", async () => {
@@ -196,17 +236,22 @@ describe("Secured Status Feature", () => {
         <OrderCard
           order={order}
           onUpdateStatus={mockOnUpdateStatus}
+          onUpdateOrderDetails={mockOnUpdateOrderDetails}
           onDeleteOrder={mockOnDeleteOrder}
           currentUser={mockManagerUser}
-        />
+        />,
       );
 
       // Expand the card
-      const expandButton = screen.getByRole("button", { name: /toggle order details/i });
+      const expandButton = screen.getByRole("button", {
+        name: /toggle order details/i,
+      });
       await user.click(expandButton);
 
       // Should NOT show Mark Secured button for already secured orders
-      expect(screen.queryByRole("button", { name: /mark secured/i })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /mark secured/i }),
+      ).not.toBeInTheDocument();
     });
 
     it("does not show Mark Secured button for non-manager users", async () => {
@@ -217,17 +262,22 @@ describe("Secured Status Feature", () => {
         <OrderCard
           order={order}
           onUpdateStatus={mockOnUpdateStatus}
+          onUpdateOrderDetails={mockOnUpdateOrderDetails}
           onDeleteOrder={mockOnDeleteOrder}
           currentUser={mockNonManagerUser}
-        />
+        />,
       );
 
       // Expand the card
-      const expandButton = screen.getByRole("button", { name: /toggle order details/i });
+      const expandButton = screen.getByRole("button", {
+        name: /toggle order details/i,
+      });
       await user.click(expandButton);
 
       // Should NOT show Mark Secured button for non-managers
-      expect(screen.queryByRole("button", { name: /mark secured/i })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /mark secured/i }),
+      ).not.toBeInTheDocument();
     });
 
     it("shows Order Secured message for secured orders", async () => {
@@ -238,13 +288,16 @@ describe("Secured Status Feature", () => {
         <OrderCard
           order={order}
           onUpdateStatus={mockOnUpdateStatus}
+          onUpdateOrderDetails={mockOnUpdateOrderDetails}
           onDeleteOrder={mockOnDeleteOrder}
           currentUser={mockManagerUser}
-        />
+        />,
       );
 
       // Expand the card
-      const expandButton = screen.getByRole("button", { name: /toggle order details/i });
+      const expandButton = screen.getByRole("button", {
+        name: /toggle order details/i,
+      });
       await user.click(expandButton);
 
       // Should show "Order Secured" message
@@ -261,22 +314,30 @@ describe("Secured Status Feature", () => {
         <OrderCard
           order={order}
           onUpdateStatus={mockOnUpdateStatus}
+          onUpdateOrderDetails={mockOnUpdateOrderDetails}
           onDeleteOrder={mockOnDeleteOrder}
           currentUser={mockManagerUser}
-        />
+        />,
       );
 
       // Expand the card
-      const expandButton = screen.getByRole("button", { name: /toggle order details/i });
+      const expandButton = screen.getByRole("button", {
+        name: /toggle order details/i,
+      });
       await user.click(expandButton);
 
       // Find and click Mark Secured button
-      const markSecuredButton = screen.getByRole("button", { name: /mark secured/i });
+      const markSecuredButton = screen.getByRole("button", {
+        name: /mark secured/i,
+      });
       await user.click(markSecuredButton);
 
       // Verify single-step flow: directly updates to Delivered status
       expect(mockOnUpdateStatus).toHaveBeenCalledTimes(1);
-      expect(mockOnUpdateStatus).toHaveBeenCalledWith(order.id, OrderStatus.Delivered);
+      expect(mockOnUpdateStatus).toHaveBeenCalledWith(
+        order.id,
+        OrderStatus.Delivered,
+      );
     });
   });
 
@@ -289,17 +350,22 @@ describe("Secured Status Feature", () => {
         <OrderCard
           order={order}
           onUpdateStatus={mockOnUpdateStatus}
+          onUpdateOrderDetails={mockOnUpdateOrderDetails}
           onDeleteOrder={mockOnDeleteOrder}
           currentUser={mockManagerUser}
-        />
+        />,
       );
 
       // Expand the card
-      const expandButton = screen.getByRole("button", { name: /toggle order details/i });
+      const expandButton = screen.getByRole("button", {
+        name: /toggle order details/i,
+      });
       await user.click(expandButton);
 
       // Should show Mark as Unsecured button
-      expect(screen.getByRole("button", { name: /mark as unsecured/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /mark as unsecured/i }),
+      ).toBeInTheDocument();
     });
 
     it("does NOT show Mark as Unsecured button for non-manager users", async () => {
@@ -310,17 +376,22 @@ describe("Secured Status Feature", () => {
         <OrderCard
           order={order}
           onUpdateStatus={mockOnUpdateStatus}
+          onUpdateOrderDetails={mockOnUpdateOrderDetails}
           onDeleteOrder={mockOnDeleteOrder}
           currentUser={mockNonManagerUser}
-        />
+        />,
       );
 
       // Expand the card
-      const expandButton = screen.getByRole("button", { name: /toggle order details/i });
+      const expandButton = screen.getByRole("button", {
+        name: /toggle order details/i,
+      });
       await user.click(expandButton);
 
       // Should NOT show Mark as Unsecured button for non-managers
-      expect(screen.queryByRole("button", { name: /mark as unsecured/i })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /mark as unsecured/i }),
+      ).not.toBeInTheDocument();
     });
 
     it("does NOT show Mark as Unsecured button for active orders", async () => {
@@ -331,17 +402,22 @@ describe("Secured Status Feature", () => {
         <OrderCard
           order={order}
           onUpdateStatus={mockOnUpdateStatus}
+          onUpdateOrderDetails={mockOnUpdateOrderDetails}
           onDeleteOrder={mockOnDeleteOrder}
           currentUser={mockManagerUser}
-        />
+        />,
       );
 
       // Expand the card
-      const expandButton = screen.getByRole("button", { name: /toggle order details/i });
+      const expandButton = screen.getByRole("button", {
+        name: /toggle order details/i,
+      });
       await user.click(expandButton);
 
       // Should NOT show Mark as Unsecured button for active orders
-      expect(screen.queryByRole("button", { name: /mark as unsecured/i })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /mark as unsecured/i }),
+      ).not.toBeInTheDocument();
     });
 
     it("shows confirmation dialog when Mark as Unsecured is clicked", async () => {
@@ -352,17 +428,22 @@ describe("Secured Status Feature", () => {
         <OrderCard
           order={order}
           onUpdateStatus={mockOnUpdateStatus}
+          onUpdateOrderDetails={mockOnUpdateOrderDetails}
           onDeleteOrder={mockOnDeleteOrder}
           currentUser={mockManagerUser}
-        />
+        />,
       );
 
       // Expand the card
-      const expandButton = screen.getByRole("button", { name: /toggle order details/i });
+      const expandButton = screen.getByRole("button", {
+        name: /toggle order details/i,
+      });
       await user.click(expandButton);
 
       // Click Mark as Unsecured
-      const unsecureButton = screen.getByRole("button", { name: /mark as unsecured/i });
+      const unsecureButton = screen.getByRole("button", {
+        name: /mark as unsecured/i,
+      });
       await user.click(unsecureButton);
 
       // Should show confirmation dialog
@@ -379,15 +460,20 @@ describe("Secured Status Feature", () => {
         <OrderCard
           order={order}
           onUpdateStatus={mockOnUpdateStatus}
+          onUpdateOrderDetails={mockOnUpdateOrderDetails}
           onDeleteOrder={mockOnDeleteOrder}
           currentUser={mockManagerUser}
-        />
+        />,
       );
 
       // Expand and click unsecure
-      const expandButton = screen.getByRole("button", { name: /toggle order details/i });
+      const expandButton = screen.getByRole("button", {
+        name: /toggle order details/i,
+      });
       await user.click(expandButton);
-      const unsecureButton = screen.getByRole("button", { name: /mark as unsecured/i });
+      const unsecureButton = screen.getByRole("button", {
+        name: /mark as unsecured/i,
+      });
       await user.click(unsecureButton);
 
       // Click Cancel
@@ -407,23 +493,33 @@ describe("Secured Status Feature", () => {
         <OrderCard
           order={order}
           onUpdateStatus={mockOnUpdateStatus}
+          onUpdateOrderDetails={mockOnUpdateOrderDetails}
           onDeleteOrder={mockOnDeleteOrder}
           currentUser={mockManagerUser}
-        />
+        />,
       );
 
       // Expand and click unsecure
-      const expandButton = screen.getByRole("button", { name: /toggle order details/i });
+      const expandButton = screen.getByRole("button", {
+        name: /toggle order details/i,
+      });
       await user.click(expandButton);
-      const unsecureButton = screen.getByRole("button", { name: /mark as unsecured/i });
+      const unsecureButton = screen.getByRole("button", {
+        name: /mark as unsecured/i,
+      });
       await user.click(unsecureButton);
 
       // Confirm the action
-      const confirmButton = screen.getByRole("button", { name: /yes, mark as unsecured/i });
+      const confirmButton = screen.getByRole("button", {
+        name: /yes, mark as unsecured/i,
+      });
       await user.click(confirmButton);
 
       // Should call onUpdateStatus with Factory Order status
-      expect(mockOnUpdateStatus).toHaveBeenCalledWith(order.id, OrderStatus.FactoryOrder);
+      expect(mockOnUpdateStatus).toHaveBeenCalledWith(
+        order.id,
+        OrderStatus.FactoryOrder,
+      );
     });
 
     it("works with legacy Received status as well", async () => {
@@ -434,17 +530,22 @@ describe("Secured Status Feature", () => {
         <OrderCard
           order={order}
           onUpdateStatus={mockOnUpdateStatus}
+          onUpdateOrderDetails={mockOnUpdateOrderDetails}
           onDeleteOrder={mockOnDeleteOrder}
           currentUser={mockManagerUser}
-        />
+        />,
       );
 
       // Expand the card
-      const expandButton = screen.getByRole("button", { name: /toggle order details/i });
+      const expandButton = screen.getByRole("button", {
+        name: /toggle order details/i,
+      });
       await user.click(expandButton);
 
       // Should show Mark as Unsecured button for legacy Received status
-      expect(screen.getByRole("button", { name: /mark as unsecured/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /mark as unsecured/i }),
+      ).toBeInTheDocument();
     });
   });
 
@@ -457,15 +558,20 @@ describe("Secured Status Feature", () => {
         <OrderCard
           order={order}
           onUpdateStatus={mockOnUpdateStatus}
+          onUpdateOrderDetails={mockOnUpdateOrderDetails}
           onDeleteOrder={mockOnDeleteOrder}
           currentUser={mockNonManagerUser}
-        />
+        />,
       );
 
-      const expandButton = screen.getByRole("button", { name: /toggle order details/i });
+      const expandButton = screen.getByRole("button", {
+        name: /toggle order details/i,
+      });
       await user.click(expandButton);
 
-      expect(screen.queryByRole("button", { name: /mark secured/i })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /mark secured/i }),
+      ).not.toBeInTheDocument();
     });
 
     it("non-manager cannot see status change dropdown", async () => {
@@ -476,12 +582,15 @@ describe("Secured Status Feature", () => {
         <OrderCard
           order={order}
           onUpdateStatus={mockOnUpdateStatus}
+          onUpdateOrderDetails={mockOnUpdateOrderDetails}
           onDeleteOrder={mockOnDeleteOrder}
           currentUser={mockNonManagerUser}
-        />
+        />,
       );
 
-      const expandButton = screen.getByRole("button", { name: /toggle order details/i });
+      const expandButton = screen.getByRole("button", {
+        name: /toggle order details/i,
+      });
       await user.click(expandButton);
 
       // Non-manager should see status text but not dropdown
