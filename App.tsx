@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import {
   collection,
@@ -37,6 +37,7 @@ import DashboardStats from "./components/DashboardStats";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ZeroManagerWarning from "./components/ZeroManagerWarning";
 import CSVUpload from "./components/CSVUpload";
+import AllocationBoard from "./components/AllocationBoard";
 import { CSVOrderData } from "./src/utils/csvParser";
 import { PlusIcon } from "./components/icons/PlusIcon";
 import { CloseIcon } from "./components/icons/CloseIcon";
@@ -1111,6 +1112,20 @@ const App: React.FC = () => {
                     currentUser={user}
                   />
                 </div>
+              ) : (
+                <Navigate to="/allocation" replace />
+              )
+            }
+          />
+          <Route
+            path="/allocation"
+            element={<AllocationBoard currentUser={user} />}
+          />
+          <Route
+            path="/requests"
+            element={
+              user.isManager ? (
+                <Navigate to="/" replace />
               ) : (
                 <div>
                   <div className="text-center mb-8">
