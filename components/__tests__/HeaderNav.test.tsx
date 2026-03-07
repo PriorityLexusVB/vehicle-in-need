@@ -39,7 +39,9 @@ function renderHeader(user: AppUser) {
 describe("Header navigation", () => {
   it("hides manager navigation for non-managers", () => {
     renderHeader(baseUser);
-    expect(screen.queryByTestId("manager-nav")).toBeNull();
+    expect(screen.getByTestId("main-nav")).toBeInTheDocument();
+    expect(screen.queryByTestId("dashboard-nav-link")).toBeNull();
+    expect(screen.queryByTestId("admin-nav-link")).toBeNull();
     expect(screen.queryByTestId("admin-settings-link")).toBeNull();
     expect(
       screen.getByRole("heading", { name: /vehicle order tracker/i })
@@ -49,7 +51,7 @@ describe("Header navigation", () => {
   it("shows manager navigation and active orders count for managers", () => {
     renderHeader(managerUser);
     // nav wrapper
-    expect(screen.getByTestId("manager-nav")).toBeInTheDocument();
+    expect(screen.getByTestId("main-nav")).toBeInTheDocument();
     // dashboard link
     expect(screen.getByTestId("dashboard-nav-link")).toBeInTheDocument();
     // admin link (nav pill)
