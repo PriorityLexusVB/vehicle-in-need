@@ -5,6 +5,8 @@ export interface AllocationVehicle {
   code: string;
   quantity: number;
   color: string;
+  interiorColor: string;
+  bos: string;
   arrival: string;
   grade: string;
   engine: string;

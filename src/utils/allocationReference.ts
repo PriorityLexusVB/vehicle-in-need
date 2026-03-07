@@ -30,6 +30,16 @@ export const LEXUS_ALLOCATION_REFERENCE: Record<string, LexusAllocationReference
     rank: "Critical",
     profit: 5600,
   },
+  RX350H: {
+    code: "RX350H",
+    category: "Core",
+    type: "SUV Hybrid",
+    grade: "Premium",
+    engine: "Hybrid",
+    msrp: 0,
+    rank: "High",
+    profit: 0,
+  },
   NX250: {
     code: "NX250",
     category: "Core",
@@ -59,6 +69,16 @@ export const LEXUS_ALLOCATION_REFERENCE: Record<string, LexusAllocationReference
     msrp: 47000,
     rank: "High",
     profit: 3900,
+  },
+  "NX450H+": {
+    code: "NX450H+",
+    category: "Electrified",
+    type: "PHEV SUV",
+    grade: "Luxury",
+    engine: "Hybrid",
+    msrp: 0,
+    rank: "Medium",
+    profit: 0,
   },
   TX350: {
     code: "TX350",
@@ -130,6 +150,16 @@ export const LEXUS_ALLOCATION_REFERENCE: Record<string, LexusAllocationReference
     rank: "High",
     profit: 8400,
   },
+  LX700H: {
+    code: "LX700H",
+    category: "Flagship",
+    type: "Luxury SUV Hybrid",
+    grade: "Luxury",
+    engine: "Hybrid",
+    msrp: 0,
+    rank: "High",
+    profit: 0,
+  },
   RZ450E: {
     code: "RZ450E",
     category: "Electrified",
@@ -149,6 +179,16 @@ export const LEXUS_ALLOCATION_REFERENCE: Record<string, LexusAllocationReference
     msrp: 100450,
     rank: "High",
     profit: 9200,
+  },
+  UX300H: {
+    code: "UX300H",
+    category: "Core",
+    type: "Subcompact SUV Hybrid",
+    grade: "Base",
+    engine: "Hybrid",
+    msrp: 0,
+    rank: "Low",
+    profit: 0,
   },
 };
 

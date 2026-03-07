@@ -13,12 +13,20 @@ import {
 import { db } from "./firebase";
 import {
   AllocationSnapshot,
+  AllocationVehicle,
   PublishAllocationPayload,
 } from "../src/utils/allocationTypes";
 
 const ALLOCATION_SNAPSHOTS_COLLECTION = "allocationSnapshots";
 
 function mapSnapshot(docId: string, data: Record<string, unknown>): AllocationSnapshot {
+  const vehiclesRaw = (data.vehicles as AllocationSnapshot["vehicles"]) ?? [];
+  const vehicles: AllocationVehicle[] = vehiclesRaw.map((vehicle) => ({
+    ...vehicle,
+    interiorColor: vehicle.interiorColor ?? "TBD",
+    bos: vehicle.bos ?? "TBD",
+  }));
+
   return {
     id: docId,
     reportDate: (data.reportDate as string | null) ?? null,
@@ -31,7 +39,7 @@ function mapSnapshot(docId: string, data: Record<string, unknown>): AllocationSn
       value: 0,
       hybridMix: 0,
     },
-    vehicles: (data.vehicles as AllocationSnapshot["vehicles"]) ?? [],
+    vehicles,
     isLatest: Boolean(data.isLatest),
   };
 }
