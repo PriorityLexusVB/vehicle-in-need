@@ -15,7 +15,7 @@ const QUANTITY_AFTER_CODE_REGEX = /^\s*[xX]?\s*(\d{1,2})\b/;
 const DATE_PATTERN = /(report\s*date|allocation\s*date|date)\s*[:-]\s*([^\n]+)/i;
 
 // Label-based extraction only (avoid grabbing unrelated dates by default).
-const ARRIVAL_TAG_PATTERN = /\b(eta|arrival)\b\s*[:\-]?\s*([^\n\t|]+)/i;
+const ARRIVAL_TAG_PATTERN = /\b(eta|arrival)\b\s*[:-]?\s*([^\n\t|]+)/i;
 
 const SHORT_DATE_PATTERN = /\b(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)\b/;
 const ISO_DATE_PATTERN = /\b(20\d{2}[-/.]\d{1,2}[-/.]\d{1,2})\b/;
@@ -556,7 +556,7 @@ function normalizeExteriorColor(raw: string): string | null {
 
   cleaned = cleaned.toUpperCase();
   cleaned = cleaned.replace(
-    /^\s*(EXTERIOR|EXT\.?)(?:\s+(COLOR|CLR))?\s*[:\-]?\s*/,
+    /^\s*(EXTERIOR|EXT\.?)(?:\s+(COLOR|CLR))?\s*[:-]?\s*/,
     "",
   );
   cleaned = cleaned.split(/\b(?:INT|INTERIOR)\b/)[0].trim();
@@ -642,7 +642,7 @@ function normalizeInteriorColor(raw: string): string | null {
 
   cleaned = cleaned.toUpperCase();
   cleaned = cleaned.replace(
-    /^\s*(INTERIOR|INT\.?)(?:\s+(COLOR|CLR))?\s*[:\-]?\s*/,
+    /^\s*(INTERIOR|INT\.?)(?:\s+(COLOR|CLR))?\s*[:-]?\s*/,
     "",
   );
   cleaned = cleaned.split(/\b(?:EXT|EXTERIOR)\b/)[0].trim();
@@ -689,7 +689,7 @@ function detectInteriorColorFromBlock(block: AllocationBlock, layout: ColumnLayo
   }
 
   // 2) Label-based extraction if text explicitly includes interior label.
-  const tagged = block.blockTextUpper.match(/\b(?:INT|INTERIOR)(?:\s+(?:COLOR|CLR))?\s*[:\-]?\s*([^\n|]+)/);
+  const tagged = block.blockTextUpper.match(/\b(?:INT|INTERIOR)(?:\s+(?:COLOR|CLR))?\s*[:-]?\s*([^\n|]+)/);
   if (tagged?.[1]) {
     const normalized = normalizeInteriorColor(tagged[1]);
     if (normalized) {
@@ -762,7 +762,7 @@ function detectBosFromBlock(block: AllocationBlock, layout: ColumnLayout | null)
     }
   }
 
-  const taggedMatch = block.blockTextUpper.match(/\bBOS\b\s*[:\-]?\s*([YN])\b/);
+  const taggedMatch = block.blockTextUpper.match(/\bBOS\b\s*[:-]?\s*([YN])\b/);
   if (taggedMatch?.[1]) {
     const normalized = normalizeBosValue(taggedMatch[1]);
     if (normalized) {
@@ -804,7 +804,7 @@ function detectQuantity(
     }
   }
 
-  const explicit = uppercaseLine.match(/\bQTY\s*[:\-]?\s*(\d{1,2})\b/);
+  const explicit = uppercaseLine.match(/\bQTY\s*[:-]?\s*(\d{1,2})\b/);
   if (explicit?.[1]) {
     const numeric = Number(explicit[1]);
     if (numeric > 0) {
