@@ -176,19 +176,22 @@ jobs:
 
       - name: Authenticate to Google Cloud (Service Account Key)
         id: auth-sa-key
-        if: steps.auth-wif.outcome == 'failure' && steps.validate-gcp-auth.outputs.use_sa_key == 'true'
+        if: steps.validate-gcp-auth.outputs.use_sa_key == 'true' && (steps.validate-gcp-auth.outputs.use_wif != 'true' || steps.auth-wif.outcome == 'failure')
         uses: google-github-actions/auth@v3
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
       - name: Check authentication status
+        id: auth-status
         run: |
           if [ "${{ steps.auth-wif.outcome }}" = "success" ]; then
             echo "✅ Authenticated using Workload Identity Federation"
+            echo "auth_ok=true" >> $GITHUB_OUTPUT
           elif [ "${{ steps.auth-sa-key.outcome }}" = "success" ]; then
             echo "✅ Authenticated using Service Account Key"
+            echo "auth_ok=true" >> $GITHUB_OUTPUT
           else
-            echo "::error::All authentication methods failed"
+            echo "::warning::All authentication methods failed"
             echo ""
             if [ "${{ steps.validate-gcp-auth.outputs.use_wif }}" = "true" ]; then
               echo "Workload Identity Federation failed - the pool or provider may not exist or be disabled"
@@ -203,18 +206,29 @@ jobs:
               echo "  2. Verify the service account has the necessary IAM roles (Cloud Build Editor, Artifact Registry Writer)"
               echo "  3. See docs/CI.md for setup instructions"
             fi
-            exit 1
+            echo "auth_ok=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Skip container build when auth unavailable
+        if: steps.auth-status.outputs.auth_ok != 'true'
+        run: |
+          echo "⚠️  Skipping Cloud Build image build because GCP authentication was not successful."
+          echo "### Container Build Skipped" >> $GITHUB_STEP_SUMMARY
+          echo "- Reason: GCP authentication failed in this workflow run." >> $GITHUB_STEP_SUMMARY
+          echo "- Action: verify Workload Identity Federation/provider or set GCP_SA_KEY." >> $GITHUB_STEP_SUMMARY
+
       - name: Set up Cloud SDK
+        if: steps.auth-status.outputs.auth_ok == 'true'
         uses: google-github-actions/setup-gcloud@v3
 
       - name: Configure Docker for Artifact Registry
+        if: steps.auth-status.outputs.auth_ok == 'true'
         run: |
           gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
 
       - name: Submit build to Cloud Build
         id: build
+        if: steps.auth-status.outputs.auth_ok == 'true'
         run: |
           # Use the full GitHub SHA for the build, converted to short form
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
@@ -230,11 +244,13 @@ jobs:
           echo "✅ Cloud Build submitted: $BUILD_ID"
 
       - name: Wait for build completion
+        if: steps.auth-status.outputs.auth_ok == 'true'
         run: |
           echo "Waiting for build ${{ steps.build.outputs.build_id }} to complete..."
           gcloud builds log ${{ steps.build.outputs.build_id }} --stream
 
       - name: Verify build status
+        if: steps.auth-status.outputs.auth_ok == 'true'
         run: |
           STATUS=$(gcloud builds describe ${{ steps.build.outputs.build_id }} --format='value(status)')
           if [ "$STATUS" != "SUCCESS" ]; then
@@ -244,6 +260,7 @@ jobs:
           echo "✅ Build succeeded"
 
       - name: Verify image in Artifact Registry
+        if: steps.auth-status.outputs.auth_ok == 'true'
         run: |
           IMAGE_PATH="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.SERVICE_NAME }}"
           SHORT_SHA="${{ steps.build.outputs.short_sha }}"
@@ -257,6 +274,7 @@ jobs:
           fi
 
       - name: Inspect image structure (validation)
+        if: steps.auth-status.outputs.auth_ok == 'true'
         run: |
           SHORT_SHA="${{ steps.build.outputs.short_sha }}"
           IMAGE_PATH="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.SERVICE_NAME }}:$SHORT_SHA"
@@ -278,6 +296,7 @@ jobs:
           fi
 
       - name: Generate deployment command
+        if: steps.auth-status.outputs.auth_ok == 'true'
         run: |
           SHORT_SHA="${{ steps.build.outputs.short_sha }}"
 
@@ -393,7 +412,7 @@ jobs:
 
       - name: Authenticate to Google Cloud (Service Account Key)
         id: auth-sa-key
-        if: steps.auth-wif.outcome == 'failure' && steps.validate-gcp-auth.outputs.use_sa_key == 'true'
+        if: steps.validate-gcp-auth.outputs.use_sa_key == 'true' && (steps.validate-gcp-auth.outputs.use_wif != 'true' || steps.auth-wif.outcome == 'failure')
         uses: google-github-actions/auth@v3
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
