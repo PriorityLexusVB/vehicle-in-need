@@ -225,7 +225,9 @@ describe('AllocationBoard', () => {
     expect(screen.getByText(/Exterior: WHITE/i)).toBeInTheDocument();
     expect(screen.getByText(/Interior: EA20 BLACK/i)).toBeInTheDocument();
     expect(within(strategyView).getByText(/Changeable/i)).toBeInTheDocument();
-    expect(within(strategyView).getByText(/Locked/i)).toBeInTheDocument();
+    expect(within(strategyView).queryByText(/Locked/i)).toBeNull();
+    expect(within(strategyView).queryByText(/BOS:\s*N/i)).toBeNull();
+    expect(within(strategyView).queryByText(/BOS:\s*TBD/i)).toBeNull();
     expect(screen.queryByText(/Qty:/i)).toBeNull();
     expect(screen.queryByText('Top Actions Right Now')).toBeNull();
     expect(screen.queryByText('Strategy Summary')).toBeNull();

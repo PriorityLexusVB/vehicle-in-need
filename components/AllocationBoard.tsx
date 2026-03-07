@@ -1218,6 +1218,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                           const arrivalDisplay = formatArrivalDisplay(variant.arrival);
                           const colorDisplay = formatColorDisplay(variant.color);
                           const interiorDisplay = formatInteriorColorDisplay(variant.interiorColor);
+                          const normalizedBos = normalizeBosValue(variant.bos);
                           const bosDisplay = formatBosDisplay(variant.bos);
                           return (
                             <div
@@ -1248,10 +1249,12 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                                   Priority: {row.rank}
                                 </span>
                                 <span className={STRATEGY_CHIP_CLASS}>Category: {row.category}</span>
-                                <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${bosDisplay.tone}`}>
-                                  BOS: {bosDisplay.value}
-                                  {bosDisplay.detail ? ` (${bosDisplay.detail})` : ""}
-                                </span>
+                                {normalizedBos === "Y" && (
+                                  <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${bosDisplay.tone}`}>
+                                    BOS: {bosDisplay.value}
+                                    {bosDisplay.detail ? ` (${bosDisplay.detail})` : ""}
+                                  </span>
+                                )}
                                 {variant.units > 1 && (
                                   <span className="rounded-full border border-slate-600 bg-slate-900 px-2 py-0.5 text-xs font-semibold text-slate-100">
                                     Qty: {variant.units}
