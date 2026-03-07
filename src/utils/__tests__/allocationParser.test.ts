@@ -163,6 +163,39 @@ describe('parseAllocationSource', () => {
     expect(result.vehicles[0].arrival).toBe('2026-04-11');
     expect(result.vehicles[0].bos).toBe('Y');
   });
+
+  it('reads BOS from the BOS column and splits Toyota DM color token into exterior/interior', () => {
+    const source = [
+      '3/7/2026 Toyota District Manager Allocation Application District:06 08:17:13 AM Allocation Status By Dealer',
+      'Dealer: 64506-PRIORITY LEXUS VIRGNA BCH',
+      '1 031 9353F TS12I666 8 Y 01L2-40 01728 N BI CC CP TP 1S 2T 59 87 DF Z1 03-18',
+      '( TX 350 AWD TX 350 AWD )',
+      '( IRIDIUM )',
+      '2 031 9360F TS12H857 5 N 01N0-23 01788 Y BC CP TP 2T 3J 43 DF KG 03-27',
+      '( TX 500h AWD TX 500h AWD )',
+      '( WIND CHILL PEARL )',
+    ].join('\n');
+
+    const result = parseAllocationSource(source);
+
+    expect(result.errors).toHaveLength(0);
+
+    const tx350 = result.vehicles.find((v) => v.code === 'TX350');
+    const tx500h = result.vehicles.find((v) => v.code === 'TX500H');
+
+    expect(tx350).toBeTruthy();
+    expect(tx500h).toBeTruthy();
+
+    // BOS must come from the BOS column (after Seq#), not PI.
+    expect(tx350!.bos).toBe('N');
+    expect(tx500h!.bos).toBe('Y');
+
+    // DM color token format: EXTERIOR-INTERIOR (e.g., 1L2-40).
+    expect(tx350!.color).toBe('1L2 IRIDIUM');
+    expect(tx350!.interiorColor).toBe('40');
+    expect(tx500h!.color).toBe('1N0 WIND CHILL PEARL');
+    expect(tx500h!.interiorColor).toBe('23');
+  });
 });
 
 describe('groupArrivalBucket', () => {

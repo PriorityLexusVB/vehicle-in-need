@@ -30,7 +30,7 @@ const GRADE_PATTERN = /(f\s*sport\s*performance|f\s*sport|luxury|premium|base|ov
 const TOYOTA_DM_ROW_START_PATTERN = /^\s*\d+\s+\d{3}\s+[0-9A-Z]{4,}\s+[A-Z0-9]{6,}\s+/;
 const TOYOTA_DM_COLOR_TOKEN_PATTERN = /\b([0-9A-Z]{3,4})-([0-9A-Z]{2})\b/;
 const TOYOTA_DM_BOS_PATTERN =
-  /^\s*\d+\s+\d{3}\s+[0-9A-Z]{4,}\s+[A-Z0-9]{6,}\s+\d+\s+([YN])\b/;
+  /^\s*\d+\s+\d{3}\s+[0-9A-Z]{4,}\s+[A-Z0-9]{6,}\s+\d+\s+(?:[YN]\s+)?[0-9A-Z]{3,4}-[0-9A-Z]{2}\s+\d{4,5}\s+([YN])\b/;
 
 interface ColumnRange {
   start: number;
