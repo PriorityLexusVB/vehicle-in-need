@@ -196,6 +196,145 @@ describe('parseAllocationSource', () => {
     expect(tx500h!.color).toBe('1N0 WIND CHILL PEARL');
     expect(tx500h!.interiorColor).toBe('23');
   });
+
+  it('parses Toyota DM rows without a leading row index and with spaced color-token separators', () => {
+    const source = [
+      '3/9/2026 Toyota District Manager Allocation Application District:06 08:17:13 AM Allocation Status By Dealer',
+      'Dealer: 64506-PRIORITY LEXUS VIRGNA BCH',
+      '031 9353F TS12I666 8 Y 01L2 - 40 01728 Y BI CC CP TP 1S 2T 59 87 DF Z1 03-18',
+      '( TX 350 AWD TX 350 AWD )',
+      '( IRIDIUM )',
+    ].join('\n');
+
+    const result = parseAllocationSource(source);
+
+    expect(result.errors).toHaveLength(0);
+    expect(result.itemCount).toBe(1);
+    expect(result.vehicles[0].code).toBe('TX350');
+    expect(result.vehicles[0].bos).toBe('Y');
+    expect(result.vehicles[0].color).toBe('1L2 IRIDIUM');
+    expect(result.vehicles[0].interiorColor).toBe('40');
+  });
+
+  it('normalizes Unicode dash variants in Toyota DM color and arrival tokens', () => {
+    const source = [
+      '3/10/2026 Toyota District Manager Allocation Application District:06 08:17:13 AM Allocation Status By Dealer',
+      'Dealer: 64506-PRIORITY LEXUS VIRGNA BCH',
+      '031 9353F TS12I666 8 Y 01L2–40 01728 Y BI CC CP TP 1S 2T 59 87 DF Z1 03–18',
+      '( TX 350 AWD TX 350 AWD )',
+      '( IRIDIUM )',
+    ].join('\n');
+
+    const result = parseAllocationSource(source);
+
+    expect(result.errors).toHaveLength(0);
+    expect(result.itemCount).toBe(1);
+    expect(result.vehicles[0].code).toBe('TX350');
+    expect(result.vehicles[0].bos).toBe('Y');
+    expect(result.vehicles[0].color).toBe('1L2 IRIDIUM');
+    expect(result.vehicles[0].interiorColor).toBe('40');
+    expect(result.vehicles[0].arrival).toBe('2026-03-18');
+  });
+
+  it('does not infer BOS from PI when Toyota DM BOS token is missing in pasted rows', () => {
+    const source = [
+      '3/5/2026 Toyota District Manager Allocation Application',
+      'Dealer: 64506-PRIORITY LEXUS VIRGNA BCH',
+      '14 031 9443F TI12DC97 9 Y 0085-46 02210 03-16',
+      '( RX450H+ LUX AWD 5-DOOR SUV )',
+      '( EMINENT WHITE PEARL )',
+    ].join('\n');
+
+    const result = parseAllocationSource(source);
+
+    expect(result.errors).toHaveLength(0);
+    expect(result.itemCount).toBe(1);
+    expect(result.vehicles[0].code).toBe('RX450H+');
+    expect(result.vehicles[0].arrival).toBe('2026-03-16');
+    expect(result.vehicles[0].color).toBe('085 EMINENT WHITE PEARL');
+    expect(result.vehicles[0].interiorColor).toBe('46');
+    expect(result.vehicles[0].bos).toBe('TBD');
+  });
+
+  it('parses NX450H+ when pasted DM model text contains a spaced plus token', () => {
+    const source = [
+      '3/11/2026 Toyota District Manager Allocation Application District:06 08:17:13 AM Allocation Status By Dealer',
+      'Dealer: 64506-PRIORITY LEXUS VIRGNA BCH',
+      '5 031 9630F TC14C123 4 Y 01L2-40 02123 Y BI CC CP TP 1S 2T 59 87 DF Z1 03-22',
+      '( NX 450H + LUX AWD )',
+      '( IRIDIUM )',
+    ].join('\n');
+
+    const result = parseAllocationSource(source);
+
+    expect(result.errors).toHaveLength(0);
+    expect(result.itemCount).toBe(1);
+    expect(result.vehicles[0].code).toBe('NX450H+');
+    expect(result.vehicles[0].arrival).toBe('2026-03-22');
+    expect(result.vehicles[0].color).toBe('1L2 IRIDIUM');
+    expect(result.vehicles[0].interiorColor).toBe('40');
+    expect(result.vehicles[0].bos).toBe('Y');
+  });
+
+  it('parses spaced-dash arrival dates in pasted Toyota DM rows', () => {
+    const source = [
+      '3/12/2026 Toyota District Manager Allocation Application District:06 08:17:13 AM Allocation Status By Dealer',
+      'Dealer: 64506-PRIORITY LEXUS VIRGNA BCH',
+      '9 031 9360F TS12H857 5 Y 01N0-23 01788 Y BC CP TP 2T 3J 43 DF KG 03 - 27',
+      '( TX 500h AWD TX 500h AWD )',
+      '( WIND CHILL PEARL )',
+    ].join('\n');
+
+    const result = parseAllocationSource(source);
+
+    expect(result.errors).toHaveLength(0);
+    expect(result.itemCount).toBe(1);
+    expect(result.vehicles[0].code).toBe('TX500H');
+    expect(result.vehicles[0].arrival).toBe('2026-03-27');
+    expect(result.vehicles[0].color).toBe('1N0 WIND CHILL PEARL');
+    expect(result.vehicles[0].interiorColor).toBe('23');
+    expect(result.vehicles[0].bos).toBe('Y');
+  });
+
+  it('parses spaced-slash arrival dates in pasted Toyota DM rows', () => {
+    const source = [
+      '3/12/2026 Toyota District Manager Allocation Application District:06 08:17:13 AM Allocation Status By Dealer',
+      'Dealer: 64506-PRIORITY LEXUS VIRGNA BCH',
+      '10 031 9360F TS12H857 5 Y 01N0-23 01788 Y BC CP TP 2T 3J 43 DF KG 03 / 27',
+      '( TX 500h AWD TX 500h AWD )',
+      '( WIND CHILL PEARL )',
+    ].join('\n');
+
+    const result = parseAllocationSource(source);
+
+    expect(result.errors).toHaveLength(0);
+    expect(result.itemCount).toBe(1);
+    expect(result.vehicles[0].code).toBe('TX500H');
+    expect(result.vehicles[0].arrival).toBe('2026-03-27');
+    expect(result.vehicles[0].color).toBe('1N0 WIND CHILL PEARL');
+    expect(result.vehicles[0].interiorColor).toBe('23');
+    expect(result.vehicles[0].bos).toBe('Y');
+  });
+
+  it('parses Toyota DM color tokens when separator drifts to slash', () => {
+    const source = [
+      '3/13/2026 Toyota District Manager Allocation Application District:06 08:17:13 AM Allocation Status By Dealer',
+      'Dealer: 64506-PRIORITY LEXUS VIRGNA BCH',
+      '11 031 9360F TS12H857 5 Y 01N0/23 01788 Y BC CP TP 2T 3J 43 DF KG 03-27',
+      '( TX 500h AWD TX 500h AWD )',
+      '( WIND CHILL PEARL )',
+    ].join('\n');
+
+    const result = parseAllocationSource(source);
+
+    expect(result.errors).toHaveLength(0);
+    expect(result.itemCount).toBe(1);
+    expect(result.vehicles[0].code).toBe('TX500H');
+    expect(result.vehicles[0].arrival).toBe('2026-03-27');
+    expect(result.vehicles[0].color).toBe('1N0 WIND CHILL PEARL');
+    expect(result.vehicles[0].interiorColor).toBe('23');
+    expect(result.vehicles[0].bos).toBe('Y');
+  });
 });
 
 describe('groupArrivalBucket', () => {
