@@ -43,8 +43,6 @@ const BOARD_VIEW_OPTIONS: BoardView[] = ["strategy", "log"];
 const ARRIVAL_GROUPING_OPTIONS: ArrivalGroupingMode[] = ["bucket", "date"];
 const SORT_MODE_OPTIONS: SortMode[] = ["priority", "arrival", "units", "model"];
 const BOS_FILTER_OPTIONS: BosFilter[] = ["all", "y", "n", "unknown"];
-const STRATEGY_CHIP_CLASS =
-  "rounded-full border border-slate-700 bg-slate-900 px-2 py-0.5 text-slate-100";
 
 const STORAGE_KEYS = {
   boardView: "allocation.boardView",
@@ -1218,51 +1216,52 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                           const arrivalDisplay = formatArrivalDisplay(variant.arrival);
                           const colorDisplay = formatColorDisplay(variant.color);
                           const interiorDisplay = formatInteriorColorDisplay(variant.interiorColor);
-                          const normalizedBos = normalizeBosValue(variant.bos);
-                          const bosDisplay = formatBosDisplay(variant.bos);
+                          const daysOutDisplay = arrivalDisplay.secondary ?? "TBD";
                           return (
                             <div
                               key={`${row.key}-${variant.code}-${variant.grade}-${variant.arrival}-${variant.color}-${variant.interiorColor}-${variant.bos}`}
-                              className="rounded-xl border border-slate-700 bg-slate-950/80 p-5 lg:p-6"
+                              className="rounded-xl border border-slate-700 bg-slate-950/80 p-4 lg:p-5"
                               data-testid="allocation-strategy-vehicle-card"
                             >
-                              <div className="grid gap-5 lg:grid-cols-[1.25fr_1fr] lg:items-end">
+                              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                                 <div>
-                                  <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">Vehicle</p>
-                                  <p className="mt-1 text-4xl font-black tracking-tight text-white md:text-5xl">{variant.code}</p>
-                                  <p className="mt-1 text-base text-slate-300">Trim: {variant.grade}</p>
+                                  <p className="text-2xl font-black tracking-tight text-white">{variant.code}</p>
+                                  <p className="mt-1 text-sm text-slate-300">Trim: {variant.grade}</p>
                                 </div>
 
-                                <div>
-                                  <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">Build Date</p>
-                                  <p className="mt-1 text-4xl font-black tracking-tight text-emerald-300 md:text-5xl">
-                                    {arrivalDisplay.primary}
-                                  </p>
-                                  {arrivalDisplay.secondary && (
-                                    <p className="mt-1 text-base text-slate-400">{arrivalDisplay.secondary}</p>
+                                <div className="flex flex-wrap gap-1.5 text-xs text-slate-200">
+                                  <span className="rounded-full bg-sky-500/20 px-2.5 py-1 font-semibold text-sky-200">
+                                    Priority: {row.rank}
+                                  </span>
+                                  <span className="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 font-semibold">
+                                    Category: {row.category}
+                                  </span>
+                                  {variant.units > 1 && (
+                                    <span className="rounded-full border border-slate-600 bg-slate-900 px-2.5 py-1 font-semibold text-slate-100">
+                                      Qty: {variant.units}
+                                    </span>
                                   )}
                                 </div>
                               </div>
 
-                              <div className="mt-4 flex flex-wrap gap-1.5 text-xs text-slate-300">
-                                <span className="rounded-full bg-sky-500/20 px-3 py-1 text-xs font-semibold text-sky-300">
-                                  Priority: {row.rank}
-                                </span>
-                                <span className={STRATEGY_CHIP_CLASS}>Category: {row.category}</span>
-                                {normalizedBos === "Y" && (
-                                  <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${bosDisplay.tone}`}>
-                                    BOS: {bosDisplay.value}
-                                    {bosDisplay.detail ? ` (${bosDisplay.detail})` : ""}
-                                  </span>
-                                )}
-                                {variant.units > 1 && (
-                                  <span className="rounded-full border border-slate-600 bg-slate-900 px-2 py-0.5 text-xs font-semibold text-slate-100">
-                                    Qty: {variant.units}
-                                  </span>
-                                )}
-                                <span className={STRATEGY_CHIP_CLASS}>Exterior: {colorDisplay}</span>
-                                <span className={STRATEGY_CHIP_CLASS}>Interior: {interiorDisplay}</span>
-                              </div>
+                              <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+                                <div className="rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2">
+                                  <dt className="text-[11px] uppercase tracking-wide text-slate-400">Exterior</dt>
+                                  <dd className="mt-1 font-semibold text-slate-100">{colorDisplay}</dd>
+                                </div>
+                                <div className="rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2">
+                                  <dt className="text-[11px] uppercase tracking-wide text-slate-400">Interior</dt>
+                                  <dd className="mt-1 font-semibold text-slate-100">{interiorDisplay}</dd>
+                                </div>
+                                <div className="rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2">
+                                  <dt className="text-[11px] uppercase tracking-wide text-slate-400">Build / Arrival</dt>
+                                  <dd className="mt-1 font-semibold text-slate-100">{arrivalDisplay.primary}</dd>
+                                </div>
+                                <div className="rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2">
+                                  <dt className="text-[11px] uppercase tracking-wide text-slate-400">Days Out</dt>
+                                  <dd className="mt-1 font-semibold text-slate-100">{daysOutDisplay}</dd>
+                                </div>
+                              </dl>
                             </div>
                           );
                         });

@@ -209,7 +209,7 @@ describe('AllocationBoard', () => {
     expect(screen.queryByText('BUILD 8-30 DAYS')).toBeNull();
   });
 
-  it('shows large vehicle-focused cards without coaching copy', async () => {
+  it('shows dense factual vehicle cards without coaching copy', async () => {
     render(<AllocationBoard currentUser={consultantUser} />);
 
     await waitFor(() => {
@@ -222,10 +222,14 @@ describe('AllocationBoard', () => {
     expect(screen.getByText('TX500H')).toBeInTheDocument();
     expect(screen.getAllByText('Mar 14').length).toBeGreaterThan(0);
     expect(screen.getByText('Trim: F SPORT')).toBeInTheDocument();
-    expect(screen.getByText(/Exterior: WHITE/i)).toBeInTheDocument();
-    expect(screen.getByText(/Interior: EA20 BLACK/i)).toBeInTheDocument();
-    expect(within(strategyView).getByText(/Changeable/i)).toBeInTheDocument();
-    expect(within(strategyView).queryByText(/Locked/i)).toBeNull();
+    expect(screen.getByText(/Priority: Critical/i)).toBeInTheDocument();
+    expect(screen.getByText(/Category: Growth/i)).toBeInTheDocument();
+    expect(within(strategyView).getAllByText('Exterior').length).toBeGreaterThan(0);
+    expect(within(strategyView).getAllByText('Interior').length).toBeGreaterThan(0);
+    expect(within(strategyView).getByText('WHITE')).toBeInTheDocument();
+    expect(within(strategyView).getByText('EA20 BLACK')).toBeInTheDocument();
+    expect(within(strategyView).getAllByText(/Days Out/i).length).toBeGreaterThan(0);
+    expect(within(strategyView).getAllByText(/Build \/ Arrival/i).length).toBeGreaterThan(0);
     expect(within(strategyView).queryByText(/BOS:\s*N/i)).toBeNull();
     expect(within(strategyView).queryByText(/BOS:\s*TBD/i)).toBeNull();
     expect(screen.queryByText(/Qty:/i)).toBeNull();
@@ -244,15 +248,11 @@ describe('AllocationBoard', () => {
       expect(screen.getByTestId('allocation-strategy-view')).toBeInTheDocument();
     });
 
-    const strategyView = screen.getByTestId('allocation-strategy-view');
-
     const bosSelect = screen.getByLabelText('Filter by BOS');
     await user.selectOptions(bosSelect, 'y');
 
     expect(screen.getByText('TX500H')).toBeInTheDocument();
     expect(screen.queryByText('RX350')).toBeNull();
-    expect(within(strategyView).getByText(/Changeable/i)).toBeInTheDocument();
-    expect(within(strategyView).queryByText(/Locked/i)).toBeNull();
     expect(screen.getAllByTestId('allocation-strategy-vehicle-card')).toHaveLength(1);
   });
 

@@ -17,9 +17,9 @@ const DATE_PATTERN = /(report\s*date|allocation\s*date|date)\s*[:-]\s*([^\n]+)/i
 // Label-based extraction only (avoid grabbing unrelated dates by default).
 const ARRIVAL_TAG_PATTERN = /\b(eta|arrival)\b\s*[:-]?\s*([^\n\t|]+)/i;
 
-const SHORT_DATE_PATTERN = /\b(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)\b/;
+const SHORT_DATE_PATTERN = /\b(\d{1,2}\s*\/\s*\d{1,2}(?:\s*\/\s*\d{2,4})?)\b/;
 const ISO_DATE_PATTERN = /\b(20\d{2}[-/.]\d{1,2}[-/.]\d{1,2})\b/;
-const DASH_DATE_PATTERN = /\b(\d{1,2}-\d{1,2}(?:-\d{2,4})?)\b/;
+const DASH_DATE_PATTERN = /\b(\d{1,2}\s*-\s*\d{1,2}(?:\s*-\s*\d{2,4})?)\b/;
 
 // Fallback color name matcher (kept permissive but only used when no paint code is detected).
 const COLOR_PATTERN = /(atomic\s+silver|caviar|cloudburst(?:\s+gray)?|ematador|matador\s+red|nori\s+green|ultrasonic\s+blue|obsidian|iridium|incognito|nightfall\s+mica|ultra\s+white|eminent\s+white(?:\s+pearl)?|black|white|silver|gray|grey|red|blue|green)/i;
@@ -27,10 +27,13 @@ const GRADE_PATTERN = /(f\s*sport\s*performance|f\s*sport|luxury|premium|base|ov
 
 // Toyota District Manager Allocation Application format (PDF text extract)
 // Example row start: "1 022 9353F TS12I666 8 Y 0223-01 01728 ..."
-const TOYOTA_DM_ROW_START_PATTERN = /^\s*\d+\s+\d{3}\s+[0-9A-Z]{4,}\s+[A-Z0-9]{6,}\s+/;
-const TOYOTA_DM_COLOR_TOKEN_PATTERN = /\b([0-9A-Z]{3,4})-([0-9A-Z]{2})\b/;
+// Allow optional leading row number and serial variants that include hyphens.
+const TOYOTA_DM_ROW_START_PATTERN =
+  /^\s*(?:\d+\s+)?\d{2,4}\s+[0-9A-Z]{4,}\s+[A-Z0-9-]{6,}\s+\d+\b/;
+// PDF extraction can drift separators and spacing in the color token.
+const TOYOTA_DM_COLOR_TOKEN_PATTERN = /\b([0-9A-Z]{3,4})\s*[-/]\s*([0-9A-Z]{2,4})\b/;
 const TOYOTA_DM_BOS_PATTERN =
-  /^\s*\d+\s+\d{3}\s+[0-9A-Z]{4,}\s+[A-Z0-9]{6,}\s+\d+\s+(?:[YN]\s+)?[0-9A-Z]{3,4}-[0-9A-Z]{2}\s+\d{4,5}\s+([YN])\b/;
+  /^\s*(?:\d+\s+)?\d{2,4}\s+[0-9A-Z]{4,}\s+[A-Z0-9-]{6,}\s+\d+\s+(?:[YN]\s+)?[0-9A-Z]{3,4}\s*[-/]\s*[0-9A-Z]{2,4}\s+\d{4,5}\s+([YN])\b/;
 
 interface ColumnRange {
   start: number;
@@ -113,11 +116,22 @@ function findModelCodeMatchesInLine(uppercaseLine: string): CodeMatch[] {
         const canonical = canonicalizeMatchedCode(baseRaw);
         if (LEXUS_ALLOCATION_REFERENCE[canonical]) {
           matches.push({ code: canonical, start, end: baseEnd, raw: baseRaw });
-        } else if (uppercaseLine[baseEnd] === "+") {
+        } else {
+          const plusMatch = uppercaseLine.slice(baseEnd).match(/^\s*\+/);
+          if (!plusMatch) {
+            match = regex.exec(uppercaseLine);
+            continue;
+          }
+
           const plusRaw = `${baseRaw}+`;
           const canonicalPlus = canonicalizeMatchedCode(plusRaw);
           if (LEXUS_ALLOCATION_REFERENCE[canonicalPlus]) {
-            matches.push({ code: canonicalPlus, start, end: baseEnd + 1, raw: plusRaw });
+            matches.push({
+              code: canonicalPlus,
+              start,
+              end: baseEnd + plusMatch[0].length,
+              raw: plusRaw,
+            });
           }
         }
       }
@@ -423,7 +437,11 @@ function extractFirstDateToken(text: string): string | null {
 }
 
 function normalizeDate(rawDate: string, fallbackYear?: number): string | null {
-  const cleaned = rawDate.trim().replace(/[\s,;]+$/g, "");
+  const cleaned = rawDate
+    .trim()
+    .replace(/[\s,;]+$/g, "")
+    // Normalize separator spacing from pasted/OCR dates (e.g., "03 - 16").
+    .replace(/\s*([/.-])\s*/g, "$1");
   if (!cleaned) {
     return null;
   }
@@ -774,6 +792,12 @@ function detectBosFromBlock(block: AllocationBlock, layout: ColumnLayout | null)
     }
   }
 
+  if (isToyotaDM) {
+    // Toyota DM rows include both PI and BOS indicators; if BOS cannot be found
+    // at its expected position, do not fall back to lone Y/N tokens.
+    return "TBD";
+  }
+
   // Conservative fallback for plain rows without a detected header.
   const rowFlags = block.rowLineUpper.match(/\b([YN])\b/g) ?? [];
   if (rowFlags.length === 1) {
@@ -881,7 +905,11 @@ function summarizeVehicles(vehicles: AllocationVehicle[]): AllocationSummary {
 }
 
 export function parseAllocationSource(sourceText: string): ParsedAllocationResult {
-  const normalized = sourceText.replace(/\r\n/g, "\n").trim();
+  const normalized = sourceText
+    .replace(/\r\n/g, "\n")
+    // Normalize PDF dash variants so color token/date regexes stay reliable.
+    .replace(/[\u2010-\u2015\u2212]/g, "-")
+    .trim();
   if (!normalized) {
     return {
       reportDate: null,
