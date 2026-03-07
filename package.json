@@ -55,6 +55,7 @@
     "express": "^4.22.1",
     "firebase": "^12.6.0",
     "firebase-admin": "^13.0.2",
+    "pdfjs-dist": "^5.5.207",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-router-dom": "^6.30.2",

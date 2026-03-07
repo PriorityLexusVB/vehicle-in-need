@@ -141,6 +141,20 @@ service cloud.firestore {
     }
 
     /****************************************
+     * Allocation Snapshots Collection
+     ****************************************/
+    match /allocationSnapshots/{snapshotId} {
+      // READ:
+      // - Managers can read all snapshots (including historical).
+      // - Authenticated non-managers can read only the latest published snapshot.
+      allow read: if isManager() || (isSignedIn() && resource.data.isLatest == true);
+
+      // WRITE:
+      // - Only managers can create/update/delete snapshots.
+      allow create, update, delete: if isManager();
+    }
+
+    /****************************************
      * Orders Collection
      ****************************************/
     match /orders/{orderId} {

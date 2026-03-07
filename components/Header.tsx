@@ -31,8 +31,8 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
                   <span className='ml-2 font-mono text-xs text-sky-700'>[isManager: {user.isManager.toString()}]</span>
               </p>
             </div>
-            {user.isManager && (
-              <nav className="flex items-center gap-2 p-1 bg-slate-200/80 rounded-full flex-wrap" data-testid="manager-nav">
+            <nav className="flex items-center gap-2 p-1 bg-slate-200/80 rounded-full flex-wrap" data-testid="main-nav">
+              {user.isManager && (
                 <Link 
                   to="/"
                   className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-colors ${currentPath === '/' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
@@ -40,6 +40,15 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
                 >
                   Dashboard
                 </Link>
+              )}
+              <Link
+                to="/allocation"
+                className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-colors ${currentPath === '/allocation' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                data-testid="allocation-nav-link"
+              >
+                Allocation Board
+              </Link>
+              {user.isManager && (
                 <Link 
                   to="/admin"
                   className={`flex items-center gap-2 px-4 py-1.5 text-sm font-semibold rounded-full transition-colors ${currentPath === '/admin' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
@@ -48,8 +57,8 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
                   <SettingsIcon className="w-4 h-4" />
                   <span>User Management</span>
                 </Link>
-              </nav>
-            )}
+              )}
+            </nav>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
             {user.isManager && (
