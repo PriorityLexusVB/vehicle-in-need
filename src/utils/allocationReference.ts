@@ -40,6 +40,16 @@ export const LEXUS_ALLOCATION_REFERENCE: Record<string, LexusAllocationReference
     rank: "High",
     profit: 0,
   },
+  "RX450H+": {
+    code: "RX450H+",
+    category: "Electrified",
+    type: "PHEV SUV",
+    grade: "Luxury",
+    engine: "Hybrid",
+    msrp: 0,
+    rank: "Medium",
+    profit: 0,
+  },
   NX250: {
     code: "NX250",
     category: "Core",
