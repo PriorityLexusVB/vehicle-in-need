@@ -240,8 +240,8 @@ describe('parseAllocationSource', () => {
     const source = [
       '3/5/2026 Toyota District Manager Allocation Application',
       'Dealer: 64506-PRIORITY LEXUS VIRGNA BCH',
-      '14 031 9353F TS12I666 9 Y 0085-46 02210 03-16',
-      '( TX 350 AWD TX 350 AWD )',
+      '14 031 9443F TI12DC97 9 Y 0085-46 02210 03-16',
+      '( RX450H+ LUX AWD 5-DOOR SUV )',
       '( EMINENT WHITE PEARL )',
     ].join('\n');
 
@@ -249,7 +249,7 @@ describe('parseAllocationSource', () => {
 
     expect(result.errors).toHaveLength(0);
     expect(result.itemCount).toBe(1);
-    expect(result.vehicles[0].code).toBe('TX350');
+    expect(result.vehicles[0].code).toBe('RX450H+');
     expect(result.vehicles[0].arrival).toBe('2026-03-16');
     expect(result.vehicles[0].color).toBe('085 EMINENT WHITE PEARL');
     expect(result.vehicles[0].interiorColor).toBe('46');

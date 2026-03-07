@@ -193,6 +193,51 @@ describe('AllocationBoard', () => {
     ).toBeInTheDocument();
   });
 
+  it('parses real DM pasted source and publishes factual snapshot payload', async () => {
+    publishAllocationSnapshot.mockResolvedValue(undefined);
+
+    const sourceText = [
+      '3/5/2026 Toyota District Manager Allocation Application',
+      'Dealer: 64506-PRIORITY LEXUS VIRGNA BCH',
+      '14 031 9443F TI12DC97 9 Y 0085-46 02210 03-16',
+      '( RX450H+ LUX AWD 5-DOOR SUV )',
+      '( EMINENT WHITE PEARL )',
+    ].join('\n');
+
+    render(<AllocationBoard currentUser={managerUser} />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId('allocation-manager-toggle'));
+
+    const sourceTextarea = screen.getByPlaceholderText('Paste allocation source text...');
+    fireEvent.change(sourceTextarea, { target: { value: sourceText } });
+
+    await user.click(screen.getByRole('button', { name: 'Parse Source' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Parsed 1 rows successfully\./i)).toBeInTheDocument();
+    });
+
+    const publishButton = screen.getByRole('button', { name: 'Publish Snapshot' });
+    expect(publishButton).toBeEnabled();
+
+    await user.click(publishButton);
+
+    await waitFor(() => {
+      expect(publishAllocationSnapshot).toHaveBeenCalledTimes(1);
+    });
+
+    const [payload, uid, email] = publishAllocationSnapshot.mock.calls[0];
+    expect(uid).toBe('manager-1');
+    expect(email).toBe('manager@priorityautomotive.com');
+    expect(payload.itemCount).toBe(1);
+    expect(payload.vehicles[0].code).toBe('RX450H+');
+    expect(payload.vehicles[0].arrival).toBe('2026-03-16');
+    expect(payload.vehicles[0].color).toBe('085 EMINENT WHITE PEARL');
+    expect(payload.vehicles[0].interiorColor).toBe('46');
+    expect(payload.vehicles[0].bos).toBe('TBD');
+  });
+
   it('supports exact-date build date grouping in strategy view', async () => {
     render(<AllocationBoard currentUser={consultantUser} />);
     const user = userEvent.setup();
