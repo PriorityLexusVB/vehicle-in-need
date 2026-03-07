@@ -88,11 +88,15 @@ function canonicalizeMatchedCode(matched: string): string {
   return matched.replace(/[\s-]+/g, "").toUpperCase();
 }
 
+const FLEXIBLE_CODE_REGEXES = LEXUS_REFERENCE_CODES.map((code) =>
+  buildFlexibleCodeRegex(code),
+);
+
 function findModelCodeMatchesInLine(uppercaseLine: string): CodeMatch[] {
   const matches: CodeMatch[] = [];
 
-  for (const code of LEXUS_REFERENCE_CODES) {
-    const regex = buildFlexibleCodeRegex(code);
+  for (const regex of FLEXIBLE_CODE_REGEXES) {
+    regex.lastIndex = 0;
     let match: RegExpExecArray | null = regex.exec(uppercaseLine);
 
     while (match) {
