@@ -54,6 +54,52 @@ const STORAGE_KEYS = {
   sortMode: "allocation.sortMode",
 } as const;
 
+function getDisplayValue(value?: string | null): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (/^(unknown|n\/a|na|tbd)$/i.test(trimmed)) {
+    return null;
+  }
+
+  return trimmed;
+}
+
+function getDisplayCode(sourceCode?: string | null, code?: string | null): string {
+  const codeCandidates = [getDisplayValue(sourceCode), getDisplayValue(code)].filter(
+    Boolean,
+  ) as string[];
+
+  for (const candidate of codeCandidates) {
+    const fourDigit = candidate.match(/\b(\d{4})[A-Z]?\b/);
+    if (fourDigit?.[1]) {
+      return fourDigit[1];
+    }
+  }
+
+  return "----";
+}
+
+function getDisplayModel(model?: string | null, code?: string | null): string {
+  const explicitModel = getDisplayValue(model);
+  if (explicitModel) {
+    return explicitModel;
+  }
+
+  const codeFallback = getDisplayValue(code);
+  if (codeFallback && !/^\d{4}[A-Z]?$/i.test(codeFallback)) {
+    return codeFallback;
+  }
+
+  return "Not listed";
+}
+
 function formatBuildBucketLabel(value: string): string {
   const normalized = value.trim().toUpperCase();
   if (normalized === "ARRIVING ≤ 7 DAYS") {
@@ -460,6 +506,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
 
       return [
         vehicle.code,
+        vehicle.model,
+        vehicle.sourceCode,
         vehicle.category,
         vehicle.grade,
         vehicle.rank,
@@ -571,11 +619,11 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
       return compareArrivalValues(first.arrivalKey, second.arrivalKey);
     };
 
-    const getPrimaryCode = (row: GroupedAllocationRow): string => {
-      const codes = Array.from(new Set(row.vehicles.map((vehicle) => vehicle.code))).sort(
-        (a, b) => a.localeCompare(b),
-      );
-      return codes[0] ?? "";
+    const getPrimaryModel = (row: GroupedAllocationRow): string => {
+      const models = Array.from(
+        new Set(row.vehicles.map((vehicle) => getDisplayModel(vehicle.model, vehicle.code))),
+      ).sort((a, b) => a.localeCompare(b));
+      return models[0] ?? "";
     };
 
     return Array.from(grouped.values()).sort((first, second) => {
@@ -597,7 +645,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
         }
 
         case "model": {
-          const modelDiff = getPrimaryCode(first).localeCompare(getPrimaryCode(second));
+          const modelDiff = getPrimaryModel(first).localeCompare(getPrimaryModel(second));
           if (modelDiff !== 0) {
             return modelDiff;
           }
@@ -1139,7 +1187,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                       {(() => {
                         const variants = Array.from(
                           row.vehicles.reduce((accumulator, vehicle) => {
-                            const key = `${vehicle.code}|${vehicle.grade}|${vehicle.arrival}|${vehicle.color}|${vehicle.interiorColor}|${vehicle.bos}`;
+                            const key = `${vehicle.sourceCode ?? ""}|${vehicle.code}|${vehicle.model ?? ""}|${vehicle.grade}|${vehicle.arrival}|${vehicle.color}|${vehicle.interiorColor}|${vehicle.bos}`;
                             const existing = accumulator.get(key);
 
                             if (existing) {
@@ -1147,6 +1195,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                             } else {
                               accumulator.set(key, {
                                 code: vehicle.code,
+                                model: vehicle.model,
+                                sourceCode: vehicle.sourceCode,
                                 grade: vehicle.grade,
                                 arrival: vehicle.arrival,
                                 color: vehicle.color,
@@ -1162,6 +1212,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                             string,
                             {
                               code: string;
+                              model?: string;
+                              sourceCode?: string;
                               grade: string;
                               arrival: string;
                               color: string;
@@ -1173,9 +1225,18 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                         )
                           .map((entry) => entry[1])
                           .sort((first, second) => {
-                            const codeDiff = first.code.localeCompare(second.code);
+                            const codeDiff = getDisplayCode(first.sourceCode, first.code).localeCompare(
+                              getDisplayCode(second.sourceCode, second.code),
+                            );
                             if (codeDiff !== 0) {
                               return codeDiff;
+                            }
+
+                            const modelDiff = getDisplayModel(first.model, first.code).localeCompare(
+                              getDisplayModel(second.model, second.code),
+                            );
+                            if (modelDiff !== 0) {
+                              return modelDiff;
                             }
 
                             const gradeDiff = first.grade.localeCompare(second.grade);
@@ -1219,13 +1280,17 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                           const daysOutDisplay = arrivalDisplay.secondary ?? "TBD";
                           return (
                             <div
-                              key={`${row.key}-${variant.code}-${variant.grade}-${variant.arrival}-${variant.color}-${variant.interiorColor}-${variant.bos}`}
+                              key={`${row.key}-${variant.sourceCode ?? ""}-${variant.code}-${variant.model ?? ""}-${variant.grade}-${variant.arrival}-${variant.color}-${variant.interiorColor}-${variant.bos}`}
                               className="rounded-xl border border-slate-700 bg-slate-950/80 p-4 lg:p-5"
                               data-testid="allocation-strategy-vehicle-card"
                             >
                               <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                                 <div>
-                                  <p className="text-2xl font-black tracking-tight text-white">{variant.code}</p>
+                                  <p className="text-2xl font-black tracking-tight text-white">
+                                    {getDisplayCode(variant.sourceCode, variant.code)}{" "}
+                                    <span className="px-1 text-slate-500">·</span>
+                                    <span className="text-slate-300">{getDisplayModel(variant.model, variant.code)}</span>
+                                  </p>
                                   <p className="mt-1 text-sm text-slate-300">Trim: {variant.grade}</p>
                                 </div>
 
@@ -1276,6 +1341,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                   <thead className="bg-slate-900">
                     <tr className="text-left text-xs uppercase tracking-wider text-slate-400">
                       <th className="px-3 py-3">Code</th>
+                      <th className="px-3 py-3">Model</th>
                       <th className="px-3 py-3">Build Date</th>
                       <th className="px-3 py-3">BOS</th>
                       <th className="px-3 py-3">Category</th>
@@ -1290,7 +1356,10 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                       const bosDisplay = formatBosDisplay(vehicle.bos);
                       return (
                         <tr key={vehicle.id} className="text-slate-200">
-                          <td className="px-3 py-2 font-semibold text-white">{vehicle.code}</td>
+                          <td className="px-3 py-2 font-semibold text-white">
+                            {getDisplayCode(vehicle.sourceCode, vehicle.code)}
+                          </td>
+                          <td className="px-3 py-2">{getDisplayModel(vehicle.model, vehicle.code)}</td>
                           <td className="px-3 py-2">
                             <p>{arrivalDisplay.primary}</p>
                             {arrivalDisplay.secondary && (

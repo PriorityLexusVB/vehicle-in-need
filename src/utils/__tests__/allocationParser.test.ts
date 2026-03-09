@@ -122,18 +122,24 @@ describe('parseAllocationSource', () => {
     expect(tx500h).toBeTruthy();
     expect(rx350).toBeTruthy();
 
+    expect(tx350!.sourceCode).toBe('9353F');
+    expect(tx350!.model).toBe('TX350');
     expect(tx350!.arrival).toBe('2026-04-02');
     expect(tx350!.color).toBe('223 CAVIAR');
     expect(tx350!.interiorColor).toBe('01');
     expect(tx350!.bos).toBe('Y');
     expect(tx350!.quantity).toBe(1);
 
+    expect(tx500h!.sourceCode).toBe('9360F');
+    expect(tx500h!.model).toBe('TX500H');
     expect(tx500h!.arrival).toBe('2026-03-27');
     expect(tx500h!.color).toBe('223 CAVIAR');
     expect(tx500h!.interiorColor).toBe('20');
     expect(tx500h!.bos).toBe('Y');
     expect(tx500h!.quantity).toBe(1);
 
+    expect(rx350!.sourceCode).toBe('9412F');
+    expect(rx350!.model).toBe('RX350');
     expect(rx350!.arrival).toBe('2026-03-26');
     expect(rx350!.color).toBe('1L1 CLOUDBURST GRAY');
     expect(rx350!.interiorColor).toBe('21');
@@ -250,6 +256,8 @@ describe('parseAllocationSource', () => {
     expect(result.errors).toHaveLength(0);
     expect(result.itemCount).toBe(1);
     expect(result.vehicles[0].code).toBe('RX450H+');
+    expect(result.vehicles[0].sourceCode).toBe('9443F');
+    expect(result.vehicles[0].model).toBe('RX450H+');
     expect(result.vehicles[0].arrival).toBe('2026-03-16');
     expect(result.vehicles[0].color).toBe('085 EMINENT WHITE PEARL');
     expect(result.vehicles[0].interiorColor).toBe('46');
@@ -274,6 +282,44 @@ describe('parseAllocationSource', () => {
     expect(result.vehicles[0].color).toBe('1L2 IRIDIUM');
     expect(result.vehicles[0].interiorColor).toBe('40');
     expect(result.vehicles[0].bos).toBe('Y');
+  });
+
+  it('recovers sourceCode when wrapped source lines appear before model line', () => {
+    const source = [
+      '9353F INT EA26 FACTORY ACCY: BI CC',
+      'CP TP PPOs: 1S 2T 59 DF',
+      'BOS Y LOC 03-23',
+      'GX550 CAVIAR / BLACK',
+    ].join('\n');
+
+    const result = parseAllocationSource(source);
+
+    expect(result.errors).toHaveLength(0);
+    expect(result.itemCount).toBe(1);
+    expect(result.vehicles[0].code).toBe('GX550');
+    expect(result.vehicles[0].model).toBe('GX550');
+    expect(result.vehicles[0].sourceCode).toBe('9353F');
+  });
+
+  it('keeps distinct sourceCode values for consecutive wrapped rows', () => {
+    const source = [
+      '9706F INT 20 FACTORY ACCY: KG MF WL PPOs: 1S 2T 59 DF GN',
+      'BOS Y LOC 03-23',
+      'GX550 CAVIAR / BLACK',
+      '9353F INT EA26 FACTORY ACCY: BI CC CP TP',
+      'PPOs: 1S 2T 59 DF',
+      'BOS N LOC 03-26',
+      'TX350 CLOUD BURST / BLACK',
+    ].join('\n');
+
+    const result = parseAllocationSource(source);
+
+    expect(result.errors).toHaveLength(0);
+    expect(result.itemCount).toBe(2);
+    expect(result.vehicles[0].code).toBe('GX550');
+    expect(result.vehicles[0].sourceCode).toBe('9706F');
+    expect(result.vehicles[1].code).toBe('TX350');
+    expect(result.vehicles[1].sourceCode).toBe('9353F');
   });
 
   it('parses spaced-dash arrival dates in pasted Toyota DM rows', () => {
