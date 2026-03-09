@@ -52,6 +52,8 @@ const sampleSnapshot = {
     {
       id: '1',
       code: 'TX500H',
+      model: 'TX500H',
+      sourceCode: '9704F',
       quantity: 1,
       color: 'WHITE',
       interiorColor: 'EA20 BLACK',
@@ -69,6 +71,8 @@ const sampleSnapshot = {
     {
       id: '2',
       code: 'RX350',
+      model: 'RX350',
+      sourceCode: '9443F',
       quantity: 1,
       color: 'BLACK',
       interiorColor: 'LA00 PALOMINO',
@@ -232,10 +236,48 @@ describe('AllocationBoard', () => {
     expect(email).toBe('manager@priorityautomotive.com');
     expect(payload.itemCount).toBe(1);
     expect(payload.vehicles[0].code).toBe('RX450H+');
+    expect(payload.vehicles[0].sourceCode).toBe('9443F');
+    expect(payload.vehicles[0].model).toBe('RX450H+');
     expect(payload.vehicles[0].arrival).toBe('2026-03-16');
     expect(payload.vehicles[0].color).toBe('085 EMINENT WHITE PEARL');
     expect(payload.vehicles[0].interiorColor).toBe('46');
     expect(payload.vehicles[0].bos).toBe('TBD');
+  });
+
+  it('keeps sourceCode in publish payload for wrapped source lines before model', async () => {
+    publishAllocationSnapshot.mockResolvedValue(undefined);
+
+    const sourceText = [
+      '9353F INT EA26 FACTORY ACCY: BI CC',
+      'CP TP PPOs: 1S 2T 59 DF',
+      'BOS Y LOC 03-23',
+      'GX550 CAVIAR / BLACK',
+    ].join('\n');
+
+    render(<AllocationBoard currentUser={managerUser} />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId('allocation-manager-toggle'));
+
+    const sourceTextarea = screen.getByPlaceholderText('Paste allocation source text...');
+    fireEvent.change(sourceTextarea, { target: { value: sourceText } });
+
+    await user.click(screen.getByRole('button', { name: 'Parse Source' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Parsed 1 rows/i)).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Publish Snapshot' }));
+
+    await waitFor(() => {
+      expect(publishAllocationSnapshot).toHaveBeenCalledTimes(1);
+    });
+
+    const [payload] = publishAllocationSnapshot.mock.calls[0];
+    expect(payload.vehicles[0].sourceCode).toBe('9353F');
+    expect(payload.vehicles[0].code).toBe('GX550');
+    expect(payload.vehicles[0].model).toBe('GX550');
   });
 
   it('supports exact-date build date grouping in strategy view', async () => {
@@ -285,6 +327,31 @@ describe('AllocationBoard', () => {
     expect(screen.queryByText('Nameplates:')).toBeNull();
   });
 
+  it('shows 4-digit code separately from model in strategy and full log views', async () => {
+    render(<AllocationBoard currentUser={consultantUser} />);
+    const user = userEvent.setup();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('allocation-strategy-view')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('9704')).toBeInTheDocument();
+    expect(screen.getByText('9443')).toBeInTheDocument();
+    expect(screen.getAllByText('TX500H').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('RX350').length).toBeGreaterThan(0);
+
+    await user.click(screen.getByRole('button', { name: 'Full Log View' }));
+
+    const logView = screen.getByTestId('allocation-log-view');
+    expect(logView).toBeInTheDocument();
+    const headers = within(logView).getAllByRole('columnheader').map((cell) => cell.textContent?.trim());
+    expect(headers).toEqual(['Code', 'Model', 'Build Date', 'BOS', 'Category', 'Grade', 'Priority', 'Qty']);
+    expect(within(logView).getAllByText('9704').length).toBeGreaterThan(0);
+    expect(within(logView).getAllByText('9443').length).toBeGreaterThan(0);
+    expect(within(logView).getAllByText('TX500H').length).toBeGreaterThan(0);
+    expect(within(logView).getAllByText('RX350').length).toBeGreaterThan(0);
+  });
+
   it('filters strategy cards by BOS status', async () => {
     render(<AllocationBoard currentUser={consultantUser} />);
     const user = userEvent.setup();
@@ -316,7 +383,7 @@ describe('AllocationBoard', () => {
 
     bodyRows.forEach((row) => {
       const cells = within(row).getAllByRole('cell');
-      expect(cells[6]).toHaveTextContent(/^\s*$/);
+      expect(cells[7]).toHaveTextContent(/^\s*$/);
     });
   });
 });

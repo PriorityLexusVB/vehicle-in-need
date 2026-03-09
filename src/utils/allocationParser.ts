@@ -35,6 +35,9 @@ const TOYOTA_DM_COLOR_TOKEN_PATTERN = /\b([0-9A-Z]{3,4})\s*[-/]\s*([0-9A-Z]{2,4}
 const TOYOTA_DM_BOS_PATTERN =
   /^\s*(?:\d+\s+)?\d{2,4}\s+[0-9A-Z]{4,}\s+[A-Z0-9-]{6,}\s+\d+\s+(?:[YN]\s+)?[0-9A-Z]{3,4}\s*[-/]\s*[0-9A-Z]{2,4}\s+\d{4,5}\s+([YN])\b/;
 
+const SOURCE_CODE_PATTERN = /\b(\d{4}[A-Z]?)\b/;
+const SOURCE_CODE_SPLIT_PATTERN = /\b(\d{4})\s*[- ]\s*([A-Z])\b/;
+
 interface ColumnRange {
   start: number;
   end: number; // end is exclusive
@@ -63,6 +66,13 @@ interface AllocationBlock {
   rowLine: string;
   rowLineUpper: string;
   blockTextUpper: string;
+}
+
+interface SourceCodeCandidate {
+  value: string;
+  index: number;
+  hasSuffixLetter: boolean;
+  isYearLike: boolean;
 }
 
 function escapeRegExp(value: string): string {
@@ -810,6 +820,110 @@ function detectBosFromBlock(block: AllocationBlock, layout: ColumnLayout | null)
   return "TBD";
 }
 
+function detectSourceCode(text: string): string | undefined {
+  const candidates: SourceCodeCandidate[] = [];
+
+  const splitRegex = new RegExp(SOURCE_CODE_SPLIT_PATTERN.source, "g");
+  for (const match of text.matchAll(splitRegex)) {
+    const digits = match[1];
+    const suffix = match[2];
+    if (!digits || !suffix) {
+      continue;
+    }
+
+    const value = `${digits}${suffix}`.toUpperCase();
+    candidates.push({
+      value,
+      index: match.index ?? -1,
+      hasSuffixLetter: true,
+      isYearLike: false,
+    });
+  }
+
+  const codeRegex = new RegExp(SOURCE_CODE_PATTERN.source, "g");
+  for (const match of text.matchAll(codeRegex)) {
+    const raw = match[1]?.toUpperCase();
+    if (!raw) {
+      continue;
+    }
+
+    candidates.push({
+      value: raw,
+      index: match.index ?? -1,
+      hasSuffixLetter: /[A-Z]$/.test(raw),
+      isYearLike: /^20\d{2}$/.test(raw),
+    });
+  }
+
+  if (candidates.length === 0) {
+    return undefined;
+  }
+
+  const deduped = new Map<string, SourceCodeCandidate>();
+  candidates.forEach((candidate) => {
+    const key = `${candidate.value}@${candidate.index}`;
+    if (!deduped.has(key)) {
+      deduped.set(key, candidate);
+    }
+  });
+
+  const scored = Array.from(deduped.values()).sort((first, second) => {
+    const firstScore = first.hasSuffixLetter ? 3 : first.isYearLike ? 1 : 2;
+    const secondScore = second.hasSuffixLetter ? 3 : second.isYearLike ? 1 : 2;
+
+    if (firstScore !== secondScore) {
+      return secondScore - firstScore;
+    }
+
+    return second.index - first.index;
+  });
+
+  const best = scored[0];
+  if (!best || (best.isYearLike && !best.hasSuffixLetter)) {
+    return undefined;
+  }
+
+  return best.value;
+}
+
+function detectSourceCodeFromBlock(block: AllocationBlock): string | undefined {
+  return detectSourceCode(block.blockTextUpper);
+}
+
+function detectSourceCodeFromLookback(
+  lines: string[],
+  startLineIndex: number,
+  maxLookback = 8,
+): string | undefined {
+  const lookbackLines: string[] = [];
+
+  for (let index = startLineIndex - 1; index >= 0; index -= 1) {
+    const distance = startLineIndex - index;
+    if (distance > maxLookback) {
+      break;
+    }
+
+    const upper = lines[index].toUpperCase();
+
+    // Stop once we hit what looks like the previous row boundary.
+    if (isToyotaDMAllocationRowLine(upper) || findModelCodeMatchesInLine(upper).length > 0) {
+      break;
+    }
+
+    if (isHeaderLikeLine(upper) || isIgnorableNoiseLine(upper)) {
+      continue;
+    }
+
+    lookbackLines.unshift(upper);
+  }
+
+  if (lookbackLines.length === 0) {
+    return undefined;
+  }
+
+  return detectSourceCode(lookbackLines.join(" "));
+}
+
 function detectGrade(line: string, reference: LexusAllocationReference): string {
   const gradeMatch = line.match(GRADE_PATTERN);
   return gradeMatch
@@ -1013,6 +1127,9 @@ export function parseAllocationSource(sourceText: string): ParsedAllocationResul
     const exteriorColor = detectExteriorColorFromBlock(block, layout);
     const interiorColor = detectInteriorColorFromBlock(block, layout);
     const bos = detectBosFromBlock(block, layout);
+    const sourceCode =
+      detectSourceCodeFromBlock(block) ??
+      detectSourceCodeFromLookback(lines, block.startLineIndex);
 
     matchesToEmit.forEach((match) => {
       const reference = LEXUS_ALLOCATION_REFERENCE[match.code];
@@ -1032,6 +1149,8 @@ export function parseAllocationSource(sourceText: string): ParsedAllocationResul
       vehicles.push({
         id: `${match.code}-${block.startLineIndex}-${match.start}-${vehicles.length}`,
         code: match.code,
+        model: reference.code,
+        sourceCode,
         quantity,
         color: exteriorColor,
         interiorColor,

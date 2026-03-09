@@ -3,6 +3,8 @@ import type { Timestamp } from "firebase/firestore";
 export interface AllocationVehicle {
   id: string;
   code: string;
+  model?: string;
+  sourceCode?: string;
   quantity: number;
   color: string;
   interiorColor: string;
