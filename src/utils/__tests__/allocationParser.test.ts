@@ -301,6 +301,27 @@ describe('parseAllocationSource', () => {
     expect(result.vehicles[0].sourceCode).toBe('9353F');
   });
 
+  it('keeps distinct sourceCode values for consecutive wrapped rows', () => {
+    const source = [
+      '9706F INT 20 FACTORY ACCY: KG MF WL PPOs: 1S 2T 59 DF GN',
+      'BOS Y LOC 03-23',
+      'GX550 CAVIAR / BLACK',
+      '9353F INT EA26 FACTORY ACCY: BI CC CP TP',
+      'PPOs: 1S 2T 59 DF',
+      'BOS N LOC 03-26',
+      'TX350 CLOUD BURST / BLACK',
+    ].join('\n');
+
+    const result = parseAllocationSource(source);
+
+    expect(result.errors).toHaveLength(0);
+    expect(result.itemCount).toBe(2);
+    expect(result.vehicles[0].code).toBe('GX550');
+    expect(result.vehicles[0].sourceCode).toBe('9706F');
+    expect(result.vehicles[1].code).toBe('TX350');
+    expect(result.vehicles[1].sourceCode).toBe('9353F');
+  });
+
   it('parses spaced-dash arrival dates in pasted Toyota DM rows', () => {
     const source = [
       '3/12/2026 Toyota District Manager Allocation Application District:06 08:17:13 AM Allocation Status By Dealer',

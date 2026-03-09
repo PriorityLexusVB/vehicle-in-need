@@ -1127,15 +1127,20 @@ export function parseAllocationSource(sourceText: string): ParsedAllocationResul
     const exteriorColor = detectExteriorColorFromBlock(block, layout);
     const interiorColor = detectInteriorColorFromBlock(block, layout);
     const bos = detectBosFromBlock(block, layout);
-    const sourceCode =
-      detectSourceCodeFromBlock(block) ??
-      detectSourceCodeFromLookback(lines, block.startLineIndex);
+    const lookbackSourceCode = detectSourceCodeFromLookback(lines, block.startLineIndex);
+    const blockSourceCode = detectSourceCodeFromBlock(block);
 
     matchesToEmit.forEach((match) => {
       const reference = LEXUS_ALLOCATION_REFERENCE[match.code];
       if (!reference) {
         return;
       }
+
+      // Resolve source code per match so multi-model wrapped blocks do not share one code.
+      const sourceCode =
+        detectSourceCode(block.blockTextUpper.slice(0, Math.max(0, match.start))) ??
+        lookbackSourceCode ??
+        blockSourceCode;
 
       const quantity = isToyotaDM
         ? 1

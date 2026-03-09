@@ -280,6 +280,47 @@ describe('AllocationBoard', () => {
     expect(payload.vehicles[0].model).toBe('GX550');
   });
 
+  it('keeps distinct sourceCode values for consecutive wrapped rows in publish payload', async () => {
+    publishAllocationSnapshot.mockResolvedValue(undefined);
+
+    const sourceText = [
+      '9706F INT 20 FACTORY ACCY: KG MF WL PPOs: 1S 2T 59 DF GN',
+      'BOS Y LOC 03-23',
+      'GX550 CAVIAR / BLACK',
+      '9353F INT EA26 FACTORY ACCY: BI CC CP TP',
+      'PPOs: 1S 2T 59 DF',
+      'BOS N LOC 03-26',
+      'TX350 CLOUD BURST / BLACK',
+    ].join('\n');
+
+    render(<AllocationBoard currentUser={managerUser} />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId('allocation-manager-toggle'));
+
+    const sourceTextarea = screen.getByPlaceholderText('Paste allocation source text...');
+    fireEvent.change(sourceTextarea, { target: { value: sourceText } });
+
+    await user.click(screen.getByRole('button', { name: 'Parse Source' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Parsed 2 rows/i)).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Publish Snapshot' }));
+
+    await waitFor(() => {
+      expect(publishAllocationSnapshot).toHaveBeenCalledTimes(1);
+    });
+
+    const [payload] = publishAllocationSnapshot.mock.calls[0];
+    expect(payload.itemCount).toBe(2);
+    expect(payload.vehicles[0].code).toBe('GX550');
+    expect(payload.vehicles[0].sourceCode).toBe('9706F');
+    expect(payload.vehicles[1].code).toBe('TX350');
+    expect(payload.vehicles[1].sourceCode).toBe('9353F');
+  });
+
   it('supports exact-date build date grouping in strategy view', async () => {
     render(<AllocationBoard currentUser={consultantUser} />);
     const user = userEvent.setup();
