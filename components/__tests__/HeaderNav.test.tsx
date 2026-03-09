@@ -40,6 +40,8 @@ describe("Header navigation", () => {
   it("hides manager navigation for non-managers", () => {
     renderHeader(baseUser);
     expect(screen.getByTestId("main-nav")).toBeInTheDocument();
+    expect(screen.getByTestId("allocation-nav-link")).toBeInTheDocument();
+    expect(screen.getByTestId("requests-nav-link")).toBeInTheDocument();
     expect(screen.queryByTestId("dashboard-nav-link")).toBeNull();
     expect(screen.queryByTestId("admin-nav-link")).toBeNull();
     expect(screen.queryByTestId("admin-settings-link")).toBeNull();
@@ -52,8 +54,10 @@ describe("Header navigation", () => {
     renderHeader(managerUser);
     // nav wrapper
     expect(screen.getByTestId("main-nav")).toBeInTheDocument();
+    expect(screen.getByTestId("allocation-nav-link")).toBeInTheDocument();
     // dashboard link
     expect(screen.getByTestId("dashboard-nav-link")).toBeInTheDocument();
+    expect(screen.queryByTestId("requests-nav-link")).toBeNull();
     // admin link (nav pill)
     expect(screen.getByTestId("admin-nav-link")).toBeInTheDocument();
     // header admin quick link

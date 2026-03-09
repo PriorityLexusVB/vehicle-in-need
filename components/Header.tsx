@@ -48,6 +48,15 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
               >
                 Allocation Board
               </Link>
+              {!user.isManager && (
+                <Link
+                  to="/requests"
+                  className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-colors ${currentPath === '/requests' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                  data-testid="requests-nav-link"
+                >
+                  Requests
+                </Link>
+              )}
               {user.isManager && (
                 <Link 
                   to="/admin"
