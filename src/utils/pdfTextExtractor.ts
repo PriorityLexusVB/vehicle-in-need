@@ -34,11 +34,43 @@ interface WorkerUrlModuleLike {
 const LINE_Y_TOLERANCE = 2;
 let isPdfWorkerConfigured = false;
 
+function isStaleDynamicImportError(error: unknown): boolean {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : String(error);
+
+  return /failed to fetch dynamically imported module|error loading dynamically imported module|importing a module script failed/i.test(
+    message,
+  );
+}
+
 async function getPdfJsModule(): Promise<PdfJsModuleLike> {
-  const [pdfJsModule, workerModule] = await Promise.all([
-    import("pdfjs-dist/legacy/build/pdf.mjs") as Promise<PdfJsModuleLike>,
-    import("pdfjs-dist/legacy/build/pdf.worker.mjs?url") as Promise<WorkerUrlModuleLike>,
-  ]);
+  let pdfJsModule: PdfJsModuleLike;
+  let workerModule: WorkerUrlModuleLike;
+
+  try {
+    [pdfJsModule, workerModule] = await Promise.all([
+      import("pdfjs-dist/legacy/build/pdf.mjs") as Promise<PdfJsModuleLike>,
+      import("pdfjs-dist/legacy/build/pdf.worker.mjs?url") as Promise<WorkerUrlModuleLike>,
+    ]);
+  } catch (error) {
+    if (!(import.meta.env.DEV && isStaleDynamicImportError(error))) {
+      throw error;
+    }
+
+    // Vite can keep a stale optimized-dep URL in memory after a dev-server restart.
+    [pdfJsModule, workerModule] = await Promise.all([
+      import(
+        /* @vite-ignore */ "/node_modules/pdfjs-dist/legacy/build/pdf.mjs"
+      ) as Promise<PdfJsModuleLike>,
+      import(
+        /* @vite-ignore */ "/node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs?url"
+      ) as Promise<WorkerUrlModuleLike>,
+    ]);
+  }
 
   if (!isPdfWorkerConfigured) {
     const workerSrc = workerModule.default;

@@ -774,6 +774,12 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
         error instanceof Error
           ? error.message
           : "Unable to extract text from the uploaded PDF.";
+      if (/failed to fetch dynamically imported module/i.test(message)) {
+        setParseStatus(
+          "PDF parser module was stale after a dev-server reload. Hard refresh the page (Ctrl+Shift+R) and upload again.",
+        );
+        return;
+      }
       setParseStatus(message);
     } finally {
       setIsExtractingPdf(false);
