@@ -14,8 +14,28 @@ const QUANTITY_AFTER_CODE_REGEX = /^\s*[xX]?\s*(\d{1,2})\b/;
 const DATE_PATTERN = /(report\s*date|allocation\s*date|date)\s*[:-]\s*([^\n]+)/i;
 const ARRIVAL_PATTERN = /(eta|arrival)\s*[:-]?\s*([\w/-]+)/i;
 const SHORT_DATE_PATTERN = /\b(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)\b/;
+const HYPHEN_MONTH_DAY_PATTERN = /\b(\d{1,2})-(\d{1,2})\b/;
 const COLOR_PATTERN = /(black|white|silver|gray|grey|red|blue|green|caviar|atomic\s+silver|cloudburst|ematador|nori\s+green|ultrasonic\s+blue)/i;
 const GRADE_PATTERN = /(f\s*sport\s*performance|f\s*sport|luxury|premium|base|overtrail|ultra\s*luxury|performance)/i;
+const INTERIOR_PATTERN = /\b(?:INT(?:ERIOR)?|INT\s*COLOR)\s*[:#-]?\s*([A-Z0-9]{2,4})\b/i;
+const BOS_PATTERN = /\bBOS\s*[:#-]?\s*(Y|N|TBD)\b/i;
+const FACTORY_ACCESSORIES_PATTERN = /\b(?:FACTORY\s*ACCY|FACTORY\s*ACCESSORIES?)\s*[:#-]?\s*([A-Z0-9\s-]+)/i;
+const PPO_PATTERN = /\b(?:PPOS?|POST-?PRODUCTION\s*OPTIONS?)\s*[:#-]?\s*([A-Z0-9\s-]+)/i;
+const SOURCE_CODE_PATTERN = /\b(\d{4}[A-Z]?)\b/;
+const SOURCE_CODE_SPLIT_PATTERN = /\b(\d{4})\s*[- ]\s*([A-Z])\b/;
+
+function cleanExtractedField(value?: string): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const cleaned = value.replace(/\s+/g, " ").trim();
+  if (!cleaned || /^(unknown|n\/a|na|tbd)$/i.test(cleaned)) {
+    return undefined;
+  }
+
+  return cleaned;
+}
 
 function normalizeDate(rawDate: string): string | null {
   const cleaned = rawDate.trim().replace(/,$/, "");
@@ -23,30 +43,44 @@ function normalizeDate(rawDate: string): string | null {
     return null;
   }
 
+  const slashMatch = cleaned.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+  if (slashMatch) {
+    const month = Number(slashMatch[1]);
+    const day = Number(slashMatch[2]);
+    let year = slashMatch[3] ? Number(slashMatch[3]) : new Date().getFullYear();
+
+    if (year < 100) {
+      year += 2000;
+    }
+
+    if (month < 1 || month > 12 || day < 1 || day > 31) {
+      return null;
+    }
+
+    const safeDate = new Date(Date.UTC(year, month - 1, day));
+    return safeDate.toISOString().slice(0, 10);
+  }
+
   const directDate = new Date(cleaned);
   if (!Number.isNaN(directDate.getTime())) {
     return directDate.toISOString().slice(0, 10);
   }
 
-  const slashMatch = cleaned.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
-  if (!slashMatch) {
-    return null;
+  const hyphenMonthDayMatch = cleaned.match(/^(\d{1,2})-(\d{1,2})$/);
+  if (hyphenMonthDayMatch) {
+    const month = Number(hyphenMonthDayMatch[1]);
+    const day = Number(hyphenMonthDayMatch[2]);
+    const year = new Date().getFullYear();
+
+    if (month < 1 || month > 12 || day < 1 || day > 31) {
+      return null;
+    }
+
+    const safeDate = new Date(Date.UTC(year, month - 1, day));
+    return safeDate.toISOString().slice(0, 10);
   }
 
-  const month = Number(slashMatch[1]);
-  const day = Number(slashMatch[2]);
-  let year = slashMatch[3] ? Number(slashMatch[3]) : new Date().getFullYear();
-
-  if (year < 100) {
-    year += 2000;
-  }
-
-  if (month < 1 || month > 12 || day < 1 || day > 31) {
-    return null;
-  }
-
-  const safeDate = new Date(Date.UTC(year, month - 1, day));
-  return safeDate.toISOString().slice(0, 10);
+  return null;
 }
 
 function detectReportDate(source: string): string | null {
@@ -74,12 +108,100 @@ function detectArrival(line: string): string {
     return normalizeDate(shortDate[1]) || shortDate[1];
   }
 
+  const hyphenMonthDay = line.match(HYPHEN_MONTH_DAY_PATTERN);
+  if (hyphenMonthDay?.[0]) {
+    return normalizeDate(hyphenMonthDay[0]) || hyphenMonthDay[0];
+  }
+
   return "TBD";
 }
 
 function detectColor(line: string): string {
   const colorMatch = line.match(COLOR_PATTERN);
   return colorMatch ? colorMatch[0].replace(/\s+/g, " ").toUpperCase() : "TBD";
+}
+
+function detectInterior(line: string): string | undefined {
+  const interiorMatch = line.match(INTERIOR_PATTERN);
+  return cleanExtractedField(interiorMatch?.[1]?.toUpperCase());
+}
+
+function detectBos(line: string): string {
+  const bosMatch = line.match(BOS_PATTERN);
+  if (!bosMatch?.[1]) {
+    return "TBD";
+  }
+
+  const bos = bosMatch[1].toUpperCase();
+  return bos === "Y" || bos === "N" ? bos : "TBD";
+}
+
+function detectFactoryAccessories(line: string): string | undefined {
+  const match = line.match(FACTORY_ACCESSORIES_PATTERN);
+  if (!match?.[1]) {
+    return undefined;
+  }
+
+  const value = match[1].split(/\b(?:PPOS?|POST-?PRODUCTION\s*OPTIONS?)\b/i)[0];
+  return cleanExtractedField(value?.toUpperCase());
+}
+
+function detectPpos(line: string): string | undefined {
+  const match = line.match(PPO_PATTERN);
+  const raw = match?.[1]?.split(/\b(?:BOS|LOC)\b/i)[0];
+  return cleanExtractedField(raw?.toUpperCase());
+}
+
+function detectSourceCode(line: string): string | undefined {
+  const splitMatch = line.match(SOURCE_CODE_SPLIT_PATTERN);
+  if (splitMatch?.[1] && splitMatch?.[2]) {
+    return cleanExtractedField(`${splitMatch[1]}${splitMatch[2]}`.toUpperCase());
+  }
+
+  const match = line.match(SOURCE_CODE_PATTERN);
+  return cleanExtractedField(match?.[1]?.toUpperCase());
+}
+
+function fallbackFromAdjacentLines<T>(
+  currentValue: T | undefined,
+  previousLine: string,
+  nextLine: string,
+  detector: (line: string) => T | undefined,
+): T | undefined {
+  if (currentValue !== undefined) {
+    return currentValue;
+  }
+
+  return detector(previousLine) ?? detector(nextLine);
+}
+
+function detectArrivalWithAdjacentFallback(
+  line: string,
+  previousLine: string,
+  nextLine: string,
+): string {
+  const current = detectArrival(line);
+  if (current !== "TBD") {
+    return current;
+  }
+
+  const fromPrevious = detectArrival(previousLine);
+  if (fromPrevious !== "TBD") {
+    return fromPrevious;
+  }
+
+  const fromNext = detectArrival(nextLine);
+  if (fromNext !== "TBD") {
+    return fromNext;
+  }
+
+  return "TBD";
+}
+
+function detectTimelineType(line: string): "build" | "port" {
+  return /\b(port|vpc|at port|port date|to port|from port)\b/i.test(line)
+    ? "port"
+    : "build";
 }
 
 function detectGrade(line: string, reference: LexusAllocationReference): string {
@@ -119,6 +241,29 @@ function detectQuantity(line: string, startIndex: number, codeLength: number): n
   return 1;
 }
 
+function buildFlexibleCodeRegex(code: string): RegExp {
+  const pattern = code
+    .split("")
+    .map((char) => {
+      if (/[A-Z0-9]/.test(char)) {
+        return `${char}[\\s-]*`;
+      }
+
+      if (char === "+") {
+        return "\\+\\s*";
+      }
+
+      return `${char.replace(/[.*?^${}()|[\]\\]/g, "\\$&")}[\\s-]*`;
+    })
+    .join("");
+
+  return new RegExp(`\\b${pattern}\\b`, "g");
+}
+
+function containsExactModelToken(line: string): boolean {
+  return LEXUS_REFERENCE_CODES.some((code) => new RegExp(`\\b${code}\\b`).test(line));
+}
+
 function summarizeVehicles(vehicles: AllocationVehicle[]): AllocationSummary {
   const units = vehicles.reduce((total, vehicle) => total + vehicle.quantity, 0);
   const value = vehicles.reduce((total, vehicle) => total + vehicle.totalValue, 0);
@@ -152,32 +297,112 @@ export function parseAllocationSource(sourceText: string): ParsedAllocationResul
 
   const vehicles: AllocationVehicle[] = [];
   const warnings: string[] = [];
+  const consumedLineIndexes = new Set<number>();
   const lines = normalized
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
 
   lines.forEach((line, lineIndex) => {
+    if (consumedLineIndexes.has(lineIndex)) {
+      return;
+    }
+
     const uppercaseLine = line.toUpperCase();
+    const previousPreviousLine = lineIndex > 1 ? lines[lineIndex - 2].toUpperCase() : "";
+    const previousLine = lineIndex > 0 ? lines[lineIndex - 1].toUpperCase() : "";
+    const nextLine = lineIndex < lines.length - 1 ? lines[lineIndex + 1].toUpperCase() : "";
+    const canUseMergedNextLine =
+      Boolean(nextLine) &&
+      !containsExactModelToken(uppercaseLine) &&
+      !containsExactModelToken(nextLine);
+    const mergedWithNextLine = canUseMergedNextLine
+      ? `${uppercaseLine} ${nextLine}`
+      : uppercaseLine;
     let matchedInLine = false;
+    let matchedUsingMergedLine = false;
 
     for (const code of LEXUS_REFERENCE_CODES) {
-      const regex = new RegExp(`\\b${code}\\b`, "g");
-      let regexMatch: RegExpExecArray | null = regex.exec(uppercaseLine);
+      const regex = buildFlexibleCodeRegex(code);
+      let extractionLine = uppercaseLine;
+      let regexMatch: RegExpExecArray | null = regex.exec(extractionLine);
+
+      if (!regexMatch && mergedWithNextLine !== uppercaseLine) {
+        regex.lastIndex = 0;
+        extractionLine = mergedWithNextLine;
+        regexMatch = regex.exec(extractionLine);
+      }
 
       while (regexMatch) {
         matchedInLine = true;
+        if (extractionLine !== uppercaseLine) {
+          matchedUsingMergedLine = true;
+        }
         const reference = LEXUS_ALLOCATION_REFERENCE[code];
-        const quantity = detectQuantity(uppercaseLine, regexMatch.index, code.length);
+        const quantity = detectQuantity(extractionLine, regexMatch.index, code.length);
         const totalValue = reference.msrp * quantity;
+        const sourceContext = [previousPreviousLine, previousLine, extractionLine]
+          .filter(Boolean)
+          .join(" ");
+        const detailContext = [previousPreviousLine, previousLine, extractionLine, nextLine]
+          .filter(Boolean)
+          .join(" ");
+        const sourceCode = fallbackFromAdjacentLines(
+          detectSourceCode(sourceContext),
+          previousLine,
+          nextLine,
+          detectSourceCode,
+        );
+        const interior = fallbackFromAdjacentLines(
+          detectInterior(detailContext),
+          previousLine,
+          nextLine,
+          detectInterior,
+        );
+        const factoryAccessories = fallbackFromAdjacentLines(
+          detectFactoryAccessories(detailContext),
+          previousLine,
+          nextLine,
+          detectFactoryAccessories,
+        );
+        const postProductionOptions = fallbackFromAdjacentLines(
+          detectPpos(detailContext),
+          previousLine,
+          nextLine,
+          detectPpos,
+        );
+        const bos = fallbackFromAdjacentLines(
+          detectBos(detailContext) === "TBD" ? undefined : detectBos(detailContext),
+          previousLine,
+          nextLine,
+          (text) => {
+            const detected = detectBos(text);
+            return detected === "TBD" ? undefined : detected;
+          },
+        ) ?? "TBD";
+        const arrival = detectArrivalWithAdjacentFallback(
+          detailContext,
+          previousLine,
+          nextLine,
+        );
+        const timelineType = detectTimelineType(
+          `${previousPreviousLine} ${previousLine} ${extractionLine} ${nextLine}`,
+        );
 
         vehicles.push({
           id: `${code}-${lineIndex}-${regexMatch.index}-${vehicles.length}`,
           code,
+          model: reference.code,
+          sourceCode,
           quantity,
-          color: detectColor(uppercaseLine),
-          arrival: detectArrival(uppercaseLine),
-          grade: detectGrade(uppercaseLine, reference),
+          color: detectColor(extractionLine),
+          interior,
+          arrival,
+          timelineType,
+          bos,
+          grade: detectGrade(extractionLine, reference),
+          factoryAccessories,
+          postProductionOptions,
           engine: reference.engine,
           msrp: reference.msrp,
           category: reference.category,
@@ -187,8 +412,12 @@ export function parseAllocationSource(sourceText: string): ParsedAllocationResul
           totalValue,
         });
 
-        regexMatch = regex.exec(uppercaseLine);
+        regexMatch = regex.exec(extractionLine);
       }
+    }
+
+    if (matchedUsingMergedLine && lineIndex < lines.length - 1) {
+      consumedLineIndexes.add(lineIndex + 1);
     }
 
     if (!matchedInLine && /[A-Z0-9]{3,}/.test(uppercaseLine)) {

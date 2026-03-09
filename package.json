@@ -8,7 +8,8 @@
     "npm": ">=10.0.0"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "node -e \"const p=require('node:path');const base=process.env.npm_package_json?p.dirname(process.env.npm_package_json):process.cwd();require(p.join(base,'scripts','dev-launcher.cjs'));\" --",
+    "dev:local": "vite",
     "prebuild:check": "node scripts/check-conflicts.cjs",
     "prebuild": "npm run prebuild:check",
     "build": "vite build",

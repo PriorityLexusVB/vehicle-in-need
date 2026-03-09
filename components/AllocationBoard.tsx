@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AppUser } from "../types";
 import {
   parseAllocationSource,
@@ -43,15 +43,107 @@ function formatTimestamp(date?: { toDate: () => Date }): string {
   return date.toDate().toLocaleString();
 }
 
-interface GroupedAllocationRow {
+interface StrategyArrivalGroup {
   key: string;
   arrivalBucket: string;
-  category: string;
-  grade: string;
-  rank: string;
-  totalUnits: number;
-  totalValue: number;
   vehicles: AllocationVehicle[];
+}
+
+function getDisplayValue(value?: string | null): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (/^(unknown|n\/a|na|tbd)$/i.test(trimmed)) {
+    return null;
+  }
+
+  return trimmed;
+}
+
+function getDisplayCode(vehicle: AllocationVehicle): string {
+  const codeCandidates = [getDisplayValue(vehicle.sourceCode), getDisplayValue(vehicle.code)].filter(
+    Boolean,
+  ) as string[];
+
+  for (const candidate of codeCandidates) {
+    const fourDigit = candidate.match(/\b(\d{4})[A-Z]?\b/);
+    if (fourDigit?.[1]) {
+      return fourDigit[1];
+    }
+  }
+
+  return "----";
+}
+
+function getDisplayModel(vehicle: AllocationVehicle): string {
+  const explicitModel = getDisplayValue(vehicle.model);
+  if (explicitModel) {
+    return explicitModel;
+  }
+
+  const codeFallback = getDisplayValue(vehicle.code);
+  if (codeFallback && !/^\d{4}[A-Z]?$/i.test(codeFallback)) {
+    return codeFallback;
+  }
+
+  return "Not listed";
+}
+
+function splitExteriorInterior(color: string): { exterior: string | null; interior: string | null } {
+  const [rawExterior, rawInterior] = color
+    .split("/")
+    .map((part) => part.trim());
+
+  return {
+    exterior: getDisplayValue(rawExterior),
+    interior: getDisplayValue(rawInterior),
+  };
+}
+
+function getTimelineLabel(arrival: string): "Build" | "Port" {
+  const normalized = arrival.toLowerCase();
+  if (/(^|\b)(port|vpc|at port|port date|to port|from port)(\b|$)/.test(normalized)) {
+    return "Port";
+  }
+
+  return "Build";
+}
+
+function getVehicleTimelineLabel(vehicle: AllocationVehicle): "Build" | "Port" {
+  if (vehicle.timelineType === "port") {
+    return "Port";
+  }
+  if (vehicle.timelineType === "build") {
+    return "Build";
+  }
+
+  return getTimelineLabel(vehicle.arrival || "");
+}
+
+function formatDaysOut(arrival: string): string | null {
+  const target = new Date(arrival);
+  if (Number.isNaN(target.getTime())) {
+    return null;
+  }
+
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  target.setHours(0, 0, 0, 0);
+
+  const diffMs = target.getTime() - now.getTime();
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) {
+    return `${Math.abs(diffDays)} day(s) ago`;
+  }
+
+  return `${diffDays} day(s)`;
 }
 
 const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
@@ -69,8 +161,12 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
   const [parseStatus, setParseStatus] = useState<string | null>(null);
   const [publishStatus, setPublishStatus] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isUploadDragActive, setIsUploadDragActive] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+  const uploadInputRef = useRef<HTMLInputElement | null>(null);
 
   const [boardView, setBoardView] = useState<BoardView>("strategy");
+  const [groupStrategyCards, setGroupStrategyCards] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [rankFilter, setRankFilter] = useState("all");
@@ -130,12 +226,18 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
 
       return [
         vehicle.code,
+        vehicle.sourceCode,
+        vehicle.model,
         vehicle.category,
         vehicle.grade,
         vehicle.rank,
         vehicle.type,
         vehicle.arrival,
         vehicle.color,
+        vehicle.interior,
+        vehicle.factoryAccessories,
+        vehicle.postProductionOptions,
+        vehicle.bos,
       ]
         .join(" ")
         .toLowerCase()
@@ -143,17 +245,15 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
     });
   }, [vehicles, categoryFilter, rankFilter, searchQuery]);
 
-  const groupedRows = useMemo<GroupedAllocationRow[]>(() => {
-    const grouped = new Map<string, GroupedAllocationRow>();
+  const strategyGroups = useMemo<StrategyArrivalGroup[]>(() => {
+    const grouped = new Map<string, StrategyArrivalGroup>();
 
     filteredVehicles.forEach((vehicle) => {
       const arrivalBucket = groupArrivalBucket(vehicle.arrival);
-      const key = `${arrivalBucket}|${vehicle.category}|${vehicle.grade}|${vehicle.rank}`;
+      const key = arrivalBucket;
       const existing = grouped.get(key);
 
       if (existing) {
-        existing.totalUnits += vehicle.quantity;
-        existing.totalValue += vehicle.totalValue;
         existing.vehicles.push(vehicle);
         return;
       }
@@ -161,40 +261,58 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
       grouped.set(key, {
         key,
         arrivalBucket,
-        category: vehicle.category,
-        grade: vehicle.grade,
-        rank: vehicle.rank,
-        totalUnits: vehicle.quantity,
-        totalValue: vehicle.totalValue,
         vehicles: [vehicle],
       });
     });
 
-    return Array.from(grouped.values()).sort((a, b) => {
+    return Array.from(grouped.values())
+      .sort((a, b) => {
+        const arrivalDiff = a.arrivalBucket.localeCompare(b.arrivalBucket);
+        if (arrivalDiff !== 0) {
+          return arrivalDiff;
+        }
+
+        return b.vehicles.length - a.vehicles.length;
+      })
+      .map((group) => ({
+        ...group,
+        // Preserve priority ordering within each arrival section for fast scanning.
+        vehicles: [...group.vehicles].sort((a, b) => {
+          const rankDiff = (RANK_ORDER[a.rank] ?? 99) - (RANK_ORDER[b.rank] ?? 99);
+          if (rankDiff !== 0) {
+            return rankDiff;
+          }
+
+          return a.code.localeCompare(b.code);
+        }),
+      }));
+  }, [filteredVehicles]);
+
+  const strategyVehicles = useMemo(() => {
+    return [...filteredVehicles].sort((a, b) => {
       const rankDiff = (RANK_ORDER[a.rank] ?? 99) - (RANK_ORDER[b.rank] ?? 99);
       if (rankDiff !== 0) {
         return rankDiff;
       }
 
-      const arrivalDiff = a.arrivalBucket.localeCompare(b.arrivalBucket);
-      if (arrivalDiff !== 0) {
-        return arrivalDiff;
-      }
-
-      return b.totalUnits - a.totalUnits;
+      return getDisplayCode(a).localeCompare(getDisplayCode(b));
     });
   }, [filteredVehicles]);
 
   const strategyTotals = useMemo(() => {
-    return groupedRows.reduce(
+    return filteredVehicles.reduce(
       (accumulator, row) => {
-        accumulator.units += row.totalUnits;
+        accumulator.units += row.quantity;
         accumulator.value += row.totalValue;
         return accumulator;
       },
       { units: 0, value: 0 },
     );
-  }, [groupedRows]);
+  }, [filteredVehicles]);
+
+  const hasMeaningfulValue = useMemo(() => {
+    return filteredVehicles.some((vehicle) => vehicle.totalValue > 0);
+  }, [filteredVehicles]);
 
   const handleParse = () => {
     const result = parseAllocationSource(sourceText);
@@ -211,6 +329,60 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
         : `Parsed ${result.itemCount} rows successfully.`;
 
     setParseStatus(warningMessage);
+  };
+
+  const readAllocationFileText = async (file: File): Promise<string> => {
+    const readAsText = async (): Promise<string> => {
+      if (typeof file.text === "function") {
+        return file.text();
+      }
+
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error("Unable to read uploaded file."));
+        reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+        reader.readAsText(file);
+      });
+    };
+
+    const lower = file.name.toLowerCase();
+
+    if (lower.endsWith(".pdf")) {
+      const raw = await readAsText();
+      const printableRatio = raw.length
+        ? raw.replace(/[\x20-\x7E\r\n\t]/g, "").length / raw.length
+        : 1;
+
+      if (printableRatio > 0.35) {
+        throw new Error(
+          "PDF upload loaded non-text content. Paste extracted PDF text or upload a .txt/.csv export.",
+        );
+      }
+
+      return raw;
+    }
+
+    return readAsText();
+  };
+
+  const handleSourceFile = async (file: File) => {
+    setUploadStatus(null);
+
+    try {
+      const text = await readAllocationFileText(file);
+      const normalizedText = text.replace(/\r\n/g, "\n").trim();
+
+      if (!normalizedText) {
+        setUploadStatus("Uploaded file did not contain readable allocation text.");
+        return;
+      }
+
+      setSourceText(normalizedText);
+      setUploadStatus(`Loaded source from ${file.name}. Review text, then click Parse Source.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to read uploaded file.";
+      setUploadStatus(message);
+    }
   };
 
   const handlePublish = async () => {
@@ -292,8 +464,58 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
         <div className="border-b border-slate-800 bg-slate-900/40 px-6 py-5" data-testid="allocation-manager-panel">
           <h3 className="text-lg font-semibold text-white">Manager Update Panel</h3>
           <p className="mt-1 text-sm text-slate-300">
-            Paste Lexus allocation source text, parse, validate, and publish the new snapshot.
+            Paste or upload allocation source text, parse, validate, and publish the new snapshot.
           </p>
+
+          <input
+            ref={uploadInputRef}
+            type="file"
+            accept=".txt,.csv,.tsv,.pdf"
+            className="hidden"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) {
+                void handleSourceFile(file);
+              }
+              event.currentTarget.value = "";
+            }}
+            data-testid="allocation-source-file-input"
+          />
+
+          <div
+            className={`mt-4 rounded-xl border border-dashed px-4 py-3 text-sm transition-colors ${
+              isUploadDragActive
+                ? "border-sky-400 bg-sky-500/10 text-sky-200"
+                : "border-slate-700 bg-slate-950/70 text-slate-300"
+            }`}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setIsUploadDragActive(true);
+            }}
+            onDragLeave={() => setIsUploadDragActive(false)}
+            onDrop={(event) => {
+              event.preventDefault();
+              setIsUploadDragActive(false);
+              const file = event.dataTransfer.files?.[0];
+              if (file) {
+                void handleSourceFile(file);
+              }
+            }}
+            data-testid="allocation-source-dropzone"
+          >
+            <div className="flex flex-wrap items-center gap-3">
+              <p>Drag and drop source file (.txt/.csv/.pdf) or</p>
+              <button
+                type="button"
+                onClick={() => uploadInputRef.current?.click()}
+                className="rounded-md border border-slate-600 bg-slate-900 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-slate-200 hover:bg-slate-800"
+              >
+                Upload File
+              </button>
+            </div>
+          </div>
+
+          {uploadStatus && <p className="mt-2 text-sm text-slate-300">{uploadStatus}</p>}
 
           <textarea
             value={sourceText}
@@ -384,6 +606,14 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
             >
               Full Log View
             </button>
+            {boardView === "strategy" && (
+              <button
+                onClick={() => setGroupStrategyCards((previous) => !previous)}
+                className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-slate-300 hover:bg-slate-800"
+              >
+                {groupStrategyCards ? "Grouped" : "Flat Scan"}
+              </button>
+            )}
           </div>
 
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 lg:gap-3">
@@ -433,15 +663,17 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
 
         {!isLoading && !loadError && vehicles.length > 0 && (
           <>
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <div className={`mt-5 grid gap-3 ${hasMeaningfulValue ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
               <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
                 <p className="text-xs uppercase tracking-wider text-slate-400">Filtered Units</p>
                 <p className="mt-1 text-2xl font-bold text-white">{strategyTotals.units}</p>
               </div>
-              <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-                <p className="text-xs uppercase tracking-wider text-slate-400">Filtered Value</p>
-                <p className="mt-1 text-2xl font-bold text-white">{formatCurrency(strategyTotals.value)}</p>
-              </div>
+              {hasMeaningfulValue && (
+                <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+                  <p className="text-xs uppercase tracking-wider text-slate-400">Filtered Value</p>
+                  <p className="mt-1 text-2xl font-bold text-white">{formatCurrency(strategyTotals.value)}</p>
+                </div>
+              )}
               <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
                 <p className="text-xs uppercase tracking-wider text-slate-400">Live Hybrid Mix</p>
                 <p className="mt-1 text-2xl font-bold text-white">{latestSnapshot?.summary.hybridMix ?? 0}%</p>
@@ -450,37 +682,204 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
 
             {boardView === "strategy" ? (
               <div className="mt-5 space-y-3" data-testid="allocation-strategy-view">
-                {groupedRows.map((row) => (
-                  <article
-                    key={row.key}
-                    className="rounded-xl border border-slate-800 bg-slate-900/80 p-4"
-                  >
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-200">
-                        {row.arrivalBucket}
-                      </span>
-                      <span className="rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-200">
-                        {row.category}
-                      </span>
-                      <span className="rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-200">
-                        {row.grade}
-                      </span>
-                      <span className="rounded-full bg-sky-500/20 px-3 py-1 text-xs font-semibold text-sky-300">
-                        Priority: {row.rank}
-                      </span>
-                    </div>
+                {groupStrategyCards
+                  ? strategyGroups.map((group) => (
+                      <section key={group.key} className="rounded-xl border border-slate-800 bg-slate-900/70 p-3">
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-300">
+                            {group.arrivalBucket}
+                          </h3>
+                          <span className="rounded-full border border-slate-700 bg-slate-900 px-2 py-0.5 text-[11px] text-slate-300">
+                            {group.vehicles.length} line(s)
+                          </span>
+                        </div>
 
-                    <div className="mt-3 flex flex-wrap items-center gap-6 text-sm text-slate-300">
-                      <p>Units: <span className="font-semibold text-white">{row.totalUnits}</span></p>
-                      <p>Value: <span className="font-semibold text-white">{formatCurrency(row.totalValue)}</span></p>
-                      <p>Lines: <span className="font-semibold text-white">{row.vehicles.length}</span></p>
-                    </div>
+                        <div className="grid gap-2 lg:grid-cols-2">
+                          {group.vehicles.map((vehicle) => {
+                            const exterior = getDisplayValue(splitExteriorInterior(vehicle.color).exterior);
+                            const interior = getDisplayValue(vehicle.interior) ?? getDisplayValue(splitExteriorInterior(vehicle.color).interior);
+                            const optionalBos = getDisplayValue(vehicle.bos);
+                            const timelineLabel = getVehicleTimelineLabel(vehicle);
+                            const timelineValue = getDisplayValue(vehicle.arrival);
+                            const daysOut = formatDaysOut(vehicle.arrival);
+                            const factoryAccessories = getDisplayValue(vehicle.factoryAccessories);
+                            const ppos = getDisplayValue(vehicle.postProductionOptions);
 
-                    <div className="mt-3 text-xs text-slate-400">
-                      {Array.from(new Set(row.vehicles.map((vehicle) => vehicle.code))).join(" • ")}
-                    </div>
-                  </article>
-                ))}
+                            return (
+                              <article
+                                key={vehicle.id}
+                                className="rounded-lg border border-slate-800/90 bg-slate-950/85 px-3 py-2.5"
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <p className="text-[15px] font-semibold leading-tight text-white">
+                                      {getDisplayCode(vehicle)} <span className="px-1 text-slate-500">·</span><span className="text-slate-300">{getDisplayModel(vehicle)}</span>
+                                    </p>
+                                    <p className="mt-0.5 text-sm font-medium leading-tight text-slate-100">
+                                      {getDisplayValue(vehicle.grade) ?? "Not listed"}
+                                    </p>
+                                    <p className="mt-0.5 text-[11px] uppercase tracking-[0.08em] text-slate-500">
+                                      {vehicle.category} | Priority {vehicle.rank}
+                                    </p>
+                                  </div>
+                                  {vehicle.quantity > 1 && (
+                                    <span className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[11px] font-semibold text-sky-300">
+                                      Qty {vehicle.quantity}
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="mt-2 space-y-1.5 text-xs text-slate-300">
+                                  <p className="leading-snug">
+                                    <span className="text-slate-500">Exterior</span>{" "}
+                                    <span className={exterior ? "text-slate-200" : "text-slate-500"}>
+                                      {exterior ?? "Not listed"}
+                                    </span>
+                                    <span className="px-1 text-slate-600">|</span>
+                                    <span className="text-slate-500">Interior</span>{" "}
+                                    <span className={interior ? "text-slate-200" : "text-slate-500"}>
+                                      {interior ?? "Not listed"}
+                                    </span>
+                                  </p>
+
+                                  <p className="leading-snug">
+                                    <span className="text-slate-500">{timelineLabel}</span>{" "}
+                                    <span className={timelineValue ? "text-slate-200" : "text-slate-500"}>
+                                      {timelineValue ?? "Not posted"}
+                                    </span>
+                                    <span className="px-1 text-slate-600">|</span>
+                                    <span className="text-slate-500">Days Out</span>{" "}
+                                    <span className={daysOut ? "text-slate-200" : "text-slate-500"}>
+                                      {daysOut ?? "Not posted"}
+                                    </span>
+                                    {optionalBos && (
+                                      <>
+                                        <span className="px-1 text-slate-600">|</span>
+                                        <span className="text-slate-500">BOS</span>{" "}
+                                        <span className="text-slate-200">{optionalBos}</span>
+                                      </>
+                                    )}
+                                  </p>
+
+                                  {factoryAccessories && (
+                                    <p className="leading-snug">
+                                      <span className="text-slate-500">Factory Accy</span>{" "}
+                                      <span className="text-slate-200">{factoryAccessories}</span>
+                                    </p>
+                                  )}
+
+                                  {ppos && (
+                                    <p className="leading-snug">
+                                      <span className="text-slate-500">PPOs</span>{" "}
+                                      <span className="text-slate-200">{ppos}</span>
+                                    </p>
+                                  )}
+                                </div>
+                              </article>
+                            );
+                          })}
+                        </div>
+                      </section>
+                    ))
+                  : (
+                    <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-3">
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-300">
+                          All Vehicles
+                        </h3>
+                        <span className="rounded-full border border-slate-700 bg-slate-900 px-2 py-0.5 text-[11px] text-slate-300">
+                          {strategyVehicles.length} line(s)
+                        </span>
+                      </div>
+
+                      <div className="grid gap-2 lg:grid-cols-2">
+                        {strategyVehicles.map((vehicle) => {
+                        const { exterior, interior } = splitExteriorInterior(vehicle.color);
+                        const parsedInterior = getDisplayValue(vehicle.interior);
+                        const finalInterior = parsedInterior ?? getDisplayValue(interior);
+                        const optionalBos = getDisplayValue(vehicle.bos);
+                        const timelineLabel = getVehicleTimelineLabel(vehicle);
+                        const timelineValue = getDisplayValue(vehicle.arrival);
+                        const daysOut = formatDaysOut(vehicle.arrival);
+                        const factoryAccessories = getDisplayValue(vehicle.factoryAccessories);
+                        const ppos = getDisplayValue(vehicle.postProductionOptions);
+
+                        return (
+                          <article
+                            key={vehicle.id}
+                            className="rounded-lg border border-slate-800/90 bg-slate-950/85 px-3 py-2.5"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p className="text-[15px] font-semibold leading-tight text-white">
+                                  {getDisplayCode(vehicle)} <span className="px-1 text-slate-500">·</span><span className="text-slate-300">{getDisplayModel(vehicle)}</span>
+                                </p>
+                                <p className="mt-0.5 text-sm font-medium leading-tight text-slate-100">
+                                  {getDisplayValue(vehicle.grade) ?? "Not listed"}
+                                </p>
+                                <p className="mt-0.5 text-[11px] uppercase tracking-[0.08em] text-slate-500">
+                                  {vehicle.category} | Priority {vehicle.rank}
+                                </p>
+                              </div>
+                              {vehicle.quantity > 1 && (
+                                <span className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[11px] font-semibold text-sky-300">
+                                  Qty {vehicle.quantity}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="mt-2 space-y-1.5 text-xs text-slate-300">
+                              <p className="leading-snug">
+                                <span className="text-slate-500">Exterior</span>{" "}
+                                <span className={getDisplayValue(exterior) ? "text-slate-200" : "text-slate-500"}>
+                                  {getDisplayValue(exterior) ?? "Not listed"}
+                                </span>
+                                <span className="px-1 text-slate-600">|</span>
+                                <span className="text-slate-500">Interior</span>{" "}
+                                <span className={finalInterior ? "text-slate-200" : "text-slate-500"}>
+                                  {finalInterior ?? "Not listed"}
+                                </span>
+                              </p>
+
+                              <p className="leading-snug">
+                                <span className="text-slate-500">{timelineLabel}</span>{" "}
+                                <span className={timelineValue ? "text-slate-200" : "text-slate-500"}>
+                                  {timelineValue ?? "Not posted"}
+                                </span>
+                                <span className="px-1 text-slate-600">|</span>
+                                <span className="text-slate-500">Days Out</span>{" "}
+                                <span className={daysOut ? "text-slate-200" : "text-slate-500"}>
+                                  {daysOut ?? "Not posted"}
+                                </span>
+                              </p>
+
+                              {optionalBos && (
+                                <p className="leading-snug">
+                                  <span className="text-slate-500">BOS</span>{" "}
+                                  <span className="text-slate-200">{optionalBos}</span>
+                                </p>
+                              )}
+
+                              {factoryAccessories && (
+                                <p className="leading-snug">
+                                  <span className="text-slate-500">Factory Accy</span>{" "}
+                                  <span className="text-slate-200">{factoryAccessories}</span>
+                                </p>
+                              )}
+
+                              {ppos && (
+                                <p className="leading-snug">
+                                  <span className="text-slate-500">PPOs</span>{" "}
+                                  <span className="text-slate-200">{ppos}</span>
+                                </p>
+                              )}
+                            </div>
+                          </article>
+                        );
+                        })}
+                      </div>
+                    </section>
+                  )}
               </div>
             ) : (
               <div className="mt-5 overflow-x-auto rounded-xl border border-slate-800">
@@ -488,24 +887,39 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                   <thead className="bg-slate-900">
                     <tr className="text-left text-xs uppercase tracking-wider text-slate-400">
                       <th className="px-3 py-3">Code</th>
-                      <th className="px-3 py-3">Arrival</th>
+                      <th className="px-3 py-3">Model</th>
+                      <th className="px-3 py-3">Grade / Trim</th>
+                      <th className="px-3 py-3">Build / Port</th>
+                      <th className="px-3 py-3">BOS</th>
                       <th className="px-3 py-3">Category</th>
-                      <th className="px-3 py-3">Grade</th>
                       <th className="px-3 py-3">Priority</th>
                       <th className="px-3 py-3">Qty</th>
-                      <th className="px-3 py-3">Value</th>
+                      <th className="px-3 py-3">Factory Accessories</th>
+                      <th className="px-3 py-3">Post-Production Options</th>
+                      {hasMeaningfulValue && <th className="px-3 py-3">Value</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800 bg-slate-950">
                     {filteredVehicles.map((vehicle) => (
                       <tr key={vehicle.id} className="text-slate-200">
-                        <td className="px-3 py-2 font-semibold text-white">{vehicle.code}</td>
-                        <td className="px-3 py-2">{vehicle.arrival}</td>
+                        <td className="px-3 py-2 font-semibold text-white">{getDisplayCode(vehicle)}</td>
+                        <td className="px-3 py-2">{getDisplayModel(vehicle)}</td>
+                        <td className="px-3 py-2">{getDisplayValue(vehicle.grade) ?? "Not listed"}</td>
+                        <td className="px-3 py-2">
+                          <span className="text-slate-400">{getVehicleTimelineLabel(vehicle)}</span>{" "}
+                          <span>{getDisplayValue(vehicle.arrival) ?? "Not posted"}</span>
+                        </td>
+                        <td className="px-3 py-2">{getDisplayValue(vehicle.bos) ?? "Not listed"}</td>
                         <td className="px-3 py-2">{vehicle.category}</td>
-                        <td className="px-3 py-2">{vehicle.grade}</td>
                         <td className="px-3 py-2">{vehicle.rank}</td>
                         <td className="px-3 py-2">{vehicle.quantity}</td>
-                        <td className="px-3 py-2">{formatCurrency(vehicle.totalValue)}</td>
+                        <td className="max-w-56 truncate px-3 py-2">
+                          {getDisplayValue(vehicle.factoryAccessories) ?? "Not listed"}
+                        </td>
+                        <td className="max-w-56 truncate px-3 py-2">
+                          {getDisplayValue(vehicle.postProductionOptions) ?? "Not listed"}
+                        </td>
+                        {hasMeaningfulValue && <td className="px-3 py-2 text-slate-300">{formatCurrency(vehicle.totalValue)}</td>}
                       </tr>
                     ))}
                   </tbody>

@@ -205,7 +205,15 @@ For frontend development with hot reloading:
    npm run dev
    ```
 
+   If you run from Windows PowerShell against a `\\wsl.localhost\...` path, this command now auto-launches Vite inside WSL to avoid UNC path issues.
+
 The dev server (port 3000) will proxy API calls to the backend (port 8080).
+
+If needed, you can run Vite directly in a WSL shell:
+
+```bash
+wsl bash -lc 'cd /home/rbras/repos/PriorityLexusVB/vehicle-in-need && npm run dev:local'
+```
 
 ## Build and Deploy
 

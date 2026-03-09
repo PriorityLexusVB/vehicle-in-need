@@ -46,10 +46,17 @@ const sampleSnapshot = {
     {
       id: '1',
       code: 'TX500H',
+      model: 'TX500H',
+      sourceCode: '9704F',
       quantity: 1,
       color: 'WHITE',
+      interior: '20',
       arrival: '2026-03-14',
+      timelineType: 'build',
+      bos: 'Y',
       grade: 'F SPORT',
+      factoryAccessories: 'BI CP FT',
+      postProductionOptions: '2T 3J 59 87 DF Z1',
       engine: 'Hybrid',
       msrp: 70500,
       category: 'Growth',
@@ -61,10 +68,17 @@ const sampleSnapshot = {
     {
       id: '2',
       code: 'RX350',
+      model: 'RX350',
+      sourceCode: '9443F',
       quantity: 1,
       color: 'BLACK',
+      interior: 'LA20',
       arrival: '2026-03-20',
+      timelineType: 'port',
+      bos: 'N',
       grade: 'Premium',
+      factoryAccessories: 'WU',
+      postProductionOptions: '3J 59',
       engine: 'Gas',
       msrp: 46050,
       category: 'Core',
@@ -109,7 +123,83 @@ describe('AllocationBoard', () => {
     await user.click(toggle);
 
     expect(screen.getByTestId('allocation-manager-panel')).toBeInTheDocument();
+    expect(screen.getByTestId('allocation-source-dropzone')).toBeInTheDocument();
+    expect(screen.getByTestId('allocation-source-file-input')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Parse Source' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Publish Snapshot' })).toBeInTheDocument();
+  });
+
+  it('loads source text from uploaded file in manager panel', async () => {
+    render(<AllocationBoard currentUser={managerUser} />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId('allocation-manager-toggle'));
+
+    const input = screen.getByTestId('allocation-source-file-input') as HTMLInputElement;
+    const file = new File(['9704F TX500H INT 20 BOS Y'], 'allocation.txt', { type: 'text/plain' });
+
+    await user.upload(input, file);
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('9704F TX500H INT 20 BOS Y')).toBeInTheDocument();
+    });
+  });
+
+  it('renders 4-digit codes and model split in strategy and full log views', async () => {
+    render(<AllocationBoard currentUser={consultantUser} />);
+    const user = userEvent.setup();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('allocation-strategy-view')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('9704')).toBeInTheDocument();
+    expect(screen.getByText('9443')).toBeInTheDocument();
+    expect(screen.getAllByText('Factory Accy').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('PPOs').length).toBeGreaterThan(0);
+
+    await user.click(screen.getByRole('button', { name: 'Full Log View' }));
+
+    expect(screen.getByTestId('allocation-log-view')).toBeInTheDocument();
+    const headers = screen.getAllByRole('columnheader').map((cell) => cell.textContent?.trim());
+    expect(headers).toEqual([
+      'Code',
+      'Model',
+      'Grade / Trim',
+      'Build / Port',
+      'BOS',
+      'Category',
+      'Priority',
+      'Qty',
+      'Factory Accessories',
+      'Post-Production Options',
+      'Value',
+    ]);
+  });
+
+  it('keeps code and model distinct when source code is unavailable', async () => {
+    subscribeLatestAllocationSnapshot.mockImplementationOnce((callback: (snapshot: unknown) => void) => {
+      callback({
+        ...sampleSnapshot,
+        vehicles: [
+          {
+            ...sampleSnapshot.vehicles[0],
+            sourceCode: undefined,
+            code: 'GX550',
+            model: 'GX550',
+          },
+        ],
+      });
+      return () => undefined;
+    });
+
+    render(<AllocationBoard currentUser={consultantUser} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('allocation-strategy-view')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('----')).toBeInTheDocument();
+    expect(screen.getByText('GX550')).toBeInTheDocument();
   });
 });
