@@ -1113,7 +1113,7 @@ const App: React.FC = () => {
                   />
                 </div>
               ) : (
-                <Navigate to="/allocation" replace />
+                <Navigate to="/requests" replace />
               )
             }
           />
