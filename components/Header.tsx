@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { AppUser } from '../types';
+import { BriefcaseIcon } from './icons/BriefcaseIcon';
+import { DocumentTextIcon } from './icons/DocumentTextIcon';
 import { LogoutIcon } from './icons/LogoutIcon';
 import { SettingsIcon } from './icons/SettingsIcon';
 import VersionBadge from './VersionBadge';
@@ -13,6 +15,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPath }) => {
+  const isNonManager = !user.isManager;
 
   return (
     <header className="bg-white/80 backdrop-blur-lg sticky top-0 z-10 border-b border-slate-200">
@@ -43,18 +46,28 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
               )}
               <Link
                 to="/allocation"
-                className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-colors ${currentPath === '/allocation' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                className={`flex items-center justify-center rounded-full transition-colors text-sm font-semibold ${currentPath === '/allocation' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'} ${isNonManager ? 'px-2 py-1.5 sm:px-4' : 'px-4 py-1.5'}`}
                 data-testid="allocation-nav-link"
+                aria-label="Allocation Board"
               >
-                Allocation Board
+                {isNonManager ? (
+                  <>
+                    <BriefcaseIcon className="w-4 h-4 sm:hidden" aria-hidden="true" />
+                    <span className="hidden sm:inline">Allocation Board</span>
+                  </>
+                ) : (
+                  'Allocation Board'
+                )}
               </Link>
-              {!user.isManager && (
+              {isNonManager && (
                 <Link
                   to="/requests"
-                  className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-colors ${currentPath === '/requests' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                  className={`flex items-center justify-center px-2 py-1.5 sm:px-4 text-sm font-semibold rounded-full transition-colors ${currentPath === '/requests' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
                   data-testid="requests-nav-link"
+                  aria-label="Requests"
                 >
-                  Requests
+                  <DocumentTextIcon className="w-4 h-4 sm:hidden" aria-hidden="true" />
+                  <span className="hidden sm:inline">Requests</span>
                 </Link>
               )}
               {user.isManager && (
