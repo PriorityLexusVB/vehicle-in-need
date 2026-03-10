@@ -248,6 +248,75 @@ function formatInteriorColorDisplay(value: string): string {
   return formatted === "COLOR TBD" ? "TBD" : formatted;
 }
 
+function isMeaningfulDetailValue(value: string): boolean {
+  const normalized = value.trim();
+  if (!normalized) {
+    return false;
+  }
+
+  return !/^(tbd|n\/a|na|none|unknown|-|--)$/i.test(normalized);
+}
+
+function normalizeDetailList(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+      .filter((entry) => isMeaningfulDetailValue(entry));
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim();
+    if (!isMeaningfulDetailValue(normalized)) {
+      return [];
+    }
+
+    return normalized
+      .split(/\s*[|;,]\s*/)
+      .map((entry) => entry.trim())
+      .filter((entry) => isMeaningfulDetailValue(entry));
+  }
+
+  return [];
+}
+
+function getFactoryAccessories(vehicle: AllocationVehicle): string[] {
+  const value = vehicle as AllocationVehicle & Record<string, unknown>;
+  const candidates = [
+    value.factoryAccessories,
+    value.factoryAccessory,
+    value.factoryAccy,
+    value.factoryOptions,
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeDetailList(candidate);
+    if (normalized.length > 0) {
+      return normalized;
+    }
+  }
+
+  return [];
+}
+
+function getPostProductionOptions(vehicle: AllocationVehicle): string[] {
+  const value = vehicle as AllocationVehicle & Record<string, unknown>;
+  const candidates = [
+    value.postProductionOptions,
+    value.postProductionOption,
+    value.ppos,
+    value.ppo,
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeDetailList(candidate);
+    if (normalized.length > 0) {
+      return normalized;
+    }
+  }
+
+  return [];
+}
+
 function normalizeBosValue(value: string): "Y" | "N" {
   const normalized = value.trim().toUpperCase();
   return normalized === "Y" ? "Y" : "N";
@@ -265,14 +334,6 @@ function formatBosDisplay(value: string): {
       value: "Y",
       detail: "Changeable",
       tone: "border-emerald-500/40 bg-emerald-500/15 text-emerald-200",
-    };
-  }
-
-  if (normalized === "N") {
-    return {
-      value: "N",
-      detail: "Locked",
-      tone: "border-slate-600 bg-slate-900 text-slate-200",
     };
   }
 
@@ -1179,11 +1240,19 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                       {(() => {
                         const variants = Array.from(
                           row.vehicles.reduce((accumulator, vehicle) => {
-                            const key = `${vehicle.sourceCode ?? ""}|${vehicle.code}|${vehicle.model ?? ""}|${vehicle.grade}|${vehicle.arrival}|${vehicle.color}|${vehicle.interiorColor}|${vehicle.bos}`;
+                            const factoryAccessories = getFactoryAccessories(vehicle);
+                            const postProductionOptions = getPostProductionOptions(vehicle);
+                            const key = `${vehicle.sourceCode ?? ""}|${vehicle.code}|${vehicle.model ?? ""}|${vehicle.grade}|${vehicle.arrival}|${vehicle.color}|${vehicle.interiorColor}|${vehicle.bos}|${factoryAccessories.join(",")}|${postProductionOptions.join(",")}`;
                             const existing = accumulator.get(key);
 
                             if (existing) {
                               existing.units += vehicle.quantity;
+                              existing.factoryAccessories = Array.from(
+                                new Set([...existing.factoryAccessories, ...factoryAccessories]),
+                              );
+                              existing.postProductionOptions = Array.from(
+                                new Set([...existing.postProductionOptions, ...postProductionOptions]),
+                              );
                             } else {
                               accumulator.set(key, {
                                 code: vehicle.code,
@@ -1195,6 +1264,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                                 interiorColor: vehicle.interiorColor,
                                 bos: vehicle.bos,
                                 units: vehicle.quantity,
+                                factoryAccessories,
+                                postProductionOptions,
                               });
                             }
 
@@ -1212,6 +1283,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                               interiorColor: string;
                               bos: string;
                               units: number;
+                              factoryAccessories: string[];
+                              postProductionOptions: string[];
                             }
                           >()),
                         )
@@ -1262,6 +1335,20 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                               return bosDiff;
                             }
 
+                            const factoryDiff = first.factoryAccessories.join(" ").localeCompare(
+                              second.factoryAccessories.join(" "),
+                            );
+                            if (factoryDiff !== 0) {
+                              return factoryDiff;
+                            }
+
+                            const ppoDiff = first.postProductionOptions.join(" ").localeCompare(
+                              second.postProductionOptions.join(" "),
+                            );
+                            if (ppoDiff !== 0) {
+                              return ppoDiff;
+                            }
+
                             return 0;
                           });
 
@@ -1270,6 +1357,28 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                           const colorDisplay = formatColorDisplay(variant.color);
                           const interiorDisplay = formatInteriorColorDisplay(variant.interiorColor);
                           const daysOutDisplay = arrivalDisplay.secondary ?? "TBD";
+                          const factoryAccessories = variant.factoryAccessories.join(", ");
+                          const postProductionOptions = variant.postProductionOptions.join(", ");
+                          const showBosDetail = normalizeBosValue(variant.bos) === "Y";
+                          const detailRows: Array<{ label: string; value: string }> = [
+                            { label: "Exterior", value: colorDisplay },
+                            { label: "Interior", value: interiorDisplay },
+                            { label: "Build / Port", value: arrivalDisplay.primary },
+                            { label: "Days Out", value: daysOutDisplay },
+                          ];
+
+                          if (showBosDetail) {
+                            detailRows.push({ label: "BOS", value: "Y (Changeable)" });
+                          }
+
+                          if (factoryAccessories) {
+                            detailRows.push({ label: "Factory Accessories", value: factoryAccessories });
+                          }
+
+                          if (postProductionOptions) {
+                            detailRows.push({ label: "Post-Production Options", value: postProductionOptions });
+                          }
+
                           return (
                             <div
                               key={`${row.key}-${variant.sourceCode ?? ""}-${variant.code}-${variant.model ?? ""}-${variant.grade}-${variant.arrival}-${variant.color}-${variant.interiorColor}-${variant.bos}`}
@@ -1286,38 +1395,25 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                                   <p className="mt-1 text-sm text-slate-300">Trim: {variant.grade}</p>
                                 </div>
 
-                                <div className="flex flex-wrap gap-1.5 text-xs text-slate-200">
-                                  <span className="rounded-full bg-sky-500/20 px-2.5 py-1 font-semibold text-sky-200">
-                                    Priority: {row.rank}
-                                  </span>
-                                  <span className="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 font-semibold">
-                                    Category: {row.category}
-                                  </span>
-                                  {variant.units > 1 && (
+                                {variant.units > 1 && (
+                                  <div className="flex flex-wrap gap-1.5 text-xs text-slate-200">
                                     <span className="rounded-full border border-slate-600 bg-slate-900 px-2.5 py-1 font-semibold text-slate-100">
                                       Qty: {variant.units}
                                     </span>
-                                  )}
-                                </div>
+                                  </div>
+                                )}
                               </div>
 
                               <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-                                <div className="rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2">
-                                  <dt className="text-[11px] uppercase tracking-wide text-slate-400">Exterior</dt>
-                                  <dd className="mt-1 font-semibold text-slate-100">{colorDisplay}</dd>
-                                </div>
-                                <div className="rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2">
-                                  <dt className="text-[11px] uppercase tracking-wide text-slate-400">Interior</dt>
-                                  <dd className="mt-1 font-semibold text-slate-100">{interiorDisplay}</dd>
-                                </div>
-                                <div className="rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2">
-                                  <dt className="text-[11px] uppercase tracking-wide text-slate-400">Build / Arrival</dt>
-                                  <dd className="mt-1 font-semibold text-slate-100">{arrivalDisplay.primary}</dd>
-                                </div>
-                                <div className="rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2">
-                                  <dt className="text-[11px] uppercase tracking-wide text-slate-400">Days Out</dt>
-                                  <dd className="mt-1 font-semibold text-slate-100">{daysOutDisplay}</dd>
-                                </div>
+                                {detailRows.map((detail) => (
+                                  <div
+                                    key={`${row.key}-${variant.code}-${detail.label}`}
+                                    className="rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2"
+                                  >
+                                    <dt className="text-[11px] uppercase tracking-wide text-slate-400">{detail.label}</dt>
+                                    <dd className="mt-1 font-semibold text-slate-100">{detail.value}</dd>
+                                  </div>
+                                ))}
                               </dl>
                             </div>
                           );
@@ -1334,24 +1430,27 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                     <tr className="text-left text-xs uppercase tracking-wider text-slate-400">
                       <th className="px-3 py-3">Code</th>
                       <th className="px-3 py-3">Model</th>
-                      <th className="px-3 py-3">Build Date</th>
+                      <th className="px-3 py-3">Grade / Trim</th>
+                      <th className="px-3 py-3">Build / Port</th>
                       <th className="px-3 py-3">BOS</th>
-                      <th className="px-3 py-3">Category</th>
-                      <th className="px-3 py-3">Grade</th>
-                      <th className="px-3 py-3">Priority</th>
                       <th className="px-3 py-3">Qty</th>
+                      <th className="px-3 py-3">Factory Accessories</th>
+                      <th className="px-3 py-3">Post-Production Options</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800 bg-slate-950">
                     {sortedVehicles.map((vehicle) => {
                       const arrivalDisplay = formatArrivalDisplay(vehicle.arrival);
                       const bosDisplay = formatBosDisplay(vehicle.bos);
+                      const factoryAccessories = getFactoryAccessories(vehicle).join(", ");
+                      const postProductionOptions = getPostProductionOptions(vehicle).join(", ");
                       return (
                         <tr key={vehicle.id} className="text-slate-200">
                           <td className="px-3 py-2 font-semibold text-white">
                             {getDisplayCode(vehicle.sourceCode, vehicle.code)}
                           </td>
                           <td className="px-3 py-2">{getDisplayModel(vehicle.model, vehicle.code)}</td>
+                          <td className="px-3 py-2">{vehicle.grade}</td>
                           <td className="px-3 py-2">
                             <p>{arrivalDisplay.primary}</p>
                             {arrivalDisplay.secondary && (
@@ -1363,10 +1462,9 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                               {bosDisplay.value}
                             </span>
                           </td>
-                          <td className="px-3 py-2">{vehicle.category}</td>
-                          <td className="px-3 py-2">{vehicle.grade}</td>
-                          <td className="px-3 py-2">{vehicle.rank}</td>
                           <td className="px-3 py-2">{vehicle.quantity > 1 ? vehicle.quantity : null}</td>
+                          <td className="px-3 py-2">{factoryAccessories}</td>
+                          <td className="px-3 py-2">{postProductionOptions}</td>
                         </tr>
                       );
                     })}
