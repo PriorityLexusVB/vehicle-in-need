@@ -774,7 +774,7 @@ function detectInteriorColorFromBlock(block: AllocationBlock, layout: ColumnLayo
   return "TBD";
 }
 
-function detectBosFromBlock(block: AllocationBlock, layout: ColumnLayout | null): string {
+function detectBosFromBlock(block: AllocationBlock, layout: ColumnLayout | null): "Y" | "N" {
   const isToyotaDM = isToyotaDMAllocationRowLine(block.rowLineUpper);
   if (isToyotaDM) {
     const dmBos = extractToyotaDMBosValue(block);
@@ -805,7 +805,8 @@ function detectBosFromBlock(block: AllocationBlock, layout: ColumnLayout | null)
   if (isToyotaDM) {
     // Toyota DM rows include both PI and BOS indicators; if BOS cannot be found
     // at its expected position, do not fall back to lone Y/N tokens.
-    return "TBD";
+    // Default to N so BOS is always an explicit Y/N value.
+    return "N";
   }
 
   // Conservative fallback for plain rows without a detected header.
@@ -817,7 +818,7 @@ function detectBosFromBlock(block: AllocationBlock, layout: ColumnLayout | null)
     }
   }
 
-  return "TBD";
+  return "N";
 }
 
 function detectSourceCode(text: string): string | undefined {

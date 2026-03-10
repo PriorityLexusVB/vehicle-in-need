@@ -19,12 +19,17 @@ import {
 
 const ALLOCATION_SNAPSHOTS_COLLECTION = "allocationSnapshots";
 
+function normalizeBosValue(value: unknown): "Y" | "N" {
+  const normalized = typeof value === "string" ? value.trim().toUpperCase() : "";
+  return normalized === "Y" ? "Y" : "N";
+}
+
 function mapSnapshot(docId: string, data: Record<string, unknown>): AllocationSnapshot {
   const vehiclesRaw = (data.vehicles as AllocationSnapshot["vehicles"]) ?? [];
   const vehicles: AllocationVehicle[] = vehiclesRaw.map((vehicle) => ({
     ...vehicle,
     interiorColor: vehicle.interiorColor ?? "TBD",
-    bos: vehicle.bos ?? "TBD",
+    bos: normalizeBosValue(vehicle.bos),
   }));
 
   return {
@@ -90,6 +95,11 @@ export async function publishAllocationSnapshot(
     });
   });
 
+  const normalizedVehicles = payload.vehicles.map((vehicle) => ({
+    ...vehicle,
+    bos: normalizeBosValue(vehicle.bos),
+  }));
+
   const newSnapshotRef = doc(snapshotsRef);
   batch.set(newSnapshotRef, {
     reportDate: payload.reportDate,
@@ -98,7 +108,7 @@ export async function publishAllocationSnapshot(
     publishedByEmail,
     itemCount: payload.itemCount,
     summary: payload.summary,
-    vehicles: payload.vehicles,
+    vehicles: normalizedVehicles,
     isLatest: true,
   });
 
