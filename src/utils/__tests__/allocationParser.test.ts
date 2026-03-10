@@ -129,6 +129,20 @@ describe('parseAllocationSource', () => {
     expect(tx350!.interiorColor).toBe('01');
     expect(tx350!.bos).toBe('Y');
     expect(tx350!.quantity).toBe(1);
+    expect((tx350 as typeof tx350 & { factoryAccessories?: string[] })!.factoryAccessories).toEqual([
+      'BI',
+      'CC',
+      'CP',
+      'TP',
+    ]);
+    expect((tx350 as typeof tx350 & { postProductionOptions?: string[] })!.postProductionOptions).toEqual([
+      '1S',
+      '2T',
+      '59',
+      '87',
+      'DF',
+      'Z1',
+    ]);
 
     expect(tx500h!.sourceCode).toBe('9360F');
     expect(tx500h!.model).toBe('TX500H');
@@ -299,6 +313,13 @@ describe('parseAllocationSource', () => {
     expect(result.vehicles[0].code).toBe('GX550');
     expect(result.vehicles[0].model).toBe('GX550');
     expect(result.vehicles[0].sourceCode).toBe('9353F');
+
+    const vehicle = result.vehicles[0] as (typeof result.vehicles)[number] & {
+      factoryAccessories?: string[];
+      postProductionOptions?: string[];
+    };
+    expect(vehicle.factoryAccessories).toEqual(['BI', 'CC', 'CP', 'TP']);
+    expect(vehicle.postProductionOptions).toEqual(['1S', '2T', '59', 'DF']);
   });
 
   it('keeps distinct sourceCode values for consecutive wrapped rows', () => {

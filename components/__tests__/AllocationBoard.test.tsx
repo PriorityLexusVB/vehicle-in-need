@@ -280,6 +280,126 @@ describe('AllocationBoard', () => {
     expect(payload.vehicles[0].sourceCode).toBe('9353F');
     expect(payload.vehicles[0].code).toBe('GX550');
     expect(payload.vehicles[0].model).toBe('GX550');
+
+    const vehicle = payload.vehicles[0] as (typeof payload.vehicles)[number] & {
+      factoryAccessories?: string[];
+      postProductionOptions?: string[];
+    };
+    expect(vehicle.factoryAccessories).toEqual(['BI', 'CC', 'CP', 'TP']);
+    expect(vehicle.postProductionOptions).toEqual(['1S', '2T', '59', 'DF']);
+  });
+
+  it('preserves factory accessories and PPOs from parse to publish and display', async () => {
+    publishAllocationSnapshot.mockResolvedValue(undefined);
+
+    const sourceText = [
+      '9353F INT EA26 FACTORY ACCY: BI CC',
+      'CP TP PPOs: 1S 2T 59 DF',
+      'BOS Y LOC 03-23',
+      'GX550 CAVIAR / BLACK',
+    ].join('\n');
+
+    const firstRender = render(<AllocationBoard currentUser={managerUser} />);
+    const managerUserEvent = userEvent.setup();
+
+    await managerUserEvent.click(await screen.findByTestId('allocation-manager-toggle'));
+
+    const sourceTextarea = screen.getByPlaceholderText('Paste allocation source text...');
+    fireEvent.change(sourceTextarea, { target: { value: sourceText } });
+
+    await managerUserEvent.click(screen.getByRole('button', { name: 'Parse Source' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Parsed 1 rows/i)).toBeInTheDocument();
+    });
+
+    await managerUserEvent.click(screen.getByRole('button', { name: 'Publish Snapshot' }));
+
+    await waitFor(() => {
+      expect(publishAllocationSnapshot).toHaveBeenCalledTimes(1);
+    });
+
+    const [payload] = publishAllocationSnapshot.mock.calls[0];
+    const publishedVehicle = payload.vehicles[0] as (typeof payload.vehicles)[number] & {
+      factoryAccessories?: string[];
+      postProductionOptions?: string[];
+    };
+    expect(publishedVehicle.factoryAccessories).toEqual(['BI', 'CC', 'CP', 'TP']);
+    expect(publishedVehicle.postProductionOptions).toEqual(['1S', '2T', '59', 'DF']);
+
+    firstRender.unmount();
+
+    subscribeLatestAllocationSnapshot.mockReset();
+    subscribeLatestAllocationSnapshot.mockImplementation((callback: (snapshot: unknown) => void) => {
+      callback({
+        ...sampleSnapshot,
+        id: 'snapshot-from-publish',
+        itemCount: payload.itemCount,
+        summary: payload.summary,
+        vehicles: payload.vehicles.map((vehicle: (typeof payload.vehicles)[number], index: number) => ({
+          ...vehicle,
+          id: `published-${index}`,
+        })),
+      });
+      return () => undefined;
+    });
+
+    render(<AllocationBoard currentUser={consultantUser} />);
+    const consultantUserEvent = userEvent.setup();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('allocation-strategy-view')).toBeInTheDocument();
+    });
+
+    const strategyView = screen.getByTestId('allocation-strategy-view');
+    expect(within(strategyView).getByText('BI, CC, CP, TP')).toBeInTheDocument();
+    expect(within(strategyView).getByText('1S, 2T, 59, DF')).toBeInTheDocument();
+
+    await consultantUserEvent.click(screen.getByRole('button', { name: 'Full Log View' }));
+
+    const logView = screen.getByTestId('allocation-log-view');
+    expect(within(logView).getByText('BI, CC, CP, TP')).toBeInTheDocument();
+    expect(within(logView).getByText('1S, 2T, 59, DF')).toBeInTheDocument();
+  });
+
+  it('captures DM row option tokens into accessories and PPOs in publish payload', async () => {
+    publishAllocationSnapshot.mockResolvedValue(undefined);
+
+    const sourceText = [
+      '2/19/2026 Toyota District Manager Allocation Application District:06 08:17:13 AM Allocation Status By Dealer',
+      'Dealer: 64506-PRIORITY LEXUS VIRGNA BCH',
+      '1 022 9353F TS12I666 8 Y 0223-01 01728 Y BI CC CP TP 1S 2T 59 87 DF Z1 0',
+      '4-02 ( TX 350 AWD TX 350 AWD )',
+      '( CA VIAR )',
+    ].join('\n');
+
+    render(<AllocationBoard currentUser={managerUser} />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId('allocation-manager-toggle'));
+
+    const sourceTextarea = screen.getByPlaceholderText('Paste allocation source text...');
+    fireEvent.change(sourceTextarea, { target: { value: sourceText } });
+
+    await user.click(screen.getByRole('button', { name: 'Parse Source' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Parsed 1 rows/i)).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Publish Snapshot' }));
+
+    await waitFor(() => {
+      expect(publishAllocationSnapshot).toHaveBeenCalledTimes(1);
+    });
+
+    const [payload] = publishAllocationSnapshot.mock.calls[0];
+    const vehicle = payload.vehicles[0] as (typeof payload.vehicles)[number] & {
+      factoryAccessories?: string[];
+      postProductionOptions?: string[];
+    };
+    expect(vehicle.factoryAccessories).toEqual(['BI', 'CC', 'CP', 'TP']);
+    expect(vehicle.postProductionOptions).toEqual(['1S', '2T', '59', '87', 'DF', 'Z1']);
   });
 
   it('keeps distinct sourceCode values for consecutive wrapped rows in publish payload', async () => {
@@ -360,8 +480,10 @@ describe('AllocationBoard', () => {
     expect(within(strategyView).getByText('EA20 BLACK')).toBeInTheDocument();
     expect(within(strategyView).getAllByText(/Days Out/i).length).toBeGreaterThan(0);
     expect(within(strategyView).getAllByText(/Build \/ Port/i).length).toBeGreaterThan(0);
-    expect(within(strategyView).getAllByText(/Factory Accessories/i).length).toBeGreaterThan(0);
-    expect(within(strategyView).getAllByText(/Post-Production Options/i).length).toBeGreaterThan(0);
+    expect(within(strategyView).getAllByText(/Factory Accessories/i)).toHaveLength(1);
+    expect(within(strategyView).getAllByText(/Post-Production Options/i)).toHaveLength(1);
+    expect(within(strategyView).getByText('KG MF WL')).toBeInTheDocument();
+    expect(within(strategyView).getByText('1S 2T 59 DF')).toBeInTheDocument();
     expect(within(strategyView).queryByText(/BOS:\s*N/i)).toBeNull();
     expect(within(strategyView).queryByText(/BOS:\s*TBD/i)).toBeNull();
     expect(screen.queryByText(/Qty:/i)).toBeNull();

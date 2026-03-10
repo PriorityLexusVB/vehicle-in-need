@@ -821,6 +821,156 @@ function detectBosFromBlock(block: AllocationBlock, layout: ColumnLayout | null)
   return "N";
 }
 
+function collectLookbackContext(lines: string[], startLineIndex: number, maxLookback = 8): string {
+  const lookbackLines: string[] = [];
+
+  for (let index = startLineIndex - 1; index >= 0; index -= 1) {
+    const distance = startLineIndex - index;
+    if (distance > maxLookback) {
+      break;
+    }
+
+    const upper = lines[index].toUpperCase();
+
+    // Stop once we hit what looks like the previous row boundary.
+    if (isToyotaDMAllocationRowLine(upper) || findModelCodeMatchesInLine(upper).length > 0) {
+      break;
+    }
+
+    if (isHeaderLikeLine(upper) || isIgnorableNoiseLine(upper)) {
+      continue;
+    }
+
+    lookbackLines.unshift(upper);
+  }
+
+  if (lookbackLines.length === 0) {
+    return "";
+  }
+
+  return lookbackLines.join(" ");
+}
+
+function normalizeOptionCodes(raw: string): string[] {
+  const normalized = raw
+    .replace(/[()]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+
+  if (!normalized) {
+    return [];
+  }
+
+  return normalized
+    .split(" ")
+    .map((token) => token.trim())
+    .filter(
+      (token) =>
+        /^[A-Z0-9]{2,4}$/.test(token) &&
+        !/^(FACTORY|ACCY|ACCESSORY|ACCESSORIES|PPO|PPOS|BOS|LOC)$/.test(token),
+    );
+}
+
+function detectFactoryAccessoriesFromText(textUpper: string): string[] {
+  const factoryMatch = textUpper.match(
+    /\bFACTORY\s*ACC(?:Y|ESSOR(?:Y|IES))\b\s*[:-]?\s*([A-Z0-9\s]+?)(?=\bPPOS?\b|\bBOS\b|\bLOC\b|$)/,
+  );
+
+  if (!factoryMatch?.[1]) {
+    return [];
+  }
+
+  return normalizeOptionCodes(factoryMatch[1]);
+}
+
+function detectPostProductionOptionsFromText(textUpper: string): string[] {
+  const ppoMatch = textUpper.match(
+    /\bPPOS?\b\s*[:-]?\s*([A-Z0-9\s]+?)(?=\bBOS\b|\bLOC\b|$)/,
+  );
+
+  if (!ppoMatch?.[1]) {
+    return [];
+  }
+
+  return normalizeOptionCodes(ppoMatch[1]);
+}
+
+function detectFactoryAccessoriesFromBlock(block: AllocationBlock): string[] {
+  return detectFactoryAccessoriesFromText(block.blockTextUpper);
+}
+
+function detectPostProductionOptionsFromBlock(block: AllocationBlock): string[] {
+  return detectPostProductionOptionsFromText(block.blockTextUpper);
+}
+
+function detectFactoryAccessoriesFromLookback(lines: string[], startLineIndex: number): string[] {
+  const context = collectLookbackContext(lines, startLineIndex);
+  if (!context) {
+    return [];
+  }
+
+  return detectFactoryAccessoriesFromText(context);
+}
+
+function detectPostProductionOptionsFromLookback(lines: string[], startLineIndex: number): string[] {
+  const context = collectLookbackContext(lines, startLineIndex);
+  if (!context) {
+    return [];
+  }
+
+  return detectPostProductionOptionsFromText(context);
+}
+
+function detectToyotaDMOptionsFromRow(block: AllocationBlock): {
+  factoryAccessories: string[];
+  postProductionOptions: string[];
+} {
+  if (!isToyotaDMAllocationRowLine(block.rowLineUpper)) {
+    return { factoryAccessories: [], postProductionOptions: [] };
+  }
+
+  const optionsMatch = block.rowLineUpper.match(
+    /^\s*(?:\d+\s+)?\d{2,4}\s+[0-9A-Z]{4,}\s+[A-Z0-9-]{6,}\s+\d+\s+(?:[YN]\s+)?[0-9A-Z]{3,4}\s*[-/]\s*[0-9A-Z]{2,4}\s+\d{4,5}\s+[YN]\s+(.+)$/,
+  );
+  if (!optionsMatch?.[1]) {
+    return { factoryAccessories: [], postProductionOptions: [] };
+  }
+
+  const withoutArrival = optionsMatch[1]
+    .replace(/\b\d{1,2}\s*[-/]\s*\d{1,2}(?:\s*[-/]\s*\d{2,4})?\b\s*$/, "")
+    .replace(/\b\d\b\s*$/, "")
+    .trim();
+  if (!withoutArrival) {
+    return { factoryAccessories: [], postProductionOptions: [] };
+  }
+
+  const tokens = withoutArrival
+    .split(/\s+/)
+    .map((token) => token.trim().toUpperCase())
+    .filter((token) => /^[A-Z0-9]{2,4}$/.test(token));
+  if (tokens.length === 0) {
+    return { factoryAccessories: [], postProductionOptions: [] };
+  }
+
+  const firstDigitIndex = tokens.findIndex((token) => /\d/.test(token));
+  if (firstDigitIndex < 0) {
+    return {
+      factoryAccessories: Array.from(new Set(tokens.filter((token) => /^[A-Z]{2,4}$/.test(token)))),
+      postProductionOptions: [],
+    };
+  }
+
+  const factoryAccessories = Array.from(
+    new Set(tokens.slice(0, firstDigitIndex).filter((token) => /^[A-Z]{2,4}$/.test(token))),
+  );
+  const postProductionOptions = Array.from(
+    new Set(tokens.slice(firstDigitIndex).filter((token) => /^[A-Z0-9]{2,4}$/.test(token))),
+  );
+
+  return { factoryAccessories, postProductionOptions };
+}
+
 function detectSourceCode(text: string): string | undefined {
   const candidates: SourceCodeCandidate[] = [];
 
@@ -896,33 +1046,12 @@ function detectSourceCodeFromLookback(
   startLineIndex: number,
   maxLookback = 8,
 ): string | undefined {
-  const lookbackLines: string[] = [];
-
-  for (let index = startLineIndex - 1; index >= 0; index -= 1) {
-    const distance = startLineIndex - index;
-    if (distance > maxLookback) {
-      break;
-    }
-
-    const upper = lines[index].toUpperCase();
-
-    // Stop once we hit what looks like the previous row boundary.
-    if (isToyotaDMAllocationRowLine(upper) || findModelCodeMatchesInLine(upper).length > 0) {
-      break;
-    }
-
-    if (isHeaderLikeLine(upper) || isIgnorableNoiseLine(upper)) {
-      continue;
-    }
-
-    lookbackLines.unshift(upper);
-  }
-
-  if (lookbackLines.length === 0) {
+  const context = collectLookbackContext(lines, startLineIndex, maxLookback);
+  if (!context) {
     return undefined;
   }
 
-  return detectSourceCode(lookbackLines.join(" "));
+  return detectSourceCode(context);
 }
 
 function detectGrade(line: string, reference: LexusAllocationReference): string {
@@ -1128,6 +1257,21 @@ export function parseAllocationSource(sourceText: string): ParsedAllocationResul
     const exteriorColor = detectExteriorColorFromBlock(block, layout);
     const interiorColor = detectInteriorColorFromBlock(block, layout);
     const bos = detectBosFromBlock(block, layout);
+    const dmOptions = detectToyotaDMOptionsFromRow(block);
+    const factoryAccessories = Array.from(
+      new Set([
+        ...detectFactoryAccessoriesFromLookback(lines, block.startLineIndex),
+        ...detectFactoryAccessoriesFromBlock(block),
+        ...dmOptions.factoryAccessories,
+      ]),
+    );
+    const postProductionOptions = Array.from(
+      new Set([
+        ...detectPostProductionOptionsFromLookback(lines, block.startLineIndex),
+        ...detectPostProductionOptionsFromBlock(block),
+        ...dmOptions.postProductionOptions,
+      ]),
+    );
     const lookbackSourceCode = detectSourceCodeFromLookback(lines, block.startLineIndex);
     const blockSourceCode = detectSourceCodeFromBlock(block);
 
@@ -1152,7 +1296,7 @@ export function parseAllocationSource(sourceText: string): ParsedAllocationResul
       const profit = 0;
       const totalValue = 0;
 
-      vehicles.push({
+      const vehicle: AllocationVehicle = {
         id: `${match.code}-${block.startLineIndex}-${match.start}-${vehicles.length}`,
         code: match.code,
         model: reference.code,
@@ -1170,7 +1314,22 @@ export function parseAllocationSource(sourceText: string): ParsedAllocationResul
         rank: reference.rank,
         profit,
         totalValue,
-      });
+      };
+
+      const vehicleWithOptions = vehicle as AllocationVehicle & {
+        factoryAccessories?: string[];
+        postProductionOptions?: string[];
+      };
+
+      if (factoryAccessories.length > 0) {
+        vehicleWithOptions.factoryAccessories = factoryAccessories;
+      }
+
+      if (postProductionOptions.length > 0) {
+        vehicleWithOptions.postProductionOptions = postProductionOptions;
+      }
+
+      vehicles.push(vehicleWithOptions);
     });
 
     // If we detected a block but still produced nothing, warn.
