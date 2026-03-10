@@ -241,7 +241,7 @@ describe('AllocationBoard', () => {
     expect(payload.vehicles[0].arrival).toBe('2026-03-16');
     expect(payload.vehicles[0].color).toBe('085 EMINENT WHITE PEARL');
     expect(payload.vehicles[0].interiorColor).toBe('46');
-    expect(payload.vehicles[0].bos).toBe('TBD');
+    expect(payload.vehicles[0].bos).toBe('N');
   });
 
   it('keeps sourceCode in publish payload for wrapped source lines before model', async () => {

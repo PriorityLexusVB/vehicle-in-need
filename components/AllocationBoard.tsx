@@ -22,7 +22,7 @@ interface AllocationBoardProps {
 type BoardView = "strategy" | "log";
 type ArrivalGroupingMode = "bucket" | "date";
 type SortMode = "priority" | "arrival" | "units" | "model";
-type BosFilter = "all" | "y" | "n" | "unknown";
+type BosFilter = "all" | "y" | "n";
 type ParseConfidence = "High" | "Medium" | "Needs Review";
 
 const RANK_ORDER: Record<string, number> = {
@@ -42,7 +42,7 @@ const ARRIVAL_BUCKET_ORDER: Record<string, number> = {
 const BOARD_VIEW_OPTIONS: BoardView[] = ["strategy", "log"];
 const ARRIVAL_GROUPING_OPTIONS: ArrivalGroupingMode[] = ["bucket", "date"];
 const SORT_MODE_OPTIONS: SortMode[] = ["priority", "arrival", "units", "model"];
-const BOS_FILTER_OPTIONS: BosFilter[] = ["all", "y", "n", "unknown"];
+const BOS_FILTER_OPTIONS: BosFilter[] = ["all", "y", "n"];
 
 const STORAGE_KEYS = {
   boardView: "allocation.boardView",
@@ -248,16 +248,13 @@ function formatInteriorColorDisplay(value: string): string {
   return formatted === "COLOR TBD" ? "TBD" : formatted;
 }
 
-function normalizeBosValue(value: string): "Y" | "N" | "TBD" {
+function normalizeBosValue(value: string): "Y" | "N" {
   const normalized = value.trim().toUpperCase();
-  if (normalized === "Y" || normalized === "N") {
-    return normalized;
-  }
-  return "TBD";
+  return normalized === "Y" ? "Y" : "N";
 }
 
 function formatBosDisplay(value: string): {
-  value: "Y" | "N" | "TBD";
+  value: "Y" | "N";
   detail: string | null;
   tone: string;
 } {
@@ -280,9 +277,9 @@ function formatBosDisplay(value: string): {
   }
 
   return {
-    value: "TBD",
-    detail: null,
-    tone: "border-amber-500/40 bg-amber-500/15 text-amber-200",
+    value: "N",
+    detail: "Locked",
+    tone: "border-slate-600 bg-slate-900 text-slate-200",
   };
 }
 
@@ -300,9 +297,6 @@ function deriveParseConfidence(result: ParsedAllocationResult): ParseConfidence 
       next += 1;
     }
     if (vehicle.interiorColor.trim().toUpperCase() === "TBD") {
-      next += 1;
-    }
-    if (normalizeBosValue(vehicle.bos) === "TBD") {
       next += 1;
     }
     return next;
@@ -496,10 +490,6 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
       if (bosFilter === "n" && normalizedBos !== "N") {
         return false;
       }
-      if (bosFilter === "unknown" && normalizedBos !== "TBD") {
-        return false;
-      }
-
       if (!normalizedQuery) {
         return true;
       }
@@ -695,9 +685,6 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
         tbdFields += 1;
       }
       if (vehicle.interiorColor.trim().toUpperCase() === "TBD") {
-        tbdFields += 1;
-      }
-      if (normalizeBosValue(vehicle.bos) === "TBD") {
         tbdFields += 1;
       }
       return tbdFields;
@@ -1130,7 +1117,6 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                 <option value="all">All BOS</option>
                 <option value="y">BOS: Y (Changeable)</option>
                 <option value="n">BOS: N (Locked)</option>
-                <option value="unknown">BOS: TBD</option>
               </select>
               <select
                 value={arrivalGroupingMode}

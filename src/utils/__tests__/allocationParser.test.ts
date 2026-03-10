@@ -14,7 +14,7 @@ describe('parseAllocationSource', () => {
     expect(result.summary.value).toBe(0);
     expect(result.summary.hybridMix).toBe(50);
     expect(result.vehicles[0].interiorColor).toBe('TBD');
-    expect(result.vehicles[0].bos).toBe('TBD');
+    expect(result.vehicles[0].bos).toBe('N');
   });
 
   it('supports quantity tokens around model code', () => {
@@ -242,7 +242,7 @@ describe('parseAllocationSource', () => {
     expect(result.vehicles[0].arrival).toBe('2026-03-18');
   });
 
-  it('does not infer BOS from PI when Toyota DM BOS token is missing in pasted rows', () => {
+  it('defaults BOS to N when Toyota DM BOS token is missing in pasted rows', () => {
     const source = [
       '3/5/2026 Toyota District Manager Allocation Application',
       'Dealer: 64506-PRIORITY LEXUS VIRGNA BCH',
@@ -261,7 +261,7 @@ describe('parseAllocationSource', () => {
     expect(result.vehicles[0].arrival).toBe('2026-03-16');
     expect(result.vehicles[0].color).toBe('085 EMINENT WHITE PEARL');
     expect(result.vehicles[0].interiorColor).toBe('46');
-    expect(result.vehicles[0].bos).toBe('TBD');
+    expect(result.vehicles[0].bos).toBe('N');
   });
 
   it('parses NX450H+ when pasted DM model text contains a spaced plus token', () => {
