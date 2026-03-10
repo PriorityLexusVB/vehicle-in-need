@@ -67,6 +67,8 @@ const sampleSnapshot = {
       rank: 'Critical',
       profit: 6400,
       totalValue: 70500,
+      factoryAccessories: 'KG MF WL',
+      postProductionOptions: '1S 2T 59 DF',
     },
     {
       id: '2',
@@ -350,14 +352,16 @@ describe('AllocationBoard', () => {
     expect(screen.getByText('TX500H')).toBeInTheDocument();
     expect(screen.getAllByText('Mar 14').length).toBeGreaterThan(0);
     expect(screen.getByText('Trim: F SPORT')).toBeInTheDocument();
-    expect(screen.getByText(/Priority: Critical/i)).toBeInTheDocument();
-    expect(screen.getByText(/Category: Growth/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Priority: Critical/i)).toBeNull();
+    expect(screen.queryByText(/Category: Growth/i)).toBeNull();
     expect(within(strategyView).getAllByText('Exterior').length).toBeGreaterThan(0);
     expect(within(strategyView).getAllByText('Interior').length).toBeGreaterThan(0);
     expect(within(strategyView).getByText('WHITE')).toBeInTheDocument();
     expect(within(strategyView).getByText('EA20 BLACK')).toBeInTheDocument();
     expect(within(strategyView).getAllByText(/Days Out/i).length).toBeGreaterThan(0);
-    expect(within(strategyView).getAllByText(/Build \/ Arrival/i).length).toBeGreaterThan(0);
+    expect(within(strategyView).getAllByText(/Build \/ Port/i).length).toBeGreaterThan(0);
+    expect(within(strategyView).getAllByText(/Factory Accessories/i).length).toBeGreaterThan(0);
+    expect(within(strategyView).getAllByText(/Post-Production Options/i).length).toBeGreaterThan(0);
     expect(within(strategyView).queryByText(/BOS:\s*N/i)).toBeNull();
     expect(within(strategyView).queryByText(/BOS:\s*TBD/i)).toBeNull();
     expect(screen.queryByText(/Qty:/i)).toBeNull();
@@ -386,11 +390,22 @@ describe('AllocationBoard', () => {
     const logView = screen.getByTestId('allocation-log-view');
     expect(logView).toBeInTheDocument();
     const headers = within(logView).getAllByRole('columnheader').map((cell) => cell.textContent?.trim());
-    expect(headers).toEqual(['Code', 'Model', 'Build Date', 'BOS', 'Category', 'Grade', 'Priority', 'Qty']);
+    expect(headers).toEqual([
+      'Code',
+      'Model',
+      'Grade / Trim',
+      'Build / Port',
+      'BOS',
+      'Qty',
+      'Factory Accessories',
+      'Post-Production Options',
+    ]);
     expect(within(logView).getAllByText('9704').length).toBeGreaterThan(0);
     expect(within(logView).getAllByText('9443').length).toBeGreaterThan(0);
     expect(within(logView).getAllByText('TX500H').length).toBeGreaterThan(0);
     expect(within(logView).getAllByText('RX350').length).toBeGreaterThan(0);
+    expect(within(logView).getByText('KG MF WL')).toBeInTheDocument();
+    expect(within(logView).getByText('1S 2T 59 DF')).toBeInTheDocument();
   });
 
   it('filters strategy cards by BOS status', async () => {
@@ -424,7 +439,7 @@ describe('AllocationBoard', () => {
 
     bodyRows.forEach((row) => {
       const cells = within(row).getAllByRole('cell');
-      expect(cells[7]).toHaveTextContent(/^\s*$/);
+      expect(cells[5]).toHaveTextContent(/^\s*$/);
     });
   });
 });
