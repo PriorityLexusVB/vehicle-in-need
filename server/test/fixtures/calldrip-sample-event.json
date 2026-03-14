@@ -1,0 +1,23 @@
+{
+  "_comment": "TEST FIXTURE — sample CallDrip webhook event for local validation. NOT real customer data.",
+  "event": "lead.created",
+  "event_id": "cd-evt-test-001",
+  "calldrip_event_id": "cd-evt-test-001",
+  "person_id": "person-test-9999",
+  "deal_id": "deal-test-4567",
+  "alternate_id": "alt-test-1234",
+  "call_id": "call-test-7890",
+  "text_inbox_id": "inbox-test-555",
+  "occurred_at": "2026-03-14T12:00:00Z",
+  "lead": {
+    "first_name": "Test",
+    "last_name": "Fixture",
+    "email": "test@example.invalid",
+    "phone": "555-000-0000"
+  },
+  "source": "website",
+  "metadata": {
+    "campaign": "test-campaign",
+    "utm_source": "test"
+  }
+}
