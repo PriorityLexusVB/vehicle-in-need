@@ -99,6 +99,25 @@ app.get("/api/status", (req, res) => {
   });
 });
 
+// ── CallDrip webhook routes (additive, feature-gated) ──────────────
+if (process.env.CALLDRIP_ENABLE_WEBHOOK === "true") {
+  const calldripWebhook = require("./src/handlers/calldripWebhook.cjs");
+  const calldripStatus = require("./src/handlers/calldripStatus.cjs");
+  app.use("/webhooks/calldrip/v1/events", calldripWebhook);
+  app.use("/api/calldrip/status", calldripStatus);
+  console.log("[CallDrip] Webhook routes mounted (CALLDRIP_ENABLE_WEBHOOK=true)");
+} else {
+  // Feature disabled — return safe 503 so callers know it's intentional
+  app.post("/webhooks/calldrip/v1/events", (_req, res) => {
+    res.status(503).json({ error: "CallDrip webhook is not enabled on this instance" });
+  });
+  app.get("/api/calldrip/status", (_req, res) => {
+    res.json({ service: "calldrip-ingestion", enabled: false, message: "Feature not enabled" });
+  });
+  console.log("[CallDrip] Webhook routes disabled (CALLDRIP_ENABLE_WEBHOOK not set)");
+}
+// ── End CallDrip routes ────────────────────────────────────────────
+
 // Serve static files from dist directory
 const distPath = path.join(__dirname, "..", "dist");
 app.use(
