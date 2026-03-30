@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';
 import './index.css';
 import App from '../App.tsx';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { logBundleInfo } from './diagnostics';
 
 // Unregister legacy service workers and reload once to bust stale caches
@@ -74,14 +75,16 @@ async function initializeApp() {
     const root = ReactDOM.createRoot(rootElement);
     root.render(
       <React.StrictMode>
-        <HashRouter
-          future={{
-            v7_startTransition: true,
-            v7_relativeSplatPath: true,
-          }}
-        >
-          <App />
-        </HashRouter>
+        <ErrorBoundary>
+          <HashRouter
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true,
+            }}
+          >
+            <App />
+          </HashRouter>
+        </ErrorBoundary>
       </React.StrictMode>
     );
   } catch (error) {
