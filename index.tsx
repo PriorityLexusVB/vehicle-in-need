@@ -11,14 +11,12 @@ async function unregisterLegacyServiceWorkers() {
     try {
       const registrations = await navigator.serviceWorker.getRegistrations();
       if (registrations.length > 0) {
-        console.log(`Unregistering ${registrations.length} legacy service worker(s)...`);
         await Promise.all(registrations.map(reg => reg.unregister()));
-        
+
         // Set a flag to prevent infinite reload loop
         const hasReloaded = sessionStorage.getItem('sw_unregister_reload');
         if (!hasReloaded) {
           sessionStorage.setItem('sw_unregister_reload', 'true');
-          console.log('Reloading to apply fresh bundle...');
           window.location.reload();
           return true; // Indicate that we're reloading
         }

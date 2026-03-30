@@ -22,7 +22,6 @@ import {
 import { db, auth } from "./services/firebase";
 import { Order, OrderStatus, AppUser } from "./types";
 import {
-  MANAGER_EMAILS,
   USERS_COLLECTION,
   isSecuredStatus,
   isActiveStatus,
@@ -98,18 +97,17 @@ const App: React.FC = () => {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
-    onRegistered(r) {
-      console.log("SW Registered: " + r);
+    onRegistered() {
+      // registered
     },
     onRegisterError(error) {
-      console.log("SW registration error", error);
+      console.error("SW registration error", error);
     },
   });
 
-  // Log version on load
+  // Version is logged by diagnostics module in main.tsx
   useEffect(() => {
-    console.log(`App Version: ${__APP_VERSION__}`);
-    console.log(`Build Time: ${__BUILD_TIME__}`);
+    // noop — version info available via logBundleInfo() in src/diagnostics.ts
   }, []);
 
   useEffect(() => {
@@ -122,17 +120,9 @@ const App: React.FC = () => {
           const userEmail = authUser.email; // Type narrowing for clarity
           const userDocRef = doc(db, USERS_COLLECTION, authUser.uid);
 
-          console.log(
-            "%c👤 Auth Flow - User Document Fetch",
-            "color: #10b981; font-weight: bold;",
-          );
-          console.log("User email:", userEmail);
-          console.log("User UID:", authUser.uid);
-
           let userDoc;
           try {
             userDoc = await getDoc(userDocRef);
-            console.log("User document exists:", userDoc.exists());
           } catch (firestoreError) {
             console.error(
               "%c❌ Firestore Error - Failed to fetch user document",
@@ -159,26 +149,6 @@ const App: React.FC = () => {
             // This is required by Firestore security rules which prevent self-escalation.
             // Users must be promoted to manager by an existing manager via the Settings page
             // or by running the set-manager-custom-claims.mjs admin script.
-            console.log(
-              "NEW USER - Creating user document with isManager: false",
-            );
-
-            // Check if user is in MANAGER_EMAILS for informational logging
-            const shouldBeManager = MANAGER_EMAILS.includes(
-              userEmail.toLowerCase(),
-            );
-            if (shouldBeManager) {
-              console.log(
-                "%c📋 User is in MANAGER_EMAILS list",
-                "color: #f59e0b; font-weight: bold;",
-              );
-              console.log(
-                "To grant manager permissions, an existing manager must promote this user via Settings, " +
-                  "or run: npm run seed:managers:apply -- --emails " +
-                  userEmail,
-              );
-            }
-
             // Create user document with isManager: false (required by security rules)
             const newUserDoc = {
               uid: authUser.uid,
@@ -198,10 +168,6 @@ const App: React.FC = () => {
 
             try {
               await setDoc(userDocRef, newUserDoc);
-              console.log(
-                "%c✅ Created new user document successfully",
-                "color: #10b981; font-weight: bold;",
-              );
             } catch (firestoreError) {
               console.error(
                 "%c❌ Firestore Error - Failed to create user document",
@@ -213,14 +179,9 @@ const App: React.FC = () => {
             }
           } else {
             // EXISTING USER: Firestore is the single source of truth for the manager role.
-            // Changes made via Settings page will persist because we read from Firestore, not MANAGER_EMAILS.
+            // Changes made via Settings page will persist because we read from Firestore.
             const existingData = userDoc.data();
             let isManager = existingData.isManager;
-            console.log(
-              "EXISTING USER - Firestore document data:",
-              existingData,
-            );
-            console.log("Fetched isManager from Firestore:", isManager);
 
             // One-time migration for older user documents that might not have the isManager field.
             // Checking for non-boolean handles undefined, null, and any incorrectly stored values.
@@ -228,21 +189,6 @@ const App: React.FC = () => {
             // Manager promotion must be done by an existing manager via Settings or admin scripts.
             if (typeof isManager !== "boolean") {
               isManager = false;
-              console.log(
-                "MIGRATION - isManager was not boolean, setting to false",
-              );
-              // Check if user should be a manager for informational logging
-              if (MANAGER_EMAILS.includes(userEmail.toLowerCase())) {
-                console.log(
-                  "%c📋 User is in MANAGER_EMAILS list but cannot self-elevate",
-                  "color: #f59e0b; font-weight: bold;",
-                );
-                console.log(
-                  "To grant manager permissions, an existing manager must promote this user via Settings, " +
-                    "or run: npm run seed:managers:apply -- --emails " +
-                    userEmail,
-                );
-              }
             }
 
             // Update displayName if it changed and set updatedAt timestamp
@@ -257,7 +203,6 @@ const App: React.FC = () => {
 
             try {
               await updateDoc(userDocRef, updates);
-              console.log("Updated user document with updatedAt timestamp");
             } catch (firestoreError) {
               // This is non-critical - user can still use the app
               // Log detailed info to help diagnose permission issues
@@ -287,48 +232,10 @@ const App: React.FC = () => {
             };
           }
 
-          console.log(
-            "%c✅ Auth Complete - Final AppUser State",
-            "color: #10b981; font-weight: bold;",
-          );
-          console.log("isManager:", appUser.isManager);
-          console.log("displayName:", appUser.displayName);
-          console.log("email:", appUser.email);
-
-          // Development-only: Log admin nav render intent
-          if (import.meta.env.DEV) {
-            console.log(
-              "%c🔍 Admin Nav Render Check",
-              "color: #8b5cf6; font-weight: bold;",
-            );
-            console.log(
-              `Will render admin navigation: ${
-                appUser.isManager ? "YES" : "NO"
-              }`,
-            );
-            if (appUser.isManager) {
-              console.log("✓ Manager user should see:");
-              console.log(
-                "  - Navigation pill with Dashboard/User Management links",
-              );
-              console.log("  - Gear icon link to /#/admin in header");
-              console.log("  - Active orders count");
-            } else {
-              console.log(
-                "✗ Non-manager user will NOT see admin navigation elements",
-              );
-            }
-          }
-
           setUser(appUser);
         } else {
           if (authUser) {
             // Domain restriction: Only @priorityautomotive.com emails are allowed.
-            console.log(
-              "%c⛔ Domain Restriction - Signing out user",
-              "color: #f59e0b; font-weight: bold;",
-            );
-            console.log("User email:", authUser.email);
             await signOut(auth);
             alert(
               "Access denied. Please use a '@priorityautomotive.com' email address.",
