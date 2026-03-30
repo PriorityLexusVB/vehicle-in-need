@@ -127,30 +127,14 @@ const Login: React.FC = () => {
 
   useEffect(() => {
     const checkRedirectResult = async () => {
-      console.log(
-        "%c🔄 Login - Checking for redirect result",
-        "color: #3b82f6; font-weight: bold;"
-      );
-      
       try {
         const result = await getRedirectResult(auth);
         
         if (result) {
-          // Successful redirect sign-in
-          console.log(
-            "%c✅ Login - Redirect sign-in successful",
-            "color: #10b981; font-weight: bold;"
-          );
-          console.log("User email:", result.user.email);
-          console.log("User UID:", result.user.uid);
           // The onAuthStateChanged listener in App.tsx will handle setting the user
           // Keep isSigningIn true while App.tsx processes the auth state
         } else {
           // No pending redirect result (normal page load)
-          console.log(
-            "%c📋 Login - No pending redirect result",
-            "color: #64748b; font-weight: normal;"
-          );
           setIsSigningIn(false);
         }
       } catch (err) {
@@ -225,13 +209,6 @@ const Login: React.FC = () => {
     setError(null);
     setIsSigningIn(true);
     
-    console.log(
-      "%c🔐 Login - Initiating sign-in process",
-      "color: #3b82f6; font-weight: bold;"
-    );
-    console.log("Current hostname:", window.location.hostname);
-    console.log("Current href:", window.location.href);
-    
     // Detect iOS Safari and other browsers with storage partitioning issues
     // These browsers have problems with signInWithRedirect due to ITP/sessionStorage
     // Detection logic:
@@ -252,23 +229,12 @@ const Login: React.FC = () => {
     const isCodespaces = recommendedMethod === "redirect" && 
       window.location.hostname.endsWith(".app.github.dev");
     
-    console.log("Environment detection:", {
-      recommendedMethod,
-      isCodespaces,
-      isIOS,
-      isSafari,
-      isChromiumBased,
-      isFirefox,
-      hasStoragePartitioning
-    });
-    
     // Helper message for iOS/Safari popup issues
     const iosSafariPopupHint = "On iOS/Safari, please ensure popups are enabled in Settings > Safari > Block Pop-ups.";
     
     try {
       // For Codespaces: Always use redirect (popup fails there)
       if (isCodespaces) {
-        console.log("Using redirect sign-in for Codespaces");
         await signInWithRedirect(auth, googleProvider);
         return; // navigation expected
       }
@@ -277,26 +243,17 @@ const Login: React.FC = () => {
       // Note: The COOP "window.closed" console warnings are harmless - they're just
       // logging errors from Firebase SDK's internal polling, but the actual auth
       // flow still works correctly. We suppress these to avoid confusing users.
-      console.log("Attempting popup sign-in");
-      
       const result = await safeSignInWithPopup(auth, googleProvider, {
         // For iOS/Safari, don't fall back to redirect (storage partitioning issues)
         fallbackToRedirect: !hasStoragePartitioning,
         // Suppress COOP-related console.error messages that don't affect functionality
         suppressCOOPErrors: true,
-        onPopupStart: () => {
-          console.log("Popup auth started");
-        },
         onFallbackToRedirect: () => {
-          console.log("Falling back to redirect due to popup issues");
+          // redirect fallback triggered
         },
       });
       
       if (result.success) {
-        console.log("Sign-in successful via popup");
-        if (result.usedRedirectFallback) {
-          console.log("(used redirect fallback)");
-        }
         return;
       }
       
