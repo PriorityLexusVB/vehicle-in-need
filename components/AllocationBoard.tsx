@@ -1,5 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { AppUser } from "../types";
+import {
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+  QuerySnapshot,
+  DocumentData,
+} from "firebase/firestore";
+import { db } from "../services/firebase";
+import { AppUser, Order } from "../types";
+import { isActiveStatus } from "../constants";
 import {
   parseAllocationSource,
   groupArrivalBucket,
@@ -53,6 +63,27 @@ const STORAGE_KEYS = {
   arrivalGrouping: "allocation.arrivalGrouping",
   sortMode: "allocation.sortMode",
 } as const;
+
+/** Normalize a model string for matching: strip spaces, uppercase, e.g. "RX 350" → "RX350" */
+function normalizeModelForMatch(model: string): string {
+  return model.replace(/\s+/g, "").toUpperCase();
+}
+
+/** Extract the 4-digit model number from a string like "9702" or "9702A" */
+function extractFourDigitCode(value: string): string | null {
+  const match = value.trim().match(/^(\d{4})/);
+  return match?.[1] ?? null;
+}
+
+interface MatchedOrder {
+  orderId: string;
+  customerName: string;
+  salesperson: string;
+  model: string;
+  modelNumber: string;
+  exteriorColor1: string;
+  matchType: "model" | "modelNumber" | "both";
+}
 
 function getDisplayValue(value?: string | null): string | null {
   if (!value) {
@@ -400,6 +431,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [activeOrders, setActiveOrders] = useState<Order[]>([]);
 
   const [isManagerPanelOpen, setIsManagerPanelOpen] = useState(false);
   const [sourceText, setSourceText] = useState("");
@@ -456,6 +488,94 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
 
     return () => unsubscribe();
   }, []);
+
+  // Subscribe to all orders (read-only) so we can match them against allocation vehicles
+  useEffect(() => {
+    const ordersQuery = query(
+      collection(db, "orders"),
+      orderBy("createdAt", "desc"),
+    );
+
+    const unsubscribeOrders = onSnapshot(
+      ordersQuery,
+      (querySnapshot: QuerySnapshot<DocumentData>) => {
+        const orders = querySnapshot.docs
+          .map((docSnapshot) => ({ ...docSnapshot.data(), id: docSnapshot.id }) as Order)
+          .filter((order) => isActiveStatus(order.status));
+        setActiveOrders(orders);
+      },
+      (error) => {
+        console.error("AllocationBoard: Failed to subscribe to orders:", error);
+      },
+    );
+
+    return () => unsubscribeOrders();
+  }, []);
+
+  // Build a lookup: allocation vehicle code → matched orders
+  const orderMatchesByVehicle = useMemo(() => {
+    const matches = new Map<string, MatchedOrder[]>();
+    if (activeOrders.length === 0) return matches;
+
+    for (const vehicle of latestSnapshot?.vehicles ?? []) {
+      const vehicleCode = normalizeModelForMatch(vehicle.code);
+      const vehicleSourceCode = vehicle.sourceCode
+        ? extractFourDigitCode(vehicle.sourceCode)
+        : null;
+
+      const vehicleMatches: MatchedOrder[] = [];
+
+      for (const order of activeOrders) {
+        const orderModel = normalizeModelForMatch(order.model);
+        const orderModelNumber = extractFourDigitCode(order.modelNumber);
+
+        const modelMatch = vehicleCode !== "" && orderModel === vehicleCode;
+        const modelNumberMatch =
+          vehicleSourceCode !== null &&
+          orderModelNumber !== null &&
+          vehicleSourceCode === orderModelNumber;
+
+        if (modelMatch || modelNumberMatch) {
+          vehicleMatches.push({
+            orderId: order.id,
+            customerName: order.customerName,
+            salesperson: order.salesperson,
+            model: order.model,
+            modelNumber: order.modelNumber,
+            exteriorColor1: order.exteriorColor1,
+            matchType:
+              modelMatch && modelNumberMatch
+                ? "both"
+                : modelMatch
+                  ? "model"
+                  : "modelNumber",
+          });
+        }
+      }
+
+      if (vehicleMatches.length > 0) {
+        matches.set(vehicle.id, vehicleMatches);
+      }
+    }
+
+    return matches;
+  }, [latestSnapshot, activeOrders]);
+
+  const matchSummary = useMemo(() => {
+    const totalVehicles = latestSnapshot?.vehicles.length ?? 0;
+    const matchedVehicleCount = orderMatchesByVehicle.size;
+    const uniqueOrderIds = new Set<string>();
+    for (const matched of orderMatchesByVehicle.values()) {
+      for (const m of matched) {
+        uniqueOrderIds.add(m.orderId);
+      }
+    }
+    return {
+      totalVehicles,
+      matchedVehicleCount,
+      matchedOrderCount: uniqueOrderIds.size,
+    };
+  }, [latestSnapshot, orderMatchesByVehicle]);
 
   const vehicles = useMemo(
     () => latestSnapshot?.vehicles ?? [],
@@ -1227,6 +1347,17 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                 <p className="text-xs uppercase tracking-wider text-slate-400">Live Hybrid Mix</p>
                 <p className="mt-1 text-2xl font-bold text-white">{latestSnapshot?.summary.hybridMix ?? 0}%</p>
               </div>
+              <div className={`rounded-xl border p-4 ${matchSummary.matchedOrderCount > 0 ? "border-amber-500/30 bg-amber-500/10" : "border-slate-800 bg-slate-900"}`}>
+                <p className="text-xs uppercase tracking-wider text-slate-400">Order Matches</p>
+                <p className={`mt-1 text-2xl font-bold ${matchSummary.matchedOrderCount > 0 ? "text-amber-300" : "text-white"}`}>
+                  {matchSummary.matchedOrderCount}
+                </p>
+                <p className="mt-0.5 text-xs text-slate-400">
+                  {matchSummary.matchedOrderCount > 0
+                    ? `${matchSummary.matchedOrderCount} active order${matchSummary.matchedOrderCount === 1 ? "" : "s"} matched to ${matchSummary.matchedVehicleCount} allocation vehicle${matchSummary.matchedVehicleCount === 1 ? "" : "s"}`
+                    : "No active orders match current allocation"}
+                </p>
+              </div>
             </div>
 
             {boardView === "strategy" ? (
@@ -1247,6 +1378,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
 
                             if (existing) {
                               existing.units += vehicle.quantity;
+                              existing.vehicleIds.push(vehicle.id);
                               existing.factoryAccessories = Array.from(
                                 new Set([...existing.factoryAccessories, ...factoryAccessories]),
                               );
@@ -1264,6 +1396,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                                 interiorColor: vehicle.interiorColor,
                                 bos: vehicle.bos,
                                 units: vehicle.quantity,
+                                vehicleIds: [vehicle.id],
                                 factoryAccessories,
                                 postProductionOptions,
                               });
@@ -1283,6 +1416,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                               interiorColor: string;
                               bos: string;
                               units: number;
+                              vehicleIds: string[];
                               factoryAccessories: string[];
                               postProductionOptions: string[];
                             }
@@ -1415,6 +1549,40 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                                   </div>
                                 ))}
                               </dl>
+
+                              {(() => {
+                                const variantMatches = variant.vehicleIds.flatMap(
+                                  (vid) => orderMatchesByVehicle.get(vid) ?? [],
+                                );
+                                const uniqueMatches = Array.from(
+                                  new Map(variantMatches.map((m) => [m.orderId, m])).values(),
+                                );
+                                if (uniqueMatches.length === 0) return null;
+                                return (
+                                  <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-amber-300">
+                                      Matching Orders ({uniqueMatches.length})
+                                    </p>
+                                    <div className="mt-2 space-y-1.5">
+                                      {uniqueMatches.map((m) => (
+                                        <div
+                                          key={m.orderId}
+                                          className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-amber-100"
+                                        >
+                                          <span className="font-semibold text-white">{m.customerName}</span>
+                                          <span className="text-amber-200">{m.salesperson}</span>
+                                          <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber-300">
+                                            {m.model} / {m.modelNumber}
+                                          </span>
+                                          {m.exteriorColor1 && (
+                                            <span className="text-amber-200/70">Color pref: {m.exteriorColor1}</span>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                             </div>
                           );
                         });
@@ -1434,6 +1602,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                       <th className="px-3 py-3">Build / Port</th>
                       <th className="px-3 py-3">BOS</th>
                       <th className="px-3 py-3">Qty</th>
+                      <th className="px-3 py-3">Matched Orders</th>
                       <th className="px-3 py-3">Factory Accessories</th>
                       <th className="px-3 py-3">Post-Production Options</th>
                     </tr>
@@ -1463,6 +1632,22 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                             </span>
                           </td>
                           <td className="px-3 py-2">{vehicle.quantity > 1 ? vehicle.quantity : null}</td>
+                          <td className="px-3 py-2">
+                            {(() => {
+                              const matched = orderMatchesByVehicle.get(vehicle.id);
+                              if (!matched || matched.length === 0) return null;
+                              return (
+                                <div className="space-y-1">
+                                  {matched.map((m) => (
+                                    <div key={m.orderId} className="flex flex-wrap items-center gap-1 text-xs">
+                                      <span className="font-semibold text-amber-300">{m.customerName}</span>
+                                      <span className="text-amber-200/70">({m.salesperson})</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            })()}
+                          </td>
                           <td className="px-3 py-2">{factoryAccessories}</td>
                           <td className="px-3 py-2">{postProductionOptions}</td>
                         </tr>

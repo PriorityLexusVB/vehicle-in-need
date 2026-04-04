@@ -519,6 +519,7 @@ describe('AllocationBoard', () => {
       'Build / Port',
       'BOS',
       'Qty',
+      'Matched Orders',
       'Factory Accessories',
       'Post-Production Options',
     ]);
