@@ -685,15 +685,14 @@ describe('AllocationBoard', () => {
       });
     });
 
-    it('shows color match badges when colors match', async () => {
+    it('shows color match section when colors match', async () => {
       // Vehicle 2 has color BLACK, order-1 has exteriorColor1 "Caviar" → partial match (same family)
       setupWithOrders();
       render(<AllocationBoard currentUser={managerUser} />);
 
       await waitFor(() => {
-        // Caviar is in the "black" family, vehicle has "BLACK" → partial exterior match
-        const extBadges = screen.getAllByText(/~Ext:|Ext:/);
-        expect(extBadges.length).toBeGreaterThan(0);
+        // Partial matches should appear in the "Similar Color" section
+        expect(screen.getAllByText(/Similar Color/).length).toBeGreaterThan(0);
       });
     });
   });

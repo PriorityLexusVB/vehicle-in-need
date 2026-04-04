@@ -627,16 +627,20 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
     return matches;
   }, [latestSnapshot, precomputedOrders]);
 
+  const matchedVehicleIds = useMemo(
+    () => new Set(orderMatchesByVehicle.keys()),
+    [orderMatchesByVehicle],
+  );
+
   const matchSummary = useMemo(() => {
-    const matchedVehicleCount = orderMatchesByVehicle.size;
     const uniqueOrderIds = new Set<string>();
     for (const matched of orderMatchesByVehicle.values()) {
       for (const m of matched) {
         uniqueOrderIds.add(m.orderId);
       }
     }
-    return { matchedVehicleCount, matchedOrderCount: uniqueOrderIds.size };
-  }, [orderMatchesByVehicle]);
+    return { matchedVehicleCount: matchedVehicleIds.size, matchedOrderCount: uniqueOrderIds.size };
+  }, [orderMatchesByVehicle, matchedVehicleIds]);
 
   const vehicles = useMemo(
     () => latestSnapshot?.vehicles ?? [],
@@ -755,6 +759,16 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
     });
   }, [vehicles, categoryFilter, rankFilter, bosFilter, searchQuery]);
 
+  const matchedFilteredVehicles = useMemo(
+    () => filteredVehicles.filter((v) => matchedVehicleIds.has(v.id)),
+    [filteredVehicles, matchedVehicleIds],
+  );
+
+  const unmatchedFilteredVehicles = useMemo(
+    () => filteredVehicles.filter((v) => !matchedVehicleIds.has(v.id)),
+    [filteredVehicles, matchedVehicleIds],
+  );
+
   const sortedVehicles = useMemo(() => {
     const sorted = [...filteredVehicles];
 
@@ -802,10 +816,10 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
     return sorted;
   }, [filteredVehicles, sortMode]);
 
-  const groupedRows = useMemo<GroupedAllocationRow[]>(() => {
+  const buildGroupedRows = (vehicleList: AllocationVehicle[]): GroupedAllocationRow[] => {
     const grouped = new Map<string, GroupedAllocationRow>();
 
-    filteredVehicles.forEach((vehicle) => {
+    vehicleList.forEach((vehicle) => {
       const arrivalKey =
         arrivalGroupingMode === "bucket"
           ? groupArrivalBucket(vehicle.arrival)
@@ -862,43 +876,45 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
       switch (sortMode) {
         case "arrival": {
           const arrivalDiff = compareRowArrival(first, second);
-          if (arrivalDiff !== 0) {
-            return arrivalDiff;
-          }
+          if (arrivalDiff !== 0) return arrivalDiff;
           return (RANK_ORDER[first.rank] ?? 99) - (RANK_ORDER[second.rank] ?? 99);
         }
-
         case "units": {
           const unitDiff = second.totalUnits - first.totalUnits;
-          if (unitDiff !== 0) {
-            return unitDiff;
-          }
+          if (unitDiff !== 0) return unitDiff;
           return compareRowArrival(first, second);
         }
-
         case "model": {
           const modelDiff = getPrimaryModel(first).localeCompare(getPrimaryModel(second));
-          if (modelDiff !== 0) {
-            return modelDiff;
-          }
+          if (modelDiff !== 0) return modelDiff;
           return compareRowArrival(first, second);
         }
-
         case "priority":
         default: {
           const rankDiff = (RANK_ORDER[first.rank] ?? 99) - (RANK_ORDER[second.rank] ?? 99);
-          if (rankDiff !== 0) {
-            return rankDiff;
-          }
+          if (rankDiff !== 0) return rankDiff;
           const arrivalDiff = compareRowArrival(first, second);
-          if (arrivalDiff !== 0) {
-            return arrivalDiff;
-          }
+          if (arrivalDiff !== 0) return arrivalDiff;
           return second.totalUnits - first.totalUnits;
         }
       }
     });
-  }, [filteredVehicles, arrivalGroupingMode, sortMode]);
+  };
+
+  const groupedRows = useMemo<GroupedAllocationRow[]>(
+    () => buildGroupedRows(filteredVehicles),
+    [filteredVehicles, arrivalGroupingMode, sortMode],
+  );
+
+  const matchedGroupedRows = useMemo<GroupedAllocationRow[]>(
+    () => buildGroupedRows(matchedFilteredVehicles),
+    [matchedFilteredVehicles, arrivalGroupingMode, sortMode],
+  );
+
+  const unmatchedGroupedRows = useMemo<GroupedAllocationRow[]>(
+    () => buildGroupedRows(unmatchedFilteredVehicles),
+    [unmatchedFilteredVehicles, arrivalGroupingMode, sortMode],
+  );
 
   const strategyTotals = useMemo(() => {
     return groupedRows.reduce(
@@ -1092,6 +1108,161 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
     } finally {
       setIsPublishing(false);
     }
+  };
+
+  const renderVariantCards = (row: GroupedAllocationRow) => {
+    const variants = Array.from(
+      row.vehicles.reduce((accumulator, vehicle) => {
+        const fa = getFactoryAccessories(vehicle);
+        const ppo = getPostProductionOptions(vehicle);
+        const key = `${vehicle.sourceCode ?? ""}|${vehicle.code}|${vehicle.model ?? ""}|${vehicle.grade}|${vehicle.arrival}|${vehicle.color}|${vehicle.interiorColor}|${vehicle.bos}|${fa.join(",")}|${ppo.join(",")}`;
+        const existing = accumulator.get(key);
+
+        if (existing) {
+          existing.units += vehicle.quantity;
+          existing.vehicleIds.push(vehicle.id);
+          existing.factoryAccessories = Array.from(new Set([...existing.factoryAccessories, ...fa]));
+          existing.postProductionOptions = Array.from(new Set([...existing.postProductionOptions, ...ppo]));
+        } else {
+          accumulator.set(key, {
+            code: vehicle.code, model: vehicle.model, sourceCode: vehicle.sourceCode,
+            grade: vehicle.grade, arrival: vehicle.arrival, color: vehicle.color,
+            interiorColor: vehicle.interiorColor, bos: vehicle.bos,
+            units: vehicle.quantity, vehicleIds: [vehicle.id],
+            factoryAccessories: fa, postProductionOptions: ppo,
+          });
+        }
+        return accumulator;
+      }, new Map<string, { code: string; model?: string; sourceCode?: string; grade: string; arrival: string; color: string; interiorColor: string; bos: string; units: number; vehicleIds: string[]; factoryAccessories: string[]; postProductionOptions: string[] }>()),
+    )
+      .map((entry) => entry[1])
+      .sort((a, b) => {
+        return getDisplayCode(a.sourceCode, a.code).localeCompare(getDisplayCode(b.sourceCode, b.code))
+          || getDisplayModel(a.model, a.code).localeCompare(getDisplayModel(b.model, b.code))
+          || a.grade.localeCompare(b.grade)
+          || compareArrivalValues(a.arrival, b.arrival)
+          || formatColorDisplay(a.color).localeCompare(formatColorDisplay(b.color))
+          || formatInteriorColorDisplay(a.interiorColor).localeCompare(formatInteriorColorDisplay(b.interiorColor));
+      });
+
+    return variants.map((variant) => {
+      const arrivalDisplay = formatArrivalDisplay(variant.arrival);
+      const colorDisplay = formatColorDisplay(variant.color);
+      const interiorDisplay = formatInteriorColorDisplay(variant.interiorColor);
+      const daysOutDisplay = arrivalDisplay.secondary ?? "TBD";
+      const fa = variant.factoryAccessories.join(", ");
+      const ppo = variant.postProductionOptions.join(", ");
+      const showBos = normalizeBosValue(variant.bos) === "Y";
+      const detailRows: Array<{ label: string; value: string }> = [
+        { label: "Exterior", value: colorDisplay },
+        { label: "Interior", value: interiorDisplay },
+        { label: "Build / Port", value: arrivalDisplay.primary },
+        { label: "Days Out", value: daysOutDisplay },
+      ];
+      if (showBos) detailRows.push({ label: "BOS", value: "Y (Changeable)" });
+      if (fa) detailRows.push({ label: "Factory Accessories", value: fa });
+      if (ppo) detailRows.push({ label: "Post-Production Options", value: ppo });
+
+      const variantMatches = variant.vehicleIds.flatMap((vid) => orderMatchesByVehicle.get(vid) ?? []);
+      const uniqueMatches = sortMatchedOrders(Array.from(new Map(variantMatches.map((m) => [m.orderId, m])).values()));
+      const exactMatches = uniqueMatches.filter((m) => m.colorMatch === "exact" || m.interiorMatch === "exact");
+      const partialMatches = uniqueMatches.filter((m) => (m.colorMatch === "partial" || m.interiorMatch === "partial") && m.colorMatch !== "exact" && m.interiorMatch !== "exact");
+      const modelOnlyMatches = uniqueMatches.filter((m) => !m.colorMatch && !m.interiorMatch);
+
+      return (
+        <div
+          key={`${row.key}-${variant.sourceCode ?? ""}-${variant.code}-${variant.grade}-${variant.arrival}-${variant.color}-${variant.bos}`}
+          className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:p-5"
+          data-testid="allocation-strategy-vehicle-card"
+        >
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="text-2xl font-black tracking-tight text-slate-900">
+                {getDisplayCode(variant.sourceCode, variant.code)}{" "}
+                <span className="px-1 text-slate-300">·</span>
+                <span className="text-slate-500">{getDisplayModel(variant.model, variant.code)}</span>
+              </p>
+              <p className="mt-1 text-sm text-slate-500">Trim: {variant.grade}</p>
+            </div>
+            {variant.units > 1 && (
+              <span className="rounded-full border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-800">
+                Qty: {variant.units}
+              </span>
+            )}
+          </div>
+
+          <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+            {detailRows.map((detail) => (
+              <div key={`${row.key}-${variant.code}-${detail.label}`} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                <dt className="text-[11px] uppercase tracking-wide text-slate-400">{detail.label}</dt>
+                <dd className="mt-1 font-semibold text-slate-800">{detail.value}</dd>
+              </div>
+            ))}
+          </dl>
+
+          {uniqueMatches.length > 0 && currentUser.isManager && (
+            <div className="mt-3 space-y-2">
+              {exactMatches.length > 0 && (
+                <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">Color Match ({exactMatches.length})</p>
+                  <div className="mt-2 space-y-2">
+                    {exactMatches.map((m) => (
+                      <div key={m.orderId} className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <span className="text-sm font-bold text-slate-900">{m.customerName}</span>
+                          <span className="text-sm text-emerald-600">{m.salesperson}</span>
+                          <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">{m.model} / {m.modelNumber}</span>
+                        </div>
+                        <div className="mt-1.5 flex flex-wrap gap-2 text-xs">
+                          {m.extColorMatched && <span className={`rounded px-2 py-0.5 font-semibold ${m.colorMatch === "exact" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>Ext{m.extChoiceMatched && m.extChoiceMatched > 1 ? ` (${m.extChoiceMatched}${m.extChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.extColorMatched}</span>}
+                          {m.intColorMatched && <span className={`rounded px-2 py-0.5 font-semibold ${m.interiorMatch === "exact" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>Int{m.intChoiceMatched && m.intChoiceMatched > 1 ? ` (${m.intChoiceMatched}${m.intChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.intColorMatched}</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {partialMatches.length > 0 && (
+                <div className="rounded-lg border border-sky-200 bg-sky-50 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">Similar Color ({partialMatches.length})</p>
+                  <div className="mt-1.5 space-y-1">
+                    {partialMatches.map((m) => (
+                      <div key={m.orderId} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-sky-800">
+                        <span className="font-semibold text-slate-900">{m.customerName}</span>
+                        <span className="text-sky-600">{m.salesperson}</span>
+                        <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700">{m.model} / {m.modelNumber}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {modelOnlyMatches.length > 0 && (
+                <details className="rounded-lg border border-slate-200 bg-slate-50">
+                  <summary className="cursor-pointer px-3 py-2 text-xs font-semibold text-slate-400 hover:text-slate-500">+{modelOnlyMatches.length} model-only match{modelOnlyMatches.length === 1 ? "" : "es"}</summary>
+                  <div className="space-y-1 px-3 pb-2">
+                    {modelOnlyMatches.map((m) => (
+                      <div key={m.orderId} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                        <span className="font-semibold text-slate-700">{m.customerName}</span>
+                        <span className="text-slate-400">{m.salesperson}</span>
+                        <span className="text-slate-500">{m.model} / {m.modelNumber}</span>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
+            </div>
+          )}
+
+          {uniqueMatches.length > 0 && !currentUser.isManager && (
+            <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
+                {uniqueMatches.length} matching order{uniqueMatches.length === 1 ? "" : "s"}
+              </p>
+            </div>
+          )}
+        </div>
+      );
+    });
   };
 
   return (
@@ -1422,305 +1593,55 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
             </div>
 
             {boardView === "strategy" ? (
-              <div className="mt-5 space-y-3" data-testid="allocation-strategy-view">
-                {groupedRows.map((row) => (
-                  <article
-                    key={row.key}
-                    className="grid gap-3"
-                  >
-                    <div className="grid gap-3">
-                      {(() => {
-                        const variants = Array.from(
-                          row.vehicles.reduce((accumulator, vehicle) => {
-                            const factoryAccessories = getFactoryAccessories(vehicle);
-                            const postProductionOptions = getPostProductionOptions(vehicle);
-                            const key = `${vehicle.sourceCode ?? ""}|${vehicle.code}|${vehicle.model ?? ""}|${vehicle.grade}|${vehicle.arrival}|${vehicle.color}|${vehicle.interiorColor}|${vehicle.bos}|${factoryAccessories.join(",")}|${postProductionOptions.join(",")}`;
-                            const existing = accumulator.get(key);
-
-                            if (existing) {
-                              existing.units += vehicle.quantity;
-                              existing.vehicleIds.push(vehicle.id);
-                              existing.factoryAccessories = Array.from(
-                                new Set([...existing.factoryAccessories, ...factoryAccessories]),
-                              );
-                              existing.postProductionOptions = Array.from(
-                                new Set([...existing.postProductionOptions, ...postProductionOptions]),
-                              );
-                            } else {
-                              accumulator.set(key, {
-                                code: vehicle.code,
-                                model: vehicle.model,
-                                sourceCode: vehicle.sourceCode,
-                                grade: vehicle.grade,
-                                arrival: vehicle.arrival,
-                                color: vehicle.color,
-                                interiorColor: vehicle.interiorColor,
-                                bos: vehicle.bos,
-                                units: vehicle.quantity,
-                                vehicleIds: [vehicle.id],
-                                factoryAccessories,
-                                postProductionOptions,
-                              });
-                            }
-
-                            return accumulator;
-                          },
-                          new Map<
-                            string,
-                            {
-                              code: string;
-                              model?: string;
-                              sourceCode?: string;
-                              grade: string;
-                              arrival: string;
-                              color: string;
-                              interiorColor: string;
-                              bos: string;
-                              units: number;
-                              vehicleIds: string[];
-                              factoryAccessories: string[];
-                              postProductionOptions: string[];
-                            }
-                          >()),
-                        )
-                          .map((entry) => entry[1])
-                          .sort((first, second) => {
-                            const codeDiff = getDisplayCode(first.sourceCode, first.code).localeCompare(
-                              getDisplayCode(second.sourceCode, second.code),
-                            );
-                            if (codeDiff !== 0) {
-                              return codeDiff;
-                            }
-
-                            const modelDiff = getDisplayModel(first.model, first.code).localeCompare(
-                              getDisplayModel(second.model, second.code),
-                            );
-                            if (modelDiff !== 0) {
-                              return modelDiff;
-                            }
-
-                            const gradeDiff = first.grade.localeCompare(second.grade);
-                            if (gradeDiff !== 0) {
-                              return gradeDiff;
-                            }
-
-                            const arrivalDiff = compareArrivalValues(first.arrival, second.arrival);
-                            if (arrivalDiff !== 0) {
-                              return arrivalDiff;
-                            }
-
-                            const exteriorDiff = formatColorDisplay(first.color).localeCompare(
-                              formatColorDisplay(second.color),
-                            );
-                            if (exteriorDiff !== 0) {
-                              return exteriorDiff;
-                            }
-
-                            const interiorDiff = formatInteriorColorDisplay(first.interiorColor).localeCompare(
-                              formatInteriorColorDisplay(second.interiorColor),
-                            );
-                            if (interiorDiff !== 0) {
-                              return interiorDiff;
-                            }
-
-                            const bosDiff = normalizeBosValue(first.bos).localeCompare(
-                              normalizeBosValue(second.bos),
-                            );
-                            if (bosDiff !== 0) {
-                              return bosDiff;
-                            }
-
-                            const factoryDiff = first.factoryAccessories.join(" ").localeCompare(
-                              second.factoryAccessories.join(" "),
-                            );
-                            if (factoryDiff !== 0) {
-                              return factoryDiff;
-                            }
-
-                            const ppoDiff = first.postProductionOptions.join(" ").localeCompare(
-                              second.postProductionOptions.join(" "),
-                            );
-                            if (ppoDiff !== 0) {
-                              return ppoDiff;
-                            }
-
-                            return 0;
-                          });
-
-                        return variants.map((variant) => {
-                          const arrivalDisplay = formatArrivalDisplay(variant.arrival);
-                          const colorDisplay = formatColorDisplay(variant.color);
-                          const interiorDisplay = formatInteriorColorDisplay(variant.interiorColor);
-                          const daysOutDisplay = arrivalDisplay.secondary ?? "TBD";
-                          const factoryAccessories = variant.factoryAccessories.join(", ");
-                          const postProductionOptions = variant.postProductionOptions.join(", ");
-                          const showBosDetail = normalizeBosValue(variant.bos) === "Y";
-                          const detailRows: Array<{ label: string; value: string }> = [
-                            { label: "Exterior", value: colorDisplay },
-                            { label: "Interior", value: interiorDisplay },
-                            { label: "Build / Port", value: arrivalDisplay.primary },
-                            { label: "Days Out", value: daysOutDisplay },
-                          ];
-
-                          if (showBosDetail) {
-                            detailRows.push({ label: "BOS", value: "Y (Changeable)" });
-                          }
-
-                          if (factoryAccessories) {
-                            detailRows.push({ label: "Factory Accessories", value: factoryAccessories });
-                          }
-
-                          if (postProductionOptions) {
-                            detailRows.push({ label: "Post-Production Options", value: postProductionOptions });
-                          }
-
-                          return (
-                            <div
-                              key={`${row.key}-${variant.sourceCode ?? ""}-${variant.code}-${variant.model ?? ""}-${variant.grade}-${variant.arrival}-${variant.color}-${variant.interiorColor}-${variant.bos}`}
-                              className="rounded-xl border border-slate-300 bg-white/80 p-4 lg:p-5"
-                              data-testid="allocation-strategy-vehicle-card"
-                            >
-                              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                                <div>
-                                  <p className="text-2xl font-black tracking-tight text-slate-900">
-                                    {getDisplayCode(variant.sourceCode, variant.code)}{" "}
-                                    <span className="px-1 text-slate-500">·</span>
-                                    <span className="text-slate-500">{getDisplayModel(variant.model, variant.code)}</span>
-                                  </p>
-                                  <p className="mt-1 text-sm text-slate-500">Trim: {variant.grade}</p>
-                                </div>
-
-                                {variant.units > 1 && (
-                                  <div className="flex flex-wrap gap-1.5 text-xs text-slate-700">
-                                    <span className="rounded-full border border-slate-300 bg-slate-50 px-2.5 py-1 font-semibold text-slate-800">
-                                      Qty: {variant.units}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-
-                              <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-                                {detailRows.map((detail) => (
-                                  <div
-                                    key={`${row.key}-${variant.code}-${detail.label}`}
-                                    className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
-                                  >
-                                    <dt className="text-[11px] uppercase tracking-wide text-slate-400">{detail.label}</dt>
-                                    <dd className="mt-1 font-semibold text-slate-800">{detail.value}</dd>
-                                  </div>
-                                ))}
-                              </dl>
-
-                              {(() => {
-                                const variantMatches = variant.vehicleIds.flatMap(
-                                  (vid) => orderMatchesByVehicle.get(vid) ?? [],
-                                );
-                                const uniqueMatches = sortMatchedOrders(
-                                  Array.from(new Map(variantMatches.map((m) => [m.orderId, m])).values()),
-                                );
-                                if (uniqueMatches.length === 0) return null;
-
-                                // Tier matches: exact color, partial color, model-only
-                                const exactMatches = uniqueMatches.filter((m) => m.colorMatch === "exact" || m.interiorMatch === "exact");
-                                const partialMatches = uniqueMatches.filter((m) => m.colorMatch === "partial" || m.interiorMatch === "partial").filter((m) => m.colorMatch !== "exact" && m.interiorMatch !== "exact");
-                                const modelOnlyMatches = uniqueMatches.filter((m) => !m.colorMatch && !m.interiorMatch);
-
-                                if (!currentUser.isManager) {
-                                  return (
-                                    <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3">
-                                      <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
-                                        {uniqueMatches.length} matching order{uniqueMatches.length === 1 ? "" : "s"}
-                                      </p>
-                                    </div>
-                                  );
-                                }
-
-                                return (
-                                  <div className="mt-3 space-y-2">
-                                    {exactMatches.length > 0 && (
-                                      <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-3">
-                                        <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">
-                                          Color Match ({exactMatches.length})
-                                        </p>
-                                        <div className="mt-2 space-y-2">
-                                          {exactMatches.map((m) => (
-                                            <div key={m.orderId} className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
-                                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                                                <span className="text-sm font-bold text-slate-900">{m.customerName}</span>
-                                                <span className="text-sm text-emerald-600">{m.salesperson}</span>
-                                                <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
-                                                  {m.model} / {m.modelNumber}
-                                                </span>
-                                              </div>
-                                              <div className="mt-1.5 flex flex-wrap gap-2 text-xs">
-                                                {m.extColorMatched && (
-                                                  <span className={`rounded px-2 py-0.5 font-semibold ${m.colorMatch === "exact" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
-                                                    Ext{m.extChoiceMatched && m.extChoiceMatched > 1 ? ` (${m.extChoiceMatched}${m.extChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.extColorMatched}
-                                                  </span>
-                                                )}
-                                                {m.intColorMatched && (
-                                                  <span className={`rounded px-2 py-0.5 font-semibold ${m.interiorMatch === "exact" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
-                                                    Int{m.intChoiceMatched && m.intChoiceMatched > 1 ? ` (${m.intChoiceMatched}${m.intChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.intColorMatched}
-                                                  </span>
-                                                )}
-                                              </div>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    )}
-
-                                    {partialMatches.length > 0 && (
-                                      <div className="rounded-lg border border-sky-200 bg-sky-50 p-3">
-                                        <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">
-                                          Similar Color ({partialMatches.length})
-                                        </p>
-                                        <div className="mt-1.5 space-y-1">
-                                          {partialMatches.map((m) => (
-                                            <div key={m.orderId} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-sky-800">
-                                              <span className="font-semibold text-slate-900">{m.customerName}</span>
-                                              <span className="text-sky-600">{m.salesperson}</span>
-                                              <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700">
-                                                {m.model} / {m.modelNumber}
-                                              </span>
-                                              {m.extColorMatched && <span className="text-sky-600">Ext{m.extChoiceMatched && m.extChoiceMatched > 1 ? ` (${m.extChoiceMatched}${m.extChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.extColorMatched}</span>}
-                                              {m.intColorMatched && <span className="text-sky-600">Int{m.intChoiceMatched && m.intChoiceMatched > 1 ? ` (${m.intChoiceMatched}${m.intChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.intColorMatched}</span>}
-                                            </div>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    )}
-
-                                    {modelOnlyMatches.length > 0 && (
-                                      <details className="rounded-lg border border-slate-300 bg-slate-50">
-                                        <summary className="cursor-pointer px-3 py-2 text-xs font-semibold text-slate-400 hover:text-slate-500">
-                                          +{modelOnlyMatches.length} model-only match{modelOnlyMatches.length === 1 ? "" : "es"} (no color match)
-                                        </summary>
-                                        <div className="space-y-1 px-3 pb-2">
-                                          {modelOnlyMatches.map((m) => (
-                                            <div key={m.orderId} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-                                              <span className="font-semibold text-slate-700">{m.customerName}</span>
-                                              <span className="text-slate-400">{m.salesperson}</span>
-                                              <span className="text-slate-500">{m.model} / {m.modelNumber}</span>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      </details>
-                                    )}
-                                  </div>
-                                );
-                              })()}
-                            </div>
-                          );
-                        });
-                      })()}
+              <div className="mt-5 space-y-6" data-testid="allocation-strategy-view">
+                {matchedGroupedRows.length > 0 && (
+                  <div>
+                    <div className="mb-3 flex items-center gap-3 border-b border-emerald-200 pb-2">
+                      <h3 className="text-lg font-bold text-emerald-700">Customer Matches</h3>
+                      <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-700">
+                        {matchSummary.matchedOrderCount} order{matchSummary.matchedOrderCount === 1 ? "" : "s"} / {matchSummary.matchedVehicleCount} vehicle{matchSummary.matchedVehicleCount === 1 ? "" : "s"}
+                      </span>
                     </div>
-                  </article>
-                ))}
+                    <div className="space-y-3">
+                      {matchedGroupedRows.map((row) => (
+                        <article key={`matched-${row.key}`} className="grid gap-3">
+                          <div className="grid gap-3">
+                            {renderVariantCards(row)}
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {unmatchedGroupedRows.length > 0 && (
+                  <details className="group" open={matchedGroupedRows.length === 0}>
+                    <summary className="mb-3 flex cursor-pointer items-center gap-3 border-b border-slate-200 pb-2">
+                      <h3 className="text-lg font-bold text-slate-500 group-open:text-slate-700">Available Inventory</h3>
+                      <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-500">
+                        {unmatchedFilteredVehicles.length} vehicle{unmatchedFilteredVehicles.length === 1 ? "" : "s"}
+                      </span>
+                    </summary>
+                    <div className="space-y-3">
+                      {unmatchedGroupedRows.map((row) => (
+                        <article key={`unmatched-${row.key}`} className="grid gap-3">
+                          <div className="grid gap-3">
+                            {renderVariantCards(row)}
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </details>
+                )}
+
+                {/* Fallback: no vehicles at all after filtering */}
+                {matchedGroupedRows.length === 0 && unmatchedGroupedRows.length === 0 && (
+                  <p className="mt-4 text-center text-sm text-slate-400">No vehicles match current filters.</p>
+                )}
               </div>
             ) : (
               <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200">
-                <table className="min-w-full divide-y divide-slate-800 text-sm" data-testid="allocation-log-view">
+                <table className="min-w-full divide-y divide-slate-200 text-sm" data-testid="allocation-log-view">
                   <thead className="bg-slate-50">
                     <tr className="text-left text-xs uppercase tracking-wider text-slate-400">
                       <th className="px-3 py-3">Code</th>
@@ -1734,7 +1655,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                       <th className="px-3 py-3">Post-Production Options</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800 bg-white">
+                  <tbody className="divide-y divide-slate-200 bg-white">
                     {sortedVehicles.map((vehicle) => {
                       const arrivalDisplay = formatArrivalDisplay(vehicle.arrival);
                       const bosDisplay = formatBosDisplay(vehicle.bos);
