@@ -78,6 +78,14 @@ interface MatchedOrder {
   interiorColor1: string;
   colorMatch: "exact" | "partial" | null;
   interiorMatch: "exact" | "partial" | null;
+  /** Which exterior choice matched (1, 2, 3) or null if no match */
+  extChoiceMatched: number | null;
+  /** The actual exterior color value that matched */
+  extColorMatched: string | null;
+  /** Which interior choice matched (1, 2, 3) or null if no match */
+  intChoiceMatched: number | null;
+  /** The actual interior color value that matched */
+  intColorMatched: string | null;
   orderDate: string;
 }
 
@@ -104,17 +112,27 @@ const MAX_VISIBLE_MATCHES = 3;
 
 type ColorMatchResult = "exact" | "partial" | null;
 
+interface ColorPreferenceResult {
+  quality: ColorMatchResult;
+  /** 1-based index of which choice matched (1st, 2nd, 3rd) */
+  choiceNumber: number | null;
+  /** The actual color value that matched */
+  matchedValue: string | null;
+}
+
 /** Find the best color match across multiple order preferences against one vehicle color. */
 function bestColorPreference(
   preferences: string[],
   vehicleColor: string,
   matchFn: (a: string, b: string) => ColorMatchResult,
-): ColorMatchResult {
-  let best: ColorMatchResult = null;
-  for (const pref of preferences) {
-    const result = matchFn(pref, vehicleColor);
-    if (result === "exact") return "exact";
-    if (result === "partial") best = "partial";
+): ColorPreferenceResult {
+  let best: ColorPreferenceResult = { quality: null, choiceNumber: null, matchedValue: null };
+  for (let i = 0; i < preferences.length; i++) {
+    const result = matchFn(preferences[i], vehicleColor);
+    if (result === "exact") return { quality: "exact", choiceNumber: i + 1, matchedValue: preferences[i] };
+    if (result === "partial" && best.quality !== "partial") {
+      best = { quality: "partial", choiceNumber: i + 1, matchedValue: preferences[i] };
+    }
   }
   return best;
 }
@@ -584,8 +602,18 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
             modelNumber: pc.order.modelNumber,
             exteriorColor1: pc.order.exteriorColor1,
             interiorColor1: pc.order.interiorColor1,
-            colorMatch: bestColorPreference(pc.extColors, vehicle.color, matchExteriorColors),
-            interiorMatch: bestColorPreference(pc.intColors, vehicle.interiorColor, matchInteriorColors),
+            ...(() => {
+              const ext = bestColorPreference(pc.extColors, vehicle.color, matchExteriorColors);
+              const int = bestColorPreference(pc.intColors, vehicle.interiorColor, matchInteriorColors);
+              return {
+                colorMatch: ext.quality,
+                interiorMatch: int.quality,
+                extChoiceMatched: ext.choiceNumber,
+                extColorMatched: ext.matchedValue,
+                intChoiceMatched: int.choiceNumber,
+                intColorMatched: int.matchedValue,
+              };
+            })(),
             orderDate: pc.order.date,
           });
         }
@@ -1625,14 +1653,14 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                                                 </span>
                                               </div>
                                               <div className="mt-1.5 flex flex-wrap gap-2 text-xs">
-                                                {m.exteriorColor1 && (
+                                                {m.extColorMatched && (
                                                   <span className={`rounded px-2 py-0.5 font-semibold ${m.colorMatch === "exact" ? "bg-emerald-500/20 text-emerald-300" : "bg-slate-700/50 text-slate-300"}`}>
-                                                    Ext: {m.exteriorColor1}
+                                                    Ext{m.extChoiceMatched && m.extChoiceMatched > 1 ? ` (${m.extChoiceMatched}${m.extChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.extColorMatched}
                                                   </span>
                                                 )}
-                                                {m.interiorColor1 && (
+                                                {m.intColorMatched && (
                                                   <span className={`rounded px-2 py-0.5 font-semibold ${m.interiorMatch === "exact" ? "bg-emerald-500/20 text-emerald-300" : "bg-slate-700/50 text-slate-300"}`}>
-                                                    Int: {m.interiorColor1}
+                                                    Int{m.intChoiceMatched && m.intChoiceMatched > 1 ? ` (${m.intChoiceMatched}${m.intChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.intColorMatched}
                                                   </span>
                                                 )}
                                               </div>
@@ -1655,8 +1683,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                                               <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-sky-300">
                                                 {m.model} / {m.modelNumber}
                                               </span>
-                                              {m.exteriorColor1 && <span className="text-sky-300/70">Ext: {m.exteriorColor1}</span>}
-                                              {m.interiorColor1 && <span className="text-sky-300/70">Int: {m.interiorColor1}</span>}
+                                              {m.extColorMatched && <span className="text-sky-300/70">Ext{m.extChoiceMatched && m.extChoiceMatched > 1 ? ` (${m.extChoiceMatched}${m.extChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.extColorMatched}</span>}
+                                              {m.intColorMatched && <span className="text-sky-300/70">Int{m.intChoiceMatched && m.intChoiceMatched > 1 ? ` (${m.intChoiceMatched}${m.intChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.intColorMatched}</span>}
                                             </div>
                                           ))}
                                         </div>
