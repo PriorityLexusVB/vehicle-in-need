@@ -1231,6 +1231,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                         <span className="font-semibold text-slate-900">{m.customerName}</span>
                         <span className="text-sky-600">{m.salesperson}</span>
                         <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700">{m.model} / {m.modelNumber}</span>
+                        {(m.extColorMatched || m.exteriorColor1) && <span className="text-sky-600">Ext{m.extChoiceMatched && m.extChoiceMatched > 1 ? ` (${m.extChoiceMatched}${m.extChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.extColorMatched || m.exteriorColor1}</span>}
+                        {(m.intColorMatched || m.interiorColor1) && <span className="text-sky-600">Int{m.intChoiceMatched && m.intChoiceMatched > 1 ? ` (${m.intChoiceMatched}${m.intChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.intColorMatched || m.interiorColor1}</span>}
                       </div>
                     ))}
                   </div>
