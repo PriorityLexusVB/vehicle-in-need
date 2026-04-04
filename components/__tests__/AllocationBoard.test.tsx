@@ -19,17 +19,8 @@ const { extractAllocationTextFromPdf } = pdfMocks;
 vi.mock('../../services/allocationService', () => serviceMocks);
 vi.mock('../../src/utils/pdfTextExtractor', () => pdfMocks);
 
-// Mock Firebase modules used by the orders subscription in AllocationBoard
-vi.mock('../../services/firebase', () => ({
-  db: {},
-  auth: {},
-}));
-
-vi.mock('firebase/firestore', () => ({
-  collection: vi.fn(),
-  query: vi.fn(),
-  orderBy: vi.fn(),
-  onSnapshot: vi.fn(() => vi.fn()), // returns an unsubscribe noop
+vi.mock('../../services/orderService', () => ({
+  subscribeActiveOrders: vi.fn(() => vi.fn()),
 }));
 
 const managerUser: AppUser = {

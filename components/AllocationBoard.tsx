@@ -1,15 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import {
-  collection,
-  query,
-  orderBy,
-  onSnapshot,
-  QuerySnapshot,
-  DocumentData,
-} from "firebase/firestore";
-import { db } from "../services/firebase";
 import { AppUser, Order } from "../types";
-import { isActiveStatus } from "../constants";
 import {
   parseAllocationSource,
   groupArrivalBucket,
@@ -26,6 +16,7 @@ import {
   publishAllocationSnapshot,
   subscribeLatestAllocationSnapshot,
 } from "../services/allocationService";
+import { subscribeActiveOrders } from "../services/orderService";
 
 interface AllocationBoardProps {
   currentUser: AppUser;
@@ -85,9 +76,35 @@ interface MatchedOrder {
   modelNumber: string;
   exteriorColor1: string;
   interiorColor1: string;
-  matchType: "model" | "modelNumber" | "both";
   colorMatch: "exact" | "partial" | null;
   interiorMatch: "exact" | "partial" | null;
+}
+
+type ColorMatchResult = "exact" | "partial" | null;
+
+/** Find the best color match across multiple order preferences against one vehicle color. */
+function bestColorPreference(
+  preferences: string[],
+  vehicleColor: string,
+  matchFn: (a: string, b: string) => ColorMatchResult,
+): ColorMatchResult {
+  let best: ColorMatchResult = null;
+  for (const pref of preferences) {
+    const result = matchFn(pref, vehicleColor);
+    if (result === "exact") return "exact";
+    if (result === "partial") best = "partial";
+  }
+  return best;
+}
+
+/** Pre-computed order fields to avoid redundant work in the O(V*O) matching loop. */
+interface PrecomputedOrder {
+  order: Order;
+  normalizedModel: string;
+  fourDigitCode: string | null;
+  bridgedModel: string | null;
+  extColors: string[];
+  intColors: string[];
 }
 
 function getDisplayValue(value?: string | null): string | null {
@@ -494,122 +511,53 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
     return () => unsubscribe();
   }, []);
 
-  // Subscribe to all orders (read-only) so we can match them against allocation vehicles
   useEffect(() => {
-    const ordersQuery = query(
-      collection(db, "orders"),
-      orderBy("createdAt", "desc"),
-    );
-
-    const unsubscribeOrders = onSnapshot(
-      ordersQuery,
-      (querySnapshot: QuerySnapshot<DocumentData>) => {
-        const orders = querySnapshot.docs
-          .map((docSnapshot) => ({ ...docSnapshot.data(), id: docSnapshot.id }) as Order)
-          .filter((order) => isActiveStatus(order.status));
-        setActiveOrders(orders);
-      },
-      (error) => {
-        console.error("AllocationBoard: Failed to subscribe to orders:", error);
-      },
-    );
-
-    return () => unsubscribeOrders();
+    return subscribeActiveOrders((orders) => setActiveOrders(orders));
   }, []);
 
-  // Build a lookup: allocation vehicle id → matched orders
-  // Match 3 ways:
-  //   1. Order.model (normalized, spaces stripped) === AllocationVehicle.code
-  //   2. Order.modelNumber (4-digit) === AllocationVehicle.sourceCode (4-digit)
-  //   3. Bridge: Order.modelNumber → lookup base model via MODEL_CODE_TO_ALLOCATION → compare to AllocationVehicle.code
+  // Pre-compute order fields once so the O(V*O) loop doesn't repeat work
+  const precomputedOrders = useMemo<PrecomputedOrder[]>(() => {
+    return activeOrders.map((order) => {
+      const fourDigitCode = extractFourDigitCode(order.modelNumber);
+      const bridged = fourDigitCode ? MODEL_CODE_TO_ALLOCATION[fourDigitCode] : null;
+      return {
+        order,
+        normalizedModel: normalizeModelForMatch(order.model),
+        fourDigitCode,
+        bridgedModel: bridged ? normalizeModelForMatch(bridged) : null,
+        extColors: [order.exteriorColor1, order.exteriorColor2, order.exteriorColor3].filter(Boolean) as string[],
+        intColors: [order.interiorColor1, order.interiorColor2, order.interiorColor3].filter(Boolean) as string[],
+      };
+    });
+  }, [activeOrders]);
+
+  // Match allocation vehicles to active orders via model name, 4-digit code, or bridge lookup
   const orderMatchesByVehicle = useMemo(() => {
     const matches = new Map<string, MatchedOrder[]>();
-    if (activeOrders.length === 0) return matches;
+    if (precomputedOrders.length === 0) return matches;
 
     for (const vehicle of latestSnapshot?.vehicles ?? []) {
       const vehicleCode = normalizeModelForMatch(vehicle.code);
-      const vehicleSourceCode = vehicle.sourceCode
-        ? extractFourDigitCode(vehicle.sourceCode)
-        : null;
+      const vehicleSourceCode = vehicle.sourceCode ? extractFourDigitCode(vehicle.sourceCode) : null;
 
       const vehicleMatches: MatchedOrder[] = [];
 
-      for (const order of activeOrders) {
-        const orderModel = normalizeModelForMatch(order.model);
-        const orderModelNumber = extractFourDigitCode(order.modelNumber);
+      for (const pc of precomputedOrders) {
+        const modelMatch = vehicleCode !== "" && pc.normalizedModel === vehicleCode;
+        const codeMatch = vehicleSourceCode !== null && pc.fourDigitCode !== null && vehicleSourceCode === pc.fourDigitCode;
+        const bridgeMatch = pc.bridgedModel !== null && vehicleCode !== "" && pc.bridgedModel === vehicleCode;
 
-        // Path 1: direct model name match (e.g., "RX 350" → "RX350")
-        const modelMatch = vehicleCode !== "" && orderModel === vehicleCode;
-
-        // Path 2: direct 4-digit code match
-        const modelNumberMatch =
-          vehicleSourceCode !== null &&
-          orderModelNumber !== null &&
-          vehicleSourceCode === orderModelNumber;
-
-        // Path 3: bridge via lookup table (e.g., order modelNumber "9400" → "RX350" → matches vehicle code "RX350")
-        const bridgedModel = orderModelNumber
-          ? MODEL_CODE_TO_ALLOCATION[orderModelNumber]
-          : null;
-        const bridgeMatch =
-          bridgedModel !== null &&
-          bridgedModel !== undefined &&
-          vehicleCode !== "" &&
-          normalizeModelForMatch(bridgedModel) === vehicleCode;
-
-        if (modelMatch || modelNumberMatch || bridgeMatch) {
-          // Check exterior color match across all 3 order color preferences
-          const orderExtColors = [
-            order.exteriorColor1,
-            order.exteriorColor2,
-            order.exteriorColor3,
-          ].filter(Boolean) as string[];
-          let bestColorMatch: "exact" | "partial" | null = null;
-          for (const orderColor of orderExtColors) {
-            const result = matchExteriorColors(orderColor, vehicle.color);
-            if (result === "exact") {
-              bestColorMatch = "exact";
-              break;
-            }
-            if (result === "partial" && bestColorMatch !== "exact") {
-              bestColorMatch = "partial";
-            }
-          }
-
-          // Check interior color match across all 3 order interior preferences
-          const orderIntColors = [
-            order.interiorColor1,
-            order.interiorColor2,
-            order.interiorColor3,
-          ].filter(Boolean) as string[];
-          let bestInteriorMatch: "exact" | "partial" | null = null;
-          for (const orderInt of orderIntColors) {
-            const result = matchInteriorColors(orderInt, vehicle.interiorColor);
-            if (result === "exact") {
-              bestInteriorMatch = "exact";
-              break;
-            }
-            if (result === "partial" && bestInteriorMatch !== "exact") {
-              bestInteriorMatch = "partial";
-            }
-          }
-
+        if (modelMatch || codeMatch || bridgeMatch) {
           vehicleMatches.push({
-            orderId: order.id,
-            customerName: order.customerName,
-            salesperson: order.salesperson,
-            model: order.model,
-            modelNumber: order.modelNumber,
-            exteriorColor1: order.exteriorColor1,
-            interiorColor1: order.interiorColor1,
-            colorMatch: bestColorMatch,
-            interiorMatch: bestInteriorMatch,
-            matchType:
-              modelMatch && (modelNumberMatch || bridgeMatch)
-                ? "both"
-                : modelMatch
-                  ? "model"
-                  : "modelNumber",
+            orderId: pc.order.id,
+            customerName: pc.order.customerName,
+            salesperson: pc.order.salesperson,
+            model: pc.order.model,
+            modelNumber: pc.order.modelNumber,
+            exteriorColor1: pc.order.exteriorColor1,
+            interiorColor1: pc.order.interiorColor1,
+            colorMatch: bestColorPreference(pc.extColors, vehicle.color, matchExteriorColors),
+            interiorMatch: bestColorPreference(pc.intColors, vehicle.interiorColor, matchInteriorColors),
           });
         }
       }
@@ -620,10 +568,9 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
     }
 
     return matches;
-  }, [latestSnapshot, activeOrders]);
+  }, [latestSnapshot, precomputedOrders]);
 
   const matchSummary = useMemo(() => {
-    const totalVehicles = latestSnapshot?.vehicles.length ?? 0;
     const matchedVehicleCount = orderMatchesByVehicle.size;
     const uniqueOrderIds = new Set<string>();
     for (const matched of orderMatchesByVehicle.values()) {
@@ -631,12 +578,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
         uniqueOrderIds.add(m.orderId);
       }
     }
-    return {
-      totalVehicles,
-      matchedVehicleCount,
-      matchedOrderCount: uniqueOrderIds.size,
-    };
-  }, [latestSnapshot, orderMatchesByVehicle]);
+    return { matchedVehicleCount, matchedOrderCount: uniqueOrderIds.size };
+  }, [orderMatchesByVehicle]);
 
   const vehicles = useMemo(
     () => latestSnapshot?.vehicles ?? [],
