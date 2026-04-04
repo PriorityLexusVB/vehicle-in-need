@@ -23,6 +23,9 @@ vi.mock('../../services/orderService', () => ({
   subscribeActiveOrders: vi.fn(() => vi.fn()),
 }));
 
+import { subscribeActiveOrders } from '../../services/orderService';
+const mockSubscribeActiveOrders = vi.mocked(subscribeActiveOrders);
+
 const managerUser: AppUser = {
   uid: 'manager-1',
   email: 'manager@priorityautomotive.com',
@@ -567,6 +570,131 @@ describe('AllocationBoard', () => {
     bodyRows.forEach((row) => {
       const cells = within(row).getAllByRole('cell');
       expect(cells[5]).toHaveTextContent(/^\s*$/);
+    });
+  });
+
+  describe('order matching', () => {
+    const sampleOrders = [
+      {
+        id: 'order-1',
+        customerName: 'John Smith',
+        salesperson: 'Jane Doe',
+        model: 'RX350',
+        modelNumber: '9400',
+        exteriorColor1: 'Caviar',
+        interiorColor1: 'Black',
+        status: 'Factory Order',
+        date: '2026-03-01',
+        dealNumber: 'D001',
+        year: '2026',
+        msrp: 50525,
+        depositAmount: 500,
+        manager: 'Manager User',
+      },
+      {
+        id: 'order-2',
+        customerName: 'Alice Brown',
+        salesperson: 'Bob Lee',
+        model: 'TX 500H',
+        modelNumber: '9360',
+        exteriorColor1: 'White',
+        interiorColor1: 'Peppercorn',
+        status: 'Factory Order',
+        date: '2026-03-02',
+        dealNumber: 'D002',
+        year: '2026',
+        msrp: 69960,
+        depositAmount: 1000,
+        manager: 'Manager User',
+      },
+    ];
+
+    function setupWithOrders() {
+      mockSubscribeActiveOrders.mockImplementation((callback) => {
+        callback(sampleOrders as any);
+        return () => undefined;
+      });
+    }
+
+    it('shows match summary count for managers when orders match', async () => {
+      setupWithOrders();
+      render(<AllocationBoard currentUser={managerUser} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Order Matches')).toBeInTheDocument();
+      });
+
+      // Both orders match — summary should mention matching orders
+      expect(screen.getByText(/2 active orders? matched/)).toBeInTheDocument();
+    });
+
+    it('shows customer names in strategy view for managers', async () => {
+      setupWithOrders();
+      render(<AllocationBoard currentUser={managerUser} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('John Smith')).toBeInTheDocument();
+        expect(screen.getByText('Alice Brown')).toBeInTheDocument();
+      });
+    });
+
+    it('shows salesperson in strategy view for managers', async () => {
+      setupWithOrders();
+      render(<AllocationBoard currentUser={managerUser} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Jane Doe')).toBeInTheDocument();
+        expect(screen.getByText('Bob Lee')).toBeInTheDocument();
+      });
+    });
+
+    it('does not show customer PII for non-managers', async () => {
+      // Non-managers don't get orders (subscription is gated)
+      mockSubscribeActiveOrders.mockImplementation(() => vi.fn());
+      render(<AllocationBoard currentUser={consultantUser} />);
+
+      await waitFor(() => {
+        expect(screen.queryByText('John Smith')).not.toBeInTheDocument();
+        expect(screen.queryByText('Alice Brown')).not.toBeInTheDocument();
+      });
+    });
+
+    it('shows matched orders in log view for managers', async () => {
+      setupWithOrders();
+      const user = userEvent.setup();
+      render(<AllocationBoard currentUser={managerUser} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('John Smith')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Full Log View' }));
+
+      const logView = screen.getByTestId('allocation-log-view');
+      expect(within(logView).getByText('John Smith')).toBeInTheDocument();
+      expect(within(logView).getByText('Alice Brown')).toBeInTheDocument();
+    });
+
+    it('matches model with spaces (TX 500H → TX500H)', async () => {
+      setupWithOrders();
+      render(<AllocationBoard currentUser={managerUser} />);
+
+      // Alice's order has model "TX 500H" which should match allocation vehicle code "TX500H"
+      await waitFor(() => {
+        expect(screen.getByText('Alice Brown')).toBeInTheDocument();
+      });
+    });
+
+    it('shows color match badges when colors match', async () => {
+      // Vehicle 2 has color BLACK, order-1 has exteriorColor1 "Caviar" → partial match (same family)
+      setupWithOrders();
+      render(<AllocationBoard currentUser={managerUser} />);
+
+      await waitFor(() => {
+        // Caviar is in the "black" family, vehicle has "BLACK" → partial exterior match
+        const extBadges = screen.getAllByText(/~Ext:|Ext:/);
+        expect(extBadges.length).toBeGreaterThan(0);
+      });
     });
   });
 });
