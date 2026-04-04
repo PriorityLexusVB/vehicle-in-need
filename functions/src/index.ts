@@ -543,3 +543,6 @@ export const disableUser = onCall<DisableUserData>(
     }
   }
 );
+
+// Allocation email processing
+export { processAllocationEmail } from "./allocationEmailFunction";
