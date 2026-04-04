@@ -70,10 +70,6 @@ const mapDocsToOrders = (
   );
 };
 
-// Declare version globals
-declare const __APP_VERSION__: string;
-declare const __BUILD_TIME__: string;
-
 const App: React.FC = () => {
   const location = useLocation();
   const [orders, setOrders] = useState<Order[]>([]);

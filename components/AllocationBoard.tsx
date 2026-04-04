@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { AppUser } from "../types";
+import { AppUser, Order } from "../types";
 import {
   parseAllocationSource,
   groupArrivalBucket,
 } from "../src/utils/allocationParser";
+import { MODEL_CODE_TO_ALLOCATION } from "../src/utils/allocationReference";
+import { matchExteriorColors, matchInteriorColors } from "../src/utils/colorReference";
 import { extractAllocationTextFromPdf } from "../src/utils/pdfTextExtractor";
 import {
   ParsedAllocationResult,
@@ -14,6 +16,7 @@ import {
   publishAllocationSnapshot,
   subscribeLatestAllocationSnapshot,
 } from "../services/allocationService";
+import { subscribeActiveOrders } from "../services/orderService";
 
 interface AllocationBoardProps {
   currentUser: AppUser;
@@ -53,6 +56,56 @@ const STORAGE_KEYS = {
   arrivalGrouping: "allocation.arrivalGrouping",
   sortMode: "allocation.sortMode",
 } as const;
+
+/** Normalize a model string for matching: strip spaces, uppercase, e.g. "RX 350" → "RX350" */
+function normalizeModelForMatch(model: string): string {
+  return model.replace(/\s+/g, "").toUpperCase();
+}
+
+/** Extract the 4-digit model number from a string like "9702" or "9702A" */
+function extractFourDigitCode(value: string): string | null {
+  const match = value.trim().match(/^(\d{4})/);
+  return match?.[1] ?? null;
+}
+
+interface MatchedOrder {
+  orderId: string;
+  customerName: string;
+  salesperson: string;
+  model: string;
+  modelNumber: string;
+  exteriorColor1: string;
+  interiorColor1: string;
+  colorMatch: "exact" | "partial" | null;
+  interiorMatch: "exact" | "partial" | null;
+}
+
+type ColorMatchResult = "exact" | "partial" | null;
+
+/** Find the best color match across multiple order preferences against one vehicle color. */
+function bestColorPreference(
+  preferences: string[],
+  vehicleColor: string,
+  matchFn: (a: string, b: string) => ColorMatchResult,
+): ColorMatchResult {
+  let best: ColorMatchResult = null;
+  for (const pref of preferences) {
+    const result = matchFn(pref, vehicleColor);
+    if (result === "exact") return "exact";
+    if (result === "partial") best = "partial";
+  }
+  return best;
+}
+
+/** Pre-computed order fields to avoid redundant work in the O(V*O) matching loop. */
+interface PrecomputedOrder {
+  order: Order;
+  normalizedModel: string;
+  fourDigitCode: string | null;
+  bridgedModel: string | null;
+  extColors: string[];
+  intColors: string[];
+}
 
 function getDisplayValue(value?: string | null): string | null {
   if (!value) {
@@ -400,6 +453,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [activeOrders, setActiveOrders] = useState<Order[]>([]);
 
   const [isManagerPanelOpen, setIsManagerPanelOpen] = useState(false);
   const [sourceText, setSourceText] = useState("");
@@ -456,6 +510,82 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
 
     return () => unsubscribe();
   }, []);
+
+  // Only managers subscribe to all orders for matching — non-managers lack
+  // Firestore permissions for the full orders collection and shouldn't see PII.
+  useEffect(() => {
+    if (!currentUser.isManager) {
+      setActiveOrders([]);
+      return;
+    }
+    return subscribeActiveOrders((orders) => setActiveOrders(orders));
+  }, [currentUser.isManager]);
+
+  // Pre-compute order fields once so the O(V*O) loop doesn't repeat work
+  const precomputedOrders = useMemo<PrecomputedOrder[]>(() => {
+    return activeOrders.map((order) => {
+      const fourDigitCode = extractFourDigitCode(order.modelNumber);
+      const bridged = fourDigitCode ? MODEL_CODE_TO_ALLOCATION[fourDigitCode] : null;
+      return {
+        order,
+        normalizedModel: normalizeModelForMatch(order.model),
+        fourDigitCode,
+        bridgedModel: bridged ? normalizeModelForMatch(bridged) : null,
+        extColors: [order.exteriorColor1, order.exteriorColor2, order.exteriorColor3].filter(Boolean) as string[],
+        intColors: [order.interiorColor1, order.interiorColor2, order.interiorColor3].filter(Boolean) as string[],
+      };
+    });
+  }, [activeOrders]);
+
+  // Match allocation vehicles to active orders via model name, 4-digit code, or bridge lookup
+  const orderMatchesByVehicle = useMemo(() => {
+    const matches = new Map<string, MatchedOrder[]>();
+    if (precomputedOrders.length === 0) return matches;
+
+    for (const vehicle of latestSnapshot?.vehicles ?? []) {
+      const vehicleCode = normalizeModelForMatch(vehicle.code);
+      const vehicleSourceCode = vehicle.sourceCode ? extractFourDigitCode(vehicle.sourceCode) : null;
+
+      const vehicleMatches: MatchedOrder[] = [];
+
+      for (const pc of precomputedOrders) {
+        const modelMatch = vehicleCode !== "" && pc.normalizedModel === vehicleCode;
+        const codeMatch = vehicleSourceCode !== null && pc.fourDigitCode !== null && vehicleSourceCode === pc.fourDigitCode;
+        const bridgeMatch = pc.bridgedModel !== null && vehicleCode !== "" && pc.bridgedModel === vehicleCode;
+
+        if (modelMatch || codeMatch || bridgeMatch) {
+          vehicleMatches.push({
+            orderId: pc.order.id,
+            customerName: pc.order.customerName,
+            salesperson: pc.order.salesperson,
+            model: pc.order.model,
+            modelNumber: pc.order.modelNumber,
+            exteriorColor1: pc.order.exteriorColor1,
+            interiorColor1: pc.order.interiorColor1,
+            colorMatch: bestColorPreference(pc.extColors, vehicle.color, matchExteriorColors),
+            interiorMatch: bestColorPreference(pc.intColors, vehicle.interiorColor, matchInteriorColors),
+          });
+        }
+      }
+
+      if (vehicleMatches.length > 0) {
+        matches.set(vehicle.id, vehicleMatches);
+      }
+    }
+
+    return matches;
+  }, [latestSnapshot, precomputedOrders]);
+
+  const matchSummary = useMemo(() => {
+    const matchedVehicleCount = orderMatchesByVehicle.size;
+    const uniqueOrderIds = new Set<string>();
+    for (const matched of orderMatchesByVehicle.values()) {
+      for (const m of matched) {
+        uniqueOrderIds.add(m.orderId);
+      }
+    }
+    return { matchedVehicleCount, matchedOrderCount: uniqueOrderIds.size };
+  }, [orderMatchesByVehicle]);
 
   const vehicles = useMemo(
     () => latestSnapshot?.vehicles ?? [],
@@ -1227,6 +1357,17 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                 <p className="text-xs uppercase tracking-wider text-slate-400">Live Hybrid Mix</p>
                 <p className="mt-1 text-2xl font-bold text-white">{latestSnapshot?.summary.hybridMix ?? 0}%</p>
               </div>
+              <div className={`rounded-xl border p-4 ${matchSummary.matchedOrderCount > 0 ? "border-amber-500/30 bg-amber-500/10" : "border-slate-800 bg-slate-900"}`}>
+                <p className="text-xs uppercase tracking-wider text-slate-400">Order Matches</p>
+                <p className={`mt-1 text-2xl font-bold ${matchSummary.matchedOrderCount > 0 ? "text-amber-300" : "text-white"}`}>
+                  {matchSummary.matchedOrderCount}
+                </p>
+                <p className="mt-0.5 text-xs text-slate-400">
+                  {matchSummary.matchedOrderCount > 0
+                    ? `${matchSummary.matchedOrderCount} active order${matchSummary.matchedOrderCount === 1 ? "" : "s"} matched to ${matchSummary.matchedVehicleCount} allocation vehicle${matchSummary.matchedVehicleCount === 1 ? "" : "s"}`
+                    : "No active orders match current allocation"}
+                </p>
+              </div>
             </div>
 
             {boardView === "strategy" ? (
@@ -1247,6 +1388,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
 
                             if (existing) {
                               existing.units += vehicle.quantity;
+                              existing.vehicleIds.push(vehicle.id);
                               existing.factoryAccessories = Array.from(
                                 new Set([...existing.factoryAccessories, ...factoryAccessories]),
                               );
@@ -1264,6 +1406,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                                 interiorColor: vehicle.interiorColor,
                                 bos: vehicle.bos,
                                 units: vehicle.quantity,
+                                vehicleIds: [vehicle.id],
                                 factoryAccessories,
                                 postProductionOptions,
                               });
@@ -1283,6 +1426,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                               interiorColor: string;
                               bos: string;
                               units: number;
+                              vehicleIds: string[];
                               factoryAccessories: string[];
                               postProductionOptions: string[];
                             }
@@ -1415,6 +1559,73 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                                   </div>
                                 ))}
                               </dl>
+
+                              {(() => {
+                                const variantMatches = variant.vehicleIds.flatMap(
+                                  (vid) => orderMatchesByVehicle.get(vid) ?? [],
+                                );
+                                const uniqueMatches = Array.from(
+                                  new Map(variantMatches.map((m) => [m.orderId, m])).values(),
+                                );
+                                if (uniqueMatches.length === 0) return null;
+                                return (
+                                  <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-amber-300">
+                                      Matching Orders ({uniqueMatches.length})
+                                    </p>
+                                    {currentUser.isManager ? (
+                                      <div className="mt-2 space-y-1.5">
+                                        {uniqueMatches.map((m) => (
+                                          <div
+                                            key={m.orderId}
+                                            className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-amber-100"
+                                          >
+                                            <span className="font-semibold text-white">{m.customerName}</span>
+                                            <span className="text-amber-200">{m.salesperson}</span>
+                                            <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber-300">
+                                              {m.model} / {m.modelNumber}
+                                            </span>
+                                            {m.exteriorColor1 && (
+                                              <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                                                m.colorMatch === "exact"
+                                                  ? "bg-emerald-500/20 text-emerald-300"
+                                                  : m.colorMatch === "partial"
+                                                    ? "bg-sky-500/20 text-sky-300"
+                                                    : "bg-slate-700/50 text-slate-300"
+                                              }`}>
+                                                {m.colorMatch === "exact"
+                                                  ? `Ext: ${m.exteriorColor1}`
+                                                  : m.colorMatch === "partial"
+                                                    ? `~Ext: ${m.exteriorColor1}`
+                                                    : `Ext pref: ${m.exteriorColor1}`}
+                                              </span>
+                                            )}
+                                            {m.interiorColor1 && (
+                                              <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                                                m.interiorMatch === "exact"
+                                                  ? "bg-emerald-500/20 text-emerald-300"
+                                                  : m.interiorMatch === "partial"
+                                                    ? "bg-sky-500/20 text-sky-300"
+                                                    : "bg-slate-700/50 text-slate-300"
+                                              }`}>
+                                                {m.interiorMatch === "exact"
+                                                  ? `Int: ${m.interiorColor1}`
+                                                  : m.interiorMatch === "partial"
+                                                    ? `~Int: ${m.interiorColor1}`
+                                                    : `Int pref: ${m.interiorColor1}`}
+                                              </span>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <p className="mt-2 text-xs text-amber-100">
+                                        {uniqueMatches.length} matching order{uniqueMatches.length === 1 ? "" : "s"}
+                                      </p>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                             </div>
                           );
                         });
@@ -1434,6 +1645,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                       <th className="px-3 py-3">Build / Port</th>
                       <th className="px-3 py-3">BOS</th>
                       <th className="px-3 py-3">Qty</th>
+                      <th className="px-3 py-3">Matched Orders</th>
                       <th className="px-3 py-3">Factory Accessories</th>
                       <th className="px-3 py-3">Post-Production Options</th>
                     </tr>
@@ -1463,6 +1675,37 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                             </span>
                           </td>
                           <td className="px-3 py-2">{vehicle.quantity > 1 ? vehicle.quantity : null}</td>
+                          <td className="px-3 py-2">
+                            {(() => {
+                              const matched = orderMatchesByVehicle.get(vehicle.id);
+                              if (!matched || matched.length === 0) return null;
+                              if (!currentUser.isManager) {
+                                return <span className="text-xs text-amber-300">{matched.length}</span>;
+                              }
+                              return (
+                                <div className="space-y-1">
+                                  {matched.map((m) => (
+                                    <div key={m.orderId} className="flex flex-wrap items-center gap-1 text-xs">
+                                      <span className="font-semibold text-amber-300">{m.customerName}</span>
+                                      <span className="text-amber-200/70">({m.salesperson})</span>
+                                      {m.colorMatch === "exact" && (
+                                        <span className="rounded bg-emerald-500/20 px-1 py-0.5 text-[10px] font-semibold text-emerald-300">EXT</span>
+                                      )}
+                                      {m.colorMatch === "partial" && (
+                                        <span className="rounded bg-sky-500/20 px-1 py-0.5 text-[10px] font-semibold text-sky-300">~EXT</span>
+                                      )}
+                                      {m.interiorMatch === "exact" && (
+                                        <span className="rounded bg-emerald-500/20 px-1 py-0.5 text-[10px] font-semibold text-emerald-300">INT</span>
+                                      )}
+                                      {m.interiorMatch === "partial" && (
+                                        <span className="rounded bg-sky-500/20 px-1 py-0.5 text-[10px] font-semibold text-sky-300">~INT</span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            })()}
+                          </td>
                           <td className="px-3 py-2">{factoryAccessories}</td>
                           <td className="px-3 py-2">{postProductionOptions}</td>
                         </tr>
