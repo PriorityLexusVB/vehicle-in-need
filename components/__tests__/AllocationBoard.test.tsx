@@ -611,7 +611,7 @@ describe('AllocationBoard', () => {
 
     function setupWithOrders() {
       mockSubscribeActiveOrders.mockImplementation((callback) => {
-        callback(sampleOrders as any);
+        callback(sampleOrders as unknown as import('../../types').Order[]);
         return () => undefined;
       });
     }
