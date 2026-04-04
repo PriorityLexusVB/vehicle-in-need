@@ -15,6 +15,7 @@ import {
   groupArrivalBucket,
 } from "../src/utils/allocationParser";
 import { MODEL_CODE_TO_ALLOCATION } from "../src/utils/allocationReference";
+import { matchExteriorColors } from "../src/utils/colorReference";
 import { extractAllocationTextFromPdf } from "../src/utils/pdfTextExtractor";
 import {
   ParsedAllocationResult,
@@ -84,6 +85,7 @@ interface MatchedOrder {
   modelNumber: string;
   exteriorColor1: string;
   matchType: "model" | "modelNumber" | "both";
+  colorMatch: "exact" | "partial" | null;
 }
 
 function getDisplayValue(value?: string | null): string | null {
@@ -554,6 +556,24 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
           normalizeModelForMatch(bridgedModel) === vehicleCode;
 
         if (modelMatch || modelNumberMatch || bridgeMatch) {
+          // Check color match across all 3 order color preferences
+          const orderColors = [
+            order.exteriorColor1,
+            order.exteriorColor2,
+            order.exteriorColor3,
+          ].filter(Boolean) as string[];
+          let bestColorMatch: "exact" | "partial" | null = null;
+          for (const orderColor of orderColors) {
+            const result = matchExteriorColors(orderColor, vehicle.color);
+            if (result === "exact") {
+              bestColorMatch = "exact";
+              break;
+            }
+            if (result === "partial" && bestColorMatch !== "exact") {
+              bestColorMatch = "partial";
+            }
+          }
+
           vehicleMatches.push({
             orderId: order.id,
             customerName: order.customerName,
@@ -561,6 +581,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
             model: order.model,
             modelNumber: order.modelNumber,
             exteriorColor1: order.exteriorColor1,
+            colorMatch: bestColorMatch,
             matchType:
               modelMatch && (modelNumberMatch || bridgeMatch)
                 ? "both"
@@ -1593,7 +1614,19 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                                             {m.model} / {m.modelNumber}
                                           </span>
                                           {m.exteriorColor1 && (
-                                            <span className="text-amber-200/70">Color pref: {m.exteriorColor1}</span>
+                                            <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                                              m.colorMatch === "exact"
+                                                ? "bg-emerald-500/20 text-emerald-300"
+                                                : m.colorMatch === "partial"
+                                                  ? "bg-sky-500/20 text-sky-300"
+                                                  : "bg-slate-700/50 text-slate-300"
+                                            }`}>
+                                              {m.colorMatch === "exact"
+                                                ? `Color match: ${m.exteriorColor1}`
+                                                : m.colorMatch === "partial"
+                                                  ? `Similar color: ${m.exteriorColor1}`
+                                                  : `Color pref: ${m.exteriorColor1}`}
+                                            </span>
                                           )}
                                         </div>
                                       ))}
@@ -1660,6 +1693,12 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                                     <div key={m.orderId} className="flex flex-wrap items-center gap-1 text-xs">
                                       <span className="font-semibold text-amber-300">{m.customerName}</span>
                                       <span className="text-amber-200/70">({m.salesperson})</span>
+                                      {m.colorMatch === "exact" && (
+                                        <span className="rounded bg-emerald-500/20 px-1 py-0.5 text-[10px] font-semibold text-emerald-300">COLOR</span>
+                                      )}
+                                      {m.colorMatch === "partial" && (
+                                        <span className="rounded bg-sky-500/20 px-1 py-0.5 text-[10px] font-semibold text-sky-300">~COLOR</span>
+                                      )}
                                     </div>
                                   ))}
                                 </div>
