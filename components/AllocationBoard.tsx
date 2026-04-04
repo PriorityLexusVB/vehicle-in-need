@@ -14,6 +14,7 @@ import {
   parseAllocationSource,
   groupArrivalBucket,
 } from "../src/utils/allocationParser";
+import { MODEL_CODE_TO_ALLOCATION } from "../src/utils/allocationReference";
 import { extractAllocationTextFromPdf } from "../src/utils/pdfTextExtractor";
 import {
   ParsedAllocationResult,
@@ -512,7 +513,11 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
     return () => unsubscribeOrders();
   }, []);
 
-  // Build a lookup: allocation vehicle code → matched orders
+  // Build a lookup: allocation vehicle id → matched orders
+  // Match 3 ways:
+  //   1. Order.model (normalized, spaces stripped) === AllocationVehicle.code
+  //   2. Order.modelNumber (4-digit) === AllocationVehicle.sourceCode (4-digit)
+  //   3. Bridge: Order.modelNumber → lookup base model via MODEL_CODE_TO_ALLOCATION → compare to AllocationVehicle.code
   const orderMatchesByVehicle = useMemo(() => {
     const matches = new Map<string, MatchedOrder[]>();
     if (activeOrders.length === 0) return matches;
@@ -529,13 +534,26 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
         const orderModel = normalizeModelForMatch(order.model);
         const orderModelNumber = extractFourDigitCode(order.modelNumber);
 
+        // Path 1: direct model name match (e.g., "RX 350" → "RX350")
         const modelMatch = vehicleCode !== "" && orderModel === vehicleCode;
+
+        // Path 2: direct 4-digit code match
         const modelNumberMatch =
           vehicleSourceCode !== null &&
           orderModelNumber !== null &&
           vehicleSourceCode === orderModelNumber;
 
-        if (modelMatch || modelNumberMatch) {
+        // Path 3: bridge via lookup table (e.g., order modelNumber "9400" → "RX350" → matches vehicle code "RX350")
+        const bridgedModel = orderModelNumber
+          ? MODEL_CODE_TO_ALLOCATION[orderModelNumber]
+          : null;
+        const bridgeMatch =
+          bridgedModel !== null &&
+          bridgedModel !== undefined &&
+          vehicleCode !== "" &&
+          normalizeModelForMatch(bridgedModel) === vehicleCode;
+
+        if (modelMatch || modelNumberMatch || bridgeMatch) {
           vehicleMatches.push({
             orderId: order.id,
             customerName: order.customerName,
@@ -544,7 +562,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
             modelNumber: order.modelNumber,
             exteriorColor1: order.exteriorColor1,
             matchType:
-              modelMatch && modelNumberMatch
+              modelMatch && (modelNumberMatch || bridgeMatch)
                 ? "both"
                 : modelMatch
                   ? "model"
