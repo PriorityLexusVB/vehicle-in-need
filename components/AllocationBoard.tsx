@@ -78,7 +78,29 @@ interface MatchedOrder {
   interiorColor1: string;
   colorMatch: "exact" | "partial" | null;
   interiorMatch: "exact" | "partial" | null;
+  orderDate: string;
 }
+
+/** Score a match for sorting: higher = better match. Exact color > partial > none. */
+function matchScore(m: MatchedOrder): number {
+  let score = 0;
+  if (m.colorMatch === "exact") score += 4;
+  else if (m.colorMatch === "partial") score += 2;
+  if (m.interiorMatch === "exact") score += 2;
+  else if (m.interiorMatch === "partial") score += 1;
+  return score;
+}
+
+/** Sort matched orders: best color match first, then oldest deposit (longest waiting). */
+function sortMatchedOrders(matches: MatchedOrder[]): MatchedOrder[] {
+  return [...matches].sort((a, b) => {
+    const scoreDiff = matchScore(b) - matchScore(a);
+    if (scoreDiff !== 0) return scoreDiff;
+    return a.orderDate.localeCompare(b.orderDate);
+  });
+}
+
+const MAX_VISIBLE_MATCHES = 3;
 
 type ColorMatchResult = "exact" | "partial" | null;
 
@@ -564,6 +586,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
             interiorColor1: pc.order.interiorColor1,
             colorMatch: bestColorPreference(pc.extColors, vehicle.color, matchExteriorColors),
             interiorMatch: bestColorPreference(pc.intColors, vehicle.interiorColor, matchInteriorColors),
+            orderDate: pc.order.date,
           });
         }
       }
@@ -1564,60 +1587,85 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                                 const variantMatches = variant.vehicleIds.flatMap(
                                   (vid) => orderMatchesByVehicle.get(vid) ?? [],
                                 );
-                                const uniqueMatches = Array.from(
-                                  new Map(variantMatches.map((m) => [m.orderId, m])).values(),
+                                const uniqueMatches = sortMatchedOrders(
+                                  Array.from(new Map(variantMatches.map((m) => [m.orderId, m])).values()),
                                 );
                                 if (uniqueMatches.length === 0) return null;
+                                const visibleMatches = uniqueMatches.slice(0, MAX_VISIBLE_MATCHES);
+                                const hiddenCount = uniqueMatches.length - visibleMatches.length;
                                 return (
                                   <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
                                     <p className="text-xs font-semibold uppercase tracking-wide text-amber-300">
                                       Matching Orders ({uniqueMatches.length})
                                     </p>
                                     {currentUser.isManager ? (
-                                      <div className="mt-2 space-y-1.5">
-                                        {uniqueMatches.map((m) => (
-                                          <div
-                                            key={m.orderId}
-                                            className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-amber-100"
-                                          >
-                                            <span className="font-semibold text-white">{m.customerName}</span>
-                                            <span className="text-amber-200">{m.salesperson}</span>
-                                            <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber-300">
-                                              {m.model} / {m.modelNumber}
-                                            </span>
-                                            {m.exteriorColor1 && (
-                                              <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
-                                                m.colorMatch === "exact"
-                                                  ? "bg-emerald-500/20 text-emerald-300"
-                                                  : m.colorMatch === "partial"
-                                                    ? "bg-sky-500/20 text-sky-300"
-                                                    : "bg-slate-700/50 text-slate-300"
-                                              }`}>
-                                                {m.colorMatch === "exact"
-                                                  ? `Ext: ${m.exteriorColor1}`
-                                                  : m.colorMatch === "partial"
-                                                    ? `~Ext: ${m.exteriorColor1}`
-                                                    : `Ext pref: ${m.exteriorColor1}`}
+                                      <>
+                                        <div className="mt-2 space-y-1.5">
+                                          {visibleMatches.map((m) => (
+                                            <div
+                                              key={m.orderId}
+                                              className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-amber-100"
+                                            >
+                                              <span className="font-semibold text-white">{m.customerName}</span>
+                                              <span className="text-amber-200">{m.salesperson}</span>
+                                              <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber-300">
+                                                {m.model} / {m.modelNumber}
                                               </span>
-                                            )}
-                                            {m.interiorColor1 && (
-                                              <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
-                                                m.interiorMatch === "exact"
-                                                  ? "bg-emerald-500/20 text-emerald-300"
-                                                  : m.interiorMatch === "partial"
-                                                    ? "bg-sky-500/20 text-sky-300"
-                                                    : "bg-slate-700/50 text-slate-300"
-                                              }`}>
-                                                {m.interiorMatch === "exact"
-                                                  ? `Int: ${m.interiorColor1}`
-                                                  : m.interiorMatch === "partial"
-                                                    ? `~Int: ${m.interiorColor1}`
-                                                    : `Int pref: ${m.interiorColor1}`}
-                                              </span>
-                                            )}
-                                          </div>
-                                        ))}
-                                      </div>
+                                              {m.exteriorColor1 && (
+                                                <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                                                  m.colorMatch === "exact"
+                                                    ? "bg-emerald-500/20 text-emerald-300"
+                                                    : m.colorMatch === "partial"
+                                                      ? "bg-sky-500/20 text-sky-300"
+                                                      : "bg-slate-700/50 text-slate-300"
+                                                }`}>
+                                                  {m.colorMatch === "exact"
+                                                    ? `Ext: ${m.exteriorColor1}`
+                                                    : m.colorMatch === "partial"
+                                                      ? `~Ext: ${m.exteriorColor1}`
+                                                      : `Ext pref: ${m.exteriorColor1}`}
+                                                </span>
+                                              )}
+                                              {m.interiorColor1 && (
+                                                <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                                                  m.interiorMatch === "exact"
+                                                    ? "bg-emerald-500/20 text-emerald-300"
+                                                    : m.interiorMatch === "partial"
+                                                      ? "bg-sky-500/20 text-sky-300"
+                                                      : "bg-slate-700/50 text-slate-300"
+                                                }`}>
+                                                  {m.interiorMatch === "exact"
+                                                    ? `Int: ${m.interiorColor1}`
+                                                    : m.interiorMatch === "partial"
+                                                      ? `~Int: ${m.interiorColor1}`
+                                                      : `Int pref: ${m.interiorColor1}`}
+                                                </span>
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                        {hiddenCount > 0 && (
+                                          <details className="mt-2">
+                                            <summary className="cursor-pointer text-xs font-semibold text-amber-300 hover:text-amber-200">
+                                              +{hiddenCount} more order{hiddenCount === 1 ? "" : "s"}
+                                            </summary>
+                                            <div className="mt-1.5 space-y-1.5">
+                                              {uniqueMatches.slice(MAX_VISIBLE_MATCHES).map((m) => (
+                                                <div
+                                                  key={m.orderId}
+                                                  className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-amber-100"
+                                                >
+                                                  <span className="font-semibold text-white">{m.customerName}</span>
+                                                  <span className="text-amber-200">{m.salesperson}</span>
+                                                  <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber-300">
+                                                    {m.model} / {m.modelNumber}
+                                                  </span>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </details>
+                                        )}
+                                      </>
                                     ) : (
                                       <p className="mt-2 text-xs text-amber-100">
                                         {uniqueMatches.length} matching order{uniqueMatches.length === 1 ? "" : "s"}
@@ -1677,11 +1725,12 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                           <td className="px-3 py-2">{vehicle.quantity > 1 ? vehicle.quantity : null}</td>
                           <td className="px-3 py-2">
                             {(() => {
-                              const matched = orderMatchesByVehicle.get(vehicle.id);
-                              if (!matched || matched.length === 0) return null;
+                              const rawMatched = orderMatchesByVehicle.get(vehicle.id);
+                              if (!rawMatched || rawMatched.length === 0) return null;
                               if (!currentUser.isManager) {
-                                return <span className="text-xs text-amber-300">{matched.length}</span>;
+                                return <span className="text-xs text-amber-300">{rawMatched.length}</span>;
                               }
+                              const matched = sortMatchedOrders(rawMatched);
                               return (
                                 <div className="space-y-1">
                                   {matched.map((m) => (
