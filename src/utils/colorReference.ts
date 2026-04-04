@@ -116,10 +116,27 @@ function createColorMatcher<T extends ColorEntry>(
   function resolveEntry(input: string): Resolution<T> | null {
     const trimmed = input.trim();
     if (!trimmed) return null;
+    const upper = trimmed.toUpperCase();
 
-    // 1. OEM code
-    const byCode = codeToEntry.get(trimmed.toUpperCase());
+    // 1. OEM code (direct)
+    const byCode = codeToEntry.get(upper);
     if (byCode) return { name: byCode.name, precision: "specific", entry: byCode };
+
+    // 1b. Strip leading zero and retry (salespeople enter "0223" for "223", "01H9" for "1H9")
+    if (/^0[A-Z0-9]{2,4}$/i.test(trimmed)) {
+      const stripped = codeToEntry.get(upper.slice(1));
+      if (stripped) return { name: stripped.name, precision: "specific", entry: stripped };
+    }
+
+    // 1c. Interior material prefix flexibility — try swapping prefix (LC20 → LA20, LB20, EA20)
+    const materialMatch = upper.match(/^(E[A-Z]|L[A-Z])(\d{2})$/);
+    if (materialMatch) {
+      const suffix = materialMatch[2];
+      for (const prefix of ["EA", "LA", "LB", "LC"]) {
+        const variant = codeToEntry.get(`${prefix}${suffix}`);
+        if (variant) return { name: variant.name, precision: "specific", entry: variant };
+      }
+    }
 
     const lower = trimmed.toLowerCase();
 
