@@ -122,6 +122,13 @@ function createColorMatcher<T extends ColorEntry>(
     const byCode = codeToEntry.get(upper);
     if (byCode) return { name: byCode.name, precision: "specific", entry: byCode };
 
+    // 1a. Compound string — try first token as OEM code (e.g., "6X4 NORI GREEN PEARL" → "6X4")
+    const firstToken = upper.split(/\s+/)[0];
+    if (firstToken && firstToken !== upper) {
+      const byFirstToken = codeToEntry.get(firstToken);
+      if (byFirstToken) return { name: byFirstToken.name, precision: "specific", entry: byFirstToken };
+    }
+
     // 1b. Strip leading zero and retry (salespeople enter "0223" for "223", "01H9" for "1H9")
     if (/^0[A-Z0-9]{2,4}$/i.test(trimmed)) {
       const stripped = codeToEntry.get(upper.slice(1));
