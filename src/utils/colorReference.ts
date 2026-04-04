@@ -84,48 +84,68 @@ export const INTERIOR_COLORS: InteriorColorEntry[] = [
 
 /** OEM code → color name (e.g., "223" → "Caviar") */
 const exteriorCodeToName = new Map<string, string>();
-/** Lowercase color name → OEM code (e.g., "caviar" → "223") */
-const exteriorNameToCode = new Map<string, string>();
+/** Exact lowercase name → entry (e.g., "caviar" → entry) */
+const exteriorExactName = new Map<string, ExteriorColorEntry>();
+/** Generic aliases that map to MULTIPLE colors (e.g., "blue" → 4 different blues) */
+const genericAliasToEntries = new Map<string, ExteriorColorEntry[]>();
 
 for (const entry of EXTERIOR_COLORS) {
   exteriorCodeToName.set(entry.code.toUpperCase(), entry.name);
-  exteriorNameToCode.set(entry.name.toLowerCase(), entry.code);
+  exteriorExactName.set(entry.name.toLowerCase(), entry);
   for (const alias of entry.aliases) {
-    // Don't overwrite more specific matches (e.g., "black" → first match wins)
-    if (!exteriorNameToCode.has(alias)) {
-      exteriorNameToCode.set(alias, entry.code);
-    }
+    const list = genericAliasToEntries.get(alias) ?? [];
+    list.push(entry);
+    genericAliasToEntries.set(alias, list);
   }
 }
 
+interface ColorResolution {
+  name: string;
+  /** "specific" = OEM code or exact name; "generic" = alias like "blue" or "black" */
+  precision: "specific" | "generic";
+  entry: ExteriorColorEntry;
+}
+
 /**
- * Resolve an exterior color input to a standardized name.
+ * Resolve an exterior color input to a standardized entry.
  * Accepts OEM codes ("223"), full names ("Caviar"), or informal names ("black").
- * Returns the official color name or null if no match.
  */
-export function resolveExteriorColor(input: string): string | null {
+function resolveColor(input: string): ColorResolution | null {
   const trimmed = input.trim();
   if (!trimmed) return null;
 
-  // Try as OEM code first
+  // 1. Try as OEM code (most precise)
   const byCode = exteriorCodeToName.get(trimmed.toUpperCase());
-  if (byCode) return byCode;
-
-  // Try as name/alias (case-insensitive)
-  const lower = trimmed.toLowerCase();
-  const code = exteriorNameToCode.get(lower);
-  if (code) {
-    return exteriorCodeToName.get(code.toUpperCase()) ?? null;
+  if (byCode) {
+    const entry = EXTERIOR_COLORS.find((e) => e.name === byCode);
+    if (entry) return { name: byCode, precision: "specific", entry };
   }
 
-  // Partial match: check if input contains or is contained by any alias
+  const lower = trimmed.toLowerCase();
+
+  // 2. Try as exact official name (e.g., "Caviar", "Ultrasonic Blue 2.0")
+  const byExactName = exteriorExactName.get(lower);
+  if (byExactName) return { name: byExactName.name, precision: "specific", entry: byExactName };
+
+  // 3. Try as alias — if it maps to exactly 1 color, it's specific; if multiple, it's generic
+  const aliasMatches = genericAliasToEntries.get(lower);
+  if (aliasMatches && aliasMatches.length === 1) {
+    return { name: aliasMatches[0].name, precision: "specific", entry: aliasMatches[0] };
+  }
+  if (aliasMatches && aliasMatches.length > 1) {
+    // Generic term like "blue" or "black" — resolve to first but mark as generic
+    return { name: aliasMatches[0].name, precision: "generic", entry: aliasMatches[0] };
+  }
+
+  // 4. Substring match (e.g., "ultrasonic" finds "Ultrasonic Blue 2.0")
   for (const entry of EXTERIOR_COLORS) {
-    if (entry.name.toLowerCase().includes(lower) || lower.includes(entry.name.toLowerCase())) {
-      return entry.name;
+    const entryLower = entry.name.toLowerCase();
+    if (entryLower.includes(lower) || lower.includes(entryLower)) {
+      return { name: entry.name, precision: "specific", entry };
     }
     for (const alias of entry.aliases) {
-      if (alias.includes(lower) || lower.includes(alias)) {
-        return entry.name;
+      if (alias.length > 3 && (alias.includes(lower) || lower.includes(alias))) {
+        return { name: entry.name, precision: "specific", entry };
       }
     }
   }
@@ -134,31 +154,47 @@ export function resolveExteriorColor(input: string): string | null {
 }
 
 /**
+ * Resolve an exterior color input to a standardized name.
+ * Accepts OEM codes ("223"), full names ("Caviar"), or informal names ("black").
+ * Returns the official color name or null if no match.
+ */
+export function resolveExteriorColor(input: string): string | null {
+  return resolveColor(input)?.name ?? null;
+}
+
+/**
  * Check if two color inputs refer to the same exterior color.
  * Handles codes, names, and informal aliases.
- * Returns: "exact" if same color, "partial" if same base color family, null if no match.
+ *
+ * Returns:
+ * - "exact" if both resolve to the SAME specific color (e.g., "223" vs "Caviar")
+ * - "partial" if they share a color family (e.g., "black" matches both Caviar & Obsidian)
+ *   or if either input is a generic term (e.g., "blue" is partial for any blue)
+ * - null if no relationship
  */
 export function matchExteriorColors(
   colorA: string,
   colorB: string,
 ): "exact" | "partial" | null {
-  const resolvedA = resolveExteriorColor(colorA);
-  const resolvedB = resolveExteriorColor(colorB);
+  const resA = resolveColor(colorA);
+  const resB = resolveColor(colorB);
 
-  if (!resolvedA || !resolvedB) return null;
+  if (!resA || !resB) return null;
 
-  // Exact same resolved color
-  if (resolvedA === resolvedB) return "exact";
+  // If both are specific and resolve to the same color → exact
+  if (resA.precision === "specific" && resB.precision === "specific") {
+    if (resA.name === resB.name) return "exact";
+  }
 
-  // Check if they share a color family alias (e.g., both resolve to a "black" alias)
-  const entryA = EXTERIOR_COLORS.find((e) => e.name === resolvedA);
-  const entryB = EXTERIOR_COLORS.find((e) => e.name === resolvedB);
-  if (entryA && entryB) {
-    const familiesA = new Set(entryA.aliases);
-    const familiesB = new Set(entryB.aliases);
-    for (const family of familiesA) {
-      if (familiesB.has(family)) return "partial";
-    }
+  // If one is generic (e.g., "blue") and the other matches a color in that family → partial
+  // Also covers: same name but one/both are generic → partial (not exact)
+  if (resA.name === resB.name) return resA.precision === "specific" && resB.precision === "specific" ? "exact" : "partial";
+
+  // Check if they share a color family alias
+  const familiesA = new Set(resA.entry.aliases);
+  const familiesB = new Set(resB.entry.aliases);
+  for (const family of familiesA) {
+    if (familiesB.has(family)) return "partial";
   }
 
   return null;
