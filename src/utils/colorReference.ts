@@ -72,7 +72,7 @@ export const INTERIOR_COLORS: InteriorColorEntry[] = [
   { codes: ["EA31", "LA31"], name: "Circuit Red", aliases: ["circuit red", "red"] },
   { codes: ["EA80", "LA80"], name: "Peppercorn", aliases: ["peppercorn", "gray", "grey"] },
   { codes: ["LB81"], name: "White/Peppercorn", aliases: ["white peppercorn", "bi-tone"] },
-  { codes: ["LA44"], name: "Sunflare", aliases: ["sunflare", "gold", "yellow"] },
+  { codes: ["LA46"], name: "Sunflare", aliases: ["sunflare", "gold", "yellow"] },
   { codes: ["LA45"], name: "Stone Brown", aliases: ["stone brown", "brown", "stone"] },
   { codes: ["EA32", "LA32"], name: "Mauve", aliases: ["mauve", "purple"] },
   { codes: ["EA42", "LA42"], name: "Glazed Caramel", aliases: ["glazed caramel", "caramel", "tan"] },

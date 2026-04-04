@@ -16,7 +16,7 @@ const ACTIVE_STATUSES = [
 ];
 
 /**
- * Subscribe to active orders (Factory Order, Dealer Exchange, Locate).
+ * Subscribe to all orders with an active status as defined by `isActiveStatus()`.
  *
  * Tries server-side filtering first (requires composite index: status + createdAt).
  * If the index isn't deployed yet, automatically falls back to client-side filtering.

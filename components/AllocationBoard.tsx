@@ -511,9 +511,15 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
     return () => unsubscribe();
   }, []);
 
+  // Only managers subscribe to all orders for matching — non-managers lack
+  // Firestore permissions for the full orders collection and shouldn't see PII.
   useEffect(() => {
+    if (!currentUser.isManager) {
+      setActiveOrders([]);
+      return;
+    }
     return subscribeActiveOrders((orders) => setActiveOrders(orders));
-  }, []);
+  }, [currentUser.isManager]);
 
   // Pre-compute order fields once so the O(V*O) loop doesn't repeat work
   const precomputedOrders = useMemo<PrecomputedOrder[]>(() => {
@@ -1567,50 +1573,56 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                                     <p className="text-xs font-semibold uppercase tracking-wide text-amber-300">
                                       Matching Orders ({uniqueMatches.length})
                                     </p>
-                                    <div className="mt-2 space-y-1.5">
-                                      {uniqueMatches.map((m) => (
-                                        <div
-                                          key={m.orderId}
-                                          className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-amber-100"
-                                        >
-                                          <span className="font-semibold text-white">{m.customerName}</span>
-                                          <span className="text-amber-200">{m.salesperson}</span>
-                                          <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber-300">
-                                            {m.model} / {m.modelNumber}
-                                          </span>
-                                          {m.exteriorColor1 && (
-                                            <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
-                                              m.colorMatch === "exact"
-                                                ? "bg-emerald-500/20 text-emerald-300"
-                                                : m.colorMatch === "partial"
-                                                  ? "bg-sky-500/20 text-sky-300"
-                                                  : "bg-slate-700/50 text-slate-300"
-                                            }`}>
-                                              {m.colorMatch === "exact"
-                                                ? `Ext: ${m.exteriorColor1}`
-                                                : m.colorMatch === "partial"
-                                                  ? `~Ext: ${m.exteriorColor1}`
-                                                  : `Ext pref: ${m.exteriorColor1}`}
+                                    {currentUser.isManager ? (
+                                      <div className="mt-2 space-y-1.5">
+                                        {uniqueMatches.map((m) => (
+                                          <div
+                                            key={m.orderId}
+                                            className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-amber-100"
+                                          >
+                                            <span className="font-semibold text-white">{m.customerName}</span>
+                                            <span className="text-amber-200">{m.salesperson}</span>
+                                            <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber-300">
+                                              {m.model} / {m.modelNumber}
                                             </span>
-                                          )}
-                                          {m.interiorColor1 && (
-                                            <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
-                                              m.interiorMatch === "exact"
-                                                ? "bg-emerald-500/20 text-emerald-300"
-                                                : m.interiorMatch === "partial"
-                                                  ? "bg-sky-500/20 text-sky-300"
-                                                  : "bg-slate-700/50 text-slate-300"
-                                            }`}>
-                                              {m.interiorMatch === "exact"
-                                                ? `Int: ${m.interiorColor1}`
-                                                : m.interiorMatch === "partial"
-                                                  ? `~Int: ${m.interiorColor1}`
-                                                  : `Int pref: ${m.interiorColor1}`}
-                                            </span>
-                                          )}
-                                        </div>
-                                      ))}
-                                    </div>
+                                            {m.exteriorColor1 && (
+                                              <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                                                m.colorMatch === "exact"
+                                                  ? "bg-emerald-500/20 text-emerald-300"
+                                                  : m.colorMatch === "partial"
+                                                    ? "bg-sky-500/20 text-sky-300"
+                                                    : "bg-slate-700/50 text-slate-300"
+                                              }`}>
+                                                {m.colorMatch === "exact"
+                                                  ? `Ext: ${m.exteriorColor1}`
+                                                  : m.colorMatch === "partial"
+                                                    ? `~Ext: ${m.exteriorColor1}`
+                                                    : `Ext pref: ${m.exteriorColor1}`}
+                                              </span>
+                                            )}
+                                            {m.interiorColor1 && (
+                                              <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                                                m.interiorMatch === "exact"
+                                                  ? "bg-emerald-500/20 text-emerald-300"
+                                                  : m.interiorMatch === "partial"
+                                                    ? "bg-sky-500/20 text-sky-300"
+                                                    : "bg-slate-700/50 text-slate-300"
+                                              }`}>
+                                                {m.interiorMatch === "exact"
+                                                  ? `Int: ${m.interiorColor1}`
+                                                  : m.interiorMatch === "partial"
+                                                    ? `~Int: ${m.interiorColor1}`
+                                                    : `Int pref: ${m.interiorColor1}`}
+                                              </span>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <p className="mt-2 text-xs text-amber-100">
+                                        {uniqueMatches.length} matching order{uniqueMatches.length === 1 ? "" : "s"}
+                                      </p>
+                                    )}
                                   </div>
                                 );
                               })()}
@@ -1667,6 +1679,9 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                             {(() => {
                               const matched = orderMatchesByVehicle.get(vehicle.id);
                               if (!matched || matched.length === 0) return null;
+                              if (!currentUser.isManager) {
+                                return <span className="text-xs text-amber-300">{matched.length}</span>;
+                              }
                               return (
                                 <div className="space-y-1">
                                   {matched.map((m) => (
