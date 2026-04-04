@@ -426,14 +426,14 @@ function formatBosDisplay(value: string): {
     return {
       value: "Y",
       detail: "Changeable",
-      tone: "border-emerald-500/40 bg-emerald-500/15 text-emerald-200",
+      tone: "border-emerald-300 bg-emerald-50 text-emerald-700",
     };
   }
 
   return {
     value: "N",
     detail: "Locked",
-    tone: "border-slate-600 bg-slate-900 text-slate-200",
+    tone: "border-slate-300 bg-slate-100 text-slate-600",
   };
 }
 
@@ -944,16 +944,16 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
 
   const parseConfidenceTone = useMemo(() => {
     if (!parseInsights) {
-      return "bg-slate-800 text-slate-200";
+      return "bg-slate-100 text-slate-600";
     }
 
     if (parseInsights.confidence === "High") {
-      return "bg-emerald-500/20 text-emerald-300";
+      return "bg-emerald-100 text-emerald-700";
     }
     if (parseInsights.confidence === "Medium") {
-      return "bg-amber-500/20 text-amber-300";
+      return "bg-amber-100 text-amber-700";
     }
-    return "bg-rose-500/20 text-rose-300";
+    return "bg-rose-100 text-rose-700";
   }, [parseInsights]);
 
   const handleParse = () => {
@@ -1095,28 +1095,28 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
   };
 
   return (
-    <section className="rounded-2xl border border-slate-800 bg-slate-950 text-slate-100 shadow-2xl">
-      <div className="border-b border-slate-800 px-6 py-5">
+    <section className="rounded-2xl border border-slate-200 bg-white text-slate-800 shadow-lg">
+      <div className="border-b border-slate-200 px-6 py-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.24em] text-sky-400">Live Allocation</p>
-            <h2 className="text-2xl font-bold tracking-tight text-white">Allocation Board</h2>
-            <p className="mt-1 text-sm text-slate-300">
+            <p className="text-xs uppercase tracking-[0.24em] text-sky-600">Live Allocation</p>
+            <h2 className="text-2xl font-bold tracking-tight text-slate-900">Allocation Board</h2>
+            <p className="mt-1 text-sm text-slate-500">
               Snapshot source of truth for consultant strategy and live inventory visibility.
             </p>
           </div>
 
-          <div className="rounded-xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-sm">
-            <p className="text-slate-300">
-              <span className="font-semibold text-slate-100">Published:</span>{" "}
+          <div className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm">
+            <p className="text-slate-500">
+              <span className="font-semibold text-slate-800">Published:</span>{" "}
               {formatTimestamp(latestSnapshot?.publishedAt)}
             </p>
-            <p className="text-slate-300">
-              <span className="font-semibold text-slate-100">Publisher:</span>{" "}
+            <p className="text-slate-500">
+              <span className="font-semibold text-slate-800">Publisher:</span>{" "}
               {latestSnapshot?.publishedByEmail || "Not published yet"}
             </p>
-            <p className="text-slate-300">
-              <span className="font-semibold text-slate-100">Report Date:</span>{" "}
+            <p className="text-slate-500">
+              <span className="font-semibold text-slate-800">Report Date:</span>{" "}
               {latestSnapshot?.reportDate || "Unknown"}
             </p>
           </div>
@@ -1126,7 +1126,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
           <div className="mt-5 flex items-center justify-end">
             <button
               onClick={() => setIsManagerPanelOpen((previous) => !previous)}
-              className="rounded-lg border border-sky-500/60 bg-sky-500/10 px-4 py-2 text-sm font-semibold text-sky-300 transition-colors hover:bg-sky-500/20"
+              className="rounded-lg border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-700 transition-colors hover:bg-sky-100"
               data-testid="allocation-manager-toggle"
             >
               {isManagerPanelOpen ? "Hide Allocation Update" : "Update Allocation"}
@@ -1136,17 +1136,17 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
       </div>
 
       {currentUser.isManager && isManagerPanelOpen && (
-        <div className="border-b border-slate-800 bg-slate-900/40 px-6 py-5" data-testid="allocation-manager-panel">
-          <h3 className="text-lg font-semibold text-white">Manager Update Panel</h3>
-          <p className="mt-1 text-sm text-slate-300">
+        <div className="border-b border-slate-200 bg-slate-50 px-6 py-5" data-testid="allocation-manager-panel">
+          <h3 className="text-lg font-semibold text-slate-900">Manager Update Panel</h3>
+          <p className="mt-1 text-sm text-slate-500">
             Paste Lexus allocation source text, parse, validate, and publish the new snapshot.
           </p>
 
           <div
             className={`mt-4 rounded-xl border border-dashed p-3 transition-colors ${
               isPdfDragActive
-                ? "border-sky-400 bg-sky-500/10"
-                : "border-slate-700 bg-slate-900/30"
+                ? "border-sky-400 bg-sky-50"
+                : "border-slate-300 bg-slate-50"
             }`}
             onDragEnter={handlePdfDrag}
             onDragOver={handlePdfDrag}
@@ -1159,7 +1159,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                 type="button"
                 onClick={() => pdfInputRef.current?.click()}
                 disabled={isExtractingPdf}
-                className="rounded-lg border border-slate-600 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-100 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-700"
+                className="rounded-lg border border-slate-300 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-800 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:bg-slate-200"
                 data-testid="allocation-pdf-upload"
               >
                 {isExtractingPdf ? "Extracting PDF..." : "Upload PDF"}
@@ -1182,14 +1182,14 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
           <textarea
             value={sourceText}
             onChange={(event) => setSourceText(event.target.value)}
-            className="mt-4 min-h-44 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-100 shadow-inner outline-none ring-sky-500/50 transition focus:ring"
+            className="mt-4 min-h-44 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 shadow-sm outline-none ring-sky-500 transition focus:ring"
             placeholder="Paste allocation source text..."
           />
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <button
               onClick={handleParse}
-              className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-600"
+              className="rounded-lg bg-emerald-600px-4 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-emerald-700"
             >
               Parse Source
             </button>
@@ -1201,36 +1201,36 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                 parsedResult.errors.length > 0 ||
                 parsedResult.vehicles.length === 0
               }
-              className="rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-600 disabled:cursor-not-allowed disabled:bg-slate-700"
+              className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-slate-200"
             >
               {isPublishing ? "Publishing..." : "Publish Snapshot"}
             </button>
           </div>
 
-          {parseStatus && <p className="mt-3 text-sm text-slate-200">{parseStatus}</p>}
-          {publishStatus && <p className="mt-2 text-sm text-sky-300">{publishStatus}</p>}
+          {parseStatus && <p className="mt-3 text-sm text-slate-700">{parseStatus}</p>}
+          {publishStatus && <p className="mt-2 text-sm text-sky-700">{publishStatus}</p>}
 
           {parsedResult && (
-            <div className="mt-4 rounded-xl border border-slate-700 bg-slate-950/80 p-4">
-              <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-300">
+            <div className="mt-4 rounded-xl border border-slate-300 bg-white/80 p-4">
+              <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
                 Parse Preview
               </h4>
               <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                <span className="rounded-full bg-slate-800 px-2.5 py-1 text-slate-200">
+                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
                   Parsed: {parsedResult.itemCount}
                 </span>
-                <span className="rounded-full bg-slate-800 px-2.5 py-1 text-slate-200">
+                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
                   Units: {parsedResult.summary.units}
                 </span>
-                <span className="rounded-full bg-slate-800 px-2.5 py-1 text-slate-200">
+                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
                   Hybrid: {parsedResult.summary.hybridMix}%
                 </span>
                 {parseInsights && (
                   <>
-                    <span className="rounded-full bg-slate-800 px-2.5 py-1 text-slate-200">
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
                       Warnings: {parseInsights.warningCount}
                     </span>
-                    <span className="rounded-full bg-slate-800 px-2.5 py-1 text-slate-200">
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
                       TBD Fields: {parseInsights.tbdArrivals + parseInsights.tbdDetails}
                     </span>
                     <span className={`rounded-full px-2.5 py-1 ${parseConfidenceTone}`}>
@@ -1241,7 +1241,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
               </div>
 
               {parsedResult.errors.length > 0 && (
-                <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-rose-300">
+                <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-rose-600">
                   {parsedResult.errors.map((error) => (
                     <li key={error}>{error}</li>
                   ))}
@@ -1249,7 +1249,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
               )}
 
               {parsedResult.warnings.length > 0 && (
-                <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-amber-300">
+                <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-amber-700">
                   {parsedResult.warnings.slice(0, 5).map((warning) => (
                     <li key={warning}>{warning}</li>
                   ))}
@@ -1260,7 +1260,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
               )}
 
               {parseInsights && parseInsights.skippedWarnings.length > 0 && (
-                <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+                <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-600">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="font-semibold">
                       Skipped Lines: {parseInsights.skippedWarnings.length}
@@ -1268,22 +1268,22 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                     <button
                       type="button"
                       onClick={handleCopySkippedWarnings}
-                      className="rounded border border-amber-400/50 px-2 py-1 font-semibold text-amber-100 hover:bg-amber-500/20"
+                      className="rounded border border-amber-400 px-2 py-1 font-semibold text-amber-800 hover:bg-amber-100"
                     >
                       Copy
                     </button>
                   </div>
                   <details className="mt-2">
-                    <summary className="cursor-pointer select-none text-amber-100">
+                    <summary className="cursor-pointer select-none text-amber-800">
                       Show skipped line details
                     </summary>
-                    <ul className="mt-2 list-disc space-y-1 pl-5 text-amber-200">
+                    <ul className="mt-2 list-disc space-y-1 pl-5 text-amber-600">
                       {parseInsights.skippedWarnings.map((warning) => (
                         <li key={warning}>{warning}</li>
                       ))}
                     </ul>
                   </details>
-                  {skippedCopyStatus && <p className="mt-2 text-emerald-300">{skippedCopyStatus}</p>}
+                  {skippedCopyStatus && <p className="mt-2 text-emerald-700">{skippedCopyStatus}</p>}
                 </div>
               )}
             </div>
@@ -1293,14 +1293,14 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
 
       <div className="px-6 py-5">
         <div className="sticky top-16 z-20">
-          <div className="flex flex-col gap-4 rounded-xl border border-slate-800 bg-slate-900/85 p-4 backdrop-blur-sm lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white/90 p-4 backdrop-blur-sm lg:flex-row lg:items-end lg:justify-between">
             <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={() => setBoardView("strategy")}
                 className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                   boardView === "strategy"
-                    ? "bg-sky-500 text-white"
-                    : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                    ? "bg-sky-600 text-slate-900"
+                    : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                 }`}
               >
                 Strategy View
@@ -1309,8 +1309,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                 onClick={() => setBoardView("log")}
                 className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                   boardView === "log"
-                    ? "bg-sky-500 text-white"
-                    : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                    ? "bg-sky-600 text-slate-900"
+                    : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                 }`}
               >
                 Full Log View
@@ -1322,13 +1322,13 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Search code, grade, category..."
-                className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none ring-sky-500/50 transition focus:ring"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
               />
               <select
                 value={categoryFilter}
                 onChange={(event) => setCategoryFilter(event.target.value)}
                 aria-label="Filter by category"
-                className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none ring-sky-500/50 transition focus:ring"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
               >
                 <option value="all">All Categories</option>
                 {categoryOptions.map((category) => (
@@ -1341,7 +1341,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                 value={rankFilter}
                 onChange={(event) => setRankFilter(event.target.value)}
                 aria-label="Filter by priority"
-                className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none ring-sky-500/50 transition focus:ring"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
               >
                 <option value="all">All Priorities</option>
                 {rankOptions.map((rank) => (
@@ -1354,7 +1354,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                 value={bosFilter}
                 onChange={(event) => setBosFilter(event.target.value as BosFilter)}
                 aria-label="Filter by BOS"
-                className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none ring-sky-500/50 transition focus:ring"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
               >
                 <option value="all">All BOS</option>
                 <option value="y">BOS: Y (Changeable)</option>
@@ -1366,7 +1366,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                   setArrivalGroupingMode(event.target.value as ArrivalGroupingMode)
                 }
                 aria-label="Build date grouping mode"
-                className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none ring-sky-500/50 transition focus:ring"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
               >
                 <option value="bucket">Build Date: Bucket</option>
                 <option value="date">Build Date: Exact Date</option>
@@ -1375,7 +1375,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                 value={sortMode}
                 onChange={(event) => setSortMode(event.target.value as SortMode)}
                 aria-label="Sort allocation rows"
-                className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none ring-sky-500/50 transition focus:ring"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
               >
                 <option value="priority">Sort: Priority</option>
                 <option value="arrival">Sort: Build Date</option>
@@ -1386,12 +1386,12 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
           </div>
         </div>
 
-        {isLoading && <p className="mt-6 text-sm text-slate-300">Loading live allocation...</p>}
-        {loadError && <p className="mt-6 text-sm text-rose-300">{loadError}</p>}
+        {isLoading && <p className="mt-6 text-sm text-slate-500">Loading live allocation...</p>}
+        {loadError && <p className="mt-6 text-sm text-rose-600">{loadError}</p>}
 
         {!isLoading && !loadError && vehicles.length === 0 && (
-          <div className="mt-6 rounded-xl border border-dashed border-slate-700 bg-slate-900/50 p-6 text-center">
-            <p className="text-sm text-slate-300">
+          <div className="mt-6 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+            <p className="text-sm text-slate-500">
               No published allocation snapshot yet. Managers can publish from Update Allocation.
             </p>
           </div>
@@ -1400,17 +1400,17 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
         {!isLoading && !loadError && vehicles.length > 0 && (
           <>
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <p className="text-xs uppercase tracking-wider text-slate-400">Filtered Units</p>
-                <p className="mt-1 text-2xl font-bold text-white">{strategyTotals.units}</p>
+                <p className="mt-1 text-2xl font-bold text-slate-900">{strategyTotals.units}</p>
               </div>
-              <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <p className="text-xs uppercase tracking-wider text-slate-400">Live Hybrid Mix</p>
-                <p className="mt-1 text-2xl font-bold text-white">{latestSnapshot?.summary.hybridMix ?? 0}%</p>
+                <p className="mt-1 text-2xl font-bold text-slate-900">{latestSnapshot?.summary.hybridMix ?? 0}%</p>
               </div>
-              <div className={`rounded-xl border p-4 ${matchSummary.matchedOrderCount > 0 ? "border-amber-500/30 bg-amber-500/10" : "border-slate-800 bg-slate-900"}`}>
+              <div className={`rounded-xl border p-4 ${matchSummary.matchedOrderCount > 0 ? "border-amber-300 bg-amber-50" : "border-slate-200 bg-slate-50"}`}>
                 <p className="text-xs uppercase tracking-wider text-slate-400">Order Matches</p>
-                <p className={`mt-1 text-2xl font-bold ${matchSummary.matchedOrderCount > 0 ? "text-amber-300" : "text-white"}`}>
+                <p className={`mt-1 text-2xl font-bold ${matchSummary.matchedOrderCount > 0 ? "text-amber-700" : "text-slate-900"}`}>
                   {matchSummary.matchedOrderCount}
                 </p>
                 <p className="mt-0.5 text-xs text-slate-400">
@@ -1577,22 +1577,22 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                           return (
                             <div
                               key={`${row.key}-${variant.sourceCode ?? ""}-${variant.code}-${variant.model ?? ""}-${variant.grade}-${variant.arrival}-${variant.color}-${variant.interiorColor}-${variant.bos}`}
-                              className="rounded-xl border border-slate-700 bg-slate-950/80 p-4 lg:p-5"
+                              className="rounded-xl border border-slate-300 bg-white/80 p-4 lg:p-5"
                               data-testid="allocation-strategy-vehicle-card"
                             >
                               <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                                 <div>
-                                  <p className="text-2xl font-black tracking-tight text-white">
+                                  <p className="text-2xl font-black tracking-tight text-slate-900">
                                     {getDisplayCode(variant.sourceCode, variant.code)}{" "}
                                     <span className="px-1 text-slate-500">·</span>
-                                    <span className="text-slate-300">{getDisplayModel(variant.model, variant.code)}</span>
+                                    <span className="text-slate-500">{getDisplayModel(variant.model, variant.code)}</span>
                                   </p>
-                                  <p className="mt-1 text-sm text-slate-300">Trim: {variant.grade}</p>
+                                  <p className="mt-1 text-sm text-slate-500">Trim: {variant.grade}</p>
                                 </div>
 
                                 {variant.units > 1 && (
-                                  <div className="flex flex-wrap gap-1.5 text-xs text-slate-200">
-                                    <span className="rounded-full border border-slate-600 bg-slate-900 px-2.5 py-1 font-semibold text-slate-100">
+                                  <div className="flex flex-wrap gap-1.5 text-xs text-slate-700">
+                                    <span className="rounded-full border border-slate-300 bg-slate-50 px-2.5 py-1 font-semibold text-slate-800">
                                       Qty: {variant.units}
                                     </span>
                                   </div>
@@ -1603,10 +1603,10 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                                 {detailRows.map((detail) => (
                                   <div
                                     key={`${row.key}-${variant.code}-${detail.label}`}
-                                    className="rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2"
+                                    className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
                                   >
                                     <dt className="text-[11px] uppercase tracking-wide text-slate-400">{detail.label}</dt>
-                                    <dd className="mt-1 font-semibold text-slate-100">{detail.value}</dd>
+                                    <dd className="mt-1 font-semibold text-slate-800">{detail.value}</dd>
                                   </div>
                                 ))}
                               </dl>
@@ -1627,8 +1627,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
 
                                 if (!currentUser.isManager) {
                                   return (
-                                    <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
-                                      <p className="text-xs font-semibold uppercase tracking-wide text-amber-300">
+                                    <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3">
+                                      <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
                                         {uniqueMatches.length} matching order{uniqueMatches.length === 1 ? "" : "s"}
                                       </p>
                                     </div>
@@ -1638,28 +1638,28 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                                 return (
                                   <div className="mt-3 space-y-2">
                                     {exactMatches.length > 0 && (
-                                      <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3">
-                                        <p className="text-xs font-bold uppercase tracking-wide text-emerald-300">
+                                      <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-3">
+                                        <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">
                                           Color Match ({exactMatches.length})
                                         </p>
                                         <div className="mt-2 space-y-2">
                                           {exactMatches.map((m) => (
-                                            <div key={m.orderId} className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2">
+                                            <div key={m.orderId} className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
                                               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                                                <span className="text-sm font-bold text-white">{m.customerName}</span>
-                                                <span className="text-sm text-emerald-200">{m.salesperson}</span>
-                                                <span className="rounded bg-emerald-500/20 px-2 py-0.5 text-xs font-semibold text-emerald-300">
+                                                <span className="text-sm font-bold text-slate-900">{m.customerName}</span>
+                                                <span className="text-sm text-emerald-600">{m.salesperson}</span>
+                                                <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
                                                   {m.model} / {m.modelNumber}
                                                 </span>
                                               </div>
                                               <div className="mt-1.5 flex flex-wrap gap-2 text-xs">
                                                 {m.extColorMatched && (
-                                                  <span className={`rounded px-2 py-0.5 font-semibold ${m.colorMatch === "exact" ? "bg-emerald-500/20 text-emerald-300" : "bg-slate-700/50 text-slate-300"}`}>
+                                                  <span className={`rounded px-2 py-0.5 font-semibold ${m.colorMatch === "exact" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
                                                     Ext{m.extChoiceMatched && m.extChoiceMatched > 1 ? ` (${m.extChoiceMatched}${m.extChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.extColorMatched}
                                                   </span>
                                                 )}
                                                 {m.intColorMatched && (
-                                                  <span className={`rounded px-2 py-0.5 font-semibold ${m.interiorMatch === "exact" ? "bg-emerald-500/20 text-emerald-300" : "bg-slate-700/50 text-slate-300"}`}>
+                                                  <span className={`rounded px-2 py-0.5 font-semibold ${m.interiorMatch === "exact" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
                                                     Int{m.intChoiceMatched && m.intChoiceMatched > 1 ? ` (${m.intChoiceMatched}${m.intChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.intColorMatched}
                                                   </span>
                                                 )}
@@ -1671,20 +1671,20 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                                     )}
 
                                     {partialMatches.length > 0 && (
-                                      <div className="rounded-lg border border-sky-500/30 bg-sky-500/5 p-3">
-                                        <p className="text-xs font-semibold uppercase tracking-wide text-sky-300">
+                                      <div className="rounded-lg border border-sky-200 bg-sky-50 p-3">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">
                                           Similar Color ({partialMatches.length})
                                         </p>
                                         <div className="mt-1.5 space-y-1">
                                           {partialMatches.map((m) => (
-                                            <div key={m.orderId} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-sky-100">
-                                              <span className="font-semibold text-white">{m.customerName}</span>
-                                              <span className="text-sky-200">{m.salesperson}</span>
-                                              <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-sky-300">
+                                            <div key={m.orderId} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-sky-800">
+                                              <span className="font-semibold text-slate-900">{m.customerName}</span>
+                                              <span className="text-sky-600">{m.salesperson}</span>
+                                              <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700">
                                                 {m.model} / {m.modelNumber}
                                               </span>
-                                              {m.extColorMatched && <span className="text-sky-300/70">Ext{m.extChoiceMatched && m.extChoiceMatched > 1 ? ` (${m.extChoiceMatched}${m.extChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.extColorMatched}</span>}
-                                              {m.intColorMatched && <span className="text-sky-300/70">Int{m.intChoiceMatched && m.intChoiceMatched > 1 ? ` (${m.intChoiceMatched}${m.intChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.intColorMatched}</span>}
+                                              {m.extColorMatched && <span className="text-sky-600">Ext{m.extChoiceMatched && m.extChoiceMatched > 1 ? ` (${m.extChoiceMatched}${m.extChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.extColorMatched}</span>}
+                                              {m.intColorMatched && <span className="text-sky-600">Int{m.intChoiceMatched && m.intChoiceMatched > 1 ? ` (${m.intChoiceMatched}${m.intChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.intColorMatched}</span>}
                                             </div>
                                           ))}
                                         </div>
@@ -1692,14 +1692,14 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                                     )}
 
                                     {modelOnlyMatches.length > 0 && (
-                                      <details className="rounded-lg border border-slate-700 bg-slate-900/50">
-                                        <summary className="cursor-pointer px-3 py-2 text-xs font-semibold text-slate-400 hover:text-slate-300">
+                                      <details className="rounded-lg border border-slate-300 bg-slate-50">
+                                        <summary className="cursor-pointer px-3 py-2 text-xs font-semibold text-slate-400 hover:text-slate-500">
                                           +{modelOnlyMatches.length} model-only match{modelOnlyMatches.length === 1 ? "" : "es"} (no color match)
                                         </summary>
                                         <div className="space-y-1 px-3 pb-2">
                                           {modelOnlyMatches.map((m) => (
-                                            <div key={m.orderId} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-300">
-                                              <span className="font-semibold text-slate-200">{m.customerName}</span>
+                                            <div key={m.orderId} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                                              <span className="font-semibold text-slate-700">{m.customerName}</span>
                                               <span className="text-slate-400">{m.salesperson}</span>
                                               <span className="text-slate-500">{m.model} / {m.modelNumber}</span>
                                             </div>
@@ -1719,9 +1719,9 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                 ))}
               </div>
             ) : (
-              <div className="mt-5 overflow-x-auto rounded-xl border border-slate-800">
+              <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200">
                 <table className="min-w-full divide-y divide-slate-800 text-sm" data-testid="allocation-log-view">
-                  <thead className="bg-slate-900">
+                  <thead className="bg-slate-50">
                     <tr className="text-left text-xs uppercase tracking-wider text-slate-400">
                       <th className="px-3 py-3">Code</th>
                       <th className="px-3 py-3">Model</th>
@@ -1734,15 +1734,15 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                       <th className="px-3 py-3">Post-Production Options</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800 bg-slate-950">
+                  <tbody className="divide-y divide-slate-800 bg-white">
                     {sortedVehicles.map((vehicle) => {
                       const arrivalDisplay = formatArrivalDisplay(vehicle.arrival);
                       const bosDisplay = formatBosDisplay(vehicle.bos);
                       const factoryAccessories = getFactoryAccessories(vehicle).join(", ");
                       const postProductionOptions = getPostProductionOptions(vehicle).join(", ");
                       return (
-                        <tr key={vehicle.id} className="text-slate-200">
-                          <td className="px-3 py-2 font-semibold text-white">
+                        <tr key={vehicle.id} className="text-slate-700">
+                          <td className="px-3 py-2 font-semibold text-slate-900">
                             {getDisplayCode(vehicle.sourceCode, vehicle.code)}
                           </td>
                           <td className="px-3 py-2">{getDisplayModel(vehicle.model, vehicle.code)}</td>
@@ -1764,26 +1764,26 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                               const rawMatched = orderMatchesByVehicle.get(vehicle.id);
                               if (!rawMatched || rawMatched.length === 0) return null;
                               if (!currentUser.isManager) {
-                                return <span className="text-xs text-amber-300">{rawMatched.length}</span>;
+                                return <span className="text-xs text-amber-700">{rawMatched.length}</span>;
                               }
                               const matched = sortMatchedOrders(rawMatched);
                               return (
                                 <div className="space-y-1">
                                   {matched.map((m) => (
                                     <div key={m.orderId} className="flex flex-wrap items-center gap-1 text-xs">
-                                      <span className="font-semibold text-amber-300">{m.customerName}</span>
-                                      <span className="text-amber-200/70">({m.salesperson})</span>
+                                      <span className="font-semibold text-amber-700">{m.customerName}</span>
+                                      <span className="text-amber-500">({m.salesperson})</span>
                                       {m.colorMatch === "exact" && (
-                                        <span className="rounded bg-emerald-500/20 px-1 py-0.5 text-[10px] font-semibold text-emerald-300">EXT</span>
+                                        <span className="rounded bg-emerald-100 px-1 py-0.5 text-[10px] font-semibold text-emerald-700">EXT</span>
                                       )}
                                       {m.colorMatch === "partial" && (
-                                        <span className="rounded bg-sky-500/20 px-1 py-0.5 text-[10px] font-semibold text-sky-300">~EXT</span>
+                                        <span className="rounded bg-sky-100 px-1 py-0.5 text-[10px] font-semibold text-sky-700">~EXT</span>
                                       )}
                                       {m.interiorMatch === "exact" && (
-                                        <span className="rounded bg-emerald-500/20 px-1 py-0.5 text-[10px] font-semibold text-emerald-300">INT</span>
+                                        <span className="rounded bg-emerald-100 px-1 py-0.5 text-[10px] font-semibold text-emerald-700">INT</span>
                                       )}
                                       {m.interiorMatch === "partial" && (
-                                        <span className="rounded bg-sky-500/20 px-1 py-0.5 text-[10px] font-semibold text-sky-300">~INT</span>
+                                        <span className="rounded bg-sky-100 px-1 py-0.5 text-[10px] font-semibold text-sky-700">~INT</span>
                                       )}
                                     </div>
                                   ))}
