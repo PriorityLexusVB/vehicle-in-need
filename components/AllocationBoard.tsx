@@ -15,7 +15,7 @@ import {
   groupArrivalBucket,
 } from "../src/utils/allocationParser";
 import { MODEL_CODE_TO_ALLOCATION } from "../src/utils/allocationReference";
-import { matchExteriorColors } from "../src/utils/colorReference";
+import { matchExteriorColors, matchInteriorColors } from "../src/utils/colorReference";
 import { extractAllocationTextFromPdf } from "../src/utils/pdfTextExtractor";
 import {
   ParsedAllocationResult,
@@ -84,8 +84,10 @@ interface MatchedOrder {
   model: string;
   modelNumber: string;
   exteriorColor1: string;
+  interiorColor1: string;
   matchType: "model" | "modelNumber" | "both";
   colorMatch: "exact" | "partial" | null;
+  interiorMatch: "exact" | "partial" | null;
 }
 
 function getDisplayValue(value?: string | null): string | null {
@@ -556,14 +558,14 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
           normalizeModelForMatch(bridgedModel) === vehicleCode;
 
         if (modelMatch || modelNumberMatch || bridgeMatch) {
-          // Check color match across all 3 order color preferences
-          const orderColors = [
+          // Check exterior color match across all 3 order color preferences
+          const orderExtColors = [
             order.exteriorColor1,
             order.exteriorColor2,
             order.exteriorColor3,
           ].filter(Boolean) as string[];
           let bestColorMatch: "exact" | "partial" | null = null;
-          for (const orderColor of orderColors) {
+          for (const orderColor of orderExtColors) {
             const result = matchExteriorColors(orderColor, vehicle.color);
             if (result === "exact") {
               bestColorMatch = "exact";
@@ -574,6 +576,24 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
             }
           }
 
+          // Check interior color match across all 3 order interior preferences
+          const orderIntColors = [
+            order.interiorColor1,
+            order.interiorColor2,
+            order.interiorColor3,
+          ].filter(Boolean) as string[];
+          let bestInteriorMatch: "exact" | "partial" | null = null;
+          for (const orderInt of orderIntColors) {
+            const result = matchInteriorColors(orderInt, vehicle.interiorColor);
+            if (result === "exact") {
+              bestInteriorMatch = "exact";
+              break;
+            }
+            if (result === "partial" && bestInteriorMatch !== "exact") {
+              bestInteriorMatch = "partial";
+            }
+          }
+
           vehicleMatches.push({
             orderId: order.id,
             customerName: order.customerName,
@@ -581,7 +601,9 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
             model: order.model,
             modelNumber: order.modelNumber,
             exteriorColor1: order.exteriorColor1,
+            interiorColor1: order.interiorColor1,
             colorMatch: bestColorMatch,
+            interiorMatch: bestInteriorMatch,
             matchType:
               modelMatch && (modelNumberMatch || bridgeMatch)
                 ? "both"
@@ -1622,10 +1644,25 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                                                   : "bg-slate-700/50 text-slate-300"
                                             }`}>
                                               {m.colorMatch === "exact"
-                                                ? `Color match: ${m.exteriorColor1}`
+                                                ? `Ext: ${m.exteriorColor1}`
                                                 : m.colorMatch === "partial"
-                                                  ? `Similar color: ${m.exteriorColor1}`
-                                                  : `Color pref: ${m.exteriorColor1}`}
+                                                  ? `~Ext: ${m.exteriorColor1}`
+                                                  : `Ext pref: ${m.exteriorColor1}`}
+                                            </span>
+                                          )}
+                                          {m.interiorColor1 && (
+                                            <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                                              m.interiorMatch === "exact"
+                                                ? "bg-emerald-500/20 text-emerald-300"
+                                                : m.interiorMatch === "partial"
+                                                  ? "bg-sky-500/20 text-sky-300"
+                                                  : "bg-slate-700/50 text-slate-300"
+                                            }`}>
+                                              {m.interiorMatch === "exact"
+                                                ? `Int: ${m.interiorColor1}`
+                                                : m.interiorMatch === "partial"
+                                                  ? `~Int: ${m.interiorColor1}`
+                                                  : `Int pref: ${m.interiorColor1}`}
                                             </span>
                                           )}
                                         </div>
@@ -1694,10 +1731,16 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                                       <span className="font-semibold text-amber-300">{m.customerName}</span>
                                       <span className="text-amber-200/70">({m.salesperson})</span>
                                       {m.colorMatch === "exact" && (
-                                        <span className="rounded bg-emerald-500/20 px-1 py-0.5 text-[10px] font-semibold text-emerald-300">COLOR</span>
+                                        <span className="rounded bg-emerald-500/20 px-1 py-0.5 text-[10px] font-semibold text-emerald-300">EXT</span>
                                       )}
                                       {m.colorMatch === "partial" && (
-                                        <span className="rounded bg-sky-500/20 px-1 py-0.5 text-[10px] font-semibold text-sky-300">~COLOR</span>
+                                        <span className="rounded bg-sky-500/20 px-1 py-0.5 text-[10px] font-semibold text-sky-300">~EXT</span>
+                                      )}
+                                      {m.interiorMatch === "exact" && (
+                                        <span className="rounded bg-emerald-500/20 px-1 py-0.5 text-[10px] font-semibold text-emerald-300">INT</span>
+                                      )}
+                                      {m.interiorMatch === "partial" && (
+                                        <span className="rounded bg-sky-500/20 px-1 py-0.5 text-[10px] font-semibold text-sky-300">~INT</span>
                                       )}
                                     </div>
                                   ))}
