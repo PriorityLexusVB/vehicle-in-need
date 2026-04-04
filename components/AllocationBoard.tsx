@@ -1591,85 +1591,93 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                                   Array.from(new Map(variantMatches.map((m) => [m.orderId, m])).values()),
                                 );
                                 if (uniqueMatches.length === 0) return null;
-                                const visibleMatches = uniqueMatches.slice(0, MAX_VISIBLE_MATCHES);
-                                const hiddenCount = uniqueMatches.length - visibleMatches.length;
+
+                                // Tier matches: exact color, partial color, model-only
+                                const exactMatches = uniqueMatches.filter((m) => m.colorMatch === "exact" || m.interiorMatch === "exact");
+                                const partialMatches = uniqueMatches.filter((m) => m.colorMatch === "partial" || m.interiorMatch === "partial").filter((m) => m.colorMatch !== "exact" && m.interiorMatch !== "exact");
+                                const modelOnlyMatches = uniqueMatches.filter((m) => !m.colorMatch && !m.interiorMatch);
+
+                                if (!currentUser.isManager) {
+                                  return (
+                                    <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+                                      <p className="text-xs font-semibold uppercase tracking-wide text-amber-300">
+                                        {uniqueMatches.length} matching order{uniqueMatches.length === 1 ? "" : "s"}
+                                      </p>
+                                    </div>
+                                  );
+                                }
+
                                 return (
-                                  <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-amber-300">
-                                      Matching Orders ({uniqueMatches.length})
-                                    </p>
-                                    {currentUser.isManager ? (
-                                      <>
-                                        <div className="mt-2 space-y-1.5">
-                                          {visibleMatches.map((m) => (
-                                            <div
-                                              key={m.orderId}
-                                              className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-amber-100"
-                                            >
-                                              <span className="font-semibold text-white">{m.customerName}</span>
-                                              <span className="text-amber-200">{m.salesperson}</span>
-                                              <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber-300">
-                                                {m.model} / {m.modelNumber}
-                                              </span>
-                                              {m.exteriorColor1 && (
-                                                <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
-                                                  m.colorMatch === "exact"
-                                                    ? "bg-emerald-500/20 text-emerald-300"
-                                                    : m.colorMatch === "partial"
-                                                      ? "bg-sky-500/20 text-sky-300"
-                                                      : "bg-slate-700/50 text-slate-300"
-                                                }`}>
-                                                  {m.colorMatch === "exact"
-                                                    ? `Ext: ${m.exteriorColor1}`
-                                                    : m.colorMatch === "partial"
-                                                      ? `~Ext: ${m.exteriorColor1}`
-                                                      : `Ext pref: ${m.exteriorColor1}`}
+                                  <div className="mt-3 space-y-2">
+                                    {exactMatches.length > 0 && (
+                                      <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3">
+                                        <p className="text-xs font-bold uppercase tracking-wide text-emerald-300">
+                                          Color Match ({exactMatches.length})
+                                        </p>
+                                        <div className="mt-2 space-y-2">
+                                          {exactMatches.map((m) => (
+                                            <div key={m.orderId} className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2">
+                                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                                <span className="text-sm font-bold text-white">{m.customerName}</span>
+                                                <span className="text-sm text-emerald-200">{m.salesperson}</span>
+                                                <span className="rounded bg-emerald-500/20 px-2 py-0.5 text-xs font-semibold text-emerald-300">
+                                                  {m.model} / {m.modelNumber}
                                                 </span>
-                                              )}
-                                              {m.interiorColor1 && (
-                                                <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
-                                                  m.interiorMatch === "exact"
-                                                    ? "bg-emerald-500/20 text-emerald-300"
-                                                    : m.interiorMatch === "partial"
-                                                      ? "bg-sky-500/20 text-sky-300"
-                                                      : "bg-slate-700/50 text-slate-300"
-                                                }`}>
-                                                  {m.interiorMatch === "exact"
-                                                    ? `Int: ${m.interiorColor1}`
-                                                    : m.interiorMatch === "partial"
-                                                      ? `~Int: ${m.interiorColor1}`
-                                                      : `Int pref: ${m.interiorColor1}`}
-                                                </span>
-                                              )}
+                                              </div>
+                                              <div className="mt-1.5 flex flex-wrap gap-2 text-xs">
+                                                {m.exteriorColor1 && (
+                                                  <span className={`rounded px-2 py-0.5 font-semibold ${m.colorMatch === "exact" ? "bg-emerald-500/20 text-emerald-300" : "bg-slate-700/50 text-slate-300"}`}>
+                                                    Ext: {m.exteriorColor1}
+                                                  </span>
+                                                )}
+                                                {m.interiorColor1 && (
+                                                  <span className={`rounded px-2 py-0.5 font-semibold ${m.interiorMatch === "exact" ? "bg-emerald-500/20 text-emerald-300" : "bg-slate-700/50 text-slate-300"}`}>
+                                                    Int: {m.interiorColor1}
+                                                  </span>
+                                                )}
+                                              </div>
                                             </div>
                                           ))}
                                         </div>
-                                        {hiddenCount > 0 && (
-                                          <details className="mt-2">
-                                            <summary className="cursor-pointer text-xs font-semibold text-amber-300 hover:text-amber-200">
-                                              +{hiddenCount} more order{hiddenCount === 1 ? "" : "s"}
-                                            </summary>
-                                            <div className="mt-1.5 space-y-1.5">
-                                              {uniqueMatches.slice(MAX_VISIBLE_MATCHES).map((m) => (
-                                                <div
-                                                  key={m.orderId}
-                                                  className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-amber-100"
-                                                >
-                                                  <span className="font-semibold text-white">{m.customerName}</span>
-                                                  <span className="text-amber-200">{m.salesperson}</span>
-                                                  <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber-300">
-                                                    {m.model} / {m.modelNumber}
-                                                  </span>
-                                                </div>
-                                              ))}
+                                      </div>
+                                    )}
+
+                                    {partialMatches.length > 0 && (
+                                      <div className="rounded-lg border border-sky-500/30 bg-sky-500/5 p-3">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-sky-300">
+                                          Similar Color ({partialMatches.length})
+                                        </p>
+                                        <div className="mt-1.5 space-y-1">
+                                          {partialMatches.map((m) => (
+                                            <div key={m.orderId} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-sky-100">
+                                              <span className="font-semibold text-white">{m.customerName}</span>
+                                              <span className="text-sky-200">{m.salesperson}</span>
+                                              <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-sky-300">
+                                                {m.model} / {m.modelNumber}
+                                              </span>
+                                              {m.exteriorColor1 && <span className="text-sky-300/70">Ext: {m.exteriorColor1}</span>}
+                                              {m.interiorColor1 && <span className="text-sky-300/70">Int: {m.interiorColor1}</span>}
                                             </div>
-                                          </details>
-                                        )}
-                                      </>
-                                    ) : (
-                                      <p className="mt-2 text-xs text-amber-100">
-                                        {uniqueMatches.length} matching order{uniqueMatches.length === 1 ? "" : "s"}
-                                      </p>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {modelOnlyMatches.length > 0 && (
+                                      <details className="rounded-lg border border-slate-700 bg-slate-900/50">
+                                        <summary className="cursor-pointer px-3 py-2 text-xs font-semibold text-slate-400 hover:text-slate-300">
+                                          +{modelOnlyMatches.length} model-only match{modelOnlyMatches.length === 1 ? "" : "es"} (no color match)
+                                        </summary>
+                                        <div className="space-y-1 px-3 pb-2">
+                                          {modelOnlyMatches.map((m) => (
+                                            <div key={m.orderId} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-300">
+                                              <span className="font-semibold text-slate-200">{m.customerName}</span>
+                                              <span className="text-slate-400">{m.salesperson}</span>
+                                              <span className="text-slate-500">{m.model} / {m.modelNumber}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </details>
                                     )}
                                   </div>
                                 );
