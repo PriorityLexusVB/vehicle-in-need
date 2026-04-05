@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { Order, OrderStatus, AppUser } from "../types";
 import OrderCard from "./OrderCard";
 import {
@@ -27,6 +28,7 @@ const OrderList: React.FC<OrderListProps> = ({
   onDeleteOrder,
   currentUser,
 }) => {
+  const [animateRef] = useAutoAnimate();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [activeTab, setActiveTab] = useState<"active" | "secured">("active");
@@ -270,7 +272,7 @@ const OrderList: React.FC<OrderListProps> = ({
         </div>
       )}
 
-      <div className="space-y-4">
+      <div ref={animateRef} className="space-y-4">
         {filteredOrders.length > 0 ? (
           filteredOrders.map((order) => (
             <OrderCard
