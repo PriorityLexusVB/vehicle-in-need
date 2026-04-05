@@ -1071,7 +1071,7 @@ const App: React.FC = () => {
             }
           />
           {/* Beta routes — same components with variant prop for new features */}
-          {import.meta.env.DEV && (
+          {user.isManager && (
             <>
               <Route
                 path="/dashboard-beta"

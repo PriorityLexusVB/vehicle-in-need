@@ -104,7 +104,7 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
                 <span className="text-sm font-medium hidden sm:inline">User Management</span>
               </Link>
             )}
-            {import.meta.env.DEV && user.isManager && (
+            {user.isManager && (
               <Link
                 to="/dashboard-beta"
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium text-amber-700 bg-amber-100 hover:bg-amber-200 transition-colors"
