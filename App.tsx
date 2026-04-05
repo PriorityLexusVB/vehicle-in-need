@@ -38,6 +38,7 @@ import ZeroManagerWarning from "./components/ZeroManagerWarning";
 import CSVUpload from "./components/CSVUpload";
 import AllocationBoard from "./components/AllocationBoard";
 import { CSVOrderData } from "./src/utils/csvParser";
+import confetti from "canvas-confetti";
 import { PlusIcon } from "./components/icons/PlusIcon";
 import { CloseIcon } from "./components/icons/CloseIcon";
 import { UploadIcon } from "./components/icons/UploadIcon";
@@ -737,6 +738,11 @@ const App: React.FC = () => {
       try {
         const orderDocRef = doc(db, "orders", orderId);
         await updateDoc(orderDocRef, { status });
+
+        // Celebrate when a vehicle is delivered (the big win moment)
+        if (status === OrderStatus.Delivered) {
+          confetti({ particleCount: 80, spread: 70, origin: { y: 0.7 } });
+        }
       } catch (error) {
         console.error("Error updating order status: ", error);
         alert("Failed to update status. Please try again.");
