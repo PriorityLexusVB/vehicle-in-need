@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { Routes, Route, useLocation, useSearchParams, Navigate } from "react-router-dom";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import {
   collection,
@@ -73,6 +73,8 @@ const mapDocsToOrders = (
 
 const App: React.FC = () => {
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const highlightedOrderId = searchParams.get("highlight");
   const [orders, setOrders] = useState<Order[]>([]);
   const [user, setUser] = useState<AppUser | null>(null);
   const [allUsers, setAllUsers] = useState<AppUser[]>([]);
@@ -1022,6 +1024,7 @@ const App: React.FC = () => {
                     onUpdateOrderDetails={handleUpdateOrderDetails}
                     onDeleteOrder={handleDeleteOrder}
                     currentUser={user}
+                    highlightedOrderId={highlightedOrderId}
                   />
                 </div>
               ) : (
@@ -1067,6 +1070,7 @@ const App: React.FC = () => {
                       onUpdateOrderDetails={handleUpdateOrderDetails}
                       onDeleteOrder={handleDeleteOrder}
                       currentUser={user}
+                      highlightedOrderId={highlightedOrderId}
                     />
                   </div>
                 </div>
@@ -1094,6 +1098,7 @@ const App: React.FC = () => {
                         onDeleteOrder={handleDeleteOrder}
                         currentUser={user}
                         variant="beta"
+                        highlightedOrderId={highlightedOrderId}
                       />
                     </div>
                   ) : (

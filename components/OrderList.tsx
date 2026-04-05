@@ -19,6 +19,7 @@ interface OrderListProps {
   onDeleteOrder: (orderId: string) => void;
   currentUser?: AppUser | null;
   variant?: "beta";
+  highlightedOrderId?: string | null;
 }
 
 const OrderList: React.FC<OrderListProps> = ({
@@ -27,6 +28,7 @@ const OrderList: React.FC<OrderListProps> = ({
   onUpdateOrderDetails,
   onDeleteOrder,
   currentUser,
+  highlightedOrderId,
 }) => {
   const [animateRef] = useAutoAnimate();
   const [searchQuery, setSearchQuery] = useState("");
@@ -282,6 +284,7 @@ const OrderList: React.FC<OrderListProps> = ({
               onUpdateOrderDetails={onUpdateOrderDetails}
               onDeleteOrder={onDeleteOrder}
               currentUser={currentUser}
+              highlighted={highlightedOrderId === order.id}
             />
           ))
         ) : (

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Order, OrderStatus, AppUser } from "../types";
 import { ACTIVE_STATUS_OPTIONS, isSecuredStatus } from "../constants";
 import { ChevronDownIcon } from "./icons/ChevronDownIcon";
@@ -22,6 +22,7 @@ interface OrderCardProps {
   ) => Promise<boolean>;
   onDeleteOrder: (orderId: string) => void;
   currentUser?: AppUser | null;
+  highlighted?: boolean;
 }
 
 const DetailItem: React.FC<{ label: string; children: React.ReactNode }> = ({
@@ -42,10 +43,24 @@ const OrderCard: React.FC<OrderCardProps> = ({
   onUpdateOrderDetails,
   onDeleteOrder,
   currentUser,
+  highlighted,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showUnsecureConfirm, setShowUnsecureConfirm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (highlighted && cardRef.current) {
+      setIsExpanded(true);
+      cardRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      cardRef.current.classList.add("ring-2", "ring-sky-400");
+      const timer = setTimeout(() => {
+        cardRef.current?.classList.remove("ring-2", "ring-sky-400");
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [highlighted]);
   const [isSaving, setIsSaving] = useState(false);
 
   type EditFormState = {
@@ -308,6 +323,8 @@ const OrderCard: React.FC<OrderCardProps> = ({
 
   return (
     <div
+      ref={cardRef}
+      id={`order-${order.id}`}
       className={`rounded-xl shadow-sm transition-all duration-300 ${
         isSecured
           ? "bg-slate-100/70 border-slate-200"
