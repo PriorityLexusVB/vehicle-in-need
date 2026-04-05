@@ -200,7 +200,7 @@ const OrderList: React.FC<OrderListProps> = ({
               setActiveTab("active");
               setStatusFilter("all");
             }}
-            className={`whitespace-nowrap pb-3 px-1 border-b-2 font-semibold text-sm transition-colors ${
+            className={`whitespace-nowrap pb-3 px-3 border-b-2 font-semibold text-sm transition-colors ${
               activeTab === "active"
                 ? "border-sky-500 text-sky-600"
                 : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
@@ -215,7 +215,7 @@ const OrderList: React.FC<OrderListProps> = ({
           </button>
           <button
             onClick={() => setActiveTab("secured")}
-            className={`whitespace-nowrap pb-3 px-1 border-b-2 font-semibold text-sm transition-colors ${
+            className={`whitespace-nowrap pb-3 px-3 border-b-2 font-semibold text-sm transition-colors ${
               activeTab === "secured"
                 ? "border-sky-500 text-sky-600"
                 : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
@@ -253,7 +253,7 @@ const OrderList: React.FC<OrderListProps> = ({
             </span>
             <button
               onClick={() => setStatusFilter("all")}
-              className={`px-3 py-1.5 text-xs rounded-full border-2 font-semibold ${statusFilter === "all" ? "bg-sky-600 border-sky-600 text-white" : "bg-white border-slate-300 text-slate-600 hover:bg-slate-100"}`}
+              className={`px-4 py-2.5 text-xs rounded-full border-2 font-semibold ${statusFilter === "all" ? "bg-sky-600 border-sky-600 text-white" : "bg-white border-slate-300 text-slate-600 hover:bg-slate-100"}`}
             >
               All Active
             </button>
@@ -261,7 +261,7 @@ const OrderList: React.FC<OrderListProps> = ({
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
-                className={`px-3 py-1.5 text-xs rounded-full border-2 font-semibold ${statusFilter === status ? "bg-sky-600 border-sky-600 text-white" : "bg-white border-slate-300 text-slate-600 hover:bg-slate-100"}`}
+                className={`px-4 py-2.5 text-xs rounded-full border-2 font-semibold ${statusFilter === status ? "bg-sky-600 border-sky-600 text-white" : "bg-white border-slate-300 text-slate-600 hover:bg-slate-100"}`}
               >
                 {status}
               </button>

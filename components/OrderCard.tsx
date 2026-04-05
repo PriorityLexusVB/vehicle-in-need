@@ -407,7 +407,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         value={order.status}
                         onChange={handleStatusChange}
                         disabled={isEditing || isSaving}
-                        className="p-1.5 border border-slate-300 rounded-md shadow-sm text-sm focus:ring-sky-500 focus:border-sky-500 disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="p-2.5 border border-slate-300 rounded-md shadow-sm text-sm focus:ring-sky-500 focus:border-sky-500 disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         {ACTIVE_STATUS_OPTIONS.map((status) => (
                           <option key={status} value={status}>
@@ -435,7 +435,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         onUpdateStatus(order.id, OrderStatus.Delivered)
                       }
                       disabled={isSaving}
-                      className="flex items-center gap-1.5 text-sm bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-3 rounded-lg shadow-sm transition-colors"
+                      className="flex items-center gap-1.5 text-sm bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg shadow-sm transition-colors"
                     >
                       Mark Secured
                     </button>
@@ -443,7 +443,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                   {currentUser?.isManager && isActive && !isEditing && (
                     <button
                       onClick={handleBeginEdit}
-                      className="flex items-center gap-1.5 text-sm border-2 border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold py-2 px-3 rounded-lg transition-colors"
+                      className="flex items-center gap-1.5 text-sm border-2 border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold py-3 px-4 rounded-lg transition-colors"
                     >
                       Edit
                     </button>
@@ -472,7 +472,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                   {currentUser?.isManager && isSecured && (
                     <button
                       onClick={() => setShowUnsecureConfirm(true)}
-                      className="flex items-center gap-1.5 text-sm border-2 border-amber-500 text-amber-700 hover:bg-amber-50 font-semibold py-2 px-3 rounded-lg transition-colors"
+                      className="flex items-center gap-1.5 text-sm border-2 border-amber-500 text-amber-700 hover:bg-amber-50 font-semibold py-3 px-4 rounded-lg transition-colors"
                     >
                       <UndoIcon className="w-4 h-4" />
                       Mark as Unsecured
@@ -481,7 +481,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                   {currentUser?.isManager && !isEditing && (
                     <button
                       onClick={() => onDeleteOrder(order.id)}
-                      className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-800 font-medium py-2 px-3 rounded-lg hover:bg-red-50 transition-colors"
+                      className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-800 font-medium py-3 px-4 rounded-lg hover:bg-red-50 transition-colors"
                     >
                       <TrashIcon className="w-4 h-4 text-red-500" />
                       Delete

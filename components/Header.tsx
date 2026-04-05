@@ -52,7 +52,7 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
               >
                 {isNonManager ? (
                   <>
-                    <BriefcaseIcon className="w-4 h-4 sm:hidden" aria-hidden="true" />
+                    <BriefcaseIcon className="w-5 h-5 sm:hidden" aria-hidden="true" />
                     <span className="hidden sm:inline">Allocation Board</span>
                   </>
                 ) : (
@@ -62,18 +62,18 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
               {isNonManager && (
                 <Link
                   to="/requests"
-                  className={`flex items-center justify-center px-2 py-1.5 sm:px-4 text-sm font-semibold rounded-full transition-colors ${currentPath === '/requests' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                  className={`flex items-center justify-center px-3 py-2.5 sm:px-4 text-sm font-semibold rounded-full transition-colors ${currentPath === '/requests' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
                   data-testid="requests-nav-link"
                   aria-label="Requests"
                 >
-                  <DocumentTextIcon className="w-4 h-4 sm:hidden" aria-hidden="true" />
+                  <DocumentTextIcon className="w-5 h-5 sm:hidden" aria-hidden="true" />
                   <span className="hidden sm:inline">Requests</span>
                 </Link>
               )}
               {user.isManager && (
                 <Link 
                   to="/admin"
-                  className={`flex items-center gap-2 px-4 py-1.5 text-sm font-semibold rounded-full transition-colors ${currentPath === '/admin' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-full transition-colors ${currentPath === '/admin' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
                   data-testid="admin-nav-link"
                 >
                   <SettingsIcon className="w-4 h-4" />

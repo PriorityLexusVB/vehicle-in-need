@@ -1496,13 +1496,13 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Search code, grade, category..."
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
+                className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
               />
               <select
                 value={categoryFilter}
                 onChange={(event) => setCategoryFilter(event.target.value)}
                 aria-label="Filter by category"
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
+                className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
               >
                 <option value="all">All Categories</option>
                 {categoryOptions.map((category) => (
@@ -1515,7 +1515,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                 value={rankFilter}
                 onChange={(event) => setRankFilter(event.target.value)}
                 aria-label="Filter by priority"
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
+                className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
               >
                 <option value="all">All Priorities</option>
                 {rankOptions.map((rank) => (
@@ -1528,7 +1528,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                 value={bosFilter}
                 onChange={(event) => setBosFilter(event.target.value as BosFilter)}
                 aria-label="Filter by BOS"
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
+                className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
               >
                 <option value="all">All BOS</option>
                 <option value="y">BOS: Y (Changeable)</option>
@@ -1540,7 +1540,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                   setArrivalGroupingMode(event.target.value as ArrivalGroupingMode)
                 }
                 aria-label="Build date grouping mode"
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
+                className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
               >
                 <option value="bucket">Build Date: Bucket</option>
                 <option value="date">Build Date: Exact Date</option>
@@ -1549,7 +1549,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                 value={sortMode}
                 onChange={(event) => setSortMode(event.target.value as SortMode)}
                 aria-label="Sort allocation rows"
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
+                className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
               >
                 <option value="priority">Sort: Priority</option>
                 <option value="arrival">Sort: Build Date</option>
