@@ -158,10 +158,6 @@ function parseToyotaDMText(text: string): { reportDate: string | null; vehicles:
     const arrivalMatch = restOfLine.match(/(\d{2}-\d{2})/);
     const arrival = arrivalMatch ? `2026-${arrivalMatch[1].replace("-", "-")}` : "TBD";
 
-    // Extract factory accessories and PPOs from between BOS and LOC
-    const afterBos = restOfLine.trim();
-    const factoryAccyMatch = afterBos.match(/^([A-Z0-9\s,]+?)(?:\s+[A-Z0-9\s,]+?)?\s+(?:\d{2}-\d{2}|PORT|SVA)/);
-
     rowIndex++;
     vehicles.push({
       id: `auto-${rowIndex}`,

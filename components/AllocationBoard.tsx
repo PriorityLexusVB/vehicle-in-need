@@ -109,8 +109,6 @@ function sortMatchedOrders(matches: MatchedOrder[]): MatchedOrder[] {
   });
 }
 
-const MAX_VISIBLE_MATCHES = 3;
-
 type ColorMatchResult = "exact" | "partial" | null;
 
 interface ColorPreferenceResult {
