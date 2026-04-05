@@ -60,8 +60,6 @@ describe("Header navigation", () => {
     expect(screen.queryByTestId("requests-nav-link")).toBeNull();
     // admin link (nav pill)
     expect(screen.getByTestId("admin-nav-link")).toBeInTheDocument();
-    // header admin quick link
-    expect(screen.getByTestId("admin-settings-link")).toBeInTheDocument();
     // active orders count
     expect(screen.getByText("42")).toBeInTheDocument();
     expect(screen.getByText(/active orders/i)).toBeInTheDocument();
@@ -89,12 +87,10 @@ describe("Header navigation", () => {
   it("shows manager role indicator for managers", () => {
     renderHeader(managerUser);
     expect(screen.getByText(/\(manager\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/\[ismanager: true\]/i)).toBeInTheDocument();
   });
 
   it("does not show role indicator for non-managers", () => {
     renderHeader(baseUser);
     expect(screen.queryByText(/\(manager\)/i)).toBeNull();
-    expect(screen.getByText(/\[ismanager: false\]/i)).toBeInTheDocument();
   });
 });

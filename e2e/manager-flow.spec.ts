@@ -122,8 +122,8 @@ test.describe('Manager User Flow', () => {
       await expect(page.getByText('Dashboard')).toBeVisible();
       await expect(page.getByText('User Management')).toBeVisible();
       
-      // Verify the gear icon link is also present
-      await expect(page.getByTestId('admin-settings-link')).toBeVisible();
+      // Verify admin nav pill is present
+      await expect(page.getByTestId('admin-nav-link')).toBeVisible();
     } else {
       console.log('Manager navigation not visible - user may not be authenticated as manager');
       // Test passes without manager auth - this is expected for unauthenticated users
@@ -150,23 +150,23 @@ test.describe('Manager User Flow', () => {
     }
   });
 
-  test('should navigate via gear icon to admin settings page', async ({ page }) => {
+  test('should navigate via admin nav pill to admin settings page', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
-    
+
     // Only proceed if manager is authenticated
-    const settingsLink = page.getByTestId('admin-settings-link');
+    const settingsLink = page.getByTestId('admin-nav-link');
     if (await settingsLink.isVisible().catch(() => false)) {
-      // Click on the gear icon link
+      // Click on the admin nav pill
       await settingsLink.click();
-      
+
       // Verify we're on the admin page
       await expect(page).toHaveURL(/#\/admin/);
-      
+
       // Verify settings page loaded
       await expect(page.getByRole('heading', { name: 'User Management' })).toBeVisible();
     } else {
-      console.log('Skipping gear icon test - settings link not available');
+      console.log('Skipping admin nav test - settings link not available');
     }
   });
 
@@ -242,8 +242,8 @@ test.describe('Non-Manager User Flow', () => {
       // Verify manager navigation elements are NOT present
       await expect(managerNav).not.toBeVisible();
       
-      // Verify gear icon is also NOT present
-      const settingsLink = page.getByTestId('admin-settings-link');
+      // Verify admin nav pill is also NOT present
+      const settingsLink = page.getByTestId('admin-nav-link');
       await expect(settingsLink).not.toBeVisible();
     }
     

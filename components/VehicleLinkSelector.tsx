@@ -64,7 +64,7 @@ export default function VehicleLinkSelector({
   const isLinked = Boolean(order.allocatedVehicleId);
 
   // Score and sort vehicles by match quality
-  const scored = useMemo(() => {
+  const scored = useMemo<ScoredVehicle[]>(() => {
     const orderModel = (order.model || "").toUpperCase().replace(/\s+/g, "");
     const orderColors = [
       order.exteriorColor1,
@@ -93,10 +93,10 @@ export default function VehicleLinkSelector({
         if (orderColors.length > 0 && v.color) {
           for (let i = 0; i < orderColors.length; i++) {
             const colorMatch = matchExteriorColors(orderColors[i], v.color);
-            if (colorMatch.isMatch) {
+            if (colorMatch) {
               score += (3 - i) * 20; // First choice = 60, second = 40, third = 20
               matchReason += (matchReason ? " + " : "") +
-                `Color ${i + 1}${colorMatch.precision === "generic" ? " (close)" : ""}`;
+                `Color ${i + 1}${colorMatch === "partial" ? " (close)" : ""}`;
               break;
             }
           }
@@ -113,7 +113,7 @@ export default function VehicleLinkSelector({
   }, [vehicles, order, linkedVehicleIds]);
 
   // Filter by search
-  const filtered = useMemo(() => {
+  const filtered = useMemo<ScoredVehicle[]>(() => {
     if (!search) return scored;
     const q = search.toLowerCase();
     return scored.filter(
@@ -125,9 +125,9 @@ export default function VehicleLinkSelector({
     );
   }, [scored, search]);
 
-  const bestMatches = filtered.filter((s) => s.score >= 100 && !s.isLinked);
-  const otherMatches = filtered.filter((s) => s.score < 100 && !s.isLinked);
-  const alreadyLinked = filtered.filter((s) => s.isLinked);
+  const bestMatches: ScoredVehicle[] = filtered.filter((s) => s.score >= 100 && !s.isLinked);
+  const otherMatches: ScoredVehicle[] = filtered.filter((s) => s.score < 100 && !s.isLinked);
+  const alreadyLinked: ScoredVehicle[] = filtered.filter((s) => s.isLinked);
 
   return (
     <Drawer.Root open={open} onOpenChange={setOpen}>
@@ -264,15 +264,13 @@ export default function VehicleLinkSelector({
   );
 }
 
-function VehicleRow({
-  scored,
-  onSelect,
-  disabled,
-}: {
+interface VehicleRowProps {
   scored: ScoredVehicle;
   onSelect?: () => void;
   disabled?: boolean;
-}) {
+}
+
+const VehicleRow: React.FC<VehicleRowProps> = ({ scored, onSelect, disabled }) => {
   const v = scored.vehicle;
   return (
     <button
@@ -310,4 +308,4 @@ function VehicleRow({
       </div>
     </button>
   );
-}
+};

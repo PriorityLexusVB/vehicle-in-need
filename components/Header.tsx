@@ -31,10 +31,9 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
               </Link>
               <p className="text-sm text-slate-500 hidden sm:block">
                   Welcome, {user.displayName || user.email} {user.isManager && '(Manager)'}
-                  <span className='ml-2 font-mono text-xs text-sky-700'>[isManager: {user.isManager.toString()}]</span>
               </p>
             </div>
-            <nav className="flex items-center gap-2 p-1 bg-slate-200/80 rounded-full flex-wrap" data-testid="main-nav">
+            <nav className="flex items-center gap-2 p-1 bg-slate-200/80 rounded-full" data-testid="main-nav">
               {user.isManager && (
                 <Link 
                   to="/"
@@ -62,7 +61,7 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
               {isNonManager && (
                 <Link
                   to="/requests"
-                  className={`flex items-center justify-center px-3 py-2.5 sm:px-4 text-sm font-semibold rounded-full transition-colors ${currentPath === '/requests' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                  className={`flex items-center justify-center px-3 py-1.5 sm:px-4 text-sm font-semibold rounded-full transition-colors ${currentPath === '/requests' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
                   data-testid="requests-nav-link"
                   aria-label="Requests"
                 >
@@ -71,9 +70,9 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
                 </Link>
               )}
               {user.isManager && (
-                <Link 
+                <Link
                   to="/admin"
-                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-full transition-colors ${currentPath === '/admin' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                  className={`flex items-center gap-2 px-4 py-1.5 text-sm font-semibold rounded-full transition-colors ${currentPath === '/admin' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
                   data-testid="admin-nav-link"
                 >
                   <SettingsIcon className="w-4 h-4" />
@@ -91,18 +90,6 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
                 </div>
                 <div className="h-6 w-px bg-slate-200"></div>
               </>
-            )}
-            {user.isManager && (
-              <Link
-                to="/admin"
-                className="flex items-center gap-2 px-3 py-2 rounded-full text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-colors"
-                aria-label="User Management"
-                title="User Management"
-                data-testid="admin-settings-link"
-              >
-                <SettingsIcon className="w-5 h-5" />
-                <span className="text-sm font-medium hidden sm:inline">User Management</span>
-              </Link>
             )}
             {user.isManager && (
               <Link

@@ -644,26 +644,22 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
     return { matchedVehicleCount: matchedVehicleIds.size, matchedOrderCount: uniqueOrderIds.size };
   }, [orderMatchesByVehicle, matchedVehicleIds]);
 
-  const vehicles = useMemo(
+  const vehicles = useMemo<AllocationVehicle[]>(
     () => latestSnapshot?.vehicles ?? [],
     [latestSnapshot],
   );
 
-  const categoryOptions = useMemo<string[]>(
-    () =>
-      Array.from(new Set(vehicles.map((vehicle) => vehicle.category))).sort(
-        (a, b) => a.localeCompare(b),
-      ),
-    [vehicles],
-  );
+  const categoryOptions = useMemo<string[]>(() => {
+    const cats: string[] = vehicles.map((vehicle) => vehicle.category);
+    return [...new Set(cats)].sort((a, b) => a.localeCompare(b));
+  }, [vehicles]);
 
-  const rankOptions = useMemo<string[]>(
-    () =>
-      Array.from(new Set(vehicles.map((vehicle) => vehicle.rank))).sort((a, b) => {
-        return (RANK_ORDER[a] ?? 99) - (RANK_ORDER[b] ?? 99);
-      }),
-    [vehicles],
-  );
+  const rankOptions = useMemo<string[]>(() => {
+    const ranks: string[] = vehicles.map((vehicle) => vehicle.rank);
+    return [...new Set(ranks)].sort((a, b) => {
+      return (RANK_ORDER[a] ?? 99) - (RANK_ORDER[b] ?? 99);
+    });
+  }, [vehicles]);
 
   useEffect(() => {
     persistSetting(STORAGE_KEYS.boardView, boardView);

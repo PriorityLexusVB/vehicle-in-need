@@ -80,9 +80,9 @@ test.describe('Order Visibility by Role', () => {
       const managerNav = page.getByTestId('manager-nav');
       await expect(managerNav).not.toBeVisible();
       
-      // Non-manager should NOT see admin settings link
-      const adminSettingsLink = page.getByTestId('admin-settings-link');
-      await expect(adminSettingsLink).not.toBeVisible();
+      // Non-manager should NOT see admin nav pill
+      const adminNavLink = page.getByTestId('admin-nav-link');
+      await expect(adminNavLink).not.toBeVisible();
     } else {
       console.log('Non-manager view not detected - may be manager or unauthenticated');
     }
