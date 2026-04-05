@@ -488,7 +488,7 @@ interface GroupedAllocationRow {
   vehicles: AllocationVehicle[];
 }
 
-const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
+const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant }) => {
   const [latestSnapshot, setLatestSnapshot] = useState<AllocationSnapshot | null>(
     null,
   );
@@ -1736,6 +1736,60 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
           </>
         )}
       </div>
+
+      {/* DX Pipeline — shows Dealer Exchange orders alongside allocation (beta only) */}
+      {variant === "beta" && currentUser.isManager && (() => {
+        const dxOrders = activeOrders.filter(o => o.status === "Dealer Exchange");
+        if (dxOrders.length === 0) return null;
+        return (
+          <div className="mt-8">
+            <div className="mb-3 flex items-center gap-3 border-b border-amber-200 pb-2">
+              <h3 className="text-lg font-bold text-amber-700">Dealer Exchange Pipeline</h3>
+              <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-700">
+                {dxOrders.length}
+              </span>
+            </div>
+            <p className="mb-4 text-xs text-slate-500">
+              Incoming vehicles from other dealers — not in factory allocation. These arrive when the trade is completed.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {dxOrders.map((order) => (
+                <div
+                  key={order.id}
+                  className="rounded-xl border border-amber-200 bg-amber-50/50 p-4"
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">
+                        {order.year} {order.model}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {order.customerName}
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-amber-200 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                      DX
+                    </span>
+                  </div>
+                  <div className="mt-3 space-y-1 text-xs text-slate-600">
+                    {order.exteriorColor1 && (
+                      <p>Color: {order.exteriorColor1}{order.exteriorColor2 ? `, ${order.exteriorColor2}` : ""}</p>
+                    )}
+                    {order.salesperson && <p>Salesperson: {order.salesperson}</p>}
+                    {order.dxDealerName && <p>Trading Dealer: {order.dxDealerName}</p>}
+                    {order.dxExpectedArrival && <p>Expected: {order.dxExpectedArrival}</p>}
+                    {order.vin && <p>VIN: {order.vin}</p>}
+                    {order.stockNumber && <p>Stock: {order.stockNumber}</p>}
+                    {!order.vin && !order.stockNumber && (
+                      <p className="italic text-slate-400">No VIN/Stock yet — awaiting arrival</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
     </section>
   );
 };
