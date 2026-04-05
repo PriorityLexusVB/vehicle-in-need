@@ -51,14 +51,20 @@
     "seed:options:apply": "node scripts/seed-vehicle-options.mjs --project vehicles-in-need"
   },
   "dependencies": {
+    "@formkit/auto-animate": "^0.9.0",
+    "@use-gesture/react": "^10.3.1",
+    "canvas-confetti": "^1.9.4",
     "cors": "^2.8.5",
     "express": "^4.22.1",
     "firebase": "^12.6.0",
     "firebase-admin": "^13.0.2",
+    "framer-motion": "^12.38.0",
     "pdfjs-dist": "^5.5.207",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-router-dom": "^6.30.3",
+    "sonner": "^2.0.7",
+    "vaul": "^1.1.2",
     "vite-plugin-node-polyfills": "^0.24.0"
   },
   "devDependencies": {
