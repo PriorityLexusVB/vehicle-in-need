@@ -1206,6 +1206,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                       <div key={m.orderId} className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                           <span className="text-sm font-bold text-slate-900">{m.customerName}</span>
+                          <span className="text-xs text-slate-400">{m.orderDate ? new Date(m.orderDate).toLocaleDateString() : ""}</span>
                           <span className="text-sm text-emerald-600">{m.salesperson}</span>
                           <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">{m.model} / {m.modelNumber}</span>
                         </div>
@@ -1225,6 +1226,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                     {partialMatches.map((m) => (
                       <div key={m.orderId} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-sky-800">
                         <span className="font-semibold text-slate-900">{m.customerName}</span>
+                        <span className="text-slate-400">{m.orderDate ? new Date(m.orderDate).toLocaleDateString() : ""}</span>
                         <span className="text-sky-600">{m.salesperson}</span>
                         <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700">{m.model} / {m.modelNumber}</span>
                         {(m.extColorMatched || m.exteriorColor1) && <span className="text-sky-600">Ext{m.extChoiceMatched && m.extChoiceMatched > 1 ? ` (${m.extChoiceMatched}${m.extChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.extColorMatched || m.exteriorColor1}</span>}
@@ -1241,6 +1243,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                     {modelOnlyMatches.map((m) => (
                       <div key={m.orderId} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
                         <span className="font-semibold text-slate-700">{m.customerName}</span>
+                        <span className="text-slate-400">{m.orderDate ? new Date(m.orderDate).toLocaleDateString() : ""}</span>
                         <span className="text-slate-400">{m.salesperson}</span>
                         <span className="text-slate-500">{m.model} / {m.modelNumber}</span>
                       </div>
@@ -1699,6 +1702,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                                   {matched.map((m) => (
                                     <div key={m.orderId} className="flex flex-wrap items-center gap-1 text-xs">
                                       <span className="font-semibold text-amber-700">{m.customerName}</span>
+                                      {m.orderDate && <span className="text-slate-400">{new Date(m.orderDate).toLocaleDateString()}</span>}
                                       <span className="text-amber-500">({m.salesperson})</span>
                                       {m.colorMatch === "exact" && (
                                         <span className="rounded bg-emerald-100 px-1 py-0.5 text-[10px] font-semibold text-emerald-700">EXT</span>
