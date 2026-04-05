@@ -1358,7 +1358,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <button
               onClick={handleParse}
-              className="rounded-lg bg-emerald-600px-4 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-emerald-700"
+              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
             >
               Parse Source
             </button>
@@ -1370,7 +1370,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                 parsedResult.errors.length > 0 ||
                 parsedResult.vehicles.length === 0
               }
-              className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-slate-200"
+              className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-slate-200"
             >
               {isPublishing ? "Publishing..." : "Publish Snapshot"}
             </button>
@@ -1468,7 +1468,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                 onClick={() => setBoardView("strategy")}
                 className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                   boardView === "strategy"
-                    ? "bg-sky-600 text-slate-900"
+                    ? "bg-sky-600 text-white"
                     : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                 }`}
               >
@@ -1478,7 +1478,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                 onClick={() => setBoardView("log")}
                 className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                   boardView === "log"
-                    ? "bg-sky-600 text-slate-900"
+                    ? "bg-sky-600 text-white"
                     : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                 }`}
               >

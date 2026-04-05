@@ -6,8 +6,8 @@ import {
   onSnapshot,
   orderBy,
   query,
+  runTransaction,
   serverTimestamp,
-  writeBatch,
   where,
 } from "firebase/firestore";
 import { db } from "./firebase";
@@ -84,35 +84,37 @@ export async function publishAllocationSnapshot(
   publishedByEmail: string,
 ): Promise<void> {
   const snapshotsRef = collection(db, ALLOCATION_SNAPSHOTS_COLLECTION);
-  const currentLatestQuery = query(snapshotsRef, where("isLatest", "==", true));
-  const currentLatest = await getDocs(currentLatestQuery);
 
-  const batch = writeBatch(db);
+  await runTransaction(db, async (transaction) => {
+    // Read current latest snapshots inside the transaction for atomicity
+    const currentLatestQuery = query(snapshotsRef, where("isLatest", "==", true));
+    const currentLatest = await getDocs(currentLatestQuery);
 
-  currentLatest.docs.forEach((snapshotDoc) => {
-    batch.update(doc(db, ALLOCATION_SNAPSHOTS_COLLECTION, snapshotDoc.id), {
-      isLatest: false,
+    // Mark all existing "latest" snapshots as not-latest
+    currentLatest.docs.forEach((snapshotDoc) => {
+      transaction.update(doc(db, ALLOCATION_SNAPSHOTS_COLLECTION, snapshotDoc.id), {
+        isLatest: false,
+      });
+    });
+
+    const normalizedVehicles = payload.vehicles.map((vehicle) => ({
+      ...vehicle,
+      bos: normalizeBosValue(vehicle.bos),
+    }));
+
+    // Create the new snapshot as latest
+    const newSnapshotRef = doc(snapshotsRef);
+    transaction.set(newSnapshotRef, {
+      reportDate: payload.reportDate,
+      publishedAt: serverTimestamp(),
+      publishedByUid,
+      publishedByEmail,
+      itemCount: payload.itemCount,
+      summary: payload.summary,
+      vehicles: normalizedVehicles,
+      isLatest: true,
+      // TTL: auto-delete after 90 days (Firestore TTL policy on this field)
+      expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
     });
   });
-
-  const normalizedVehicles = payload.vehicles.map((vehicle) => ({
-    ...vehicle,
-    bos: normalizeBosValue(vehicle.bos),
-  }));
-
-  const newSnapshotRef = doc(snapshotsRef);
-  batch.set(newSnapshotRef, {
-    reportDate: payload.reportDate,
-    publishedAt: serverTimestamp(),
-    publishedByUid,
-    publishedByEmail,
-    itemCount: payload.itemCount,
-    summary: payload.summary,
-    vehicles: normalizedVehicles,
-    isLatest: true,
-    // TTL: auto-delete after 90 days (Firestore TTL policy on this field)
-    expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
-  });
-
-  await batch.commit();
 }

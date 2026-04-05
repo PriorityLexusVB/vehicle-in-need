@@ -90,6 +90,20 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.VITE_APP_COMMIT_SHA': JSON.stringify(commitSha),
       'import.meta.env.VITE_APP_BUILD_TIME': JSON.stringify(buildTime),
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            firebase: [
+              'firebase/app',
+              'firebase/auth',
+              'firebase/firestore',
+              'firebase/functions',
+            ],
+          },
+        },
+      },
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

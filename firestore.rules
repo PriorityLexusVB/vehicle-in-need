@@ -206,7 +206,22 @@ service cloud.firestore {
         // STATUS CHANGES ARE MANAGER-ONLY: Owners cannot change status field
         && !isStatusChanged()
         // Optional: validate status is still a valid value (unchanged)
-        && request.resource.data.status in ['Factory Order', 'Locate', 'Dealer Exchange', 'Received', 'Delivered'];
+        && request.resource.data.status in ['Factory Order', 'Locate', 'Dealer Exchange', 'Received', 'Delivered']
+        // MANAGER-ONLY FIELDS: Owners cannot modify allocation or note fields
+        && (!('allocatedVehicleId' in resource.data) || request.resource.data.allocatedVehicleId == resource.data.allocatedVehicleId)
+        && (!('allocatedVehicleId' in request.resource.data) || ('allocatedVehicleId' in resource.data))
+        && (!('allocatedVehicleInfo' in resource.data) || request.resource.data.allocatedVehicleInfo == resource.data.allocatedVehicleInfo)
+        && (!('allocatedVehicleInfo' in request.resource.data) || ('allocatedVehicleInfo' in resource.data))
+        && (!('linkedAt' in resource.data) || request.resource.data.linkedAt == resource.data.linkedAt)
+        && (!('linkedAt' in request.resource.data) || ('linkedAt' in resource.data))
+        && (!('linkedByUid' in resource.data) || request.resource.data.linkedByUid == resource.data.linkedByUid)
+        && (!('linkedByUid' in request.resource.data) || ('linkedByUid' in resource.data))
+        && (!('latestNoteText' in resource.data) || request.resource.data.latestNoteText == resource.data.latestNoteText)
+        && (!('latestNoteText' in request.resource.data) || ('latestNoteText' in resource.data))
+        && (!('latestNoteAuthor' in resource.data) || request.resource.data.latestNoteAuthor == resource.data.latestNoteAuthor)
+        && (!('latestNoteAuthor' in request.resource.data) || ('latestNoteAuthor' in resource.data))
+        && (!('latestNoteAt' in resource.data) || request.resource.data.latestNoteAt == resource.data.latestNoteAt)
+        && (!('latestNoteAt' in request.resource.data) || ('latestNoteAt' in resource.data));
 
       // DELETE: Managers only (via custom claims or Firestore document).
       allow delete: if isManager();

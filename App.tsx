@@ -38,7 +38,7 @@ import ZeroManagerWarning from "./components/ZeroManagerWarning";
 import CSVUpload from "./components/CSVUpload";
 import AllocationBoard from "./components/AllocationBoard";
 import { CSVOrderData } from "./src/utils/csvParser";
-import confetti from "canvas-confetti";
+// canvas-confetti is dynamically imported at the usage site to avoid bundling in the main chunk
 import { PlusIcon } from "./components/icons/PlusIcon";
 import { CloseIcon } from "./components/icons/CloseIcon";
 import { UploadIcon } from "./components/icons/UploadIcon";
@@ -354,8 +354,10 @@ const App: React.FC = () => {
         "%c🔐 Permission Error Details",
         "color: #f59e0b; font-weight: bold;",
       );
-      console.error("User UID:", user.uid);
-      console.error("User email:", user.email);
+      if (import.meta.env.DEV) {
+        console.error("User UID:", user.uid);
+        console.error("User email:", user.email);
+      }
       console.error("User isManager (app state):", user.isManager);
       console.error("Query type attempted:", queryType);
     };
@@ -741,6 +743,7 @@ const App: React.FC = () => {
 
         // Celebrate when a vehicle is delivered (the big win moment)
         if (status === OrderStatus.Delivered) {
+          const { default: confetti } = await import("canvas-confetti");
           confetti({ particleCount: 80, spread: 70, origin: { y: 0.7 } });
         }
       } catch (error) {
@@ -868,7 +871,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-100 font-sans">
       {needRefresh && (
-        <div className="fixed top-0 left-0 right-0 bg-sky-600 text-white py-3 px-4 z-50 flex items-center justify-between shadow-lg">
+        <div className="bg-sky-600 text-white py-3 px-4 flex items-center justify-between shadow-lg">
           <span className="text-sm font-medium">
             A new version is available!
           </span>
@@ -1118,6 +1121,7 @@ const App: React.FC = () => {
               </ProtectedRoute>
             }
           />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
     </div>

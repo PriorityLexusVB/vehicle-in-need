@@ -319,6 +319,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
         className="w-full p-4 cursor-pointer text-left"
         onClick={() => setIsExpanded(!isExpanded)}
         aria-label="Toggle order details"
+        aria-expanded={isExpanded}
       >
         <div className="flex justify-between items-start">
           <div>

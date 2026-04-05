@@ -12,7 +12,6 @@ import {
   doc,
   runTransaction,
   serverTimestamp,
-  updateDoc,
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -66,11 +65,18 @@ export async function linkVehicleToOrder(
 export async function unlinkVehicleFromOrder(orderId: string): Promise<void> {
   const orderRef = doc(db, ORDERS_COLLECTION, orderId);
 
-  await updateDoc(orderRef, {
-    allocatedVehicleId: null,
-    allocatedVehicleInfo: null,
-    linkedAt: null,
-    linkedByUid: null,
+  await runTransaction(db, async (transaction) => {
+    const orderSnap = await transaction.get(orderRef);
+    if (!orderSnap.exists()) {
+      throw new Error("Order not found");
+    }
+
+    transaction.update(orderRef, {
+      allocatedVehicleId: null,
+      allocatedVehicleInfo: null,
+      linkedAt: null,
+      linkedByUid: null,
+    });
   });
 }
 
