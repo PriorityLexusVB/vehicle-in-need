@@ -49,6 +49,16 @@ export interface Order {
   latestNoteAt?: Timestamp;
   latestNoteByUid?: string;
   latestNoteByName?: string;
+
+  // Allocation vehicle linking (manager-only writes, enforced by Firestore rules)
+  allocatedVehicleId?: string;       // ID of linked allocation vehicle (e.g. "RX350-6X4-001")
+  allocatedVehicleInfo?: string;     // Human-readable summary (e.g. "RX 350 - Eminent White Pearl - May 2026")
+  linkedAt?: Timestamp;              // When the link was created
+  linkedByUid?: string;              // Manager who created the link
+
+  // Dealer Exchange additional fields (optional, for DX pipeline tracking)
+  dxDealerName?: string;             // Trading dealer name
+  dxExpectedArrival?: string;        // Expected arrival date
 }
 
 export interface AppUser {

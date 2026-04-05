@@ -110,6 +110,8 @@ export async function publishAllocationSnapshot(
     summary: payload.summary,
     vehicles: normalizedVehicles,
     isLatest: true,
+    // TTL: auto-delete after 90 days (Firestore TTL policy on this field)
+    expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
   });
 
   await batch.commit();

@@ -17,6 +17,7 @@ interface OrderListProps {
   ) => Promise<boolean>;
   onDeleteOrder: (orderId: string) => void;
   currentUser?: AppUser | null;
+  variant?: "beta";
 }
 
 const OrderList: React.FC<OrderListProps> = ({

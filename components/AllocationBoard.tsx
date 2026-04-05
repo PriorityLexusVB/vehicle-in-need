@@ -20,6 +20,7 @@ import { subscribeActiveOrders } from "../services/orderService";
 
 interface AllocationBoardProps {
   currentUser: AppUser;
+  variant?: "beta";
 }
 
 type BoardView = "strategy" | "log";
