@@ -187,7 +187,7 @@ const OrderList: React.FC<OrderListProps> = ({
         </div>
         <button
           onClick={handleExport}
-          className="mt-4 sm:mt-0 flex-shrink-0 flex items-center justify-center gap-2 text-sm bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors duration-200 disabled:bg-slate-300 disabled:cursor-not-allowed"
+          className="mt-4 sm:mt-0 flex-shrink-0 flex items-center justify-center gap-2 text-sm bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={filteredOrders.length === 0}
         >
           <DownloadIcon />

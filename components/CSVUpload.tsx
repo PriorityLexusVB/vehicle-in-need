@@ -4,6 +4,7 @@ import { AppUser } from '../types';
 import { CloseIcon } from './icons/CloseIcon';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
 import { DocumentTextIcon } from './icons/DocumentTextIcon';
+import ButtonSpinner from './ButtonSpinner';
 
 interface CSVUploadProps {
   onUpload: (orders: CSVOrderData[]) => Promise<{ success: number; failed: number }>;
@@ -264,7 +265,7 @@ const CSVUpload: React.FC<CSVUploadProps> = ({ onUpload, currentUser, onClose })
             type="button"
             onClick={handleUpload}
             disabled={orders.length === 0}
-            className="px-4 py-2 text-sm font-medium text-white bg-sky-600 rounded-lg hover:bg-sky-700 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm font-medium text-white bg-sky-600 rounded-lg hover:bg-sky-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Import {orders.length} Orders
           </button>
@@ -275,10 +276,7 @@ const CSVUpload: React.FC<CSVUploadProps> = ({ onUpload, currentUser, onClose })
 
   const renderUploadingStage = () => (
     <div className="text-center py-8">
-      <svg className="animate-spin mx-auto h-12 w-12 text-sky-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-      </svg>
+      <ButtonSpinner className="mx-auto h-12 w-12 text-sky-600" />
       <p className="mt-4 text-sm text-slate-600">Importing orders...</p>
       <p className="mt-1 text-xs text-slate-500">Please wait while we add your orders to the system.</p>
     </div>
@@ -291,10 +289,10 @@ const CSVUpload: React.FC<CSVUploadProps> = ({ onUpload, currentUser, onClose })
 
     return (
       <div className="text-center py-8">
-        <CheckCircleIcon className="mx-auto h-12 w-12 text-green-500" />
+        <CheckCircleIcon className="mx-auto h-12 w-12 text-emerald-500" />
         <h3 className="mt-4 text-lg font-medium text-slate-900">Import Complete</h3>
         <p className="mt-2 text-sm text-slate-600">
-          Successfully imported <span className="font-semibold text-green-600">{success}</span> orders
+          Successfully imported <span className="font-semibold text-emerald-600">{success}</span> orders
           {failed > 0 && (
             <>, <span className="font-semibold text-red-600">{failed}</span> failed</>
           )}

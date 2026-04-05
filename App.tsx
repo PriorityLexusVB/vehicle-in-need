@@ -954,10 +954,10 @@ const App: React.FC = () => {
                             setIsOrderFormVisible(false);
                           }
                         }}
-                        className={`flex items-center gap-2 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 ${
+                        className={`flex items-center gap-2 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-colors duration-200 ${
                           isCSVUploadVisible
                             ? "bg-slate-600 hover:bg-slate-700"
-                            : "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700"
+                            : "bg-emerald-600 hover:bg-emerald-700"
                         }`}
                       >
                         {isCSVUploadVisible ? (
@@ -979,10 +979,10 @@ const App: React.FC = () => {
                             setIsCSVUploadVisible(false);
                           }
                         }}
-                        className={`flex items-center gap-2 text-white font-bold py-2 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 ${
+                        className={`flex items-center gap-2 text-white font-bold py-2 px-5 rounded-lg shadow-md hover:shadow-lg transition-colors duration-200 ${
                           isOrderFormVisible
                             ? "bg-slate-600 hover:bg-slate-700"
-                            : "bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700"
+                            : "bg-sky-600 hover:bg-sky-700"
                         }`}
                       >
                         {isOrderFormVisible ? (

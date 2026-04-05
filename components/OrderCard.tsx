@@ -408,7 +408,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         value={order.status}
                         onChange={handleStatusChange}
                         disabled={isEditing || isSaving}
-                        className="p-2.5 border border-slate-300 rounded-md shadow-sm text-sm focus:ring-sky-500 focus:border-sky-500 disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="p-2.5 border border-slate-300 rounded-md shadow-sm text-sm focus:ring-sky-500 focus:border-sky-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {ACTIVE_STATUS_OPTIONS.map((status) => (
                           <option key={status} value={status}>
@@ -418,7 +418,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                       </select>
                     </>
                   ) : isSecured ? (
-                    <div className="text-sm font-medium text-green-700">
+                    <div className="text-sm font-medium text-emerald-700">
                       Order Secured
                     </div>
                   ) : (
@@ -436,7 +436,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         onUpdateStatus(order.id, OrderStatus.Delivered)
                       }
                       disabled={isSaving}
-                      className="flex items-center gap-1.5 text-sm bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg shadow-sm transition-colors"
+                      className="flex items-center gap-1.5 text-sm bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-4 rounded-lg shadow-sm transition-colors"
                     >
                       Mark Secured
                     </button>
@@ -455,7 +455,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         onClick={handleCancelEdit}
                         type="button"
                         disabled={isSaving}
-                        className="flex items-center gap-1.5 text-sm border-2 border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold py-2 px-3 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="flex items-center gap-1.5 text-sm border-2 border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold py-2 px-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Cancel
                       </button>
@@ -463,7 +463,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         onClick={() => void handleSaveEdit()}
                         type="button"
                         disabled={isSaving}
-                        className="flex items-center gap-1.5 text-sm bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-3 rounded-lg shadow-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="flex items-center gap-1.5 text-sm bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-3 rounded-lg shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isSaving ? "Saving..." : "Save"}
                       </button>
@@ -511,7 +511,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                       <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                         Staff & Date
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                           <label
                             htmlFor={`edit-salesperson-${order.id}`}
@@ -585,7 +585,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                       <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                         Customer & Deal
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <label
                             htmlFor={`edit-customerName-${order.id}`}
@@ -631,7 +631,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                           )}
                         </div>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <label
                             htmlFor={`edit-stockNumber-${order.id}`}
@@ -673,7 +673,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                       <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                         Vehicle
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                           <label
                             htmlFor={`edit-year-${order.id}`}
@@ -749,7 +749,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                       <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                         Colors
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                           <label
                             htmlFor={`edit-exteriorColor1-${order.id}`}
@@ -817,7 +817,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                           )}
                         </div>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                           <label
                             htmlFor={`edit-interiorColor1-${order.id}`}
@@ -891,7 +891,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                       <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                         Pricing
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
                           <label
                             htmlFor={`edit-msrp-${order.id}`}
@@ -991,7 +991,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                       <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                         Notes
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label
                             htmlFor={`edit-options-${order.id}`}

@@ -235,7 +235,7 @@ const OrderNotes: React.FC<OrderNotesProps> = ({ orderId, currentUser }) => {
             <button
               type="submit"
               disabled={isSubmitting || newText.trim().length === 0}
-              className="text-sm bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-3 rounded-lg shadow-sm transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
+              className="text-sm bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-3 rounded-lg shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? "Saving…" : "Add Note"}
             </button>

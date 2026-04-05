@@ -965,7 +965,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
     if (parseInsights.confidence === "Medium") {
       return "bg-amber-100 text-amber-700";
     }
-    return "bg-rose-100 text-rose-700";
+    return "bg-red-100 text-red-700";
   }, [parseInsights]);
 
   const handleParse = () => {
@@ -1190,30 +1190,28 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
           <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
             {detailRows.map((detail) => (
               <div key={`${row.key}-${variant.code}-${detail.label}`} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                <dt className="text-[11px] uppercase tracking-wide text-slate-400">{detail.label}</dt>
+                <dt className="text-xs uppercase tracking-wide text-slate-400">{detail.label}</dt>
                 <dd className="mt-1 font-semibold text-slate-800">{detail.value}</dd>
               </div>
             ))}
           </dl>
 
           {uniqueMatches.length > 0 && currentUser.isManager && (
-            <div className="mt-3 space-y-2">
+            <div className="mt-4 space-y-2 border-t border-slate-100 pt-3">
               {exactMatches.length > 0 && (
                 <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-3">
-                  <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">Color Match ({exactMatches.length})</p>
-                  <div className="mt-2 space-y-2">
-                    {exactMatches.map((m) => (
-                      <div key={m.orderId} className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                          <span className="text-sm font-bold text-slate-900">{m.customerName}</span>
-                          <span className="text-xs text-slate-400">{m.orderDate ? new Date(m.orderDate).toLocaleDateString() : ""}</span>
-                          <span className="text-sm text-emerald-600">{m.salesperson}</span>
-                          <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">{m.model} / {m.modelNumber}</span>
-                        </div>
-                        <div className="mt-1.5 flex flex-wrap gap-2 text-xs">
-                          {m.extColorMatched && <span className={`rounded px-2 py-0.5 font-semibold ${m.colorMatch === "exact" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>Ext{m.extChoiceMatched && m.extChoiceMatched > 1 ? ` (${m.extChoiceMatched}${m.extChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.extColorMatched}</span>}
-                          {m.intColorMatched && <span className={`rounded px-2 py-0.5 font-semibold ${m.interiorMatch === "exact" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>Int{m.intChoiceMatched && m.intChoiceMatched > 1 ? ` (${m.intChoiceMatched}${m.intChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.intColorMatched}</span>}
-                        </div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Color Match ({exactMatches.length})</p>
+                  <div className="mt-2 space-y-1">
+                    {exactMatches.map((m, index) => (
+                      <div key={m.orderId} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-1.5">
+                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-600">{index + 1}</span>
+                        <span className="text-sm font-semibold text-slate-900">{m.customerName}</span>
+                        {m.orderDate?.trim() && <span className="font-medium text-xs text-slate-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
+                        <span className="text-sm text-slate-500">{m.salesperson || "TBD"}</span>
+                        <span className="text-xs text-slate-400">{m.model} / {m.modelNumber}</span>
+                        <a href={`/#/?highlight=${m.orderId}`} className="text-sky-500 hover:text-sky-700 text-xs font-medium" title="View order">View &rarr;</a>
+                        {m.extColorMatched && <span className={`rounded px-2 py-0.5 text-xs font-semibold ${m.colorMatch === "exact" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>Ext{m.extChoiceMatched && m.extChoiceMatched > 1 ? ` (${m.extChoiceMatched}${m.extChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.extColorMatched}</span>}
+                        {m.intColorMatched && <span className={`rounded px-2 py-0.5 text-xs font-semibold ${m.interiorMatch === "exact" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>Int{m.intChoiceMatched && m.intChoiceMatched > 1 ? ` (${m.intChoiceMatched}${m.intChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.intColorMatched}</span>}
                       </div>
                     ))}
                   </div>
@@ -1223,12 +1221,14 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                 <div className="rounded-lg border border-sky-200 bg-sky-50 p-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">Similar Color ({partialMatches.length})</p>
                   <div className="mt-1.5 space-y-1">
-                    {partialMatches.map((m) => (
+                    {partialMatches.map((m, index) => (
                       <div key={m.orderId} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-sky-800">
-                        <span className="font-semibold text-slate-900">{m.customerName}</span>
-                        <span className="text-slate-400">{m.orderDate ? new Date(m.orderDate).toLocaleDateString() : ""}</span>
-                        <span className="text-sky-600">{m.salesperson}</span>
-                        <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700">{m.model} / {m.modelNumber}</span>
+                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-600">{index + 1}</span>
+                        <span className="text-sm font-semibold text-slate-900">{m.customerName}</span>
+                        {m.orderDate?.trim() && <span className="font-medium text-xs text-slate-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
+                        <span className="text-sm text-slate-500">{m.salesperson || "TBD"}</span>
+                        <span className="text-xs text-slate-400">{m.model} / {m.modelNumber}</span>
+                        <a href={`/#/?highlight=${m.orderId}`} className="text-sky-500 hover:text-sky-700 text-xs font-medium" title="View order">View &rarr;</a>
                         {(m.extColorMatched || m.exteriorColor1) && <span className="text-sky-600">Ext{m.extChoiceMatched && m.extChoiceMatched > 1 ? ` (${m.extChoiceMatched}${m.extChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.extColorMatched || m.exteriorColor1}</span>}
                         {(m.intColorMatched || m.interiorColor1) && <span className="text-sky-600">Int{m.intChoiceMatched && m.intChoiceMatched > 1 ? ` (${m.intChoiceMatched}${m.intChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.intColorMatched || m.interiorColor1}</span>}
                       </div>
@@ -1240,12 +1240,14 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                 <details className="rounded-lg border border-slate-200 bg-slate-50">
                   <summary className="cursor-pointer px-3 py-2 text-xs font-semibold text-slate-400 hover:text-slate-500">+{modelOnlyMatches.length} model-only match{modelOnlyMatches.length === 1 ? "" : "es"}</summary>
                   <div className="space-y-1 px-3 pb-2">
-                    {modelOnlyMatches.map((m) => (
+                    {modelOnlyMatches.map((m, index) => (
                       <div key={m.orderId} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-                        <span className="font-semibold text-slate-700">{m.customerName}</span>
-                        <span className="text-slate-400">{m.orderDate ? new Date(m.orderDate).toLocaleDateString() : ""}</span>
-                        <span className="text-slate-400">{m.salesperson}</span>
-                        <span className="text-slate-500">{m.model} / {m.modelNumber}</span>
+                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-600">{index + 1}</span>
+                        <span className="text-sm font-semibold text-slate-900">{m.customerName}</span>
+                        {m.orderDate?.trim() && <span className="font-medium text-xs text-slate-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
+                        <span className="text-sm text-slate-500">{m.salesperson || "TBD"}</span>
+                        <span className="text-xs text-slate-400">{m.model} / {m.modelNumber}</span>
+                        <a href={`/#/?highlight=${m.orderId}`} className="text-sky-500 hover:text-sky-700 text-xs font-medium" title="View order">View &rarr;</a>
                       </div>
                     ))}
                   </div>
@@ -1413,7 +1415,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
               </div>
 
               {parsedResult.errors.length > 0 && (
-                <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-rose-600">
+                <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-red-600">
                   {parsedResult.errors.map((error) => (
                     <li key={error}>{error}</li>
                   ))}
@@ -1567,7 +1569,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
         </div>
 
         {isLoading && <p className="mt-6 text-sm text-slate-500">Loading live allocation...</p>}
-        {loadError && <p className="mt-6 text-sm text-rose-600">{loadError}</p>}
+        {loadError && <p className="mt-6 text-sm text-red-600">{loadError}</p>}
 
         {!isLoading && !loadError && vehicles.length === 0 && (
           <div className="mt-6 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
@@ -1701,20 +1703,20 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                                 <div className="space-y-1">
                                   {matched.map((m) => (
                                     <div key={m.orderId} className="flex flex-wrap items-center gap-1 text-xs">
-                                      <span className="font-semibold text-amber-700">{m.customerName}</span>
-                                      {m.orderDate && <span className="text-slate-400">{new Date(m.orderDate).toLocaleDateString()}</span>}
-                                      <span className="text-amber-500">({m.salesperson})</span>
+                                      <span className="font-semibold text-slate-900">{m.customerName}</span>
+                                      {m.orderDate?.trim() && <span className="font-medium text-xs text-slate-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
+                                      <span className="text-slate-500">({m.salesperson || "TBD"})</span>
                                       {m.colorMatch === "exact" && (
-                                        <span className="rounded bg-emerald-100 px-1 py-0.5 text-[10px] font-semibold text-emerald-700">EXT</span>
+                                        <span className="rounded bg-emerald-100 px-1 py-0.5 text-xs font-semibold text-emerald-700">EXT</span>
                                       )}
                                       {m.colorMatch === "partial" && (
-                                        <span className="rounded bg-sky-100 px-1 py-0.5 text-[10px] font-semibold text-sky-700">~EXT</span>
+                                        <span className="rounded bg-sky-100 px-1 py-0.5 text-xs font-semibold text-sky-700">~EXT</span>
                                       )}
                                       {m.interiorMatch === "exact" && (
-                                        <span className="rounded bg-emerald-100 px-1 py-0.5 text-[10px] font-semibold text-emerald-700">INT</span>
+                                        <span className="rounded bg-emerald-100 px-1 py-0.5 text-xs font-semibold text-emerald-700">INT</span>
                                       )}
                                       {m.interiorMatch === "partial" && (
-                                        <span className="rounded bg-sky-100 px-1 py-0.5 text-[10px] font-semibold text-sky-700">~INT</span>
+                                        <span className="rounded bg-sky-100 px-1 py-0.5 text-xs font-semibold text-sky-700">~INT</span>
                                       )}
                                     </div>
                                   ))}

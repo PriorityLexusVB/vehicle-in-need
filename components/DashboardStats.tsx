@@ -16,7 +16,7 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color }) => (
       {icon}
     </div>
     <div>
-      <p className="text-3xl font-bold text-slate-800">{value}</p>
+      <p className="text-2xl font-bold text-slate-800">{value}</p>
       <p className="text-sm font-medium text-slate-500">{title}</p>
     </div>
   </div>
@@ -51,8 +51,8 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
              <StatCard 
                 title="Secured (Last 30d)" 
                 value={securedLast30Days}
-                icon={<CheckCircleIcon className="w-6 h-6 text-green-700" />}
-                color="bg-green-100"
+                icon={<CheckCircleIcon className="w-6 h-6 text-emerald-700" />}
+                color="bg-emerald-100"
             />
         </div>
     )

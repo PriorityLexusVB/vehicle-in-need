@@ -51,7 +51,7 @@ const UnauthorizedDomainError: React.FC = () => {
               onClick={handleCopy}
               className={`flex-shrink-0 px-3 py-2 rounded-md text-sm font-semibold transition-colors ${
                 copySuccess
-                  ? "bg-green-600 text-white"
+                  ? "bg-emerald-600 text-white"
                   : "bg-slate-200 hover:bg-slate-300 text-slate-700"
               }`}
             >
@@ -352,7 +352,7 @@ const Login: React.FC = () => {
           <button
             onClick={handleLogin}
             disabled={isSigningIn}
-            className="w-full flex items-center justify-center gap-3 bg-white border-2 border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold py-3 px-4 rounded-lg shadow-sm transition-all duration-200 disabled:bg-slate-200 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-3 bg-white border-2 border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold py-3 px-4 rounded-lg shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <GoogleIcon />
             {isSigningIn ? "Processing sign-in..." : "Sign in with Google"}
