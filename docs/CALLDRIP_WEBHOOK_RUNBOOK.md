@@ -9,7 +9,7 @@ This backend receives CallDrip webhook events and stores them durably in
 Firestore for later export to `bdc-agent`.
 
 | Item | Value |
-|------|-------|
+| ------ | ------- |
 | Webhook path | `POST /webhooks/calldrip/v1/events` |
 | Status path | `GET /api/calldrip/status` |
 | Feature flag | `CALLDRIP_ENABLE_WEBHOOK=true` |
@@ -19,7 +19,7 @@ Firestore for later export to `bdc-agent`.
 ## Required Environment Variables
 
 | Variable | Required | Description |
-|----------|----------|-------------|
+| ---------- | ---------- | ------------- |
 | `CALLDRIP_ENABLE_WEBHOOK` | Yes | Set to `true` to activate webhook routes |
 | `CALLDRIP_WEBHOOK_SECRET` | Yes (when enabled) | Shared secret for authenticating inbound webhooks |
 | `GOOGLE_CLOUD_PROJECT` | Recommended | GCP project ID (auto-detected on Cloud Run) |
@@ -149,7 +149,7 @@ create duplicate Firestore documents.
 ## File Map
 
 | File | Purpose |
-|------|---------|
+| ------ | --------- |
 | `server/index.cjs` | Route mounting (lines ~102-120) |
 | `server/src/lib/firebaseAdmin.cjs` | Shared Firebase Admin singleton |
 | `server/src/lib/calldripStore.cjs` | Firestore storage layer |
