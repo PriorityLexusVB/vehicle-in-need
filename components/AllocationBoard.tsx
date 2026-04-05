@@ -534,6 +534,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
   const [sortMode, setSortMode] = useState<SortMode>(() =>
     getStoredEnum(STORAGE_KEYS.sortMode, SORT_MODE_OPTIONS, "priority"),
   );
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const pdfInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -1491,7 +1492,15 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
               </button>
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6 lg:gap-3">
+            {/* Mobile: show filter toggle button */}
+            <button
+              onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
+              className="flex w-full items-center justify-between rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 lg:hidden"
+            >
+              <span>Filters {categoryFilter !== "all" || rankFilter !== "all" || bosFilter !== "all" || searchQuery ? "•" : ""}</span>
+              <svg className={`h-4 w-4 transition-transform ${mobileFiltersOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+            </button>
+            <div className={`${mobileFiltersOpen ? "grid" : "hidden"} gap-2 sm:grid-cols-2 lg:grid lg:grid-cols-6 lg:gap-3`}>
               <input
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
