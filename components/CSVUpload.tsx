@@ -124,26 +124,26 @@ const CSVUpload: React.FC<CSVUploadProps> = ({ onUpload, currentUser, onClose })
     <div
       className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
         state.dragActive
-          ? 'border-sky-500 bg-sky-50'
-          : 'border-slate-300 hover:border-slate-400'
+          ? 'border-indigo-500 bg-indigo-50'
+          : 'border-stone-300 hover:border-stone-400'
       }`}
       onDragEnter={handleDrag}
       onDragLeave={handleDrag}
       onDragOver={handleDrag}
       onDrop={handleDrop}
     >
-      <DocumentTextIcon className="mx-auto h-12 w-12 text-slate-400" />
-      <p className="mt-4 text-sm text-slate-600">
+      <DocumentTextIcon className="mx-auto h-12 w-12 text-stone-400" />
+      <p className="mt-4 text-sm text-stone-600">
         Drag and drop a CSV file here, or{' '}
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="text-sky-600 hover:text-sky-500 font-medium"
+          className="text-indigo-600 hover:text-indigo-500 font-medium"
         >
           browse
         </button>
       </p>
-      <p className="mt-2 text-xs text-slate-500">
+      <p className="mt-2 text-xs text-stone-500">
         CSV must include a CUSTOMER column. Optional columns: DATE, SALES PERSON, DEPOSIT, DEAL #, MODEL #, YEAR, MODEL, EXT COLOR, INT COLOR, MANAGER, OPTIONS
       </p>
       <input
@@ -165,12 +165,12 @@ const CSVUpload: React.FC<CSVUploadProps> = ({ onUpload, currentUser, onClose })
     return (
       <div className="space-y-4">
         {/* File info */}
-        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+        <div className="flex items-center justify-between p-3 bg-stone-50 rounded-lg">
           <div className="flex items-center gap-3">
-            <DocumentTextIcon className="h-8 w-8 text-slate-400" />
+            <DocumentTextIcon className="h-8 w-8 text-stone-400" />
             <div>
-              <p className="text-sm font-medium text-slate-700">{state.file?.name}</p>
-              <p className="text-xs text-slate-500">
+              <p className="text-sm font-medium text-stone-700">{state.file?.name}</p>
+              <p className="text-xs text-stone-500">
                 {totalRows} rows found, {orders.length} valid, {skippedRows} skipped
               </p>
             </div>
@@ -178,7 +178,7 @@ const CSVUpload: React.FC<CSVUploadProps> = ({ onUpload, currentUser, onClose })
           <button
             type="button"
             onClick={handleReset}
-            className="text-slate-400 hover:text-slate-600"
+            className="text-stone-400 hover:text-stone-600"
             aria-label="Remove file"
           >
             <CloseIcon className="w-5 h-5" />
@@ -217,36 +217,36 @@ const CSVUpload: React.FC<CSVUploadProps> = ({ onUpload, currentUser, onClose })
 
         {/* Preview table */}
         {orders.length > 0 && (
-          <div className="border border-slate-200 rounded-lg overflow-hidden">
-            <p className="px-3 py-2 bg-slate-50 text-sm font-medium text-slate-700 border-b border-slate-200">
+          <div className="border border-stone-200 rounded-lg overflow-hidden">
+            <p className="px-3 py-2 bg-stone-50 text-sm font-medium text-stone-700 border-b border-stone-200">
               Preview ({orders.length} orders to import)
             </p>
             <div className="max-h-64 overflow-y-auto">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50 sticky top-0">
+              <table className="min-w-full divide-y divide-stone-200">
+                <thead className="bg-stone-50 sticky top-0">
                   <tr>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Customer</th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Model</th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Year</th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Deposit</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Customer</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Model</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Year</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Status</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Deposit</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-slate-200">
+                <tbody className="bg-white divide-y divide-stone-200">
                   {orders.slice(0, 20).map((order, i) => (
-                    <tr key={i} className="hover:bg-slate-50">
-                      <td className="px-3 py-2 whitespace-nowrap text-sm text-slate-900">{order.customerName}</td>
-                      <td className="px-3 py-2 whitespace-nowrap text-sm text-slate-600">{order.model}</td>
-                      <td className="px-3 py-2 whitespace-nowrap text-sm text-slate-600">{order.year}</td>
-                      <td className="px-3 py-2 whitespace-nowrap text-sm text-slate-600">{order.status}</td>
-                      <td className="px-3 py-2 whitespace-nowrap text-sm text-slate-600">
+                    <tr key={i} className="hover:bg-stone-50">
+                      <td className="px-3 py-2 whitespace-nowrap text-sm text-stone-900">{order.customerName}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-sm text-stone-600">{order.model}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-sm text-stone-600">{order.year}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-sm text-stone-600">{order.status}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-sm text-stone-600">
                         ${order.depositAmount.toLocaleString()}
                       </td>
                     </tr>
                   ))}
                   {orders.length > 20 && (
                     <tr>
-                      <td colSpan={5} className="px-3 py-2 text-center text-xs text-slate-500">
+                      <td colSpan={5} className="px-3 py-2 text-center text-xs text-stone-500">
                         ... and {orders.length - 20} more orders
                       </td>
                     </tr>
@@ -262,7 +262,7 @@ const CSVUpload: React.FC<CSVUploadProps> = ({ onUpload, currentUser, onClose })
           <button
             type="button"
             onClick={handleReset}
-            className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-stone-700 bg-white border border-stone-300 rounded-lg hover:bg-stone-50 transition-colors"
           >
             Cancel
           </button>
@@ -270,7 +270,7 @@ const CSVUpload: React.FC<CSVUploadProps> = ({ onUpload, currentUser, onClose })
             type="button"
             onClick={handleUpload}
             disabled={orders.length === 0}
-            className="px-4 py-2 text-sm font-medium text-white bg-sky-600 rounded-lg hover:bg-sky-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Import {orders.length} Orders
           </button>
@@ -281,9 +281,9 @@ const CSVUpload: React.FC<CSVUploadProps> = ({ onUpload, currentUser, onClose })
 
   const renderUploadingStage = () => (
     <div className="text-center py-8">
-      <ButtonSpinner className="mx-auto h-12 w-12 text-sky-600" />
-      <p className="mt-4 text-sm text-slate-600">Importing orders...</p>
-      <p className="mt-1 text-xs text-slate-500">Please wait while we add your orders to the system.</p>
+      <ButtonSpinner className="mx-auto h-12 w-12 text-indigo-600" />
+      <p className="mt-4 text-sm text-stone-600">Importing orders...</p>
+      <p className="mt-1 text-xs text-stone-500">Please wait while we add your orders to the system.</p>
     </div>
   );
 
@@ -295,28 +295,28 @@ const CSVUpload: React.FC<CSVUploadProps> = ({ onUpload, currentUser, onClose })
     return (
       <div className="text-center py-8">
         <CheckCircleIcon className="mx-auto h-12 w-12 text-emerald-500" />
-        <h3 className="mt-4 text-lg font-medium text-slate-900">Import Complete</h3>
-        <p className="mt-2 text-sm text-slate-600">
+        <h3 className="mt-4 text-lg font-medium text-stone-900">Import Complete</h3>
+        <p className="mt-2 text-sm text-stone-600">
           Successfully imported <span className="font-semibold text-emerald-600">{success}</span> orders
           {failed > 0 && (
             <>, <span className="font-semibold text-red-600">{failed}</span> failed</>
           )}
         </p>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-stone-500">
           Imported by: {currentUser.displayName || currentUser.email}
         </p>
         <div className="mt-6 flex gap-3 justify-center">
           <button
             type="button"
             onClick={handleReset}
-            className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-stone-700 bg-white border border-stone-300 rounded-lg hover:bg-stone-50 transition-colors"
           >
             Import More
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-white bg-sky-600 rounded-lg hover:bg-sky-700 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
           >
             Done
           </button>
@@ -326,13 +326,13 @@ const CSVUpload: React.FC<CSVUploadProps> = ({ onUpload, currentUser, onClose })
   };
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-lg border border-slate-200">
+    <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-slate-800">Import Orders from CSV</h2>
+        <h2 className="text-xl font-bold text-stone-800">Import Orders from CSV</h2>
         <button
           type="button"
           onClick={onClose}
-          className="text-slate-400 hover:text-slate-600 transition-colors"
+          className="text-stone-400 hover:text-stone-600 transition-colors"
           aria-label="Close CSV upload"
         >
           <CloseIcon className="w-6 h-6" />

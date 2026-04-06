@@ -352,7 +352,6 @@ describe('AllocationBoard', () => {
     });
 
     render(<AllocationBoard currentUser={consultantUser} />);
-    const consultantUserEvent = userEvent.setup();
 
     await waitFor(() => {
       expect(screen.getByTestId('allocation-strategy-view')).toBeInTheDocument();
@@ -362,11 +361,7 @@ describe('AllocationBoard', () => {
     expect(within(strategyView).getByText('BI, CC, CP, TP')).toBeInTheDocument();
     expect(within(strategyView).getByText('1S, 2T, 59, DF')).toBeInTheDocument();
 
-    await consultantUserEvent.click(screen.getByRole('button', { name: 'Full Log View' }));
-
-    const logView = screen.getByTestId('allocation-log-view');
-    expect(within(logView).getByText('BI, CC, CP, TP')).toBeInTheDocument();
-    expect(within(logView).getByText('1S, 2T, 59, DF')).toBeInTheDocument();
+    // Factory accessories and PPOs are shown in strategy view cards, not in the log table
   });
 
   it('captures DM row option tokens into accessories and PPOs in publish payload', async () => {
@@ -523,19 +518,18 @@ describe('AllocationBoard', () => {
       'Code',
       'Model',
       'Grade / Trim',
+      'Exterior',
+      'Interior',
       'Build / Port',
       'BOS',
       'Qty',
       'Matched Orders',
-      'Factory Accessories',
-      'Post-Production Options',
     ]);
     expect(within(logView).getAllByText('9704').length).toBeGreaterThan(0);
     expect(within(logView).getAllByText('9443').length).toBeGreaterThan(0);
     expect(within(logView).getAllByText('TX500H').length).toBeGreaterThan(0);
     expect(within(logView).getAllByText('RX350').length).toBeGreaterThan(0);
-    expect(within(logView).getByText('KG MF WL')).toBeInTheDocument();
-    expect(within(logView).getByText('1S 2T 59 DF')).toBeInTheDocument();
+    // Factory accessories and PPOs are displayed in strategy view cards, not in the log table
   });
 
   it('filters strategy cards by BOS status', async () => {
@@ -569,7 +563,7 @@ describe('AllocationBoard', () => {
 
     bodyRows.forEach((row) => {
       const cells = within(row).getAllByRole('cell');
-      expect(cells[5]).toHaveTextContent(/^\s*$/);
+      expect(cells[7]).toHaveTextContent(/^\s*$/);
     });
   });
 

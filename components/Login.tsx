@@ -35,7 +35,7 @@ const UnauthorizedDomainError: React.FC = () => {
 
       <div className="space-y-4 mt-4">
         <div>
-          <label htmlFor="domain-input" className="font-semibold text-slate-700 block mb-1">
+          <label htmlFor="domain-input" className="font-semibold text-stone-700 block mb-1">
             1. Copy this exact domain (hostname only):
           </label>
           <div className="flex items-center gap-2">
@@ -44,7 +44,7 @@ const UnauthorizedDomainError: React.FC = () => {
               type="text"
               readOnly
               value={hostname}
-              className="w-full p-2 border border-slate-300 rounded bg-slate-100 text-xs font-mono"
+              className="w-full p-2 border border-stone-300 rounded bg-stone-100 text-xs font-mono"
               onClick={(e: React.MouseEvent<HTMLInputElement>) => e.currentTarget.select()}
             />
             <button
@@ -52,35 +52,35 @@ const UnauthorizedDomainError: React.FC = () => {
               className={`flex-shrink-0 px-3 py-2 rounded-md text-sm font-semibold transition-colors ${
                 copySuccess
                   ? "bg-emerald-600 text-white"
-                  : "bg-slate-200 hover:bg-slate-300 text-slate-700"
+                  : "bg-stone-200 hover:bg-stone-300 text-stone-700"
               }`}
             >
               {copySuccess ? "Copied!" : "Copy"}
             </button>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-stone-500 mt-1">
             Example entry format: <code>subdomain.app.github.dev</code> (no{" "}
             <code>https://</code>, no slashes).
           </p>
         </div>
 
         <div>
-          <span className="font-semibold text-slate-700">
+          <span className="font-semibold text-stone-700">
             2. Add it to your Firebase authorized domains list:
           </span>
           <a
             href={`https://console.firebase.google.com/u/0/project/${firebaseConfig.projectId}/authentication/settings`}
             target="_blank"
             rel="noopener noreferrer"
-            className="block w-full text-center mt-1 bg-sky-600 hover:bg-sky-700 text-white font-bold py-2.5 px-4 rounded-lg text-sm transition-colors"
+            className="block w-full text-center mt-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-lg text-sm transition-colors"
           >
             Open Firebase Auth Settings
           </a>
-          <p className="text-xs text-slate-500 mt-1 text-center">
+          <p className="text-xs text-stone-500 mt-1 text-center">
             This will open in a new tab.
           </p>
           {hostname.endsWith(".app.github.dev") && (
-            <div className="text-xs text-slate-600 mt-2 text-left">
+            <div className="text-xs text-stone-600 mt-2 text-left">
               <p className="font-semibold">Tip for Codespaces:</p>
               <ul className="list-disc ml-5 space-y-1">
                 <li>
@@ -337,13 +337,13 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-stone-50 p-4">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-8 text-center">
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight mb-2">
+        <div className="bg-white rounded-2xl shadow-xl border border-stone-200 p-8 text-center">
+          <h1 className="text-2xl font-bold text-stone-800 tracking-tight mb-2">
             Vehicle Order Tracker
           </h1>
-          <p className="text-slate-500 mb-8">
+          <p className="text-stone-500 mb-8">
             Please sign in with your company Google account.
           </p>
 
@@ -352,12 +352,12 @@ const Login: React.FC = () => {
           <button
             onClick={handleLogin}
             disabled={isSigningIn}
-            className="w-full flex items-center justify-center gap-3 bg-white border-2 border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold py-3 px-4 rounded-lg shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-3 bg-white border-2 border-stone-300 hover:bg-stone-100 text-stone-700 font-semibold py-3 px-4 rounded-lg shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <GoogleIcon />
             {isSigningIn ? "Processing sign-in..." : "Sign in with Google"}
           </button>
-          <p className="mt-6 text-xs text-slate-400">
+          <p className="mt-6 text-xs text-stone-400">
             Access is restricted to @priorityautomotive.com accounts.
           </p>
         </div>

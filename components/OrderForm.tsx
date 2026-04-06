@@ -41,9 +41,9 @@ const getInitialFormState = (currentUser?: AppUser | null) => ({
 
 const FormField: React.FC<{label: string, id: string, error?: string, hint?: string, children: React.ReactNode}> = ({ label, id, error, hint, children }) => (
     <div>
-        <label htmlFor={id} className="block text-sm font-medium text-slate-700">{label}</label>
+        <label htmlFor={id} className="block text-sm font-medium text-stone-700">{label}</label>
         <div className="mt-1">{children}</div>
-        {hint && !error && <p className="mt-1 text-xs text-slate-400">{hint}</p>}
+        {hint && !error && <p className="mt-1 text-xs text-stone-400">{hint}</p>}
         {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </div>
 );
@@ -163,12 +163,12 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
   // Use ACTIVE_STATUS_OPTIONS directly instead of filtering STATUS_OPTIONS
   // ACTIVE_STATUS_OPTIONS now only contains Factory Order and Dealer Exchange (Locate removed)
   const activeStatusOptions = ACTIVE_STATUS_OPTIONS;
-  const inputClass = (name: keyof typeof formState) => `block w-full p-2.5 border ${errors[name] ? 'border-red-500' : 'border-slate-300'} rounded-lg shadow-sm focus:ring-sky-500 focus:border-sky-500 sm:text-sm transition-colors`;
-  const moneyInputClass = (name: keyof typeof formState) => `pl-8 block w-full p-2.5 border ${errors[name] ? 'border-red-500' : 'border-slate-300'} rounded-lg focus:ring-sky-500 focus:border-sky-500 sm:text-sm transition-colors`;
+  const inputClass = (name: keyof typeof formState) => `block w-full p-2.5 border ${errors[name] ? 'border-red-500' : 'border-stone-300'} rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors`;
+  const moneyInputClass = (name: keyof typeof formState) => `pl-8 block w-full p-2.5 border ${errors[name] ? 'border-red-500' : 'border-stone-300'} rounded-lg focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors`;
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-lg border border-slate-200">
-      <h2 className="text-2xl font-bold text-slate-800 mb-6">Add New Order</h2>
+    <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200">
+      <h2 className="text-2xl font-bold text-stone-800 mb-6">Add New Order</h2>
 
       {submitSuccess && (
         <div className="flex items-center gap-3 mb-4 p-4 bg-emerald-100 border border-emerald-300 text-emerald-800 rounded-lg animate-fade-in-down">
@@ -180,7 +180,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
       <form onSubmit={handleSubmit} className="space-y-6">
 
         <div className="space-y-4">
-            <h3 className="text-base font-semibold text-slate-600 border-b pb-2">Staff & Date</h3>
+            <h3 className="text-base font-semibold text-stone-600 border-b pb-2">Staff & Date</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                  <FormField label="Salesperson*" id="salesperson" error={errors.salesperson}>
                     <input type="text" id="salesperson" name="salesperson" value={formState.salesperson} onChange={handleChange} className={inputClass('salesperson')} />
@@ -195,7 +195,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
         </div>
         
         <div className="space-y-4">
-             <h3 className="text-base font-semibold text-slate-600 border-b pb-2">Customer & Deal</h3>
+             <h3 className="text-base font-semibold text-stone-600 border-b pb-2">Customer & Deal</h3>
              <FormField label="Customer Name*" id="customerName" error={errors.customerName}>
                 <input type="text" id="customerName" name="customerName" value={formState.customerName} onChange={handleChange} className={inputClass('customerName')} />
              </FormField>
@@ -213,7 +213,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
         </div>
 
         <div className="space-y-4">
-             <h3 className="text-base font-semibold text-slate-600 border-b pb-2">Vehicle Specification</h3>
+             <h3 className="text-base font-semibold text-stone-600 border-b pb-2">Vehicle Specification</h3>
              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <FormField label="Year*" id="year" error={errors.year} hint={`${minYear}–${maxYear}`}>
                     <input 
@@ -264,29 +264,29 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
         </div>
 
         <div className="space-y-4">
-            <h3 className="text-base font-semibold text-slate-600 border-b pb-2">Financials</h3>
+            <h3 className="text-base font-semibold text-stone-600 border-b pb-2">Financials</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField label="MSRP*" id="msrp" error={errors.msrp}>
                     <div className="relative rounded-md shadow-sm">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span className="text-slate-500 sm:text-sm">$</span></div>
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span className="text-stone-500 sm:text-sm">$</span></div>
                         <input type="number" id="msrp" name="msrp" value={formState.msrp} onChange={handleChange} className={moneyInputClass('msrp')} step="0.01" />
                     </div>
                 </FormField>
                 <FormField label="Selling Price" id="sellingPrice" error={errors.sellingPrice}>
                     <div className="relative rounded-md shadow-sm">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span className="text-slate-500 sm:text-sm">$</span></div>
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span className="text-stone-500 sm:text-sm">$</span></div>
                         <input type="number" id="sellingPrice" name="sellingPrice" value={formState.sellingPrice} onChange={handleChange} className={moneyInputClass('sellingPrice')} step="0.01" />
                     </div>
                 </FormField>
                 <FormField label="Gross" id="gross" error={errors.gross}>
                     <div className="relative rounded-md shadow-sm">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span className="text-slate-500 sm:text-sm">$</span></div>
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span className="text-stone-500 sm:text-sm">$</span></div>
                         <input type="number" id="gross" name="gross" value={formState.gross} onChange={handleChange} className={moneyInputClass('gross')} step="0.01" />
                     </div>
                 </FormField>
                  <FormField label="Deposit Amount*" id="depositAmount" error={errors.depositAmount}>
                     <div className="relative rounded-md shadow-sm">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span className="text-slate-500 sm:text-sm">$</span></div>
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span className="text-stone-500 sm:text-sm">$</span></div>
                         <input type="number" id="depositAmount" name="depositAmount" value={formState.depositAmount} onChange={handleChange} className={moneyInputClass('depositAmount')} step="0.01" />
                     </div>
                 </FormField>
@@ -294,12 +294,12 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
         </div>
 
         <div className="space-y-4">
-             <h3 className="text-base font-semibold text-slate-600 border-b pb-2">Status & Notes</h3>
+             <h3 className="text-base font-semibold text-stone-600 border-b pb-2">Status & Notes</h3>
               <div>
-                <label htmlFor="status-buttons" className="block text-sm font-medium text-slate-700">Status*</label>
+                <label htmlFor="status-buttons" className="block text-sm font-medium text-stone-700">Status*</label>
                 <div id="status-buttons" className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Select status">
                     {activeStatusOptions.map(status => (
-                    <button key={status} type="button" onClick={() => setFormState(s => ({...s, status}))} className={`px-4 py-2 text-sm rounded-full border-2 transition-colors ${formState.status === status ? 'bg-sky-600 border-sky-600 text-white font-semibold' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-100 hover:border-slate-400'}`}>
+                    <button key={status} type="button" onClick={() => setFormState(s => ({...s, status}))} className={`px-4 py-2 text-sm rounded-full border-2 transition-colors ${formState.status === status ? 'bg-indigo-600 border-indigo-600 text-white font-semibold' : 'bg-white border-stone-300 text-stone-600 hover:bg-stone-100 hover:border-stone-400'}`}>
                         {status}
                     </button>
                     ))}
@@ -317,7 +317,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
           type="submit" 
           disabled={isSubmitting} 
           data-testid="submit-order-button"
-          className="w-full flex justify-center items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+          className="w-full flex justify-center items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
           {isSubmitting ? (
             <>
               <ButtonSpinner className="-ml-1 mr-2 h-5 w-5" />

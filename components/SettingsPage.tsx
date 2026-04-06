@@ -189,22 +189,22 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   return (
     <div className="animate-fade-in-down">
       {/* User Management Section */}
-      <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg border border-slate-200">
+      <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-stone-200">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold text-slate-800 mb-2">User Management</h2>
-          <p className="text-sm text-slate-600 mb-4">
+          <h2 className="text-2xl font-bold text-stone-800 mb-2">User Management</h2>
+          <p className="text-sm text-stone-600 mb-4">
             Manage user roles and account status. Managers can view all orders and manage user roles.
           </p>
           
           {/* Info box about role changes */}
-          <div className="mb-6 p-4 bg-sky-50 border border-sky-200 rounded-lg">
+          <div className="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
             <div className="flex items-start gap-3">
-              <svg className="w-5 h-5 text-sky-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <svg className="w-5 h-5 text-indigo-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <div className="text-sm text-sky-800">
+              <div className="text-sm text-indigo-800">
                 <p className="font-medium mb-1">About Role Changes</p>
-                <ul className="list-disc list-inside space-y-1 text-sky-700">
+                <ul className="list-disc list-inside space-y-1 text-indigo-700">
                   <li><strong>Managers</strong> can view all orders, manage user roles, and deactivate users.</li>
                   <li><strong>Non-managers</strong> can only view and manage their own orders.</li>
                   <li>Role changes require the affected user to <strong>sign out and sign back in</strong> to take effect.</li>
@@ -244,12 +244,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
           {/* Filter controls */}
           {disabledCount > 0 && (
             <div className="mb-4 flex items-center gap-2">
-              <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+              <label className="flex items-center gap-2 text-sm text-stone-600 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={showDisabledUsers}
                   onChange={(e) => setShowDisabledUsers(e.target.checked)}
-                  className="rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                  className="rounded border-stone-300 text-indigo-600 focus:ring-indigo-500"
                 />
                 Show deactivated users ({disabledCount})
               </label>
@@ -269,25 +269,25 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                   key={user.uid}
                   className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg border ${
                     !isUserActive 
-                      ? 'bg-slate-100 border-slate-300' 
-                      : 'bg-slate-50 border-slate-200'
+                      ? 'bg-stone-100 border-stone-300' 
+                      : 'bg-stone-50 border-stone-200'
                   }`}
                   data-testid={`user-row-${user.uid}`}
                 >
                   <div className="flex items-center gap-3 mb-3 sm:mb-0">
                     {/* User avatar placeholder */}
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm ${
-                      user.isManager ? 'bg-sky-500' : 'bg-slate-400'
+                      user.isManager ? 'bg-indigo-500' : 'bg-stone-400'
                     }`}>
                       {user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || '?'}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className={`font-semibold ${!isUserActive ? 'text-slate-500' : 'text-slate-800'}`}>
+                        <p className={`font-semibold ${!isUserActive ? 'text-stone-500' : 'text-stone-800'}`}>
                           {user.displayName || 'Unknown User'}
                         </p>
                         {isCurrentUser && (
-                          <span className="px-2 py-0.5 text-xs font-medium bg-sky-100 text-sky-700 rounded-full">
+                          <span className="px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-700 rounded-full">
                             You
                           </span>
                         )}
@@ -297,7 +297,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                           </span>
                         )}
                       </div>
-                      <p className={`text-sm ${!isUserActive ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <p className={`text-sm ${!isUserActive ? 'text-stone-400' : 'text-stone-500'}`}>
                         {user.email}
                       </p>
                     </div>
@@ -306,7 +306,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                   <div className="flex items-center gap-4 sm:gap-6">
                     {/* Manager toggle */}
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-slate-600">Manager</span>
+                      <span className="text-sm font-medium text-stone-600">Manager</span>
                       <label 
                         htmlFor={`manager-toggle-${user.uid}`} 
                         className="relative inline-flex items-center cursor-pointer"
@@ -321,7 +321,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                           disabled={isCurrentUser || isRoleLoading || !isUserActive}
                           onChange={(e) => handleRoleToggle(user, e.target.checked)}
                         />
-                        <div className={`w-11 h-6 bg-slate-300 rounded-full peer peer-focus:ring-4 peer-focus:ring-sky-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 ${
+                        <div className={`w-11 h-6 bg-stone-300 rounded-full peer peer-focus:ring-4 peer-focus:ring-indigo-300 peer-checked:after:transtone-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 ${
                           isRoleLoading ? 'animate-pulse' : ''
                         }`}></div>
                       </label>
@@ -353,7 +353,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             })}
 
             {filteredUsers.length === 0 && (
-              <div className="text-center py-8 text-slate-500">
+              <div className="text-center py-8 text-stone-500">
                 {users.length === 0 
                   ? 'No users found.' 
                   : 'No active users to display. Enable "Show deactivated users" to see all users.'}
@@ -385,10 +385,10 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             role="document"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 id="confirm-modal-title" className="text-xl font-bold text-slate-800 mb-2">
+            <h3 id="confirm-modal-title" className="text-xl font-bold text-stone-800 mb-2">
               {confirmModal.action === 'disable' ? 'Deactivate User' : 'Reactivate User'}
             </h3>
-            <p className="text-slate-600 mb-6">
+            <p className="text-stone-600 mb-6">
               {confirmModal.action === 'disable' ? (
                 <>
                   Are you sure you want to deactivate <strong>{confirmModal.targetUser.displayName || confirmModal.targetUser.email}</strong>? 
@@ -404,7 +404,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             <div className="flex justify-end gap-3">
               <button
                 onClick={closeConfirmModal}
-                className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors"
               >
                 Cancel
               </button>

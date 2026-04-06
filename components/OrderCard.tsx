@@ -30,10 +30,10 @@ const DetailItem: React.FC<{ label: string; children: React.ReactNode }> = ({
   children,
 }) => (
   <div>
-    <strong className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+    <strong className="block text-xs font-semibold text-stone-500 uppercase tracking-wider">
       {label}
     </strong>
-    <span className="text-sm text-slate-800">{children || "N/A"}</span>
+    <span className="text-sm text-stone-800">{children || "N/A"}</span>
   </div>
 );
 
@@ -54,9 +54,9 @@ const OrderCard: React.FC<OrderCardProps> = ({
     if (highlighted && cardRef.current) {
       setIsExpanded(true);
       cardRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-      cardRef.current.classList.add("ring-2", "ring-sky-400");
+      cardRef.current.classList.add("ring-2", "ring-indigo-400");
       const timer = setTimeout(() => {
-        cardRef.current?.classList.remove("ring-2", "ring-sky-400");
+        cardRef.current?.classList.remove("ring-2", "ring-indigo-400");
       }, 3000);
       return () => clearTimeout(timer);
     }
@@ -302,8 +302,8 @@ const OrderCard: React.FC<OrderCardProps> = ({
 
   const inputClass = (name: keyof EditFormState) =>
     `block w-full p-2 border ${
-      errors[name] ? "border-red-500" : "border-slate-300"
-    } rounded-lg shadow-sm focus:ring-sky-500 focus:border-sky-500 sm:text-sm`;
+      errors[name] ? "border-red-500" : "border-stone-300"
+    } rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`;
 
   /**
    * Handle the unsecure action with confirmation.
@@ -327,8 +327,8 @@ const OrderCard: React.FC<OrderCardProps> = ({
       id={`order-${order.id}`}
       className={`rounded-xl shadow-sm transition-all duration-300 ${
         isSecured
-          ? "bg-slate-100/70 border-slate-200"
-          : "bg-white border-slate-200 hover:shadow-md hover:border-slate-300"
+          ? "bg-stone-100/70 border-stone-200"
+          : "bg-white border-stone-200 hover:shadow-md hover:border-stone-300"
       } border`}
     >
       <button
@@ -342,17 +342,17 @@ const OrderCard: React.FC<OrderCardProps> = ({
           <div>
             <h3
               className={`text-lg font-bold ${
-                isSecured ? "line-through text-slate-500" : "text-slate-800"
+                isSecured ? "line-through text-stone-500" : "text-stone-800"
               }`}
             >
               {order.customerName}
             </h3>
-            <p className="text-sm text-slate-500 font-medium">
+            <p className="text-sm text-stone-500 font-medium">
               {order.year} {order.model}
             </p>
             {/* Summary row for at-a-glance details */}
             <p
-              className="text-xs text-slate-400 mt-0.5 flex flex-wrap items-center gap-x-1"
+              className="text-xs text-stone-400 mt-0.5 flex flex-wrap items-center gap-x-1"
               data-testid="order-card-summary-row"
             >
               <span data-testid="order-card-summary-salesperson">
@@ -377,10 +377,10 @@ const OrderCard: React.FC<OrderCardProps> = ({
             </p>
             {order.latestNoteText && (
               <p
-                className="text-xs text-slate-400 mt-1"
+                className="text-xs text-stone-400 mt-1"
                 data-testid="order-card-latest-note"
               >
-                <span className="font-semibold text-slate-500">
+                <span className="font-semibold text-stone-500">
                   Latest note:
                 </span>{" "}
                 <span className="truncate inline-block max-w-[38ch] align-bottom">
@@ -393,10 +393,10 @@ const OrderCard: React.FC<OrderCardProps> = ({
             </div>
           </div>
           <div className="flex items-center space-x-3 text-right flex-shrink-0 ml-4">
-            <span className="text-sm font-medium text-slate-500">
+            <span className="text-sm font-medium text-stone-500">
               {order.date}
             </span>
-            <span className="text-slate-400">
+            <span className="text-stone-400">
               <ChevronDownIcon
                 className={`w-6 h-6 transform transition-transform duration-200 ${
                   isExpanded ? "rotate-180" : ""
@@ -408,15 +408,15 @@ const OrderCard: React.FC<OrderCardProps> = ({
       </button>
       {isExpanded && (
         <div className="px-4 pb-4">
-          <div className="mt-2 pt-4 border-t border-slate-200">
-            <div className="p-3 mb-4 rounded-lg bg-slate-50 border border-slate-200">
+          <div className="mt-2 pt-4 border-t border-stone-200">
+            <div className="p-3 mb-4 rounded-lg bg-stone-50 border border-stone-200">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center space-x-2">
                   {currentUser?.isManager && isActive ? (
                     <>
                       <label
                         htmlFor={`status-select-${order.id}`}
-                        className="flex items-center gap-1.5 text-sm font-medium text-slate-700"
+                        className="flex items-center gap-1.5 text-sm font-medium text-stone-700"
                       >
                         Change Status:
                       </label>
@@ -425,7 +425,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         value={order.status}
                         onChange={handleStatusChange}
                         disabled={isEditing || isSaving}
-                        className="p-2.5 border border-slate-300 rounded-md shadow-sm text-sm focus:ring-sky-500 focus:border-sky-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-2.5 border border-stone-300 rounded-md shadow-sm text-sm focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {ACTIVE_STATUS_OPTIONS.map((status) => (
                           <option key={status} value={status}>
@@ -439,7 +439,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                       Order Secured
                     </div>
                   ) : (
-                    <div className="text-sm font-medium text-slate-700">
+                    <div className="text-sm font-medium text-stone-700">
                       Status: {order.status}
                     </div>
                   )}
@@ -461,7 +461,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                   {currentUser?.isManager && isActive && !isEditing && (
                     <button
                       onClick={handleBeginEdit}
-                      className="flex items-center gap-1.5 text-sm border-2 border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold py-3 px-4 rounded-lg transition-colors"
+                      className="flex items-center gap-1.5 text-sm border-2 border-stone-300 text-stone-700 hover:bg-stone-100 font-semibold py-3 px-4 rounded-lg transition-colors"
                     >
                       Edit
                     </button>
@@ -472,7 +472,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         onClick={handleCancelEdit}
                         type="button"
                         disabled={isSaving}
-                        className="flex items-center gap-1.5 text-sm border-2 border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold py-2 px-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-1.5 text-sm border-2 border-stone-300 text-stone-700 hover:bg-stone-100 font-semibold py-2 px-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Cancel
                       </button>
@@ -480,7 +480,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         onClick={() => void handleSaveEdit()}
                         type="button"
                         disabled={isSaving}
-                        className="flex items-center gap-1.5 text-sm bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-3 rounded-lg shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-1.5 text-sm bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-3 rounded-lg shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isSaving ? "Saving..." : "Save"}
                       </button>
@@ -516,23 +516,23 @@ const OrderCard: React.FC<OrderCardProps> = ({
                     e.preventDefault();
                     void handleSaveEdit();
                   }}
-                  className="p-4 rounded-lg bg-white border border-slate-200"
+                  className="p-4 rounded-lg bg-white border border-stone-200"
                   aria-label="Edit order details"
                 >
-                  <h4 className="text-sm font-semibold text-slate-700 mb-4">
+                  <h4 className="text-sm font-semibold text-stone-700 mb-4">
                     Edit Order
                   </h4>
 
                   <div className="space-y-5">
                     <div className="space-y-3">
-                      <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      <div className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
                         Staff & Date
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                           <label
                             htmlFor={`edit-salesperson-${order.id}`}
-                            className="block text-sm font-medium text-slate-700"
+                            className="block text-sm font-medium text-stone-700"
                           >
                             Salesperson*
                           </label>
@@ -554,7 +554,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         <div>
                           <label
                             htmlFor={`edit-manager-${order.id}`}
-                            className="block text-sm font-medium text-slate-700"
+                            className="block text-sm font-medium text-stone-700"
                           >
                             Manager*
                           </label>
@@ -576,7 +576,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         <div>
                           <label
                             htmlFor={`edit-date-${order.id}`}
-                            className="block text-sm font-medium text-slate-700"
+                            className="block text-sm font-medium text-stone-700"
                           >
                             Date*
                           </label>
@@ -599,14 +599,14 @@ const OrderCard: React.FC<OrderCardProps> = ({
                     </div>
 
                     <div className="space-y-3">
-                      <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      <div className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
                         Customer & Deal
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <label
                             htmlFor={`edit-customerName-${order.id}`}
-                            className="block text-sm font-medium text-slate-700"
+                            className="block text-sm font-medium text-stone-700"
                           >
                             Customer Name*
                           </label>
@@ -628,7 +628,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         <div>
                           <label
                             htmlFor={`edit-dealNumber-${order.id}`}
-                            className="block text-sm font-medium text-slate-700"
+                            className="block text-sm font-medium text-stone-700"
                           >
                             Deal #*
                           </label>
@@ -652,7 +652,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         <div>
                           <label
                             htmlFor={`edit-stockNumber-${order.id}`}
-                            className="block text-sm font-medium text-slate-700"
+                            className="block text-sm font-medium text-stone-700"
                           >
                             Stock #
                           </label>
@@ -669,7 +669,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         <div>
                           <label
                             htmlFor={`edit-vin-${order.id}`}
-                            className="block text-sm font-medium text-slate-700"
+                            className="block text-sm font-medium text-stone-700"
                           >
                             VIN (Last 8)
                           </label>
@@ -687,14 +687,14 @@ const OrderCard: React.FC<OrderCardProps> = ({
                     </div>
 
                     <div className="space-y-3">
-                      <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      <div className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
                         Vehicle
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                           <label
                             htmlFor={`edit-year-${order.id}`}
-                            className="block text-sm font-medium text-slate-700"
+                            className="block text-sm font-medium text-stone-700"
                           >
                             Year*
                           </label>
@@ -718,7 +718,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         <div>
                           <label
                             htmlFor={`edit-model-${order.id}`}
-                            className="block text-sm font-medium text-slate-700"
+                            className="block text-sm font-medium text-stone-700"
                           >
                             Model*
                           </label>
@@ -740,7 +740,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         <div>
                           <label
                             htmlFor={`edit-modelNumber-${order.id}`}
-                            className="block text-sm font-medium text-slate-700"
+                            className="block text-sm font-medium text-stone-700"
                           >
                             Model #*
                           </label>
@@ -763,14 +763,14 @@ const OrderCard: React.FC<OrderCardProps> = ({
                     </div>
 
                     <div className="space-y-3">
-                      <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      <div className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
                         Colors
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                           <label
                             htmlFor={`edit-exteriorColor1-${order.id}`}
-                            className="block text-sm font-medium text-slate-700"
+                            className="block text-sm font-medium text-stone-700"
                           >
                             Exterior Color #1*
                           </label>
@@ -792,7 +792,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         <div>
                           <label
                             htmlFor={`edit-exteriorColor2-${order.id}`}
-                            className="block text-sm font-medium text-slate-700"
+                            className="block text-sm font-medium text-stone-700"
                           >
                             Exterior Color #2
                           </label>
@@ -814,7 +814,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         <div>
                           <label
                             htmlFor={`edit-exteriorColor3-${order.id}`}
-                            className="block text-sm font-medium text-slate-700"
+                            className="block text-sm font-medium text-stone-700"
                           >
                             Exterior Color #3
                           </label>
@@ -838,7 +838,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         <div>
                           <label
                             htmlFor={`edit-interiorColor1-${order.id}`}
-                            className="block text-sm font-medium text-slate-700"
+                            className="block text-sm font-medium text-stone-700"
                           >
                             Interior Color #1*
                           </label>
@@ -860,7 +860,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         <div>
                           <label
                             htmlFor={`edit-interiorColor2-${order.id}`}
-                            className="block text-sm font-medium text-slate-700"
+                            className="block text-sm font-medium text-stone-700"
                           >
                             Interior Color #2
                           </label>
@@ -882,7 +882,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         <div>
                           <label
                             htmlFor={`edit-interiorColor3-${order.id}`}
-                            className="block text-sm font-medium text-slate-700"
+                            className="block text-sm font-medium text-stone-700"
                           >
                             Interior Color #3
                           </label>
@@ -905,14 +905,14 @@ const OrderCard: React.FC<OrderCardProps> = ({
                     </div>
 
                     <div className="space-y-3">
-                      <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      <div className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
                         Pricing
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
                           <label
                             htmlFor={`edit-msrp-${order.id}`}
-                            className="block text-sm font-medium text-slate-700"
+                            className="block text-sm font-medium text-stone-700"
                           >
                             MSRP*
                           </label>
@@ -935,7 +935,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         <div>
                           <label
                             htmlFor={`edit-sellingPrice-${order.id}`}
-                            className="block text-sm font-medium text-slate-700"
+                            className="block text-sm font-medium text-stone-700"
                           >
                             Selling Price
                           </label>
@@ -958,7 +958,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         <div>
                           <label
                             htmlFor={`edit-gross-${order.id}`}
-                            className="block text-sm font-medium text-slate-700"
+                            className="block text-sm font-medium text-stone-700"
                           >
                             Gross
                           </label>
@@ -981,7 +981,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         <div>
                           <label
                             htmlFor={`edit-depositAmount-${order.id}`}
-                            className="block text-sm font-medium text-slate-700"
+                            className="block text-sm font-medium text-stone-700"
                           >
                             Deposit Amount*
                           </label>
@@ -1005,14 +1005,14 @@ const OrderCard: React.FC<OrderCardProps> = ({
                     </div>
 
                     <div className="space-y-3">
-                      <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      <div className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
                         Notes
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label
                             htmlFor={`edit-options-${order.id}`}
-                            className="block text-sm font-medium text-slate-700"
+                            className="block text-sm font-medium text-stone-700"
                           >
                             Options*
                           </label>
@@ -1034,7 +1034,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         <div>
                           <label
                             htmlFor={`edit-notes-${order.id}`}
-                            className="block text-sm font-medium text-slate-700"
+                            className="block text-sm font-medium text-stone-700"
                           >
                             Internal Notes
                           </label>
@@ -1106,21 +1106,21 @@ const OrderCard: React.FC<OrderCardProps> = ({
               {(order.options || order.notes) && (
                 <div className="space-y-4">
                   {order.options && (
-                    <div className="bg-slate-50 p-3 rounded-lg border">
-                      <strong className="block text-slate-500 text-sm font-semibold mb-1">
+                    <div className="bg-stone-50 p-3 rounded-lg border">
+                      <strong className="block text-stone-500 text-sm font-semibold mb-1">
                         Options
                       </strong>
-                      <p className="text-sm text-slate-700 whitespace-pre-wrap">
+                      <p className="text-sm text-stone-700 whitespace-pre-wrap">
                         {order.options}
                       </p>
                     </div>
                   )}
                   {order.notes && (
-                    <div className="bg-slate-50 p-3 rounded-lg border">
-                      <strong className="block text-slate-500 text-sm font-semibold mb-1">
+                    <div className="bg-stone-50 p-3 rounded-lg border">
+                      <strong className="block text-stone-500 text-sm font-semibold mb-1">
                         Internal Notes
                       </strong>
-                      <p className="text-sm text-slate-700 whitespace-pre-wrap">
+                      <p className="text-sm text-stone-700 whitespace-pre-wrap">
                         {order.notes}
                       </p>
                     </div>
@@ -1144,14 +1144,14 @@ const OrderCard: React.FC<OrderCardProps> = ({
           <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md mx-4">
             <h3
               id="unsecure-dialog-title"
-              className="text-lg font-bold text-slate-800 mb-3"
+              className="text-lg font-bold text-stone-800 mb-3"
             >
               Confirm Unsecure Action
             </h3>
-            <p className="text-sm text-slate-600 mb-4">
+            <p className="text-sm text-stone-600 mb-4">
               Are you sure you want to mark this order as unsecured?
             </p>
-            <ul className="text-sm text-slate-600 mb-4 list-disc list-inside space-y-1">
+            <ul className="text-sm text-stone-600 mb-4 list-disc list-inside space-y-1">
               <li>
                 The order will move back to <strong>Active Orders</strong>
               </li>
@@ -1167,7 +1167,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowUnsecureConfirm(false)}
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
               >
                 Cancel
               </button>

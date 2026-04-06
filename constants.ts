@@ -21,12 +21,12 @@ export const ACTIVE_STATUS_OPTIONS = [
 ];
 
 export const STATUS_COLORS: Record<OrderStatus, string> = {
-  [OrderStatus.FactoryOrder]: 'bg-sky-100 text-sky-800 border-sky-300',
+  [OrderStatus.FactoryOrder]: 'bg-indigo-100 text-indigo-800 border-indigo-300',
   [OrderStatus.Locate]: 'bg-amber-100 text-amber-800 border-amber-300',
   [OrderStatus.DealerExchange]: 'bg-purple-100 text-purple-800 border-purple-300',
   [OrderStatus.Received]: 'bg-emerald-100 text-emerald-800 border-emerald-300',
-  [OrderStatus.Delivered]: 'bg-slate-100 text-slate-800 border-slate-300',
-  [OrderStatus.Secured]: 'bg-slate-100 text-slate-800 border-slate-300',
+  [OrderStatus.Delivered]: 'bg-stone-100 text-stone-800 border-stone-300',
+  [OrderStatus.Secured]: 'bg-stone-100 text-stone-800 border-stone-300',
 };
 
 /**

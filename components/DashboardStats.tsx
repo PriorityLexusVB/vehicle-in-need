@@ -11,13 +11,13 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color }) => (
-  <div className={`bg-white p-5 rounded-xl shadow-md border border-slate-200 flex items-center gap-4`}>
+  <div className={`bg-white p-5 rounded-xl shadow-md border border-stone-200 flex items-center gap-4`}>
     <div className={`p-3 rounded-full ${color}`}>
       {icon}
     </div>
     <div>
-      <p className="text-2xl font-bold text-slate-800">{value}</p>
-      <p className="text-sm font-medium text-slate-500">{title}</p>
+      <p className="text-2xl font-bold text-stone-800">{value}</p>
+      <p className="text-sm font-medium text-stone-500">{title}</p>
     </div>
   </div>
 );
@@ -39,8 +39,8 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
             <StatCard 
                 title="Total Active Orders" 
                 value={totalActive}
-                icon={<BriefcaseIcon className="w-6 h-6 text-sky-700" />}
-                color="bg-sky-100"
+                icon={<BriefcaseIcon className="w-6 h-6 text-indigo-700" />}
+                color="bg-indigo-100"
             />
             <StatCard 
                 title="Awaiting Action" 

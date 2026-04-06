@@ -887,22 +887,22 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 font-sans">
+    <div className="min-h-screen bg-stone-50 font-sans">
       {needRefresh && (
-        <div className="bg-sky-600 text-white py-3 px-4 flex items-center justify-between shadow-lg">
+        <div className="bg-indigo-600 text-white py-3 px-4 flex items-center justify-between shadow-lg">
           <span className="text-sm font-medium">
             A new version is available!
           </span>
           <div className="flex gap-2">
             <button
               onClick={() => updateServiceWorker(true)}
-              className="bg-white text-sky-600 px-4 py-1 rounded-md text-sm font-semibold hover:bg-slate-100 transition-colors"
+              className="bg-white text-indigo-600 px-4 py-1 rounded-md text-sm font-semibold hover:bg-stone-100 transition-colors"
             >
               Reload
             </button>
             <button
               onClick={() => setNeedRefresh(false)}
-              className="text-white px-3 py-1 text-sm hover:bg-sky-700 rounded-md transition-colors"
+              className="text-white px-3 py-1 text-sm hover:bg-indigo-700 rounded-md transition-colors"
             >
               Dismiss
             </button>
@@ -961,7 +961,7 @@ const App: React.FC = () => {
                 <div>
                   <DashboardStats {...stats} />
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-slate-800">
+                    <h2 className="text-2xl font-bold text-stone-800">
                       All Orders
                     </h2>
                     <div className="flex items-center gap-3">
@@ -974,7 +974,7 @@ const App: React.FC = () => {
                         }}
                         className={`flex items-center gap-2 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-colors duration-200 ${
                           isCSVUploadVisible
-                            ? "bg-slate-600 hover:bg-slate-700"
+                            ? "bg-stone-600 hover:bg-stone-700"
                             : "bg-emerald-600 hover:bg-emerald-700"
                         }`}
                       >
@@ -999,8 +999,8 @@ const App: React.FC = () => {
                         }}
                         className={`flex items-center gap-2 text-white font-bold py-2 px-5 rounded-lg shadow-md hover:shadow-lg transition-colors duration-200 ${
                           isOrderFormVisible
-                            ? "bg-slate-600 hover:bg-slate-700"
-                            : "bg-sky-600 hover:bg-sky-700"
+                            ? "bg-stone-600 hover:bg-stone-700"
+                            : "bg-indigo-600 hover:bg-indigo-700"
                         }`}
                       >
                         {isOrderFormVisible ? (
@@ -1060,10 +1060,10 @@ const App: React.FC = () => {
               ) : (
                 <div>
                   <div className="text-center mb-8">
-                    <h2 className="text-2xl font-bold text-slate-800">
+                    <h2 className="text-2xl font-bold text-stone-800">
                       Submit a New Vehicle Request
                     </h2>
-                    <p className="text-slate-500 mt-1">
+                    <p className="text-stone-500 mt-1">
                       Fill out the form below to create a new pre-order or
                       dealer exchange request.
                     </p>
@@ -1077,7 +1077,7 @@ const App: React.FC = () => {
                     </div>
                   </div>
                   <div className="mt-12">
-                    <h2 className="text-2xl font-bold text-slate-800 mb-6">
+                    <h2 className="text-2xl font-bold text-stone-800 mb-6">
                       Your Orders
                     </h2>
                     <OrderList
@@ -1103,7 +1103,7 @@ const App: React.FC = () => {
                     <div>
                       <DashboardStats {...stats} />
                       <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-2xl font-bold text-slate-800">
+                        <h2 className="text-2xl font-bold text-stone-800">
                           All Orders <span className="text-xs font-normal text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full ml-2">BETA</span>
                         </h2>
                       </div>

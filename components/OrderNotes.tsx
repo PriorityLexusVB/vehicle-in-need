@@ -163,12 +163,12 @@ const OrderNotes: React.FC<OrderNotesProps> = ({ orderId, currentUser }) => {
   };
 
   return (
-    <div className="bg-slate-50 p-3 rounded-lg border">
+    <div className="bg-stone-50 p-3 rounded-lg border">
       <div className="flex items-center justify-between gap-3 mb-2">
-        <strong className="block text-slate-500 text-sm font-semibold">
+        <strong className="block text-stone-500 text-sm font-semibold">
           Process Notes
         </strong>
-        {loading && <span className="text-xs text-slate-400">Loading…</span>}
+        {loading && <span className="text-xs text-stone-400">Loading…</span>}
       </div>
 
       {loadError && (
@@ -178,7 +178,7 @@ const OrderNotes: React.FC<OrderNotesProps> = ({ orderId, currentUser }) => {
       )}
 
       {!loadError && notes.length === 0 && !loading && (
-        <p className="text-sm text-slate-500">No notes yet.</p>
+        <p className="text-sm text-stone-500">No notes yet.</p>
       )}
 
       {!loadError && notes.length > 0 && (
@@ -186,24 +186,24 @@ const OrderNotes: React.FC<OrderNotesProps> = ({ orderId, currentUser }) => {
           {notes.map((note) => (
             <div
               key={note.id}
-              className="bg-white border border-slate-200 rounded-md p-2"
+              className="bg-white border border-stone-200 rounded-md p-2"
             >
               <div className="flex items-center justify-between gap-3">
-                <div className="text-xs text-slate-500">
-                  <span className="font-semibold text-slate-600">
+                <div className="text-xs text-stone-500">
+                  <span className="font-semibold text-stone-600">
                     {note.createdByName || "Unknown"}
                   </span>
                   {note.createdByRole && (
-                    <span className="ml-1 text-slate-400">
+                    <span className="ml-1 text-stone-400">
                       ({roleLabel(note.createdByRole)})
                     </span>
                   )}
                 </div>
-                <div className="text-xs text-slate-400">
+                <div className="text-xs text-stone-400">
                   {formatNoteTimestamp(note)}
                 </div>
               </div>
-              <p className="text-sm text-slate-700 whitespace-pre-wrap mt-1">
+              <p className="text-sm text-stone-700 whitespace-pre-wrap mt-1">
                 {note.text}
               </p>
             </div>
@@ -215,7 +215,7 @@ const OrderNotes: React.FC<OrderNotesProps> = ({ orderId, currentUser }) => {
         <form onSubmit={handleAdd} className="mt-3">
           <label
             htmlFor={noteInputId}
-            className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1"
+            className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1"
           >
             Add Note
           </label>
@@ -225,7 +225,7 @@ const OrderNotes: React.FC<OrderNotesProps> = ({ orderId, currentUser }) => {
             onChange={(e) => setNewText(e.target.value)}
             rows={3}
             maxLength={2000}
-            className="block w-full p-2.5 border border-slate-300 rounded-lg shadow-sm focus:ring-sky-500 focus:border-sky-500 sm:text-sm"
+            className="block w-full p-2.5 border border-stone-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             placeholder="Add a process update…"
           />
           {submitError && (
@@ -235,7 +235,7 @@ const OrderNotes: React.FC<OrderNotesProps> = ({ orderId, currentUser }) => {
             <button
               type="submit"
               disabled={isSubmitting || newText.trim().length === 0}
-              className="text-sm bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-3 rounded-lg shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-sm bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-3 rounded-lg shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? "Saving…" : "Add Note"}
             </button>
@@ -244,7 +244,7 @@ const OrderNotes: React.FC<OrderNotesProps> = ({ orderId, currentUser }) => {
       )}
 
       {!canAdd && (
-        <p className="mt-3 text-xs text-slate-400">
+        <p className="mt-3 text-xs text-stone-400">
           Only managers can add notes.
         </p>
       )}

@@ -136,7 +136,7 @@ export default function VehicleLinkSelector({
           className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
             isLinked
               ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-              : "bg-sky-100 text-sky-700 hover:bg-sky-200"
+              : "bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
           }`}
         >
           {isLinked ? (
@@ -162,13 +162,13 @@ export default function VehicleLinkSelector({
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
         <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 mt-24 flex flex-col rounded-t-2xl bg-white">
-          <div className="mx-auto mt-4 h-1.5 w-12 rounded-full bg-slate-300" />
+          <div className="mx-auto mt-4 h-1.5 w-12 rounded-full bg-stone-300" />
 
           <div className="p-4 pb-2">
-            <Drawer.Title className="text-lg font-semibold text-slate-800">
+            <Drawer.Title className="text-lg font-semibold text-stone-800">
               {isLinked ? "Linked Vehicle" : "Link Allocation Vehicle"}
             </Drawer.Title>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-stone-500">
               {order.customerName} — {order.year} {order.model}
             </p>
           </div>
@@ -199,7 +199,7 @@ export default function VehicleLinkSelector({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search model, color, grade..."
-              className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none ring-sky-500 transition focus:ring"
+              className="w-full rounded-lg border border-stone-300 bg-stone-50 px-4 py-3 text-sm outline-none ring-indigo-500 transition focus:ring"
             />
           </div>
 
@@ -225,7 +225,7 @@ export default function VehicleLinkSelector({
 
             {otherMatches.length > 0 && (
               <div className="mb-3">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-400">
                   Other Vehicles
                 </p>
                 {otherMatches.map((s) => (
@@ -243,7 +243,7 @@ export default function VehicleLinkSelector({
 
             {alreadyLinked.length > 0 && (
               <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-300">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-300">
                   Already Linked
                 </p>
                 {alreadyLinked.map((s) => (
@@ -253,7 +253,7 @@ export default function VehicleLinkSelector({
             )}
 
             {filtered.length === 0 && (
-              <p className="py-8 text-center text-sm text-slate-400">
+              <p className="py-8 text-center text-sm text-stone-400">
                 No matching vehicles found
               </p>
             )}
@@ -278,16 +278,16 @@ const VehicleRow: React.FC<VehicleRowProps> = ({ scored, onSelect, disabled }) =
       disabled={disabled}
       className={`mb-1.5 flex w-full items-start gap-3 rounded-lg border p-3 text-left transition-colors ${
         disabled
-          ? "cursor-not-allowed border-slate-100 bg-slate-50 opacity-50"
-          : "border-slate-200 bg-white hover:border-sky-300 hover:bg-sky-50 active:bg-sky-100"
+          ? "cursor-not-allowed border-stone-100 bg-stone-50 opacity-50"
+          : "border-stone-200 bg-white hover:border-indigo-300 hover:bg-indigo-50 active:bg-indigo-100"
       }`}
     >
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-slate-800">
+        <p className="text-sm font-semibold text-stone-800">
           {v.model || v.code}
           {v.grade ? ` ${v.grade}` : ""}
         </p>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-stone-500">
           {[v.color, v.interiorColor ? `Int: ${v.interiorColor}` : null, v.arrival ? `Arr: ${v.arrival}` : null]
             .filter(Boolean)
             .join(" · ")}
@@ -299,10 +299,10 @@ const VehicleRow: React.FC<VehicleRowProps> = ({ scored, onSelect, disabled }) =
         )}
       </div>
       <div className="shrink-0 text-right">
-        <p className="text-xs font-semibold text-slate-600">
+        <p className="text-xs font-semibold text-stone-600">
           {v.quantity} unit{v.quantity !== 1 ? "s" : ""}
         </p>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-stone-400">
           BOS: {v.bos}
         </p>
       </div>

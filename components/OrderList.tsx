@@ -180,10 +180,10 @@ const OrderList: React.FC<OrderListProps> = ({
   };
 
   return (
-    <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-lg border border-slate-200">
+    <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-stone-200">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
         <div>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-stone-500 mt-1">
             Showing {filteredOrders.length} of{" "}
             {activeTab === "active" ? totalActiveOrders : totalSecuredOrders}{" "}
             orders.
@@ -199,7 +199,7 @@ const OrderList: React.FC<OrderListProps> = ({
         </button>
       </div>
 
-      <div className="mb-4 border-b border-slate-200">
+      <div className="mb-4 border-b border-stone-200">
         <nav className="-mb-px flex space-x-6" aria-label="Tabs">
           <button
             onClick={() => {
@@ -208,13 +208,13 @@ const OrderList: React.FC<OrderListProps> = ({
             }}
             className={`whitespace-nowrap pb-3 px-3 border-b-2 font-semibold text-sm transition-colors ${
               activeTab === "active"
-                ? "border-sky-500 text-sky-600"
-                : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+                ? "border-indigo-500 text-indigo-600"
+                : "border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300"
             }`}
           >
             Active Orders{" "}
             <span
-              className={`ml-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold ${activeTab === "active" ? "bg-sky-100 text-sky-700" : "bg-slate-200 text-slate-700"}`}
+              className={`ml-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold ${activeTab === "active" ? "bg-indigo-100 text-indigo-700" : "bg-stone-200 text-stone-700"}`}
             >
               {totalActiveOrders}
             </span>
@@ -223,13 +223,13 @@ const OrderList: React.FC<OrderListProps> = ({
             onClick={() => setActiveTab("secured")}
             className={`whitespace-nowrap pb-3 px-3 border-b-2 font-semibold text-sm transition-colors ${
               activeTab === "secured"
-                ? "border-sky-500 text-sky-600"
-                : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+                ? "border-indigo-500 text-indigo-600"
+                : "border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300"
             }`}
           >
             Secured History{" "}
             <span
-              className={`ml-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold ${activeTab === "secured" ? "bg-sky-100 text-sky-700" : "bg-slate-200 text-slate-700"}`}
+              className={`ml-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold ${activeTab === "secured" ? "bg-indigo-100 text-indigo-700" : "bg-stone-200 text-stone-700"}`}
             >
               {totalSecuredOrders}
             </span>
@@ -247,19 +247,19 @@ const OrderList: React.FC<OrderListProps> = ({
           placeholder="Search by Customer, Salesperson, Model, Deal #, Stock #, or VIN..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="block w-full p-2.5 border border-slate-300 rounded-lg shadow-sm focus:ring-sky-500 focus:border-sky-500 sm:text-sm"
+          className="block w-full p-2.5 border border-stone-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
         />
       </div>
 
       {activeTab === "active" && (
         <div className="mb-6">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-medium text-slate-600 mr-2">
+            <span className="text-sm font-medium text-stone-600 mr-2">
               Filter:
             </span>
             <button
               onClick={() => setStatusFilter("all")}
-              className={`px-4 py-2.5 text-xs rounded-full border-2 font-semibold ${statusFilter === "all" ? "bg-sky-600 border-sky-600 text-white" : "bg-white border-slate-300 text-slate-600 hover:bg-slate-100"}`}
+              className={`px-4 py-2.5 text-xs rounded-full border-2 font-semibold ${statusFilter === "all" ? "bg-indigo-600 border-indigo-600 text-white" : "bg-white border-stone-300 text-stone-600 hover:bg-stone-100"}`}
             >
               All Active
             </button>
@@ -267,7 +267,7 @@ const OrderList: React.FC<OrderListProps> = ({
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
-                className={`px-4 py-2.5 text-xs rounded-full border-2 font-semibold ${statusFilter === status ? "bg-sky-600 border-sky-600 text-white" : "bg-white border-slate-300 text-slate-600 hover:bg-slate-100"}`}
+                className={`px-4 py-2.5 text-xs rounded-full border-2 font-semibold ${statusFilter === status ? "bg-indigo-600 border-indigo-600 text-white" : "bg-white border-stone-300 text-stone-600 hover:bg-stone-100"}`}
               >
                 {status}
               </button>
@@ -290,9 +290,9 @@ const OrderList: React.FC<OrderListProps> = ({
             />
           ))
         ) : (
-          <div className="text-center py-16 px-6 border-2 border-dashed border-slate-200 rounded-lg">
+          <div className="text-center py-16 px-6 border-2 border-dashed border-stone-200 rounded-lg">
             <svg
-              className="mx-auto h-12 w-12 text-slate-400"
+              className="mx-auto h-12 w-12 text-stone-400"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -306,10 +306,10 @@ const OrderList: React.FC<OrderListProps> = ({
                 d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
               />
             </svg>
-            <h3 className="mt-2 text-sm font-semibold text-slate-900">
+            <h3 className="mt-2 text-sm font-semibold text-stone-900">
               No Orders Found
             </h3>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-stone-500">
               {activeTab === "active"
                 ? "No active orders match your current search and filters."
                 : "There are no secured orders to display."}

@@ -433,7 +433,7 @@ function formatBosDisplay(value: string): {
   return {
     value: "N",
     detail: "Locked",
-    tone: "border-slate-300 bg-slate-100 text-slate-600",
+    tone: "border-stone-300 bg-stone-100 text-stone-600",
   };
 }
 
@@ -819,6 +819,11 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
     const sorted = [...filteredVehicles];
 
     sorted.sort((first, second) => {
+      // Always sort matched vehicles to the top
+      const firstHasMatch = (orderMatchesByVehicle.get(first.id)?.length ?? 0) > 0;
+      const secondHasMatch = (orderMatchesByVehicle.get(second.id)?.length ?? 0) > 0;
+      if (firstHasMatch !== secondHasMatch) return firstHasMatch ? -1 : 1;
+
       switch (sortMode) {
         case "arrival": {
           const arrivalDiff = compareArrivalValues(first.arrival, second.arrival);
@@ -860,7 +865,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
     });
 
     return sorted;
-  }, [filteredVehicles, sortMode]);
+  }, [filteredVehicles, sortMode, orderMatchesByVehicle]);
 
   const buildGroupedRows = (vehicleList: AllocationVehicle[]): GroupedAllocationRow[] => {
     const grouped = new Map<string, GroupedAllocationRow>();
@@ -947,11 +952,6 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
     });
   };
 
-  const groupedRows = useMemo<GroupedAllocationRow[]>(
-    () => buildGroupedRows(filteredVehicles),
-    [filteredVehicles, arrivalGroupingMode, sortMode],
-  );
-
   const matchedGroupedRows = useMemo<GroupedAllocationRow[]>(
     () => buildGroupedRows(matchedFilteredVehicles),
     [matchedFilteredVehicles, arrivalGroupingMode, sortMode],
@@ -961,16 +961,6 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
     () => buildGroupedRows(unmatchedFilteredVehicles),
     [unmatchedFilteredVehicles, arrivalGroupingMode, sortMode],
   );
-
-  const strategyTotals = useMemo(() => {
-    return groupedRows.reduce(
-      (accumulator, row) => {
-        accumulator.units += row.totalUnits;
-        return accumulator;
-      },
-      { units: 0 },
-    );
-  }, [groupedRows]);
 
   const parseInsights = useMemo(() => {
     if (!parsedResult) {
@@ -1006,7 +996,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
 
   const parseConfidenceTone = useMemo(() => {
     if (!parseInsights) {
-      return "bg-slate-100 text-slate-600";
+      return "bg-stone-100 text-stone-600";
     }
 
     if (parseInsights.confidence === "High") {
@@ -1218,20 +1208,20 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
       return (
         <div
           key={`${row.key}-${variant.sourceCode ?? ""}-${variant.code}-${variant.grade}-${variant.arrival}-${variant.color}-${variant.bos}`}
-          className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:p-5"
+          className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm hover:border-stone-300 transition-colors lg:p-5"
           data-testid="allocation-strategy-vehicle-card"
         >
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div>
-              <p className="text-2xl font-black tracking-tight text-slate-900">
+              <p className="text-lg font-bold tracking-tight text-stone-900">
                 {getDisplayCode(variant.sourceCode, variant.code)}{" "}
-                <span className="px-1 text-slate-300">·</span>
-                <span className="text-slate-500">{getDisplayModel(variant.model, variant.code)}</span>
+                <span className="px-1 text-stone-300">·</span>
+                <span className="text-stone-500">{getDisplayModel(variant.model, variant.code)}</span>
               </p>
-              <p className="mt-1 text-sm text-slate-500">Trim: {variant.grade}</p>
+              <p className="mt-1 text-sm text-stone-500">Trim: {variant.grade}</p>
             </div>
             {variant.units > 1 && (
-              <span className="rounded-full border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-800">
+              <span className="rounded-full border border-stone-300 bg-stone-50 px-2.5 py-1 text-xs font-semibold text-stone-800">
                 Qty: {variant.units}
               </span>
             )}
@@ -1239,65 +1229,65 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
 
           <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
             {detailRows.map((detail) => (
-              <div key={`${row.key}-${variant.code}-${detail.label}`} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                <dt className="text-xs uppercase tracking-wide text-slate-400">{detail.label}</dt>
-                <dd className="mt-1 font-semibold text-slate-800">{detail.value}</dd>
+              <div key={`${row.key}-${variant.code}-${detail.label}`} className="rounded-md bg-stone-50 px-3 py-2">
+                <dt className="text-xs uppercase tracking-wide text-stone-400">{detail.label}</dt>
+                <dd className="mt-1 font-semibold text-stone-800">{detail.value}</dd>
               </div>
             ))}
           </dl>
 
           {uniqueMatches.length > 0 && currentUser.isManager && (
-            <div className="mt-4 space-y-2 border-t border-slate-100 pt-3">
+            <div className="mt-4 space-y-2 border-t border-stone-100 pt-3">
               {exactMatches.length > 0 && (
-                <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-3">
+                <div className="border-l-2 border-emerald-500 bg-emerald-50/50 rounded-r-md pl-3 py-2">
                   <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Color Match ({exactMatches.length})</p>
                   <div className="mt-2 space-y-1">
                     {exactMatches.map((m, index) => (
                       <div key={m.orderId} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-1.5">
-                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-600">{index + 1}</span>
-                        <span className="text-sm font-semibold text-slate-900">{m.customerName}</span>
-                        {m.orderDate?.trim() && <span className="font-medium text-xs text-slate-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
-                        <span className="text-sm text-slate-500">{m.salesperson || "TBD"}</span>
-                        <span className="text-xs text-slate-400">{m.model} / {m.modelNumber}</span>
-                        <a href={`/#/?highlight=${m.orderId}`} className="text-sky-500 hover:text-sky-700 text-xs font-medium" title="View order">View &rarr;</a>
-                        {m.extColorMatched && <span className={`rounded px-2 py-0.5 text-xs font-semibold ${m.colorMatch === "exact" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>Ext{m.extChoiceMatched && m.extChoiceMatched > 1 ? ` (${m.extChoiceMatched}${m.extChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.extColorMatched}</span>}
-                        {m.intColorMatched && <span className={`rounded px-2 py-0.5 text-xs font-semibold ${m.interiorMatch === "exact" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>Int{m.intChoiceMatched && m.intChoiceMatched > 1 ? ` (${m.intChoiceMatched}${m.intChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.intColorMatched}</span>}
+                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-stone-200 text-xs font-bold text-stone-600">{index + 1}</span>
+                        <span className="text-sm font-semibold text-stone-900">{m.customerName}</span>
+                        {m.orderDate?.trim() && <span className="font-medium text-xs text-stone-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
+                        <span className="text-sm text-stone-500">{m.salesperson || "TBD"}</span>
+                        <span className="text-xs text-stone-400">{m.model} / {m.modelNumber}</span>
+                        <a href={`/#/?highlight=${m.orderId}`} className="text-indigo-500 hover:text-indigo-700 text-xs font-medium" title="View order">View &rarr;</a>
+                        {m.extColorMatched && <span className={`rounded px-2 py-0.5 text-xs font-semibold ${m.colorMatch === "exact" ? "bg-emerald-100 text-emerald-700" : "bg-stone-100 text-stone-500"}`}>Ext{m.extChoiceMatched && m.extChoiceMatched > 1 ? ` (${m.extChoiceMatched}${m.extChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.extColorMatched}</span>}
+                        {m.intColorMatched && <span className={`rounded px-2 py-0.5 text-xs font-semibold ${m.interiorMatch === "exact" ? "bg-emerald-100 text-emerald-700" : "bg-stone-100 text-stone-500"}`}>Int{m.intChoiceMatched && m.intChoiceMatched > 1 ? ` (${m.intChoiceMatched}${m.intChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.intColorMatched}</span>}
                       </div>
                     ))}
                   </div>
                 </div>
               )}
               {partialMatches.length > 0 && (
-                <div className="rounded-lg border border-sky-200 bg-sky-50 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">Similar Color ({partialMatches.length})</p>
+                <div className="border-l-2 border-indigo-400 bg-indigo-50/50 rounded-r-md pl-3 py-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Similar Color ({partialMatches.length})</p>
                   <div className="mt-1.5 space-y-1">
                     {partialMatches.map((m, index) => (
-                      <div key={m.orderId} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-sky-800">
-                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-600">{index + 1}</span>
-                        <span className="text-sm font-semibold text-slate-900">{m.customerName}</span>
-                        {m.orderDate?.trim() && <span className="font-medium text-xs text-slate-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
-                        <span className="text-sm text-slate-500">{m.salesperson || "TBD"}</span>
-                        <span className="text-xs text-slate-400">{m.model} / {m.modelNumber}</span>
-                        <a href={`/#/?highlight=${m.orderId}`} className="text-sky-500 hover:text-sky-700 text-xs font-medium" title="View order">View &rarr;</a>
-                        {(m.extColorMatched || m.exteriorColor1) && <span className="text-sky-600">Ext{m.extChoiceMatched && m.extChoiceMatched > 1 ? ` (${m.extChoiceMatched}${m.extChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.extColorMatched || m.exteriorColor1}</span>}
-                        {(m.intColorMatched || m.interiorColor1) && <span className="text-sky-600">Int{m.intChoiceMatched && m.intChoiceMatched > 1 ? ` (${m.intChoiceMatched}${m.intChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.intColorMatched || m.interiorColor1}</span>}
+                      <div key={m.orderId} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-indigo-800">
+                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-stone-200 text-xs font-bold text-stone-600">{index + 1}</span>
+                        <span className="text-sm font-semibold text-stone-900">{m.customerName}</span>
+                        {m.orderDate?.trim() && <span className="font-medium text-xs text-stone-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
+                        <span className="text-sm text-stone-500">{m.salesperson || "TBD"}</span>
+                        <span className="text-xs text-stone-400">{m.model} / {m.modelNumber}</span>
+                        <a href={`/#/?highlight=${m.orderId}`} className="text-indigo-500 hover:text-indigo-700 text-xs font-medium" title="View order">View &rarr;</a>
+                        {(m.extColorMatched || m.exteriorColor1) && <span className="text-indigo-600">Ext{m.extChoiceMatched && m.extChoiceMatched > 1 ? ` (${m.extChoiceMatched}${m.extChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.extColorMatched || m.exteriorColor1}</span>}
+                        {(m.intColorMatched || m.interiorColor1) && <span className="text-indigo-600">Int{m.intChoiceMatched && m.intChoiceMatched > 1 ? ` (${m.intChoiceMatched}${m.intChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.intColorMatched || m.interiorColor1}</span>}
                       </div>
                     ))}
                   </div>
                 </div>
               )}
               {modelOnlyMatches.length > 0 && (
-                <details className="rounded-lg border border-slate-200 bg-slate-50">
-                  <summary className="cursor-pointer px-3 py-2 text-xs font-semibold text-slate-400 hover:text-slate-500">+{modelOnlyMatches.length} model-only match{modelOnlyMatches.length === 1 ? "" : "es"}</summary>
+                <details className="rounded-lg border border-stone-200 bg-stone-50">
+                  <summary className="cursor-pointer px-3 py-2 text-xs font-semibold text-stone-400 hover:text-stone-500">+{modelOnlyMatches.length} model-only match{modelOnlyMatches.length === 1 ? "" : "es"}</summary>
                   <div className="space-y-1 px-3 pb-2">
                     {modelOnlyMatches.map((m, index) => (
-                      <div key={m.orderId} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-600">{index + 1}</span>
-                        <span className="text-sm font-semibold text-slate-900">{m.customerName}</span>
-                        {m.orderDate?.trim() && <span className="font-medium text-xs text-slate-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
-                        <span className="text-sm text-slate-500">{m.salesperson || "TBD"}</span>
-                        <span className="text-xs text-slate-400">{m.model} / {m.modelNumber}</span>
-                        <a href={`/#/?highlight=${m.orderId}`} className="text-sky-500 hover:text-sky-700 text-xs font-medium" title="View order">View &rarr;</a>
+                      <div key={m.orderId} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-500">
+                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-stone-200 text-xs font-bold text-stone-600">{index + 1}</span>
+                        <span className="text-sm font-semibold text-stone-900">{m.customerName}</span>
+                        {m.orderDate?.trim() && <span className="font-medium text-xs text-stone-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
+                        <span className="text-sm text-stone-500">{m.salesperson || "TBD"}</span>
+                        <span className="text-xs text-stone-400">{m.model} / {m.modelNumber}</span>
+                        <a href={`/#/?highlight=${m.orderId}`} className="text-indigo-500 hover:text-indigo-700 text-xs font-medium" title="View order">View &rarr;</a>
                       </div>
                     ))}
                   </div>
@@ -1319,28 +1309,28 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
   };
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white text-slate-800 shadow-lg">
-      <div className="border-b border-slate-200 px-6 py-5">
+    <section className="rounded-xl border border-stone-200 bg-white text-stone-800 shadow-sm">
+      <div className="border-b border-stone-200 px-6 py-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.24em] text-sky-600">Live Allocation</p>
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900">Allocation Board</h2>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="text-xs uppercase tracking-[0.24em] text-indigo-600">Live Allocation</p>
+            <h2 className="text-2xl font-bold tracking-tight text-stone-900">Allocation Board</h2>
+            <p className="mt-1 text-sm text-stone-500">
               Snapshot source of truth for consultant strategy and live inventory visibility.
             </p>
           </div>
 
-          <div className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm">
-            <p className="text-slate-500">
-              <span className="font-semibold text-slate-800">Published:</span>{" "}
+          <div className="rounded-xl border border-stone-300 bg-stone-50 px-4 py-3 text-sm">
+            <p className="text-stone-500">
+              <span className="font-semibold text-stone-800">Published:</span>{" "}
               {formatTimestamp(latestSnapshot?.publishedAt)}
             </p>
-            <p className="text-slate-500">
-              <span className="font-semibold text-slate-800">Publisher:</span>{" "}
+            <p className="text-stone-500">
+              <span className="font-semibold text-stone-800">Publisher:</span>{" "}
               {latestSnapshot?.publishedByEmail || "Not published yet"}
             </p>
-            <p className="text-slate-500">
-              <span className="font-semibold text-slate-800">Report Date:</span>{" "}
+            <p className="text-stone-500">
+              <span className="font-semibold text-stone-800">Report Date:</span>{" "}
               {latestSnapshot?.reportDate || "Unknown"}
             </p>
           </div>
@@ -1350,7 +1340,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
           <div className="mt-5 flex items-center justify-end">
             <button
               onClick={() => setIsManagerPanelOpen((previous) => !previous)}
-              className="rounded-lg border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-700 transition-colors hover:bg-sky-100"
+              className="rounded-lg border border-indigo-300 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 transition-colors hover:bg-indigo-100"
               data-testid="allocation-manager-toggle"
             >
               {isManagerPanelOpen ? "Hide Allocation Update" : "Update Allocation"}
@@ -1360,17 +1350,17 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
       </div>
 
       {currentUser.isManager && isManagerPanelOpen && (
-        <div className="border-b border-slate-200 bg-slate-50 px-6 py-5" data-testid="allocation-manager-panel">
-          <h3 className="text-lg font-semibold text-slate-900">Manager Update Panel</h3>
-          <p className="mt-1 text-sm text-slate-500">
+        <div className="border-b border-stone-200 bg-stone-50 px-6 py-5" data-testid="allocation-manager-panel">
+          <h3 className="text-lg font-semibold text-stone-900">Manager Update Panel</h3>
+          <p className="mt-1 text-sm text-stone-500">
             Paste Lexus allocation source text, parse, validate, and publish the new snapshot.
           </p>
 
           <div
             className={`mt-4 rounded-xl border border-dashed p-3 transition-colors ${
               isPdfDragActive
-                ? "border-sky-400 bg-sky-50"
-                : "border-slate-300 bg-slate-50"
+                ? "border-indigo-400 bg-indigo-50"
+                : "border-stone-300 bg-stone-50"
             }`}
             onDragEnter={handlePdfDrag}
             onDragOver={handlePdfDrag}
@@ -1383,7 +1373,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                 type="button"
                 onClick={() => pdfInputRef.current?.click()}
                 disabled={isExtractingPdf}
-                className="rounded-lg border border-slate-300 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-800 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:bg-slate-200"
+                className="rounded-lg border border-stone-300 bg-stone-100 px-4 py-2 text-sm font-semibold text-stone-800 transition-colors hover:bg-stone-200 disabled:cursor-not-allowed disabled:bg-stone-200"
                 data-testid="allocation-pdf-upload"
               >
                 {isExtractingPdf ? "Extracting PDF..." : "Upload PDF"}
@@ -1397,7 +1387,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                 aria-label="Upload allocation PDF"
                 data-testid="allocation-pdf-input"
               />
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-stone-400">
                 Drag and drop a Toyota allocation PDF here, or use Upload PDF.
               </p>
             </div>
@@ -1406,7 +1396,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
           <textarea
             value={sourceText}
             onChange={(event) => setSourceText(event.target.value)}
-            className="mt-4 min-h-44 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 shadow-sm outline-none ring-sky-500 transition focus:ring"
+            className="mt-4 min-h-44 w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm text-stone-800 shadow-sm outline-none ring-indigo-500 transition focus:ring"
             placeholder="Paste allocation source text..."
           />
 
@@ -1425,36 +1415,36 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                 parsedResult.errors.length > 0 ||
                 parsedResult.vehicles.length === 0
               }
-              className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-slate-200"
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-stone-200"
             >
               {isPublishing ? "Publishing..." : "Publish Snapshot"}
             </button>
           </div>
 
-          {parseStatus && <p className="mt-3 text-sm text-slate-700">{parseStatus}</p>}
-          {publishStatus && <p className="mt-2 text-sm text-sky-700">{publishStatus}</p>}
+          {parseStatus && <p className="mt-3 text-sm text-stone-700">{parseStatus}</p>}
+          {publishStatus && <p className="mt-2 text-sm text-indigo-700">{publishStatus}</p>}
 
           {parsedResult && (
-            <div className="mt-4 rounded-xl border border-slate-300 bg-white/80 p-4">
-              <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            <div className="mt-4 rounded-xl border border-stone-300 bg-white/80 p-4">
+              <h4 className="text-sm font-semibold uppercase tracking-wide text-stone-500">
                 Parse Preview
               </h4>
               <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
+                <span className="rounded-full bg-stone-100 px-2.5 py-1 text-stone-700">
                   Parsed: {parsedResult.itemCount}
                 </span>
-                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
+                <span className="rounded-full bg-stone-100 px-2.5 py-1 text-stone-700">
                   Units: {parsedResult.summary.units}
                 </span>
-                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
+                <span className="rounded-full bg-stone-100 px-2.5 py-1 text-stone-700">
                   Hybrid: {parsedResult.summary.hybridMix}%
                 </span>
                 {parseInsights && (
                   <>
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
+                    <span className="rounded-full bg-stone-100 px-2.5 py-1 text-stone-700">
                       Warnings: {parseInsights.warningCount}
                     </span>
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
+                    <span className="rounded-full bg-stone-100 px-2.5 py-1 text-stone-700">
                       TBD Fields: {parseInsights.tbdArrivals + parseInsights.tbdDetails}
                     </span>
                     <span className={`rounded-full px-2.5 py-1 ${parseConfidenceTone}`}>
@@ -1517,14 +1507,14 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
 
       <div className="px-6 py-5">
         <div className="sticky top-16 z-20">
-          <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white/90 p-4 backdrop-blur-sm lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-col gap-4 rounded-xl border border-stone-200 bg-white/90 p-4 backdrop-blur-sm lg:flex-row lg:items-end lg:justify-between">
             <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={() => setBoardView("strategy")}
                 className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                   boardView === "strategy"
-                    ? "bg-sky-600 text-white"
-                    : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                    ? "bg-indigo-600 text-white"
+                    : "bg-stone-100 text-stone-500 hover:bg-stone-200"
                 }`}
               >
                 Strategy View
@@ -1533,8 +1523,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                 onClick={() => setBoardView("log")}
                 className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                   boardView === "log"
-                    ? "bg-sky-600 text-white"
-                    : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                    ? "bg-indigo-600 text-white"
+                    : "bg-stone-100 text-stone-500 hover:bg-stone-200"
                 }`}
               >
                 Full Log View
@@ -1544,7 +1534,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
             {/* Mobile: show filter toggle button */}
             <button
               onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
-              className="flex w-full items-center justify-between rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 lg:hidden"
+              className="flex w-full items-center justify-between rounded-lg border border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-stone-700 lg:hidden"
             >
               <span>Filters {categoryFilter !== "all" || modelFilter !== "all" || rankFilter !== "all" || bosFilter !== "all" || searchQuery ? "•" : ""}</span>
               <svg className={`h-4 w-4 transition-transform ${mobileFiltersOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
@@ -1554,13 +1544,13 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Search code, model, customer, salesperson..."
-                className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
+                className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 outline-none ring-indigo-500 transition focus:ring"
               />
               <select
                 value={categoryFilter}
                 onChange={(event) => setCategoryFilter(event.target.value)}
                 aria-label="Filter by category"
-                className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
+                className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 outline-none ring-indigo-500 transition focus:ring"
               >
                 <option value="all">All Categories</option>
                 {categoryOptions.map((category) => (
@@ -1573,7 +1563,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                 value={modelFilter}
                 onChange={(event) => setModelFilter(event.target.value)}
                 aria-label="Filter by model"
-                className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
+                className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 outline-none ring-indigo-500 transition focus:ring"
               >
                 <option value="all">All Models</option>
                 {modelOptions.map((opt) => (
@@ -1586,7 +1576,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                 value={rankFilter}
                 onChange={(event) => setRankFilter(event.target.value)}
                 aria-label="Filter by priority"
-                className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
+                className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 outline-none ring-indigo-500 transition focus:ring"
               >
                 <option value="all">All Priorities</option>
                 {rankOptions.map((rank) => (
@@ -1599,7 +1589,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                 value={bosFilter}
                 onChange={(event) => setBosFilter(event.target.value as BosFilter)}
                 aria-label="Filter by BOS"
-                className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
+                className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 outline-none ring-indigo-500 transition focus:ring"
               >
                 <option value="all">All BOS</option>
                 <option value="y">BOS: Y (Changeable)</option>
@@ -1611,7 +1601,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                   setArrivalGroupingMode(event.target.value as ArrivalGroupingMode)
                 }
                 aria-label="Build date grouping mode"
-                className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
+                className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 outline-none ring-indigo-500 transition focus:ring"
               >
                 <option value="bucket">Build Date: Bucket</option>
                 <option value="date">Build Date: Exact Date</option>
@@ -1620,7 +1610,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                 value={sortMode}
                 onChange={(event) => setSortMode(event.target.value as SortMode)}
                 aria-label="Sort allocation rows"
-                className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
+                className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 outline-none ring-indigo-500 transition focus:ring"
               >
                 <option value="priority">Sort: Priority</option>
                 <option value="arrival">Sort: Build Date</option>
@@ -1631,12 +1621,12 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
           </div>
         </div>
 
-        {isLoading && <p className="mt-6 text-sm text-slate-500">Loading live allocation...</p>}
+        {isLoading && <p className="mt-6 text-sm text-stone-500">Loading live allocation...</p>}
         {loadError && <p className="mt-6 text-sm text-red-600">{loadError}</p>}
 
         {!isLoading && !loadError && vehicles.length === 0 && (
-          <div className="mt-6 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
-            <p className="text-sm text-slate-500">
+          <div className="mt-6 rounded-xl border border-dashed border-stone-300 bg-stone-50 p-6 text-center">
+            <p className="text-sm text-stone-500">
               No published allocation snapshot yet. Managers can publish from Update Allocation.
             </p>
           </div>
@@ -1644,26 +1634,20 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
 
         {!isLoading && !loadError && vehicles.length > 0 && (
           <>
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs uppercase tracking-wider text-slate-400">Filtered Units</p>
-                <p className="mt-1 text-2xl font-bold text-slate-900">{strategyTotals.units}</p>
-              </div>
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs uppercase tracking-wider text-slate-400">Live Hybrid Mix</p>
-                <p className="mt-1 text-2xl font-bold text-slate-900">{latestSnapshot?.summary.hybridMix ?? 0}%</p>
-              </div>
-              <div className={`rounded-xl border p-4 ${matchSummary.matchedOrderCount > 0 ? "border-amber-300 bg-amber-50" : "border-slate-200 bg-slate-50"}`}>
-                <p className="text-xs uppercase tracking-wider text-slate-400">Order Matches</p>
-                <p className={`mt-1 text-2xl font-bold ${matchSummary.matchedOrderCount > 0 ? "text-amber-700" : "text-slate-900"}`}>
-                  {matchSummary.matchedOrderCount}
-                </p>
-                <p className="mt-0.5 text-xs text-slate-400">
-                  {matchSummary.matchedOrderCount > 0
-                    ? `${matchSummary.matchedOrderCount} active order${matchSummary.matchedOrderCount === 1 ? "" : "s"} matched to ${matchSummary.matchedVehicleCount} allocation vehicle${matchSummary.matchedVehicleCount === 1 ? "" : "s"}`
-                    : "No active orders match current allocation"}
-                </p>
-              </div>
+            <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-sm text-stone-500 mt-5">
+              <span><span className="text-lg font-semibold text-stone-900">{filteredVehicles.length}</span> units</span>
+              <span className="text-stone-300">&middot;</span>
+              <span><span className="text-lg font-semibold text-stone-900">{latestSnapshot?.summary.hybridMix ?? 0}%</span> hybrid</span>
+              <span className="text-stone-300">&middot;</span>
+              <span>
+                <span className="sr-only">Order Matches</span>
+                <span className={`text-lg font-semibold ${matchSummary.matchedOrderCount > 0 ? "text-indigo-600" : "text-stone-900"}`}>{matchSummary.matchedOrderCount}</span> order match{matchSummary.matchedOrderCount === 1 ? "" : "es"}
+                {matchSummary.matchedOrderCount > 0 && (
+                  <span className="ml-1 text-xs text-stone-400">
+                    ({matchSummary.matchedOrderCount} active order{matchSummary.matchedOrderCount === 1 ? "" : "s"} matched to {matchSummary.matchedVehicleCount} allocation vehicle{matchSummary.matchedVehicleCount === 1 ? "" : "s"})
+                  </span>
+                )}
+              </span>
             </div>
 
             {boardView === "strategy" ? (
@@ -1690,9 +1674,9 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
 
                 {unmatchedGroupedRows.length > 0 && (
                   <details className="group" open={matchedGroupedRows.length === 0}>
-                    <summary className="mb-3 flex cursor-pointer items-center gap-3 border-b border-slate-200 pb-2">
-                      <h3 className="text-lg font-bold text-slate-500 group-open:text-slate-700">Available Inventory</h3>
-                      <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-500">
+                    <summary className="mb-3 flex cursor-pointer items-center gap-3 border-b border-stone-200 pb-2">
+                      <h3 className="text-lg font-bold text-stone-500 group-open:text-stone-700">Available Inventory</h3>
+                      <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-bold text-stone-500">
                         {unmatchedFilteredVehicles.length} vehicle{unmatchedFilteredVehicles.length === 1 ? "" : "s"}
                       </span>
                     </summary>
@@ -1710,42 +1694,42 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
 
                 {/* Fallback: no vehicles at all after filtering */}
                 {matchedGroupedRows.length === 0 && unmatchedGroupedRows.length === 0 && (
-                  <p className="mt-4 text-center text-sm text-slate-400">No vehicles match current filters.</p>
+                  <p className="mt-4 text-center text-sm text-stone-400">No vehicles match current filters.</p>
                 )}
               </div>
             ) : (
-              <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200">
-                <table className="min-w-full divide-y divide-slate-200 text-sm" data-testid="allocation-log-view">
-                  <thead className="bg-slate-50">
-                    <tr className="text-left text-xs uppercase tracking-wider text-slate-400">
-                      <th className="px-3 py-3">Code</th>
-                      <th className="px-3 py-3">Model</th>
-                      <th className="px-3 py-3">Grade / Trim</th>
-                      <th className="px-3 py-3">Build / Port</th>
-                      <th className="px-3 py-3">BOS</th>
-                      <th className="px-3 py-3">Qty</th>
-                      <th className="px-3 py-3">Matched Orders</th>
-                      <th className="px-3 py-3">Factory Accessories</th>
-                      <th className="px-3 py-3">Post-Production Options</th>
+              <div className="mt-5 overflow-x-auto rounded-xl border border-stone-200">
+                <table className="min-w-full divide-y divide-stone-200 text-sm" data-testid="allocation-log-view">
+                  <thead className="bg-stone-50">
+                    <tr className="text-left text-xs uppercase tracking-wider text-stone-400">
+                      <th scope="col" className="px-3 py-3">Code</th>
+                      <th scope="col" className="px-3 py-3">Model</th>
+                      <th scope="col" className="px-3 py-3">Grade / Trim</th>
+                      <th scope="col" className="px-3 py-3">Exterior</th>
+                      <th scope="col" className="px-3 py-3">Interior</th>
+                      <th scope="col" className="px-3 py-3">Build / Port</th>
+                      <th scope="col" className="px-3 py-3">BOS</th>
+                      <th scope="col" className="px-3 py-3">Qty</th>
+                      <th scope="col" className="px-3 py-3">Matched Orders</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200 bg-white">
+                  <tbody className="divide-y divide-stone-200 bg-white">
                     {sortedVehicles.map((vehicle) => {
                       const arrivalDisplay = formatArrivalDisplay(vehicle.arrival);
                       const bosDisplay = formatBosDisplay(vehicle.bos);
-                      const factoryAccessories = getFactoryAccessories(vehicle).join(", ");
-                      const postProductionOptions = getPostProductionOptions(vehicle).join(", ");
                       return (
-                        <tr key={vehicle.id} className="text-slate-700">
-                          <td className="px-3 py-2 font-semibold text-slate-900">
+                        <tr key={vehicle.id} className="text-stone-700 hover:bg-stone-50 transition-colors">
+                          <td className="px-3 py-2 font-semibold text-stone-900">
                             {getDisplayCode(vehicle.sourceCode, vehicle.code)}
                           </td>
                           <td className="px-3 py-2">{getDisplayModel(vehicle.model, vehicle.code)}</td>
                           <td className="px-3 py-2">{vehicle.grade}</td>
+                          <td className="px-3 py-2">{formatColorDisplay(vehicle.color)}</td>
+                          <td className="px-3 py-2">{formatInteriorColorDisplay(vehicle.interiorColor)}</td>
                           <td className="px-3 py-2">
                             <p>{arrivalDisplay.primary}</p>
                             {arrivalDisplay.secondary && (
-                              <p className="text-xs text-slate-400">{arrivalDisplay.secondary}</p>
+                              <p className="text-xs text-stone-400">{arrivalDisplay.secondary}</p>
                             )}
                           </td>
                           <td className="px-3 py-2">
@@ -1766,20 +1750,20 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                                 <div className="space-y-1">
                                   {matched.map((m) => (
                                     <div key={m.orderId} className="flex flex-wrap items-center gap-1 text-xs">
-                                      <span className="font-semibold text-slate-900">{m.customerName}</span>
-                                      {m.orderDate?.trim() && <span className="font-medium text-xs text-slate-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
-                                      <span className="text-slate-500">({m.salesperson || "TBD"})</span>
+                                      <span className="font-semibold text-stone-900">{m.customerName}</span>
+                                      {m.orderDate?.trim() && <span className="font-medium text-xs text-stone-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
+                                      <span className="text-stone-500">({m.salesperson || "TBD"})</span>
                                       {m.colorMatch === "exact" && (
                                         <span className="rounded bg-emerald-100 px-1 py-0.5 text-xs font-semibold text-emerald-700">EXT</span>
                                       )}
                                       {m.colorMatch === "partial" && (
-                                        <span className="rounded bg-sky-100 px-1 py-0.5 text-xs font-semibold text-sky-700">~EXT</span>
+                                        <span className="rounded bg-indigo-100 px-1 py-0.5 text-xs font-semibold text-indigo-700">~EXT</span>
                                       )}
                                       {m.interiorMatch === "exact" && (
                                         <span className="rounded bg-emerald-100 px-1 py-0.5 text-xs font-semibold text-emerald-700">INT</span>
                                       )}
                                       {m.interiorMatch === "partial" && (
-                                        <span className="rounded bg-sky-100 px-1 py-0.5 text-xs font-semibold text-sky-700">~INT</span>
+                                        <span className="rounded bg-indigo-100 px-1 py-0.5 text-xs font-semibold text-indigo-700">~INT</span>
                                       )}
                                     </div>
                                   ))}
@@ -1787,8 +1771,6 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                               );
                             })()}
                           </td>
-                          <td className="px-3 py-2">{factoryAccessories}</td>
-                          <td className="px-3 py-2">{postProductionOptions}</td>
                         </tr>
                       );
                     })}
@@ -1812,7 +1794,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                 {dxOrders.length}
               </span>
             </div>
-            <p className="mb-4 text-xs text-slate-500">
+            <p className="mb-4 text-xs text-stone-500">
               Incoming vehicles from other dealers — not in factory allocation. These arrive when the trade is completed.
             </p>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -1823,10 +1805,10 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-sm font-semibold text-slate-800">
+                      <p className="text-sm font-semibold text-stone-800">
                         {order.year} {order.model}
                       </p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-stone-500">
                         {order.customerName}
                       </p>
                     </div>
@@ -1834,7 +1816,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                       DX
                     </span>
                   </div>
-                  <div className="mt-3 space-y-1 text-xs text-slate-600">
+                  <div className="mt-3 space-y-1 text-xs text-stone-600">
                     {order.exteriorColor1 && (
                       <p>Color: {order.exteriorColor1}{order.exteriorColor2 ? `, ${order.exteriorColor2}` : ""}</p>
                     )}
@@ -1844,7 +1826,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                     {order.vin && <p>VIN: {order.vin}</p>}
                     {order.stockNumber && <p>Stock: {order.stockNumber}</p>}
                     {!order.vin && !order.stockNumber && (
-                      <p className="italic text-slate-400">No VIN/Stock yet — awaiting arrival</p>
+                      <p className="italic text-stone-400">No VIN/Stock yet — awaiting arrival</p>
                     )}
                   </div>
                 </div>
