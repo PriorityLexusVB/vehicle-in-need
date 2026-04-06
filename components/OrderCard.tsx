@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import { Order, OrderStatus, AppUser } from "../types";
+import MatchPreviewModal from "./MatchPreviewModal";
 import { ACTIVE_STATUS_OPTIONS, isSecuredStatus } from "../constants";
 import { ChevronDownIcon } from "./icons/ChevronDownIcon";
 import StatusBadge from "./StatusBadge";
@@ -69,6 +69,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
   }, [highlighted]);
   const [isSaving, setIsSaving] = useState(false);
   const [isUnlinking, setIsUnlinking] = useState(false);
+  const [showMatchPreview, setShowMatchPreview] = useState(false);
 
   const handleUnlinkVehicle = async () => {
     setIsUnlinking(true);
@@ -342,6 +343,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
   };
 
   return (
+    <>
     <div
       ref={cardRef}
       id={`order-${order.id}`}
@@ -406,38 +408,25 @@ const OrderCard: React.FC<OrderCardProps> = ({
                   Vehicle Linked
                 </span>
               )}
-              {matchSummary && (matchSummary.exactCount > 0 || matchSummary.partialCount > 0) && (() => {
-                const parts: string[] = [];
-                if (matchSummary.exactCount > 0) parts.push(`${matchSummary.exactCount} exact`);
-                if (matchSummary.partialCount > 0) parts.push(`${matchSummary.partialCount} close`);
-                const hasExact = matchSummary.exactCount > 0;
-                // Use the allocation model name for linking (matches what the filter expects)
-                const allocModel = matchSummary.matchedAllocModels.values().next().value ?? order.model;
+              {matchSummary && (matchSummary.exactCount > 0 || matchSummary.partialCount > 0 || matchSummary.dxExactCount > 0 || matchSummary.dxPartialCount > 0) && (() => {
+                const allocParts: string[] = [];
+                if (matchSummary.exactCount > 0) allocParts.push(`${matchSummary.exactCount} exact`);
+                if (matchSummary.partialCount > 0) allocParts.push(`${matchSummary.partialCount} close`);
+                const dxParts: string[] = [];
+                if (matchSummary.dxExactCount > 0) dxParts.push(`${matchSummary.dxExactCount} exact`);
+                if (matchSummary.dxPartialCount > 0) dxParts.push(`${matchSummary.dxPartialCount} close`);
+                const hasExact = matchSummary.exactCount > 0 || matchSummary.dxExactCount > 0;
                 return (
-                  <Link
-                    to={`/allocation?model=${encodeURIComponent(allocModel)}&view=matches`}
-                    onClick={(e) => e.stopPropagation()}
-                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold hover:shadow-sm transition-shadow ${hasExact ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-indigo-50 border-indigo-200 text-indigo-700"}`}
-                    title="View matching vehicles on allocation board"
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowMatchPreview(true); }}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold hover:shadow-sm transition-shadow cursor-pointer ${hasExact ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-indigo-50 border-indigo-200 text-indigo-700"}`}
+                    title="Preview matching vehicles"
                   >
-                    {parts.join(", ")} →
-                  </Link>
-                );
-              })()}
-              {matchSummary && (matchSummary.dxExactCount > 0 || matchSummary.dxPartialCount > 0) && (() => {
-                const parts: string[] = [];
-                if (matchSummary.dxExactCount > 0) parts.push(`${matchSummary.dxExactCount} exact`);
-                if (matchSummary.dxPartialCount > 0) parts.push(`${matchSummary.dxPartialCount} close`);
-                // DX badge: link to matches view but don't filter by model (DX trades aren't in allocation filter)
-                return (
-                  <Link
-                    to={`/allocation?scrollTo=dx-pipeline&dxModel=${encodeURIComponent(order.model)}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-semibold text-amber-700 hover:shadow-sm transition-shadow"
-                    title="View matching DX vehicles on allocation board"
-                  >
-                    DX: {parts.join(", ")} →
-                  </Link>
+                    {allocParts.length > 0 && <span>{allocParts.join(", ")}</span>}
+                    {allocParts.length > 0 && dxParts.length > 0 && <span className="text-stone-300">|</span>}
+                    {dxParts.length > 0 && <span className="text-amber-700">DX: {dxParts.join(", ")}</span>}
+                    <span>→</span>
+                  </button>
                 );
               })()}
             </div>
@@ -1277,6 +1266,14 @@ const OrderCard: React.FC<OrderCardProps> = ({
         </div>
       )}
     </div>
+    {showMatchPreview && matchSummary && (
+        <MatchPreviewModal
+          order={order}
+          matchSummary={matchSummary}
+          onClose={() => setShowMatchPreview(false)}
+        />
+      )}
+    </>
   );
 };
 

@@ -901,12 +901,16 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
           // Auto-clear highlight after 30 seconds
           setTimeout(() => setHighlightDxModel(null), 30000);
         }
-        // Scroll to target after a short delay (let DOM render)
+        // Scroll to target after data loads — try highlighted row first, fall back to section
         if (urlScrollTo) {
           setTimeout(() => {
-            const el = document.getElementById(urlScrollTo);
-            el?.scrollIntoView({ behavior: "smooth", block: "start" });
-          }, 500);
+            // If we have a DX model to highlight, scroll to the first matching row
+            const highlightedRow = urlDxModel
+              ? document.querySelector(`#dx-pipeline tr[data-dx-highlight="true"]`) as HTMLElement
+              : null;
+            const target = highlightedRow ?? document.getElementById(urlScrollTo);
+            target?.scrollIntoView({ behavior: "smooth", block: "center" });
+          }, 800);
         }
         // Clean URL params
         searchParams.delete("model");
@@ -1793,6 +1797,20 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                   Matches ({matchSummary.matchedOrderCount})
                 </button>
               )}
+              {(categoryFilter !== "all" || modelFilter !== "all" || rankFilter !== "all" || bosFilter !== "all" || searchQuery) && (
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                    setCategoryFilter("all");
+                    setModelFilter("all");
+                    setRankFilter("all");
+                    setBosFilter("all");
+                  }}
+                  className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-100 transition-colors"
+                >
+                  Clear Filters
+                </button>
+              )}
             </div>
 
             {/* Mobile: show filter toggle button */}
@@ -2206,7 +2224,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                 </thead>
                 <tbody className="divide-y divide-stone-200 bg-white">
                   {dxTrades.map((trade) => (
-                    <tr key={trade.id} className={`text-stone-700 transition-colors ${
+                    <tr key={trade.id} data-dx-highlight={highlightDxModel && (trade.description.replace(/\s+/g, "").toUpperCase().includes(highlightDxModel) || highlightDxModel.includes(trade.description.replace(/\s+/g, "").toUpperCase())) ? "true" : undefined} className={`text-stone-700 transition-colors ${
                       highlightDxModel && (trade.description.replace(/\s+/g, "").toUpperCase().includes(highlightDxModel) || highlightDxModel.includes(trade.description.replace(/\s+/g, "").toUpperCase()))
                         ? "bg-amber-100 ring-2 ring-amber-400 ring-inset"
                         : "hover:bg-stone-50"
