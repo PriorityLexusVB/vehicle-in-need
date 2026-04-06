@@ -359,7 +359,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
         aria-expanded={isExpanded}
       >
         <div className="flex justify-between items-start">
-          <div>
+          <div className="min-w-0">
             <h3
               className={`text-lg font-bold ${
                 isSecured ? "line-through text-stone-500" : "text-stone-800"

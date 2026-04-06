@@ -2192,7 +2192,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                 <tbody className="divide-y divide-stone-200 bg-white">
                   {dxTrades.map((trade) => (
                     <tr key={trade.id} className={`text-stone-700 transition-colors ${
-                      highlightDxModel && trade.description.replace(/\s+/g, "").toUpperCase() === highlightDxModel
+                      highlightDxModel && (trade.description.replace(/\s+/g, "").toUpperCase().includes(highlightDxModel) || highlightDxModel.includes(trade.description.replace(/\s+/g, "").toUpperCase()))
                         ? "bg-amber-100 ring-2 ring-amber-400 ring-inset"
                         : "hover:bg-stone-50"
                     }`}>
