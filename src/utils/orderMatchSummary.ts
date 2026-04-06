@@ -17,6 +17,8 @@ export interface OrderMatchSummary {
   dxExactCount: number;
   dxPartialCount: number;
   dxModelOnlyCount: number;
+  /** Allocation model names that matched (as they appear in allocation data, for deep linking) */
+  matchedAllocModels: Set<string>;
 }
 
 function normalizeModel(model: string): string {
@@ -43,10 +45,13 @@ function bestColorMatch(
   return null;
 }
 
-const EMPTY_SUMMARY: OrderMatchSummary = {
-  exactCount: 0, partialCount: 0, modelOnlyCount: 0,
-  dxExactCount: 0, dxPartialCount: 0, dxModelOnlyCount: 0,
-};
+function emptySummary(): OrderMatchSummary {
+  return {
+    exactCount: 0, partialCount: 0, modelOnlyCount: 0,
+    dxExactCount: 0, dxPartialCount: 0, dxModelOnlyCount: 0,
+    matchedAllocModels: new Set(),
+  };
+}
 
 interface PrecomputedOrder {
   order: Order;
@@ -101,7 +106,11 @@ export function computeOrderMatchSummaries(
       const ext = bestColorMatch(pc.extColors, vehicle.color, matchExteriorColors);
       const int = bestColorMatch(pc.intColors, vehicle.interiorColor, matchInteriorColors);
 
-      const existing = results.get(pc.order.id) ?? { ...EMPTY_SUMMARY };
+      const existing = results.get(pc.order.id) ?? emptySummary();
+
+      // Track the allocation model name for deep linking
+      const allocModel = vehicle.model || vehicle.code;
+      if (allocModel) existing.matchedAllocModels.add(allocModel);
 
       if (ext === "exact" || int === "exact") {
         existing.exactCount++;
@@ -142,7 +151,7 @@ export function computeOrderMatchSummaries(
           : ext1 === "partial" || ext2 === "partial" ? "partial"
           : null;
 
-        const existing = results.get(pc.order.id) ?? { ...EMPTY_SUMMARY };
+        const existing = results.get(pc.order.id) ?? emptySummary();
 
         if (ext === "exact") {
           existing.dxExactCount++;
