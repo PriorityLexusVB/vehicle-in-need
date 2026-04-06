@@ -17,6 +17,10 @@ import {
   subscribeLatestAllocationSnapshot,
 } from "../services/allocationService";
 import { subscribeActiveOrders } from "../services/orderService";
+import {
+  linkVehicleToOrder,
+  unlinkVehicleFromOrder,
+} from "../services/orderLinkingService";
 
 interface AllocationBoardProps {
   currentUser: AppUser;
@@ -78,6 +82,7 @@ interface MatchedOrder {
   modelNumber: string;
   exteriorColor1: string;
   interiorColor1: string;
+  allocatedVehicleId?: string;
   colorMatch: "exact" | "partial" | null;
   interiorMatch: "exact" | "partial" | null;
   /** Which exterior choice matched (1, 2, 3) or null if no match */
@@ -537,6 +542,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
     getStoredEnum(STORAGE_KEYS.sortMode, SORT_MODE_OPTIONS, "priority"),
   );
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [linkingOrderId, setLinkingOrderId] = useState<string | null>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -606,6 +612,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
             modelNumber: pc.order.modelNumber,
             exteriorColor1: pc.order.exteriorColor1,
             interiorColor1: pc.order.interiorColor1,
+            allocatedVehicleId: pc.order.allocatedVehicleId,
             ...(() => {
               const ext = bestColorPreference(pc.extColors, vehicle.color, matchExteriorColors);
               const int = bestColorPreference(pc.intColors, vehicle.interiorColor, matchInteriorColors);
@@ -1161,6 +1168,36 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
     }
   };
 
+  const handleLinkOrder = async (
+    orderId: string,
+    vehicleId: string,
+    vehicleInfo: string,
+  ) => {
+    setLinkingOrderId(orderId);
+    try {
+      await linkVehicleToOrder(orderId, vehicleId, vehicleInfo, currentUser.uid);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Failed to link vehicle";
+      console.error("Link failed:", msg);
+      alert(msg);
+    } finally {
+      setLinkingOrderId(null);
+    }
+  };
+
+  const handleUnlinkOrder = async (orderId: string) => {
+    setLinkingOrderId(orderId);
+    try {
+      await unlinkVehicleFromOrder(orderId);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Failed to unlink vehicle";
+      console.error("Unlink failed:", msg);
+      alert(msg);
+    } finally {
+      setLinkingOrderId(null);
+    }
+  };
+
   const renderVariantCards = (row: GroupedAllocationRow) => {
     const variants = Array.from(
       row.vehicles.reduce((accumulator, vehicle) => {
@@ -1214,6 +1251,15 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
       if (fa) detailRows.push({ label: "Factory Accessories", value: fa });
       if (ppo) detailRows.push({ label: "Post-Production Options", value: ppo });
 
+      // Vehicle ID and info for linking
+      const variantVehicleId = variant.vehicleIds[0];
+      const variantVehicleInfo = [
+        getDisplayModel(variant.model, variant.code),
+        formatColorDisplay(variant.color),
+        variant.grade,
+        variant.arrival ? `Arriving ${variant.arrival}` : null,
+      ].filter(Boolean).join(" — ");
+
       const variantMatches = variant.vehicleIds.flatMap((vid) => orderMatchesByVehicle.get(vid) ?? []);
       const uniqueMatches = sortMatchedOrders(Array.from(new Map(variantMatches.map((m) => [m.orderId, m])).values()));
       const exactMatches = uniqueMatches.filter((m) => m.colorMatch === "exact" || m.interiorMatch === "exact");
@@ -1265,6 +1311,25 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                         <span className="text-sm text-stone-500">{m.salesperson || "TBD"}</span>
                         <span className="text-xs text-stone-400">{m.model} / {m.modelNumber}</span>
                         <a href={`/#/?highlight=${m.orderId}`} className="text-indigo-500 hover:text-indigo-700 text-xs font-medium" title="View order">View &rarr;</a>
+                        {m.allocatedVehicleId === variantVehicleId ? (
+                          <button
+                            onClick={() => void handleUnlinkOrder(m.orderId)}
+                            disabled={linkingOrderId === m.orderId}
+                            className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-200 transition-colors disabled:opacity-50"
+                          >
+                            {linkingOrderId === m.orderId ? "..." : "Linked ✓"}
+                          </button>
+                        ) : m.allocatedVehicleId ? (
+                          <span className="rounded bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-400">Linked elsewhere</span>
+                        ) : (
+                          <button
+                            onClick={() => void handleLinkOrder(m.orderId, variantVehicleId, variantVehicleInfo)}
+                            disabled={linkingOrderId === m.orderId}
+                            className="rounded bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-200 transition-colors disabled:opacity-50"
+                          >
+                            {linkingOrderId === m.orderId ? "Linking..." : "Link"}
+                          </button>
+                        )}
                         {m.extColorMatched && <span className={`rounded px-2 py-0.5 text-xs font-semibold ${m.colorMatch === "exact" ? "bg-emerald-100 text-emerald-700" : "bg-stone-100 text-stone-500"}`}>Ext{m.extChoiceMatched && m.extChoiceMatched > 1 ? ` (${m.extChoiceMatched}${m.extChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.extColorMatched}</span>}
                         {m.intColorMatched && <span className={`rounded px-2 py-0.5 text-xs font-semibold ${m.interiorMatch === "exact" ? "bg-emerald-100 text-emerald-700" : "bg-stone-100 text-stone-500"}`}>Int{m.intChoiceMatched && m.intChoiceMatched > 1 ? ` (${m.intChoiceMatched}${m.intChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.intColorMatched}</span>}
                       </div>
@@ -1284,6 +1349,25 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                         <span className="text-sm text-stone-500">{m.salesperson || "TBD"}</span>
                         <span className="text-xs text-stone-400">{m.model} / {m.modelNumber}</span>
                         <a href={`/#/?highlight=${m.orderId}`} className="text-indigo-500 hover:text-indigo-700 text-xs font-medium" title="View order">View &rarr;</a>
+                        {m.allocatedVehicleId === variantVehicleId ? (
+                          <button
+                            onClick={() => void handleUnlinkOrder(m.orderId)}
+                            disabled={linkingOrderId === m.orderId}
+                            className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-200 transition-colors disabled:opacity-50"
+                          >
+                            {linkingOrderId === m.orderId ? "..." : "Linked ✓"}
+                          </button>
+                        ) : m.allocatedVehicleId ? (
+                          <span className="rounded bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-400">Linked elsewhere</span>
+                        ) : (
+                          <button
+                            onClick={() => void handleLinkOrder(m.orderId, variantVehicleId, variantVehicleInfo)}
+                            disabled={linkingOrderId === m.orderId}
+                            className="rounded bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-200 transition-colors disabled:opacity-50"
+                          >
+                            {linkingOrderId === m.orderId ? "Linking..." : "Link"}
+                          </button>
+                        )}
                         {(m.extColorMatched || m.exteriorColor1) && <span className="text-indigo-600">Ext{m.extChoiceMatched && m.extChoiceMatched > 1 ? ` (${m.extChoiceMatched}${m.extChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.extColorMatched || m.exteriorColor1}</span>}
                         {(m.intColorMatched || m.interiorColor1) && <span className="text-indigo-600">Int{m.intChoiceMatched && m.intChoiceMatched > 1 ? ` (${m.intChoiceMatched}${m.intChoiceMatched === 2 ? "nd" : "rd"} choice)` : ""}: {m.intColorMatched || m.interiorColor1}</span>}
                       </div>
@@ -1303,6 +1387,25 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                         <span className="text-sm text-stone-500">{m.salesperson || "TBD"}</span>
                         <span className="text-xs text-stone-400">{m.model} / {m.modelNumber}</span>
                         <a href={`/#/?highlight=${m.orderId}`} className="text-indigo-500 hover:text-indigo-700 text-xs font-medium" title="View order">View &rarr;</a>
+                        {m.allocatedVehicleId === variantVehicleId ? (
+                          <button
+                            onClick={() => void handleUnlinkOrder(m.orderId)}
+                            disabled={linkingOrderId === m.orderId}
+                            className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-200 transition-colors disabled:opacity-50"
+                          >
+                            {linkingOrderId === m.orderId ? "..." : "Linked ✓"}
+                          </button>
+                        ) : m.allocatedVehicleId ? (
+                          <span className="rounded bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-400">Linked elsewhere</span>
+                        ) : (
+                          <button
+                            onClick={() => void handleLinkOrder(m.orderId, variantVehicleId, variantVehicleInfo)}
+                            disabled={linkingOrderId === m.orderId}
+                            className="rounded bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-200 transition-colors disabled:opacity-50"
+                          >
+                            {linkingOrderId === m.orderId ? "Linking..." : "Link"}
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1766,6 +1869,12 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                                 return <span className="text-xs text-amber-700">{rawMatched.length}</span>;
                               }
                               const matched = sortMatchedOrders(rawMatched);
+                              const logVehicleInfo = [
+                                getDisplayModel(vehicle.model, vehicle.code),
+                                formatColorDisplay(vehicle.color),
+                                vehicle.grade,
+                                vehicle.arrival ? `Arriving ${vehicle.arrival}` : null,
+                              ].filter(Boolean).join(" — ");
                               return (
                                 <div className="space-y-1">
                                   {matched.map((m) => (
@@ -1784,6 +1893,25 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                                       )}
                                       {m.interiorMatch === "partial" && (
                                         <span className="rounded bg-indigo-100 px-1 py-0.5 text-xs font-semibold text-indigo-700">~INT</span>
+                                      )}
+                                      {m.allocatedVehicleId === vehicle.id ? (
+                                        <button
+                                          onClick={() => void handleUnlinkOrder(m.orderId)}
+                                          disabled={linkingOrderId === m.orderId}
+                                          className="rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-200 transition-colors disabled:opacity-50"
+                                        >
+                                          {linkingOrderId === m.orderId ? "..." : "✓"}
+                                        </button>
+                                      ) : m.allocatedVehicleId ? (
+                                        <span className="rounded bg-stone-100 px-1.5 py-0.5 text-xs text-stone-400" title="Linked to another vehicle">⊘</span>
+                                      ) : (
+                                        <button
+                                          onClick={() => void handleLinkOrder(m.orderId, vehicle.id, logVehicleInfo)}
+                                          disabled={linkingOrderId === m.orderId}
+                                          className="rounded bg-indigo-100 px-1.5 py-0.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-200 transition-colors disabled:opacity-50"
+                                        >
+                                          {linkingOrderId === m.orderId ? "..." : "Link"}
+                                        </button>
                                       )}
                                     </div>
                                   ))}

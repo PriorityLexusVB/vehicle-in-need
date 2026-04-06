@@ -12,6 +12,7 @@ import {
   formatModelNumber,
 } from "../src/utils/orderCardFormatters";
 import OrderNotes from "./OrderNotes";
+import { unlinkVehicleFromOrder } from "../services/orderLinkingService";
 
 interface OrderCardProps {
   order: Order;
@@ -63,6 +64,20 @@ const OrderCard: React.FC<OrderCardProps> = ({
     }
   }, [highlighted]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUnlinking, setIsUnlinking] = useState(false);
+
+  const handleUnlinkVehicle = async () => {
+    setIsUnlinking(true);
+    try {
+      await unlinkVehicleFromOrder(order.id);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Failed to unlink vehicle";
+      console.error("Unlink failed:", msg);
+      alert(msg);
+    } finally {
+      setIsUnlinking(false);
+    }
+  };
 
   type EditFormState = {
     salesperson: string;
@@ -389,8 +404,16 @@ const OrderCard: React.FC<OrderCardProps> = ({
                 </span>
               </p>
             )}
-            <div className="mt-2">
+            <div className="mt-2 flex flex-wrap items-center gap-2">
               <StatusBadge status={order.status} />
+              {order.allocatedVehicleId && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                  Vehicle Linked
+                </span>
+              )}
             </div>
           </div>
           <div className="flex items-center space-x-3 text-right flex-shrink-0 ml-4">
@@ -527,6 +550,31 @@ const OrderCard: React.FC<OrderCardProps> = ({
                 </div>
               </div>
             </div>
+
+            {order.allocatedVehicleId && (
+              <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <svg className="h-4 w-4 shrink-0 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Linked Vehicle</p>
+                      <p className="text-sm font-medium text-emerald-800 truncate">{order.allocatedVehicleInfo || order.allocatedVehicleId}</p>
+                    </div>
+                  </div>
+                  {currentUser?.isManager && (
+                    <button
+                      onClick={() => void handleUnlinkVehicle()}
+                      disabled={isUnlinking}
+                      className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-red-600 shadow-sm hover:bg-red-50 transition-colors disabled:opacity-50"
+                    >
+                      {isUnlinking ? "Unlinking..." : "Unlink"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="space-y-6">
               {isEditing && currentUser?.isManager && isActive && (
