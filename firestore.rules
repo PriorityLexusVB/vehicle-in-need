@@ -218,8 +218,10 @@ service cloud.firestore {
         && (!('linkedByUid' in request.resource.data) || ('linkedByUid' in resource.data))
         && (!('latestNoteText' in resource.data) || request.resource.data.latestNoteText == resource.data.latestNoteText)
         && (!('latestNoteText' in request.resource.data) || ('latestNoteText' in resource.data))
-        && (!('latestNoteAuthor' in resource.data) || request.resource.data.latestNoteAuthor == resource.data.latestNoteAuthor)
-        && (!('latestNoteAuthor' in request.resource.data) || ('latestNoteAuthor' in resource.data))
+        && (!('latestNoteByName' in resource.data) || request.resource.data.latestNoteByName == resource.data.latestNoteByName)
+        && (!('latestNoteByName' in request.resource.data) || ('latestNoteByName' in resource.data))
+        && (!('latestNoteByUid' in resource.data) || request.resource.data.latestNoteByUid == resource.data.latestNoteByUid)
+        && (!('latestNoteByUid' in request.resource.data) || ('latestNoteByUid' in resource.data))
         && (!('latestNoteAt' in resource.data) || request.resource.data.latestNoteAt == resource.data.latestNoteAt)
         && (!('latestNoteAt' in request.resource.data) || ('latestNoteAt' in resource.data));
 

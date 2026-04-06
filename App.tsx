@@ -1084,7 +1084,7 @@ const App: React.FC = () => {
           />
           <Route
             path="/allocation"
-            element={<AllocationBoard currentUser={user} />}
+            element={<AllocationBoard currentUser={user} sharedSnapshot={allocationSnapshot} sharedDxTrades={dxTrades} />}
           />
           <Route
             path="/requests"
@@ -1160,7 +1160,7 @@ const App: React.FC = () => {
               />
               <Route
                 path="/allocation-beta"
-                element={<AllocationBoard currentUser={user} />}
+                element={<AllocationBoard currentUser={user} sharedSnapshot={allocationSnapshot} sharedDxTrades={dxTrades} />}
               />
             </>
           )}

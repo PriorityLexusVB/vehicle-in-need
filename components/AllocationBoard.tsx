@@ -26,6 +26,10 @@ import { fetchDxSheet, DxTrade } from "../src/utils/dxSheetParser";
 
 interface AllocationBoardProps {
   currentUser: AppUser;
+  /** Shared allocation snapshot from App.tsx to avoid duplicate Firestore subscriptions */
+  sharedSnapshot?: AllocationSnapshot | null;
+  /** Shared DX trades from App.tsx to avoid duplicate Google Sheet fetches */
+  sharedDxTrades?: DxTrade[];
 }
 
 type BoardView = "strategy" | "log" | "matches";
@@ -493,7 +497,7 @@ interface GroupedAllocationRow {
   vehicles: AllocationVehicle[];
 }
 
-const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
+const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSnapshot, sharedDxTrades }) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [latestSnapshot, setLatestSnapshot] = useState<AllocationSnapshot | null>(
@@ -555,7 +559,13 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
 
   const urlModelApplied = useRef(false);
 
+  // Use shared snapshot from App.tsx if available, otherwise subscribe independently
   useEffect(() => {
+    if (sharedSnapshot !== undefined) {
+      setLatestSnapshot(sharedSnapshot);
+      setIsLoading(false);
+      return;
+    }
     const unsubscribe = subscribeLatestAllocationSnapshot(
       (snapshot) => {
         setLatestSnapshot(snapshot);
@@ -569,7 +579,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [sharedSnapshot]);
 
   // Only managers subscribe to all orders for matching — non-managers lack
   // Firestore permissions for the full orders collection and shouldn't see PII.
@@ -581,8 +591,13 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
     return subscribeActiveOrders((orders) => setActiveOrders(orders));
   }, [currentUser.isManager]);
 
-  // Fetch DX sheet data (managers only)
+  // Use shared DX trades from App.tsx if available, otherwise fetch independently
   useEffect(() => {
+    if (sharedDxTrades !== undefined) {
+      setDxTrades(sharedDxTrades);
+      if (sharedDxTrades.length > 0) setDxLastFetched(new Date());
+      return;
+    }
     if (!currentUser.isManager) return;
     let cancelled = false;
 
