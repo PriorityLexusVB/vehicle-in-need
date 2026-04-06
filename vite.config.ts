@@ -75,7 +75,7 @@ export default defineConfig(({ mode }) => {
           name: 'Pre-Order & Dealer Exchange Tracker',
           short_name: 'Vehicle Tracker',
           description: 'Track vehicle pre-orders and dealer exchanges',
-          theme_color: '#0ea5e9',
+          theme_color: '#4f46e5',
           icons: [
             { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
             { src: '/favicon.ico', sizes: '48x48', type: 'image/x-icon' },
