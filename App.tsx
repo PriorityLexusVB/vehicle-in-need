@@ -1128,42 +1128,6 @@ const App: React.FC = () => {
               )
             }
           />
-          {/* Beta routes — same components with variant prop for new features */}
-          {user.isManager && (
-            <>
-              <Route
-                path="/dashboard-beta"
-                element={
-                  user.isManager ? (
-                    <div>
-                      <DashboardStats {...stats} />
-                      <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-2xl font-bold text-stone-800">
-                          All Orders <span className="text-xs font-normal text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full ml-2">BETA</span>
-                        </h2>
-                      </div>
-                      <OrderList
-                        orders={orders}
-                        onUpdateStatus={handleUpdateOrderStatus}
-                        onUpdateOrderDetails={handleUpdateOrderDetails}
-                        onDeleteOrder={handleDeleteOrder}
-                        currentUser={user}
-                        variant="beta"
-                        highlightedOrderId={highlightedOrderId}
-                        orderMatchSummaries={orderMatchSummaries}
-                      />
-                    </div>
-                  ) : (
-                    <Navigate to="/requests" replace />
-                  )
-                }
-              />
-              <Route
-                path="/allocation-beta"
-                element={<AllocationBoard currentUser={user} sharedSnapshot={allocationSnapshot} sharedDxTrades={dxTrades} />}
-              />
-            </>
-          )}
           <Route
             path="/admin"
             element={

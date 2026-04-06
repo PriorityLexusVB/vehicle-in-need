@@ -684,8 +684,10 @@ describe('AllocationBoard', () => {
       await user.click(screen.getByRole('tab', { name: 'Full Log View' }));
 
       const logView = screen.getByTestId('allocation-log-view');
-      expect(within(logView).getByText('John Smith')).toBeInTheDocument();
-      expect(within(logView).getByText('Alice Brown')).toBeInTheDocument();
+      // Model-only matches now show as "+N more" in log view (exact matches shown inline)
+      // Log view only shows exact color matches inline; others show as "+N more"
+      const moreLabels = within(logView).getAllByText(/\+\d+ more/);
+      expect(moreLabels.length).toBeGreaterThan(0);
     });
 
     it('matches model with spaces (TX 500H → TX500H)', async () => {

@@ -547,35 +547,14 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
   const [isPdfDragActive, setIsPdfDragActive] = useState(false);
   const [skippedCopyStatus, setSkippedCopyStatus] = useState<string | null>(null);
 
-  const [boardView, setBoardView] = useState<BoardView>(() =>
-    getStoredEnum(STORAGE_KEYS.boardView, BOARD_VIEW_OPTIONS, "strategy"),
-  );
-  const [searchQuery, setSearchQuery] = useState(() =>
-    getStoredText(STORAGE_KEYS.searchQuery, ""),
-  );
-  const [categoryFilter, setCategoryFilter] = useState(() =>
-    getStoredText(STORAGE_KEYS.categoryFilter, "all"),
-  );
-  const [modelFilter, setModelFilter] = useState(() =>
-    getStoredText(STORAGE_KEYS.modelFilter, "all"),
-  );
-  const [rankFilter, setRankFilter] = useState(() =>
-    getStoredText(STORAGE_KEYS.rankFilter, "all"),
-  );
-  const [bosFilter, setBosFilter] = useState<BosFilter>(() =>
-    getStoredEnum(STORAGE_KEYS.bosFilter, BOS_FILTER_OPTIONS, "all"),
-  );
-  const [arrivalGroupingMode, setArrivalGroupingMode] = useState<ArrivalGroupingMode>(
-    () =>
-      getStoredEnum(
-        STORAGE_KEYS.arrivalGrouping,
-        ARRIVAL_GROUPING_OPTIONS,
-        "bucket",
-      ),
-  );
-  const [sortMode, setSortMode] = useState<SortMode>(() =>
-    getStoredEnum(STORAGE_KEYS.sortMode, SORT_MODE_OPTIONS, "priority"),
-  );
+  const [boardView, setBoardView] = useState<BoardView>("strategy");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [modelFilter, setModelFilter] = useState("all");
+  const [rankFilter, setRankFilter] = useState("all");
+  const [bosFilter, setBosFilter] = useState<BosFilter>("all");
+  const [arrivalGroupingMode, setArrivalGroupingMode] = useState<ArrivalGroupingMode>("bucket");
+  const [sortMode, setSortMode] = useState<SortMode>("priority");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [linkingOrderId, setLinkingOrderId] = useState<string | null>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
@@ -2109,21 +2088,20 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                                 return <span className="text-xs text-amber-700">{rawMatched.length}</span>;
                               }
                               const matched = sortMatchedOrders(rawMatched);
+                              const exactMatches = matched.filter((m) => m.colorMatch === "exact" || m.interiorMatch === "exact");
+                              const otherCount = matched.length - exactMatches.length;
                               const logVehicleInfo = [
                                 getDisplayModel(vehicle.model, vehicle.code),
                                 formatColorDisplay(vehicle.color),
-                                vehicle.grade,
+                                getDisplayTrim(vehicle.sourceCode, vehicle.code, vehicle.grade),
                                 vehicle.arrival ? `Arriving ${vehicle.arrival}` : null,
                               ].filter(Boolean).join(" — ");
                               return (
                                 <div className="space-y-1.5">
-                                  {matched.map((m) => {
-                                    const matchDot = (m.colorMatch === "exact" || m.interiorMatch === "exact")
-                                      ? "bg-emerald-500" : (m.colorMatch === "partial" || m.interiorMatch === "partial")
-                                      ? "bg-indigo-400" : "bg-stone-300";
+                                  {exactMatches.map((m) => {
                                     return (
                                     <div key={m.orderId} className="flex items-center gap-1.5 text-xs">
-                                      <span className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${matchDot}`} />
+                                      <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
                                       <span className="font-semibold text-stone-900 truncate max-w-[100px]">{m.customerName}</span>
                                       {m.allocatedVehicleId === vehicle.id ? (
                                         <button
@@ -2147,6 +2125,9 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                                     </div>
                                     );
                                   })}
+                                  {otherCount > 0 && (
+                                    <span className="text-xs text-stone-400">+{otherCount} more</span>
+                                  )}
                                 </div>
                               );
                             })()}

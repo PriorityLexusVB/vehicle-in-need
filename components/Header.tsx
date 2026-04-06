@@ -95,15 +95,6 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
                 <div className="h-6 w-px bg-stone-200 hidden md:block"></div>
               </>
             )}
-            {user.isManager && (
-              <Link
-                to="/dashboard-beta"
-                className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium text-amber-700 bg-amber-100 hover:bg-amber-200 transition-colors"
-                title="Beta Dashboard"
-              >
-                Beta
-              </Link>
-            )}
             <button
               onClick={onLogout}
               className="flex items-center gap-2 p-2 rounded-full text-stone-500 hover:bg-stone-200 hover:text-stone-800 transition-colors"
