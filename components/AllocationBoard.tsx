@@ -851,7 +851,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
 
   // Apply URL params (e.g., ?model=RX350&view=matches from dashboard badge click)
   // Stashes params on first render, applies model filter once modelOptions load
-  const stashedUrlParams = useRef<{ model: string | null; view: string | null; scrollTo: string | null } | null>(null);
+  const [highlightDxModel, setHighlightDxModel] = useState<string | null>(null);
+  const stashedUrlParams = useRef<{ model: string | null; view: string | null; scrollTo: string | null; dxModel: string | null } | null>(null);
   useEffect(() => {
     if (urlModelApplied.current) return;
     // On first run, stash the URL params before they get cleared by navigation
@@ -859,11 +860,18 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
       const urlModel = searchParams.get("model");
       const urlView = searchParams.get("view");
       const urlScrollTo = searchParams.get("scrollTo");
-      if (urlModel || urlView || urlScrollTo) {
-        stashedUrlParams.current = { model: urlModel, view: urlView, scrollTo: urlScrollTo };
+      const urlDxModel = searchParams.get("dxModel");
+      if (urlModel || urlView || urlScrollTo || urlDxModel) {
+        stashedUrlParams.current = { model: urlModel, view: urlView, scrollTo: urlScrollTo, dxModel: urlDxModel };
         // Apply view immediately (no dependency on data loading)
         if (urlView && BOARD_VIEW_OPTIONS.includes(urlView as BoardView)) {
           setBoardView(urlView as BoardView);
+        }
+        // Highlight DX model matches
+        if (urlDxModel) {
+          setHighlightDxModel(urlDxModel.replace(/\s+/g, "").toUpperCase());
+          // Auto-clear highlight after 5 seconds
+          setTimeout(() => setHighlightDxModel(null), 5000);
         }
         // Scroll to target after a short delay (let DOM render)
         if (urlScrollTo) {
@@ -876,6 +884,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
         searchParams.delete("model");
         searchParams.delete("view");
         searchParams.delete("scrollTo");
+        searchParams.delete("dxModel");
         setSearchParams(searchParams, { replace: true });
       }
     }
@@ -2169,7 +2178,11 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                 </thead>
                 <tbody className="divide-y divide-stone-200 bg-white">
                   {dxTrades.map((trade) => (
-                    <tr key={trade.id} className="text-stone-700 hover:bg-stone-50 transition-colors">
+                    <tr key={trade.id} className={`text-stone-700 transition-colors ${
+                      highlightDxModel && trade.description.replace(/\s+/g, "").toUpperCase() === highlightDxModel
+                        ? "bg-amber-100 ring-2 ring-amber-400 ring-inset"
+                        : "hover:bg-stone-50"
+                    }`}>
                       <td className="whitespace-nowrap px-3 py-2 text-stone-500">{trade.date}</td>
                       <td className="px-3 py-2">
                         <span className="font-semibold text-stone-900">{trade.description || trade.modelNumber}</span>
