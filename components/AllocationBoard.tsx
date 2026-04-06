@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AppUser, Order } from "../types";
 import {
   parseAllocationSource,
@@ -493,6 +494,8 @@ interface GroupedAllocationRow {
 }
 
 const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [latestSnapshot, setLatestSnapshot] = useState<AllocationSnapshot | null>(
     null,
   );
@@ -549,6 +552,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [linkingOrderId, setLinkingOrderId] = useState<string | null>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
+
+  const urlModelApplied = useRef(false);
 
   useEffect(() => {
     const unsubscribe = subscribeLatestAllocationSnapshot(
@@ -843,6 +848,27 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
       setModelFilter("all");
     }
   }, [modelFilter, modelOptions]);
+
+  // Apply URL params (e.g., ?model=RX350 from dashboard badge click)
+  // Fuzzy-matches since order.model may differ from allocation display names
+  useEffect(() => {
+    if (urlModelApplied.current) return;
+    const urlModel = searchParams.get("model");
+    if (urlModel && modelOptions.length > 0) {
+      urlModelApplied.current = true;
+      const normalizedUrl = urlModel.replace(/\s+/g, "").toUpperCase();
+      const exactOption = modelOptions.find((opt) => opt.value === urlModel);
+      const fuzzyOption = !exactOption
+        ? modelOptions.find((opt) => opt.value.replace(/\s+/g, "").toUpperCase() === normalizedUrl)
+        : null;
+      const matchedModel = exactOption?.value ?? fuzzyOption?.value;
+      if (matchedModel) {
+        setModelFilter(matchedModel);
+      }
+      searchParams.delete("model");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [modelOptions]); // eslint-disable-line react-hooks/exhaustive-deps -- one-time when options load
 
   const matchedFilteredVehicles = useMemo(
     () => filteredVehicles.filter((v) => matchedVehicleIds.has(v.id)),

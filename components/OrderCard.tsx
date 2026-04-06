@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { Order, OrderStatus, AppUser } from "../types";
 import { ACTIVE_STATUS_OPTIONS, isSecuredStatus } from "../constants";
 import { ChevronDownIcon } from "./icons/ChevronDownIcon";
@@ -423,9 +424,14 @@ const OrderCard: React.FC<OrderCardProps> = ({
                 if (matchSummary.partialCount > 0) parts.push(`${matchSummary.partialCount} close`);
                 const hasExact = matchSummary.exactCount > 0;
                 return (
-                  <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold ${hasExact ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-indigo-50 border-indigo-200 text-indigo-700"}`}>
-                    {parts.join(", ")}
-                  </span>
+                  <Link
+                    to={`/allocation?model=${encodeURIComponent(order.model)}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold hover:shadow-sm transition-shadow ${hasExact ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-indigo-50 border-indigo-200 text-indigo-700"}`}
+                    title="View matching vehicles on allocation board"
+                  >
+                    {parts.join(", ")} →
+                  </Link>
                 );
               })()}
               {matchSummary && (matchSummary.dxExactCount > 0 || matchSummary.dxPartialCount > 0) && (() => {
@@ -433,9 +439,14 @@ const OrderCard: React.FC<OrderCardProps> = ({
                 if (matchSummary.dxExactCount > 0) parts.push(`${matchSummary.dxExactCount} exact`);
                 if (matchSummary.dxPartialCount > 0) parts.push(`${matchSummary.dxPartialCount} close`);
                 return (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-semibold text-amber-700">
-                    DX: {parts.join(", ")}
-                  </span>
+                  <Link
+                    to={`/allocation?model=${encodeURIComponent(order.model)}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-semibold text-amber-700 hover:shadow-sm transition-shadow"
+                    title="View matching DX vehicles on allocation board"
+                  >
+                    DX: {parts.join(", ")} →
+                  </Link>
                 );
               })()}
             </div>

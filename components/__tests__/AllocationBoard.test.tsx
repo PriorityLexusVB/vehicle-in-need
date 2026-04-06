@@ -1,8 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import AllocationBoard from '../AllocationBoard';
 import { AppUser } from '../../types';
+import React from 'react';
+
+function renderBoard(props: { currentUser: AppUser }) {
+  return render(
+    <MemoryRouter>
+      <AllocationBoard {...props} />
+    </MemoryRouter>
+  );
+}
 
 const serviceMocks = vi.hoisted(() => ({
   subscribeLatestAllocationSnapshot: vi.fn(),
@@ -21,6 +31,15 @@ vi.mock('../../src/utils/pdfTextExtractor', () => pdfMocks);
 
 vi.mock('../../services/orderService', () => ({
   subscribeActiveOrders: vi.fn(() => vi.fn()),
+}));
+
+vi.mock('../../services/orderLinkingService', () => ({
+  linkVehicleToOrder: vi.fn(),
+  unlinkVehicleFromOrder: vi.fn(),
+}));
+
+vi.mock('../../src/utils/dxSheetParser', () => ({
+  fetchDxSheet: vi.fn(() => Promise.resolve([])),
 }));
 
 import { subscribeActiveOrders } from '../../services/orderService';
@@ -112,7 +131,7 @@ beforeEach(() => {
 
 describe('AllocationBoard', () => {
   it('hides manager controls for consultants and defaults to strategy view', async () => {
-    render(<AllocationBoard currentUser={consultantUser} />);
+    renderBoard({ currentUser: consultantUser });
 
     await waitFor(() => {
       expect(screen.getByTestId('allocation-strategy-view')).toBeInTheDocument();
@@ -124,7 +143,7 @@ describe('AllocationBoard', () => {
   });
 
   it('shows collapsible manager panel for managers', async () => {
-    render(<AllocationBoard currentUser={managerUser} />);
+    renderBoard({ currentUser: managerUser });
     const user = userEvent.setup();
 
     const toggle = await screen.findByTestId('allocation-manager-toggle');
@@ -148,7 +167,7 @@ describe('AllocationBoard', () => {
 
     extractAllocationTextFromPdf.mockResolvedValue(extractedText);
 
-    render(<AllocationBoard currentUser={managerUser} />);
+    renderBoard({ currentUser: managerUser });
     const user = userEvent.setup();
 
     await user.click(await screen.findByTestId('allocation-manager-toggle'));
@@ -181,7 +200,7 @@ describe('AllocationBoard', () => {
 
     extractAllocationTextFromPdf.mockResolvedValue(extractedText);
 
-    render(<AllocationBoard currentUser={managerUser} />);
+    renderBoard({ currentUser: managerUser });
     const user = userEvent.setup();
     await user.click(await screen.findByTestId('allocation-manager-toggle'));
 
@@ -217,7 +236,7 @@ describe('AllocationBoard', () => {
       '( EMINENT WHITE PEARL )',
     ].join('\n');
 
-    render(<AllocationBoard currentUser={managerUser} />);
+    renderBoard({ currentUser: managerUser });
     const user = userEvent.setup();
 
     await user.click(await screen.findByTestId('allocation-manager-toggle'));
@@ -263,7 +282,7 @@ describe('AllocationBoard', () => {
       'GX550 CAVIAR / BLACK',
     ].join('\n');
 
-    render(<AllocationBoard currentUser={managerUser} />);
+    renderBoard({ currentUser: managerUser });
     const user = userEvent.setup();
 
     await user.click(await screen.findByTestId('allocation-manager-toggle'));
@@ -306,7 +325,7 @@ describe('AllocationBoard', () => {
       'GX550 CAVIAR / BLACK',
     ].join('\n');
 
-    const firstRender = render(<AllocationBoard currentUser={managerUser} />);
+    const firstRender = renderBoard({ currentUser: managerUser });
     const managerUserEvent = userEvent.setup();
 
     await managerUserEvent.click(await screen.findByTestId('allocation-manager-toggle'));
@@ -351,7 +370,7 @@ describe('AllocationBoard', () => {
       return () => undefined;
     });
 
-    render(<AllocationBoard currentUser={consultantUser} />);
+    renderBoard({ currentUser: consultantUser });
 
     await waitFor(() => {
       expect(screen.getByTestId('allocation-strategy-view')).toBeInTheDocument();
@@ -375,7 +394,7 @@ describe('AllocationBoard', () => {
       '( CA VIAR )',
     ].join('\n');
 
-    render(<AllocationBoard currentUser={managerUser} />);
+    renderBoard({ currentUser: managerUser });
     const user = userEvent.setup();
 
     await user.click(await screen.findByTestId('allocation-manager-toggle'));
@@ -417,7 +436,7 @@ describe('AllocationBoard', () => {
       'TX350 CLOUD BURST / BLACK',
     ].join('\n');
 
-    render(<AllocationBoard currentUser={managerUser} />);
+    renderBoard({ currentUser: managerUser });
     const user = userEvent.setup();
 
     await user.click(await screen.findByTestId('allocation-manager-toggle'));
@@ -446,7 +465,7 @@ describe('AllocationBoard', () => {
   });
 
   it('supports exact-date build date grouping in strategy view', async () => {
-    render(<AllocationBoard currentUser={consultantUser} />);
+    renderBoard({ currentUser: consultantUser });
     const user = userEvent.setup();
 
     await waitFor(() => {
@@ -462,7 +481,7 @@ describe('AllocationBoard', () => {
   });
 
   it('shows dense factual vehicle cards without coaching copy', async () => {
-    render(<AllocationBoard currentUser={consultantUser} />);
+    renderBoard({ currentUser: consultantUser });
 
     await waitFor(() => {
       expect(screen.getByTestId('allocation-strategy-view')).toBeInTheDocument();
@@ -497,7 +516,7 @@ describe('AllocationBoard', () => {
   });
 
   it('shows 4-digit code separately from model in strategy and full log views', async () => {
-    render(<AllocationBoard currentUser={consultantUser} />);
+    renderBoard({ currentUser: consultantUser });
     const user = userEvent.setup();
 
     await waitFor(() => {
@@ -533,7 +552,7 @@ describe('AllocationBoard', () => {
   });
 
   it('filters strategy cards by BOS status', async () => {
-    render(<AllocationBoard currentUser={consultantUser} />);
+    renderBoard({ currentUser: consultantUser });
     const user = userEvent.setup();
 
     await waitFor(() => {
@@ -549,7 +568,7 @@ describe('AllocationBoard', () => {
   });
 
   it('hides quantity values in log view for single-unit entries', async () => {
-    render(<AllocationBoard currentUser={consultantUser} />);
+    renderBoard({ currentUser: consultantUser });
     const user = userEvent.setup();
 
     await waitFor(() => {
@@ -612,7 +631,7 @@ describe('AllocationBoard', () => {
 
     it('shows match summary count for managers when orders match', async () => {
       setupWithOrders();
-      render(<AllocationBoard currentUser={managerUser} />);
+      renderBoard({ currentUser: managerUser });
 
       await waitFor(() => {
         expect(screen.getByText('Order Matches')).toBeInTheDocument();
@@ -624,7 +643,7 @@ describe('AllocationBoard', () => {
 
     it('shows customer names in strategy view for managers', async () => {
       setupWithOrders();
-      render(<AllocationBoard currentUser={managerUser} />);
+      renderBoard({ currentUser: managerUser });
 
       await waitFor(() => {
         expect(screen.getByText('John Smith')).toBeInTheDocument();
@@ -634,7 +653,7 @@ describe('AllocationBoard', () => {
 
     it('shows salesperson in strategy view for managers', async () => {
       setupWithOrders();
-      render(<AllocationBoard currentUser={managerUser} />);
+      renderBoard({ currentUser: managerUser });
 
       await waitFor(() => {
         expect(screen.getByText('Jane Doe')).toBeInTheDocument();
@@ -645,7 +664,7 @@ describe('AllocationBoard', () => {
     it('does not show customer PII for non-managers', async () => {
       // Non-managers don't get orders (subscription is gated)
       mockSubscribeActiveOrders.mockImplementation(() => vi.fn());
-      render(<AllocationBoard currentUser={consultantUser} />);
+      renderBoard({ currentUser: consultantUser });
 
       await waitFor(() => {
         expect(screen.queryByText('John Smith')).not.toBeInTheDocument();
@@ -656,7 +675,7 @@ describe('AllocationBoard', () => {
     it('shows matched orders in log view for managers', async () => {
       setupWithOrders();
       const user = userEvent.setup();
-      render(<AllocationBoard currentUser={managerUser} />);
+      renderBoard({ currentUser: managerUser });
 
       await waitFor(() => {
         expect(screen.getByText('John Smith')).toBeInTheDocument();
@@ -671,7 +690,7 @@ describe('AllocationBoard', () => {
 
     it('matches model with spaces (TX 500H → TX500H)', async () => {
       setupWithOrders();
-      render(<AllocationBoard currentUser={managerUser} />);
+      renderBoard({ currentUser: managerUser });
 
       // Alice's order has model "TX 500H" which should match allocation vehicle code "TX500H"
       await waitFor(() => {
@@ -682,7 +701,7 @@ describe('AllocationBoard', () => {
     it('shows color match section when colors match', async () => {
       // Vehicle 2 has color BLACK, order-1 has exteriorColor1 "Caviar" → partial match (same family)
       setupWithOrders();
-      render(<AllocationBoard currentUser={managerUser} />);
+      renderBoard({ currentUser: managerUser });
 
       await waitFor(() => {
         // Partial matches should appear in the "Similar Color" section
