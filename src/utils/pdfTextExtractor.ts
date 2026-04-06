@@ -64,6 +64,7 @@ async function getPdfJsModule(): Promise<PdfJsModuleLike> {
     // Vite can keep a stale optimized-dep URL in memory after a dev-server restart.
     [pdfJsModule, workerModule] = await Promise.all([
       import(
+        // @ts-expect-error -- dev-only fallback path for stale Vite imports
         /* @vite-ignore */ "/node_modules/pdfjs-dist/legacy/build/pdf.mjs"
       ) as Promise<PdfJsModuleLike>,
       import(
