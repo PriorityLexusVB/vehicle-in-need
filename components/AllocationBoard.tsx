@@ -5,7 +5,7 @@ import {
   parseAllocationSource,
   groupArrivalBucket,
 } from "../src/utils/allocationParser";
-import { MODEL_CODE_TO_ALLOCATION } from "../src/utils/allocationReference";
+import { MODEL_CODE_TO_ALLOCATION, MODEL_CODE_TO_TRIM } from "../src/utils/allocationReference";
 import { matchExteriorColors, matchInteriorColors } from "../src/utils/colorReference";
 import { extractAllocationTextFromPdf } from "../src/utils/pdfTextExtractor";
 import {
@@ -172,6 +172,29 @@ function getDisplayValue(value?: string | null): string | null {
   }
 
   return trimmed;
+}
+
+/** Resolve trim/grade from model code. Falls back to the raw grade if no mapping exists. */
+function getDisplayTrim(sourceCode?: string | null, code?: string | null, rawGrade?: string): string {
+  // Try sourceCode first (e.g., "9702"), then code — but verify the model code
+  // maps to the same model family to avoid cross-model mismatches
+  const codeStr = (code ?? "").replace(/\s+/g, "").toUpperCase();
+  for (const candidate of [sourceCode, code]) {
+    if (!candidate) continue;
+    const fourDigit = candidate.trim().match(/^(\d{4})/)?.[1];
+    if (fourDigit && MODEL_CODE_TO_TRIM[fourDigit]) {
+      // Verify model family matches: the 4-digit code should map to the same base model
+      const mappedModel = MODEL_CODE_TO_ALLOCATION[fourDigit];
+      if (mappedModel && codeStr.startsWith(mappedModel.replace(/\s+/g, "").toUpperCase())) {
+        return MODEL_CODE_TO_TRIM[fourDigit];
+      }
+    }
+  }
+  // Fall back to raw grade, but filter out type-like values
+  if (rawGrade && !/\b(SUV|Sedan|PHEV|Hybrid|EV|Compact|Subcompact|Three-Row|Body-on-Frame|Luxury SUV)\b/i.test(rawGrade)) {
+    return rawGrade;
+  }
+  return "—";
 }
 
 function getDisplayCode(sourceCode?: string | null, code?: string | null): string {
@@ -1403,7 +1426,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                 <span className="px-1 text-stone-300">·</span>
                 <span className="text-stone-500">{getDisplayModel(variant.model, variant.code)}</span>
               </p>
-              <p className="mt-1 text-sm text-stone-500">Trim: {variant.grade}</p>
+              <p className="mt-1 text-sm text-stone-500">Trim: {getDisplayTrim(variant.sourceCode, variant.code, variant.grade)}</p>
             </div>
             {variant.units > 1 && (
               <span className="rounded-full border border-stone-300 bg-stone-50 px-2.5 py-1 text-xs font-semibold text-stone-800">
@@ -2063,7 +2086,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                             {getDisplayCode(vehicle.sourceCode, vehicle.code)}
                           </td>
                           <td className="px-3 py-2">{getDisplayModel(vehicle.model, vehicle.code)}</td>
-                          <td className="px-3 py-2">{vehicle.grade}</td>
+                          <td className="px-3 py-2">{getDisplayTrim(vehicle.sourceCode, vehicle.code, vehicle.grade)}</td>
                           <td className="px-3 py-2">{formatColorDisplay(vehicle.color)}</td>
                           <td className="px-3 py-2">{formatInteriorColorDisplay(vehicle.interiorColor)}</td>
                           <td className="px-3 py-2">

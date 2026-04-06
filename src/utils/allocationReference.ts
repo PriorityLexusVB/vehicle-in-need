@@ -350,3 +350,48 @@ export const MODEL_CODE_TO_ALLOCATION: Record<string, string> = {
   "9628": "LX700H",
   "9629": "LX700H",
 };
+
+/**
+ * Maps 4-digit model codes to specific trim/grade names.
+ * Used to display actual trim level when the parser can't extract it from the PDF.
+ * Source: Lexus 2026 Model Code Reference.
+ */
+export const MODEL_CODE_TO_TRIM: Record<string, string> = {
+  // IS
+  "9504": "Premium", "9508": "F SPORT Design", "9510": "F SPORT Performance", "9516": "F SPORT Handling",
+  // ES
+  "9020": "Premium", "9025": "Luxury", "9021": "Premium", "9026": "Luxury",
+  "9030": "Ultra Luxury", "9032": "Ultra Luxury", "9035": "Ultra Luxury", "9037": "Ultra Luxury",
+  // LS
+  "9126": "Executive",
+  // LC
+  "9260": "Touring", "9262": "Sport",
+  // UX
+  "9721": "Premium", "9732": "Premium", "9723": "F SPORT", "9733": "F SPORT",
+  "9725": "Luxury", "9735": "Luxury", "9727": "Black Line", "9738": "Black Line",
+  // NX
+  "9834": "Premium", "9835": "F SPORT", "9836": "Luxury", "9838": "Executive",
+  "9844": "Premium", "9845": "Premium", "9848": "F SPORT", "9849": "F SPORT",
+  "9846": "Luxury", "9850": "Luxury", "9847": "Executive", "9851": "Executive",
+  "9852": "Premium", "9854": "F SPORT", "9855": "Luxury",
+  // RZ
+  "9901": "Premium", "9902": "Premium", "9904": "Luxury", "9905": "Premium", "9906": "Luxury",
+  "9909": "Luxury",
+  // RX
+  "9400": "Standard", "9410": "Premium", "9401": "Premium", "9411": "Premium",
+  "9402": "F SPORT", "9412": "F SPORT", "9403": "Luxury", "9413": "Luxury",
+  "9404": "Executive", "9414": "Executive", "9415": "Executive",
+  "9450": "Standard", "9451": "Premium", "9452": "Premium", "9453": "Luxury",
+  "9455": "Executive", "9441": "Premium+", "9443": "Luxury+",
+  "9458": "F SPORT Performance",
+  // TX
+  "9350": "Standard", "9351": "Premium", "9352": "Premium", "9353": "Premium",
+  "9354": "Luxury", "9355": "Premium+", "9357": "Executive",
+  "9360": "Premium", "9361": "Luxury", "9365": "Premium",
+  // GX
+  "9701": "Premium", "9702": "Premium+", "9703": "Luxury", "9704": "Luxury+",
+  "9705": "Overtrail", "9706": "Overtrail+",
+  // LX
+  "9621": "Standard", "9622": "Premium", "9623": "Luxury",
+  "9626": "Executive", "9627": "F SPORT", "9628": "Ultra Luxury", "9629": "Executive",
+};
