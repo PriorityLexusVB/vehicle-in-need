@@ -2036,7 +2036,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                 )}
 
                 {unmatchedGroupedRows.length > 0 && (
-                  <details className="group" open={matchedGroupedRows.length === 0}>
+                  <details className="group" open>
                     <summary className="mb-3 flex cursor-pointer items-center gap-3 border-b border-stone-200 pb-2">
                       <h3 className="text-lg font-bold text-stone-500 group-open:text-stone-700">Available Inventory</h3>
                       <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-bold text-stone-500">
