@@ -47,6 +47,7 @@ import { useRegisterSW } from "virtual:pwa-register/react";
 import { subscribeLatestAllocationSnapshot } from "./services/allocationService";
 import { AllocationSnapshot } from "./src/utils/allocationTypes";
 import { computeOrderMatchSummaries, OrderMatchSummary } from "./src/utils/orderMatchSummary";
+import { fetchDxSheet, DxTrade } from "./src/utils/dxSheetParser";
 
 // Type guard to verify if an error is a FirestoreError.
 // Checks for FirestoreError-specific properties to distinguish from generic errors.
@@ -87,6 +88,7 @@ const App: React.FC = () => {
   const [isCSVUploadVisible, setIsCSVUploadVisible] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const [allocationSnapshot, setAllocationSnapshot] = useState<AllocationSnapshot | null>(null);
+  const [dxTrades, setDxTrades] = useState<DxTrade[]>([]);
   const [stats, setStats] = useState({
     totalActive: 0,
     awaitingAction: 0,
@@ -524,11 +526,16 @@ const App: React.FC = () => {
 
     // Subscribe to allocation snapshot for match badges on dashboard cards (managers only)
     let unsubscribeAllocation: (() => void) | undefined;
+    let dxCancelled = false;
     if (user.isManager) {
       unsubscribeAllocation = subscribeLatestAllocationSnapshot(
         (snapshot) => setAllocationSnapshot(snapshot),
         () => setAllocationSnapshot(null),
       );
+      // Fetch DX sheet for matching
+      void fetchDxSheet()
+        .then((trades) => { if (!dxCancelled) setDxTrades(trades); })
+        .catch(() => { /* DX fetch failure is non-critical */ });
     }
 
     return () => {
@@ -536,6 +543,7 @@ const App: React.FC = () => {
       unsubscribeOrdersFallback?.();
       unsubscribeUsers?.();
       unsubscribeAllocation?.();
+      dxCancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- processOrdersData is stable (useCallback with []), mapDocsToOrders/isFirestoreError are module-level functions
   }, [user]);
@@ -896,13 +904,15 @@ const App: React.FC = () => {
     return <LoadingSpinner />;
   }
 
-  // Compute allocation match summaries for dashboard order cards
+  // Compute allocation + DX match summaries for dashboard order cards
   const orderMatchSummaries = useMemo(() => {
-    if (!allocationSnapshot?.vehicles || orders.length === 0) {
+    if (orders.length === 0) return new Map<string, OrderMatchSummary>();
+    const vehicles = allocationSnapshot?.vehicles ?? [];
+    if (vehicles.length === 0 && dxTrades.length === 0) {
       return new Map<string, OrderMatchSummary>();
     }
-    return computeOrderMatchSummaries(orders, allocationSnapshot.vehicles);
-  }, [orders, allocationSnapshot]);
+    return computeOrderMatchSummaries(orders, vehicles, dxTrades);
+  }, [orders, allocationSnapshot, dxTrades]);
 
   if (!user) {
     return <Login />;

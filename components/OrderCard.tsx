@@ -432,6 +432,21 @@ const OrderCard: React.FC<OrderCardProps> = ({
                   +{matchSummary.partialCount} close
                 </span>
               )}
+              {matchSummary && matchSummary.dxExactCount > 0 && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                  {matchSummary.dxExactCount} DX match{matchSummary.dxExactCount !== 1 ? "es" : ""}
+                </span>
+              )}
+              {matchSummary && matchSummary.dxPartialCount > 0 && !matchSummary.dxExactCount && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-medium text-amber-600">
+                  {matchSummary.dxPartialCount} DX close
+                </span>
+              )}
+              {matchSummary && matchSummary.dxExactCount > 0 && matchSummary.dxPartialCount > 0 && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-medium text-amber-600">
+                  +{matchSummary.dxPartialCount} DX close
+                </span>
+              )}
             </div>
           </div>
           <div className="flex items-center space-x-3 text-right flex-shrink-0 ml-4">
