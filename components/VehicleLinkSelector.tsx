@@ -199,6 +199,7 @@ export default function VehicleLinkSelector({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search model, color, grade..."
+              aria-label="Search vehicles"
               className="w-full rounded-lg border border-stone-300 bg-stone-50 px-4 py-3 text-sm outline-none ring-indigo-500 transition focus:ring"
             />
           </div>

@@ -299,7 +299,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
                 <label htmlFor="status-buttons" className="block text-sm font-medium text-stone-700">Status*</label>
                 <div id="status-buttons" className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Select status">
                     {activeStatusOptions.map(status => (
-                    <button key={status} type="button" onClick={() => setFormState(s => ({...s, status}))} className={`px-4 py-2 text-sm rounded-full border-2 transition-colors ${formState.status === status ? 'bg-indigo-600 border-indigo-600 text-white font-semibold' : 'bg-white border-stone-300 text-stone-600 hover:bg-stone-100 hover:border-stone-400'}`}>
+                    <button key={status} type="button" aria-pressed={formState.status === status} onClick={() => setFormState(s => ({...s, status}))} className={`px-4 py-2 text-sm rounded-full border-2 transition-colors ${formState.status === status ? 'bg-indigo-600 border-indigo-600 text-white font-semibold' : 'bg-white border-stone-300 text-stone-600 hover:bg-stone-100 hover:border-stone-400'}`}>
                         {status}
                     </button>
                     ))}

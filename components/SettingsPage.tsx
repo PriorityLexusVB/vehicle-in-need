@@ -379,10 +379,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             aria-label="Close modal"
             tabIndex={-1}
           />
-          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
-          <div 
+          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
+          <div
             className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 relative z-10"
-            role="document"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 id="confirm-modal-title" className="text-xl font-bold text-stone-800 mb-2">

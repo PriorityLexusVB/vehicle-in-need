@@ -960,7 +960,7 @@ const App: React.FC = () => {
               user.isManager ? (
                 <div>
                   <DashboardStats {...stats} />
-                  <div className="flex items-center justify-between mb-6">
+                  <div className="flex flex-wrap gap-y-2 items-center justify-between mb-6">
                     <h2 className="text-2xl font-bold text-stone-800">
                       All Orders
                     </h2>

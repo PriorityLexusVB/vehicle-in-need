@@ -200,8 +200,10 @@ const OrderList: React.FC<OrderListProps> = ({
       </div>
 
       <div className="mb-4 border-b border-stone-200">
-        <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+        <div className="-mb-px flex space-x-6" role="tablist" aria-label="Tabs">
           <button
+            role="tab"
+            aria-selected={activeTab === "active"}
             onClick={() => {
               setActiveTab("active");
               setStatusFilter("all");
@@ -220,6 +222,8 @@ const OrderList: React.FC<OrderListProps> = ({
             </span>
           </button>
           <button
+            role="tab"
+            aria-selected={activeTab === "secured"}
             onClick={() => setActiveTab("secured")}
             className={`whitespace-nowrap pb-3 px-3 border-b-2 font-semibold text-sm transition-colors ${
               activeTab === "secured"
@@ -234,7 +238,7 @@ const OrderList: React.FC<OrderListProps> = ({
               {totalSecuredOrders}
             </span>
           </button>
-        </nav>
+        </div>
       </div>
 
       <div className="mb-4">
@@ -276,7 +280,7 @@ const OrderList: React.FC<OrderListProps> = ({
         </div>
       )}
 
-      <div ref={animateRef} className="space-y-4">
+      <div ref={animateRef} role="tabpanel" className="space-y-4">
         {filteredOrders.length > 0 ? (
           filteredOrders.map((order) => (
             <OrderCard

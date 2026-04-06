@@ -326,7 +326,7 @@ const Login: React.FC = () => {
     if (!error) return null;
 
     return (
-      <div className="bg-red-50 border border-red-200 p-4 rounded-lg text-sm mb-6">
+      <div role="alert" className="bg-red-50 border border-red-200 p-4 rounded-lg text-sm mb-6">
         {error.type === "unauthorized-domain" ? (
           <UnauthorizedDomainError />
         ) : (
@@ -352,6 +352,7 @@ const Login: React.FC = () => {
           <button
             onClick={handleLogin}
             disabled={isSigningIn}
+            aria-busy={isSigningIn}
             className="w-full flex items-center justify-center gap-3 bg-white border-2 border-stone-300 hover:bg-stone-100 text-stone-700 font-semibold py-3 px-4 rounded-lg shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <GoogleIcon />

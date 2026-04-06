@@ -165,9 +165,9 @@ const OrderNotes: React.FC<OrderNotesProps> = ({ orderId, currentUser }) => {
   return (
     <div className="bg-stone-50 p-3 rounded-lg border">
       <div className="flex items-center justify-between gap-3 mb-2">
-        <strong className="block text-stone-500 text-sm font-semibold">
+        <h4 className="text-sm font-semibold text-stone-500">
           Process Notes
-        </strong>
+        </h4>
         {loading && <span className="text-xs text-stone-400">Loading…</span>}
       </div>
 

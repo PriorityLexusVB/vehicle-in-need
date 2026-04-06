@@ -112,7 +112,7 @@ describe("OrderList", () => {
     expect(screen.queryByText("Jane Smith")).not.toBeInTheDocument();
 
     // Click secured history tab (renamed from "delivered history")
-    const securedButton = screen.getByRole("button", {
+    const securedButton = screen.getByRole("tab", {
       name: /secured history/i,
     });
     await user.click(securedButton);
@@ -184,7 +184,7 @@ describe("OrderList", () => {
       "i",
     );
     expect(
-      screen.getByRole("button", { name: activeTabRegex }),
+      screen.getByRole("tab", { name: activeTabRegex }),
     ).toBeInTheDocument();
   });
 
@@ -210,7 +210,7 @@ describe("OrderList", () => {
       "i",
     );
     expect(
-      screen.getByRole("button", { name: securedTabRegex }),
+      screen.getByRole("tab", { name: securedTabRegex }),
     ).toBeInTheDocument();
   });
 

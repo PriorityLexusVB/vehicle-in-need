@@ -47,6 +47,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showUnsecureConfirm, setShowUnsecureConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -497,13 +498,31 @@ const OrderCard: React.FC<OrderCardProps> = ({
                     </button>
                   )}
                   {currentUser?.isManager && !isEditing && (
-                    <button
-                      onClick={() => onDeleteOrder(order.id)}
-                      className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-800 font-medium py-3 px-4 rounded-lg hover:bg-red-50 transition-colors"
-                    >
-                      <TrashIcon className="w-4 h-4 text-red-500" />
-                      Delete
-                    </button>
+                    showDeleteConfirm ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-stone-500">Delete this order?</span>
+                        <button
+                          onClick={() => { onDeleteOrder(order.id); setShowDeleteConfirm(false); }}
+                          className="text-xs font-semibold text-red-600 hover:text-red-800"
+                        >
+                          Yes, delete
+                        </button>
+                        <button
+                          onClick={() => setShowDeleteConfirm(false)}
+                          className="text-xs font-semibold text-stone-500 hover:text-stone-700"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setShowDeleteConfirm(true)}
+                        className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-800 font-medium py-2.5 px-4 rounded-lg hover:bg-red-50 transition-colors"
+                      >
+                        <TrashIcon className="w-4 h-4 text-red-500" />
+                        Delete
+                      </button>
+                    )
                   )}
                 </div>
               </div>
@@ -1128,7 +1147,9 @@ const OrderCard: React.FC<OrderCardProps> = ({
                 </div>
               )}
 
-              <OrderNotes orderId={order.id} currentUser={currentUser} />
+              <div className="border-t border-stone-100 mt-4 pt-4">
+                <OrderNotes orderId={order.id} currentUser={currentUser} />
+              </div>
             </div>
           </div>
         </div>

@@ -1040,7 +1040,14 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
     }
   };
 
+  const PDF_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+
   const processPdfFile = async (file: File) => {
+    if (file.size > PDF_MAX_BYTES) {
+      alert(`File is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum allowed size is 10 MB.`);
+      return;
+    }
+
     setIsExtractingPdf(true);
     setSkippedCopyStatus(null);
     setParseStatus(`Extracting text from ${file.name}...`);
@@ -1208,7 +1215,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
       return (
         <div
           key={`${row.key}-${variant.sourceCode ?? ""}-${variant.code}-${variant.grade}-${variant.arrival}-${variant.color}-${variant.bos}`}
-          className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm hover:border-stone-300 transition-colors lg:p-5"
+          className="group rounded-xl border border-stone-200 bg-white p-4 shadow-sm hover:border-stone-300 transition-colors lg:p-5"
           data-testid="allocation-strategy-vehicle-card"
         >
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -1258,9 +1265,9 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                 </div>
               )}
               {partialMatches.length > 0 && (
-                <div className="border-l-2 border-indigo-400 bg-indigo-50/50 rounded-r-md pl-3 py-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Similar Color ({partialMatches.length})</p>
-                  <div className="mt-1.5 space-y-1">
+                <details className="border-l-2 border-indigo-400 bg-indigo-50/50 rounded-r-md">
+                  <summary className="cursor-pointer pl-3 py-2 text-xs font-semibold uppercase tracking-wide text-indigo-700">Similar Color ({partialMatches.length})</summary>
+                  <div className="pl-3 pb-2 mt-1.5 space-y-1">
                     {partialMatches.map((m, index) => (
                       <div key={m.orderId} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-indigo-800">
                         <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-stone-200 text-xs font-bold text-stone-600">{index + 1}</span>
@@ -1274,7 +1281,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                       </div>
                     ))}
                   </div>
-                </div>
+                </details>
               )}
               {modelOnlyMatches.length > 0 && (
                 <details className="rounded-lg border border-stone-200 bg-stone-50">
@@ -1350,6 +1357,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
       </div>
 
       {currentUser.isManager && isManagerPanelOpen && (
+        <div className="overflow-hidden transition-all duration-300 max-h-[2000px] opacity-100" style={{ animation: "slideDown 300ms ease-out" }}>
         <div className="border-b border-stone-200 bg-stone-50 px-6 py-5" data-testid="allocation-manager-panel">
           <h3 className="text-lg font-semibold text-stone-900">Manager Update Panel</h3>
           <p className="mt-1 text-sm text-stone-500">
@@ -1503,14 +1511,16 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
             </div>
           )}
         </div>
+        </div>
       )}
 
       <div className="px-6 py-5">
         <div className="sticky top-16 z-20">
           <div className="flex flex-col gap-4 rounded-xl border border-stone-200 bg-white/90 p-4 backdrop-blur-sm lg:flex-row lg:items-end lg:justify-between">
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2" role="tablist">
               <button
                 onClick={() => setBoardView("strategy")}
+                aria-pressed={boardView === "strategy"}
                 className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                   boardView === "strategy"
                     ? "bg-indigo-600 text-white"
@@ -1521,6 +1531,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
               </button>
               <button
                 onClick={() => setBoardView("log")}
+                aria-pressed={boardView === "log"}
                 className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                   boardView === "log"
                     ? "bg-indigo-600 text-white"
@@ -1544,6 +1555,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Search code, model, customer, salesperson..."
+                aria-label="Search allocation vehicles"
                 className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 outline-none ring-indigo-500 transition focus:ring"
               />
               <select
