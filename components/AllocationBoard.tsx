@@ -644,7 +644,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
 
     void loadDx();
     return () => { cancelled = true; };
-  }, [currentUser.isManager]);
+  }, [currentUser.isManager, sharedDxTrades]);
 
   // Pre-compute order fields once so the O(V*O) loop doesn't repeat work
   const precomputedOrders = useMemo<PrecomputedOrder[]>(() => {
