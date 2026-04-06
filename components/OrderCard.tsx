@@ -417,36 +417,27 @@ const OrderCard: React.FC<OrderCardProps> = ({
                   Vehicle Linked
                 </span>
               )}
-              {matchSummary && matchSummary.exactCount > 0 && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs font-semibold text-emerald-700">
-                  {matchSummary.exactCount} exact match{matchSummary.exactCount !== 1 ? "es" : ""}
-                </span>
-              )}
-              {matchSummary && matchSummary.partialCount > 0 && !matchSummary.exactCount && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-xs font-semibold text-indigo-700">
-                  {matchSummary.partialCount} close match{matchSummary.partialCount !== 1 ? "es" : ""}
-                </span>
-              )}
-              {matchSummary && matchSummary.exactCount > 0 && matchSummary.partialCount > 0 && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-xs font-medium text-indigo-600">
-                  +{matchSummary.partialCount} close
-                </span>
-              )}
-              {matchSummary && matchSummary.dxExactCount > 0 && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-semibold text-amber-700">
-                  {matchSummary.dxExactCount} DX match{matchSummary.dxExactCount !== 1 ? "es" : ""}
-                </span>
-              )}
-              {matchSummary && matchSummary.dxPartialCount > 0 && !matchSummary.dxExactCount && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-medium text-amber-600">
-                  {matchSummary.dxPartialCount} DX close
-                </span>
-              )}
-              {matchSummary && matchSummary.dxExactCount > 0 && matchSummary.dxPartialCount > 0 && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-medium text-amber-600">
-                  +{matchSummary.dxPartialCount} DX close
-                </span>
-              )}
+              {matchSummary && (matchSummary.exactCount > 0 || matchSummary.partialCount > 0) && (() => {
+                const parts: string[] = [];
+                if (matchSummary.exactCount > 0) parts.push(`${matchSummary.exactCount} exact`);
+                if (matchSummary.partialCount > 0) parts.push(`${matchSummary.partialCount} close`);
+                const hasExact = matchSummary.exactCount > 0;
+                return (
+                  <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold ${hasExact ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-indigo-50 border-indigo-200 text-indigo-700"}`}>
+                    {parts.join(", ")}
+                  </span>
+                );
+              })()}
+              {matchSummary && (matchSummary.dxExactCount > 0 || matchSummary.dxPartialCount > 0) && (() => {
+                const parts: string[] = [];
+                if (matchSummary.dxExactCount > 0) parts.push(`${matchSummary.dxExactCount} exact`);
+                if (matchSummary.dxPartialCount > 0) parts.push(`${matchSummary.dxPartialCount} close`);
+                return (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                    DX: {parts.join(", ")}
+                  </span>
+                );
+              })()}
             </div>
           </div>
           <div className="flex items-center space-x-3 text-right flex-shrink-0 ml-4">
@@ -600,7 +591,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                     <button
                       onClick={() => void handleUnlinkVehicle()}
                       disabled={isUnlinking}
-                      className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-red-600 shadow-sm hover:bg-red-50 transition-colors disabled:opacity-50"
+                      className="shrink-0 rounded-lg bg-white px-4 py-2.5 text-xs font-semibold text-red-600 shadow-sm hover:bg-red-50 transition-colors disabled:opacity-50"
                     >
                       {isUnlinking ? "Unlinking..." : "Unlink"}
                     </button>

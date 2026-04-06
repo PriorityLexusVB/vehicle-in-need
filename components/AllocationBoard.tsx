@@ -25,7 +25,6 @@ import { fetchDxSheet, DxTrade } from "../src/utils/dxSheetParser";
 
 interface AllocationBoardProps {
   currentUser: AppUser;
-  variant?: "beta";
 }
 
 type BoardView = "strategy" | "log";
@@ -493,7 +492,7 @@ interface GroupedAllocationRow {
   vehicles: AllocationVehicle[];
 }
 
-const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant }) => {
+const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
   const [latestSnapshot, setLatestSnapshot] = useState<AllocationSnapshot | null>(
     null,
   );
@@ -1342,23 +1341,25 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                         <span className="text-sm font-semibold text-stone-900">{m.customerName}</span>
                         {m.orderDate?.trim() && <span className="font-medium text-xs text-stone-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
                         <span className="text-sm text-stone-500">{m.salesperson || "TBD"}</span>
-                        <span className="text-xs text-stone-400">{m.model} / {m.modelNumber}</span>
+                        <span className="text-xs text-stone-500">{m.model} / {m.modelNumber}</span>
                         <a href={`/#/?highlight=${m.orderId}`} className="text-indigo-500 hover:text-indigo-700 text-xs font-medium" title="View order">View &rarr;</a>
                         {m.allocatedVehicleId === variantVehicleId ? (
                           <button
                             onClick={() => void handleUnlinkOrder(m.orderId)}
                             disabled={linkingOrderId === m.orderId}
-                            className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-200 transition-colors disabled:opacity-50"
+                            aria-label={`Unlink ${m.customerName} from this vehicle`}
+                            className="rounded bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-200 transition-colors disabled:opacity-50"
                           >
                             {linkingOrderId === m.orderId ? "..." : "Linked ✓"}
                           </button>
                         ) : m.allocatedVehicleId ? (
-                          <span className="rounded bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-400">Linked elsewhere</span>
+                          <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-500">Linked elsewhere</span>
                         ) : (
                           <button
                             onClick={() => void handleLinkOrder(m.orderId, variantVehicleId, variantVehicleInfo)}
                             disabled={linkingOrderId === m.orderId}
-                            className="rounded bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-200 transition-colors disabled:opacity-50"
+                            aria-label={`Link ${m.customerName} to this vehicle`}
+                            className="rounded bg-indigo-100 px-2.5 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-200 transition-colors disabled:opacity-50"
                           >
                             {linkingOrderId === m.orderId ? "Linking..." : "Link"}
                           </button>
@@ -1380,23 +1381,25 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                         <span className="text-sm font-semibold text-stone-900">{m.customerName}</span>
                         {m.orderDate?.trim() && <span className="font-medium text-xs text-stone-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
                         <span className="text-sm text-stone-500">{m.salesperson || "TBD"}</span>
-                        <span className="text-xs text-stone-400">{m.model} / {m.modelNumber}</span>
+                        <span className="text-xs text-stone-500">{m.model} / {m.modelNumber}</span>
                         <a href={`/#/?highlight=${m.orderId}`} className="text-indigo-500 hover:text-indigo-700 text-xs font-medium" title="View order">View &rarr;</a>
                         {m.allocatedVehicleId === variantVehicleId ? (
                           <button
                             onClick={() => void handleUnlinkOrder(m.orderId)}
                             disabled={linkingOrderId === m.orderId}
-                            className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-200 transition-colors disabled:opacity-50"
+                            aria-label={`Unlink ${m.customerName} from this vehicle`}
+                            className="rounded bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-200 transition-colors disabled:opacity-50"
                           >
                             {linkingOrderId === m.orderId ? "..." : "Linked ✓"}
                           </button>
                         ) : m.allocatedVehicleId ? (
-                          <span className="rounded bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-400">Linked elsewhere</span>
+                          <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-500">Linked elsewhere</span>
                         ) : (
                           <button
                             onClick={() => void handleLinkOrder(m.orderId, variantVehicleId, variantVehicleInfo)}
                             disabled={linkingOrderId === m.orderId}
-                            className="rounded bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-200 transition-colors disabled:opacity-50"
+                            aria-label={`Link ${m.customerName} to this vehicle`}
+                            className="rounded bg-indigo-100 px-2.5 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-200 transition-colors disabled:opacity-50"
                           >
                             {linkingOrderId === m.orderId ? "Linking..." : "Link"}
                           </button>
@@ -1418,23 +1421,25 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                         <span className="text-sm font-semibold text-stone-900">{m.customerName}</span>
                         {m.orderDate?.trim() && <span className="font-medium text-xs text-stone-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
                         <span className="text-sm text-stone-500">{m.salesperson || "TBD"}</span>
-                        <span className="text-xs text-stone-400">{m.model} / {m.modelNumber}</span>
+                        <span className="text-xs text-stone-500">{m.model} / {m.modelNumber}</span>
                         <a href={`/#/?highlight=${m.orderId}`} className="text-indigo-500 hover:text-indigo-700 text-xs font-medium" title="View order">View &rarr;</a>
                         {m.allocatedVehicleId === variantVehicleId ? (
                           <button
                             onClick={() => void handleUnlinkOrder(m.orderId)}
                             disabled={linkingOrderId === m.orderId}
-                            className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-200 transition-colors disabled:opacity-50"
+                            aria-label={`Unlink ${m.customerName} from this vehicle`}
+                            className="rounded bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-200 transition-colors disabled:opacity-50"
                           >
                             {linkingOrderId === m.orderId ? "..." : "Linked ✓"}
                           </button>
                         ) : m.allocatedVehicleId ? (
-                          <span className="rounded bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-400">Linked elsewhere</span>
+                          <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-500">Linked elsewhere</span>
                         ) : (
                           <button
                             onClick={() => void handleLinkOrder(m.orderId, variantVehicleId, variantVehicleInfo)}
                             disabled={linkingOrderId === m.orderId}
-                            className="rounded bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-200 transition-colors disabled:opacity-50"
+                            aria-label={`Link ${m.customerName} to this vehicle`}
+                            className="rounded bg-indigo-100 px-2.5 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-200 transition-colors disabled:opacity-50"
                           >
                             {linkingOrderId === m.orderId ? "Linking..." : "Link"}
                           </button>
@@ -2051,8 +2056,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                         {trade.direction && (
                           <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
                             trade.direction === "OURS"
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-indigo-100 text-indigo-700"
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-stone-100 text-stone-600"
                           }`}>
                             {trade.direction}
                           </span>

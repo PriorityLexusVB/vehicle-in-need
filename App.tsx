@@ -900,11 +900,8 @@ const App: React.FC = () => {
     await signOut(auth);
   };
 
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
-
   // Compute allocation + DX match summaries for dashboard order cards
+  // Must be above early returns to satisfy rules-of-hooks
   const orderMatchSummaries = useMemo(() => {
     if (orders.length === 0) return new Map<string, OrderMatchSummary>();
     const vehicles = allocationSnapshot?.vehicles ?? [];
@@ -913,6 +910,10 @@ const App: React.FC = () => {
     }
     return computeOrderMatchSummaries(orders, vehicles, dxTrades);
   }, [orders, allocationSnapshot, dxTrades]);
+
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
 
   if (!user) {
     return <Login />;
@@ -1159,7 +1160,7 @@ const App: React.FC = () => {
               />
               <Route
                 path="/allocation-beta"
-                element={<AllocationBoard currentUser={user} variant="beta" />}
+                element={<AllocationBoard currentUser={user} />}
               />
             </>
           )}

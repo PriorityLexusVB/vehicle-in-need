@@ -79,23 +79,3 @@ export async function unlinkVehicleFromOrder(orderId: string): Promise<void> {
     });
   });
 }
-
-/**
- * Build a human-readable vehicle summary string for display.
- */
-export function buildVehicleInfo(vehicle: {
-  model?: string;
-  code?: string;
-  color?: string;
-  interiorColor?: string;
-  arrival?: string;
-  grade?: string;
-}): string {
-  const parts = [
-    vehicle.model || vehicle.code || "Unknown",
-    vehicle.color,
-    vehicle.grade,
-    vehicle.arrival ? `Arriving ${vehicle.arrival}` : null,
-  ].filter(Boolean);
-  return parts.join(" — ");
-}

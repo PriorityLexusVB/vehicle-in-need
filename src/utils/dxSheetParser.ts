@@ -77,9 +77,10 @@ function normalizeYear(raw: string): string {
 }
 
 /**
- * Normalize date like "1/2" to "2026-01-02" (assumes current year context).
+ * Normalize date like "1/2" to "2026-01-02".
+ * Uses current calendar year, not the vehicle model year.
  */
-function normalizeDate(raw: string, year: string): string {
+function normalizeDate(raw: string): string {
   const trimmed = raw.trim();
   if (!trimmed) return "";
 
@@ -87,8 +88,8 @@ function normalizeDate(raw: string, year: string): string {
   if (parts.length === 2) {
     const month = parts[0].padStart(2, "0");
     const day = parts[1].padStart(2, "0");
-    const fullYear = year.length === 4 ? year : `20${year}`;
-    return `${fullYear}-${month}-${day}`;
+    const calendarYear = new Date().getFullYear();
+    return `${calendarYear}-${month}-${day}`;
   }
   return trimmed;
 }
@@ -104,8 +105,8 @@ export function parseDxCsv(csvText: string): DxTrade[] {
   const dataLines = lines.slice(1);
   const trades: DxTrade[] = [];
 
-  for (const line of dataLines) {
-    const fields = parseCsvLine(line);
+  for (let lineIndex = 0; lineIndex < dataLines.length; lineIndex++) {
+    const fields = parseCsvLine(dataLines[lineIndex]);
     const date = fields[0] ?? "";
     const year = fields[1] ?? "";
     const modelNumber = fields[2] ?? "";
@@ -123,8 +124,8 @@ export function parseDxCsv(csvText: string): DxTrade[] {
     const direction = (fields[11] ?? "").toUpperCase().trim();
 
     trades.push({
-      id: stockNumber || `dx-${trades.length}`,
-      date: normalizeDate(date, year),
+      id: stockNumber || `dx-row-${lineIndex}`,
+      date: normalizeDate(date),
       year: normalizeYear(year),
       modelNumber: modelNumber.trim(),
       description: description.trim(),
