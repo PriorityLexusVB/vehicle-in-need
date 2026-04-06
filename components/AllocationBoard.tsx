@@ -849,11 +849,19 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
     }
   }, [modelFilter, modelOptions]);
 
-  // Apply URL params (e.g., ?model=RX350 from dashboard badge click)
+  // Apply URL params (e.g., ?model=RX350&view=matches from dashboard badge click)
   // Fuzzy-matches since order.model may differ from allocation display names
   useEffect(() => {
     if (urlModelApplied.current) return;
     const urlModel = searchParams.get("model");
+    const urlView = searchParams.get("view");
+    let changed = false;
+
+    if (urlView && BOARD_VIEW_OPTIONS.includes(urlView as BoardView)) {
+      setBoardView(urlView as BoardView);
+      changed = true;
+    }
+
     if (urlModel && modelOptions.length > 0) {
       urlModelApplied.current = true;
       const normalizedUrl = urlModel.replace(/\s+/g, "").toUpperCase();
@@ -865,7 +873,12 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
       if (matchedModel) {
         setModelFilter(matchedModel);
       }
+      changed = true;
+    }
+
+    if (changed) {
       searchParams.delete("model");
+      searchParams.delete("view");
       setSearchParams(searchParams, { replace: true });
     }
   }, [modelOptions]); // eslint-disable-line react-hooks/exhaustive-deps -- one-time when options load
