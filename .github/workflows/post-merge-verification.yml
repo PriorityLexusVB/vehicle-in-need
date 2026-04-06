@@ -1,5 +1,11 @@
 name: Post-merge verification
 
+# NOTE: The lint, unit test, and E2E steps overlap with ci.yml which also
+# runs on push to main. This workflow is kept because of the unique
+# "Smoke-check staging URL" step that ci.yml does not have. If the staging
+# check is removed or moved to ci.yml, this workflow's push trigger should
+# be removed to avoid redundant runs.
+
 on:
   push:
     branches: [ main ]

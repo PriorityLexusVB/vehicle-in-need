@@ -52,6 +52,7 @@ const STORAGE_KEYS = {
   boardView: "allocation.boardView",
   searchQuery: "allocation.searchQuery",
   categoryFilter: "allocation.categoryFilter",
+  modelFilter: "allocation.modelFilter",
   rankFilter: "allocation.rankFilter",
   bosFilter: "allocation.bosFilter",
   arrivalGrouping: "allocation.arrivalGrouping",
@@ -515,6 +516,9 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
   const [categoryFilter, setCategoryFilter] = useState(() =>
     getStoredText(STORAGE_KEYS.categoryFilter, "all"),
   );
+  const [modelFilter, setModelFilter] = useState(() =>
+    getStoredText(STORAGE_KEYS.modelFilter, "all"),
+  );
   const [rankFilter, setRankFilter] = useState(() =>
     getStoredText(STORAGE_KEYS.rankFilter, "all"),
   );
@@ -672,6 +676,10 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
   }, [categoryFilter]);
 
   useEffect(() => {
+    persistSetting(STORAGE_KEYS.modelFilter, modelFilter);
+  }, [modelFilter]);
+
+  useEffect(() => {
     persistSetting(STORAGE_KEYS.rankFilter, rankFilter);
   }, [rankFilter]);
 
@@ -713,7 +721,10 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
     };
   }, [skippedCopyStatus]);
 
-  const filteredVehicles = useMemo(() => {
+  /** Vehicles filtered by everything except the model dropdown. Used to derive
+   *  dynamic model options so the dropdown only shows models visible under
+   *  the current category / rank / BOS / search constraints. */
+  const preModelFilteredVehicles = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
 
     return vehicles.filter((vehicle) => {
@@ -736,7 +747,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
         return true;
       }
 
-      return [
+      const vehicleFieldsMatch = [
         vehicle.code,
         vehicle.model,
         vehicle.sourceCode,
@@ -752,8 +763,47 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
         .join(" ")
         .toLowerCase()
         .includes(normalizedQuery);
+
+      if (vehicleFieldsMatch) {
+        return true;
+      }
+
+      const vehicleMatches = orderMatchesByVehicle.get(vehicle.id) ?? [];
+      const orderFieldsMatch = vehicleMatches.some(
+        (m) =>
+          m.customerName.toLowerCase().includes(normalizedQuery) ||
+          m.salesperson.toLowerCase().includes(normalizedQuery),
+      );
+
+      return orderFieldsMatch;
     });
-  }, [vehicles, categoryFilter, rankFilter, bosFilter, searchQuery]);
+  }, [vehicles, categoryFilter, rankFilter, bosFilter, searchQuery, orderMatchesByVehicle]);
+
+  const filteredVehicles = useMemo(() => {
+    if (modelFilter === "all") {
+      return preModelFilteredVehicles;
+    }
+    return preModelFilteredVehicles.filter(
+      (vehicle) => getDisplayModel(vehicle.model, vehicle.code) === modelFilter,
+    );
+  }, [preModelFilteredVehicles, modelFilter]);
+
+  const modelOptions = useMemo<{ value: string; label: string }[]>(() => {
+    const counts = new Map<string, number>();
+    for (const vehicle of preModelFilteredVehicles) {
+      const model = getDisplayModel(vehicle.model, vehicle.code);
+      counts.set(model, (counts.get(model) ?? 0) + vehicle.quantity);
+    }
+    return [...counts.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([model, count]) => ({ value: model, label: `${model} (${count})` }));
+  }, [preModelFilteredVehicles]);
+
+  useEffect(() => {
+    if (modelFilter !== "all" && !modelOptions.some((opt) => opt.value === modelFilter)) {
+      setModelFilter("all");
+    }
+  }, [modelFilter, modelOptions]);
 
   const matchedFilteredVehicles = useMemo(
     () => filteredVehicles.filter((v) => matchedVehicleIds.has(v.id)),
@@ -1496,14 +1546,14 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
               onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
               className="flex w-full items-center justify-between rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 lg:hidden"
             >
-              <span>Filters {categoryFilter !== "all" || rankFilter !== "all" || bosFilter !== "all" || searchQuery ? "•" : ""}</span>
+              <span>Filters {categoryFilter !== "all" || modelFilter !== "all" || rankFilter !== "all" || bosFilter !== "all" || searchQuery ? "•" : ""}</span>
               <svg className={`h-4 w-4 transition-transform ${mobileFiltersOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
             </button>
-            <div className={`${mobileFiltersOpen ? "grid" : "hidden"} gap-2 sm:grid-cols-2 lg:grid lg:grid-cols-6 lg:gap-3`}>
+            <div className={`${mobileFiltersOpen ? "grid" : "hidden"} gap-2 sm:grid-cols-2 lg:grid lg:grid-cols-7 lg:gap-3`}>
               <input
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search code, grade, category..."
+                placeholder="Search code, model, customer, salesperson..."
                 className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
               />
               <select
@@ -1516,6 +1566,19 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
                 {categoryOptions.map((category) => (
                   <option key={category} value={category}>
                     {category}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={modelFilter}
+                onChange={(event) => setModelFilter(event.target.value)}
+                aria-label="Filter by model"
+                className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring"
+              >
+                <option value="all">All Models</option>
+                {modelOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
                   </option>
                 ))}
               </select>

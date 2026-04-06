@@ -36,6 +36,11 @@ const CSVUpload: React.FC<CSVUploadProps> = ({ onUpload, currentUser, onClose })
       return;
     }
 
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File is too large. Maximum size is 10 MB.');
+      return;
+    }
+
     try {
       const content = await file.text();
       const parseResult = parseCSVToOrders(content);

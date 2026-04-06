@@ -14,6 +14,7 @@ import {
   serverTimestamp,
   updateDoc,
   deleteDoc,
+  writeBatch,
   Timestamp,
   FirestoreError,
   QuerySnapshot,
@@ -671,55 +672,70 @@ const App: React.FC = () => {
         console.log("Orders to import:", csvOrders.length);
       }
 
-      for (const csvOrder of csvOrders) {
+      // Build order payloads
+      const ordersRef = collection(db, "orders");
+      const payloads = csvOrders.map((csvOrder) => {
+        const orderPayload: Record<string, unknown> = {
+          salesperson: csvOrder.salesperson,
+          manager: csvOrder.manager,
+          date: csvOrder.date,
+          customerName: csvOrder.customerName,
+          dealNumber: csvOrder.dealNumber,
+          year: csvOrder.year,
+          model: csvOrder.model,
+          modelNumber: csvOrder.modelNumber,
+          exteriorColor1: csvOrder.exteriorColor1,
+          interiorColor1: csvOrder.interiorColor1,
+          msrp: csvOrder.msrp,
+          depositAmount: csvOrder.depositAmount,
+          status: csvOrder.status,
+          options: csvOrder.options,
+          notes: csvOrder.notes,
+          createdAt: serverTimestamp(),
+          createdByUid: user.uid,
+          createdByEmail: user.email,
+        };
+
+        // Add optional fields only if they have values
+        if (csvOrder.stockNumber)
+          orderPayload.stockNumber = csvOrder.stockNumber;
+        if (csvOrder.vin) orderPayload.vin = csvOrder.vin;
+        if (csvOrder.exteriorColor2)
+          orderPayload.exteriorColor2 = csvOrder.exteriorColor2;
+        if (csvOrder.exteriorColor3)
+          orderPayload.exteriorColor3 = csvOrder.exteriorColor3;
+        if (csvOrder.interiorColor2)
+          orderPayload.interiorColor2 = csvOrder.interiorColor2;
+        if (csvOrder.interiorColor3)
+          orderPayload.interiorColor3 = csvOrder.interiorColor3;
+        if (csvOrder.sellingPrice !== undefined)
+          orderPayload.sellingPrice = csvOrder.sellingPrice;
+        if (csvOrder.gross !== undefined)
+          orderPayload.gross = csvOrder.gross;
+
+        return orderPayload;
+      });
+
+      // Firestore batches support max 500 operations — split if needed
+      const BATCH_LIMIT = 500;
+      for (let i = 0; i < payloads.length; i += BATCH_LIMIT) {
+        const chunk = payloads.slice(i, i + BATCH_LIMIT);
+        const batch = writeBatch(db);
+
+        for (const payload of chunk) {
+          const newDocRef = doc(ordersRef);
+          batch.set(newDocRef, payload);
+        }
+
         try {
-          // Convert CSVOrderData to the format expected by Firestore
-          // Remove undefined values and source field (source is metadata, not part of Order type)
-          const orderPayload: Record<string, unknown> = {
-            salesperson: csvOrder.salesperson,
-            manager: csvOrder.manager,
-            date: csvOrder.date,
-            customerName: csvOrder.customerName,
-            dealNumber: csvOrder.dealNumber,
-            year: csvOrder.year,
-            model: csvOrder.model,
-            modelNumber: csvOrder.modelNumber,
-            exteriorColor1: csvOrder.exteriorColor1,
-            interiorColor1: csvOrder.interiorColor1,
-            msrp: csvOrder.msrp,
-            depositAmount: csvOrder.depositAmount,
-            status: csvOrder.status,
-            options: csvOrder.options,
-            notes: csvOrder.notes,
-            createdAt: serverTimestamp(),
-            createdByUid: user.uid,
-            createdByEmail: user.email,
-          };
-
-          // Add optional fields only if they have values
-          if (csvOrder.stockNumber)
-            orderPayload.stockNumber = csvOrder.stockNumber;
-          if (csvOrder.vin) orderPayload.vin = csvOrder.vin;
-          if (csvOrder.exteriorColor2)
-            orderPayload.exteriorColor2 = csvOrder.exteriorColor2;
-          if (csvOrder.exteriorColor3)
-            orderPayload.exteriorColor3 = csvOrder.exteriorColor3;
-          if (csvOrder.interiorColor2)
-            orderPayload.interiorColor2 = csvOrder.interiorColor2;
-          if (csvOrder.interiorColor3)
-            orderPayload.interiorColor3 = csvOrder.interiorColor3;
-          if (csvOrder.sellingPrice !== undefined)
-            orderPayload.sellingPrice = csvOrder.sellingPrice;
-          if (csvOrder.gross !== undefined) orderPayload.gross = csvOrder.gross;
-
-          await addDoc(collection(db, "orders"), orderPayload);
-          success++;
+          await batch.commit();
+          success += chunk.length;
         } catch (error) {
           console.error(
-            `Failed to import order for ${csvOrder.customerName}:`,
+            `Failed to import batch starting at index ${i}:`,
             error,
           );
-          failed++;
+          failed += chunk.length;
         }
       }
 

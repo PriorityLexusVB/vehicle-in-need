@@ -217,6 +217,12 @@ jobs:
           echo "- Reason: GCP authentication failed in this workflow run." >> $GITHUB_STEP_SUMMARY
           echo "- Action: verify Workload Identity Federation/provider or set GCP_SA_KEY." >> $GITHUB_STEP_SUMMARY
 
+      - name: Fail on auth failure for push events
+        if: steps.auth-status.outputs.auth_ok != 'true' && github.event_name == 'push'
+        run: |
+          echo "::error::GCP authentication failed on push to main. Container image was NOT built."
+          exit 1
+
       - name: Set up Cloud SDK
         if: steps.auth-status.outputs.auth_ok == 'true'
         uses: google-github-actions/setup-gcloud@v3
