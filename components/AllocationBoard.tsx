@@ -28,7 +28,7 @@ interface AllocationBoardProps {
   currentUser: AppUser;
 }
 
-type BoardView = "strategy" | "log";
+type BoardView = "strategy" | "log" | "matches";
 type ArrivalGroupingMode = "bucket" | "date";
 type SortMode = "priority" | "arrival" | "units" | "model";
 type BosFilter = "all" | "y" | "n";
@@ -48,7 +48,7 @@ const ARRIVAL_BUCKET_ORDER: Record<string, number> = {
   UNSCHEDULED: 3,
 };
 
-const BOARD_VIEW_OPTIONS: BoardView[] = ["strategy", "log"];
+const BOARD_VIEW_OPTIONS: BoardView[] = ["strategy", "log", "matches"];
 const ARRIVAL_GROUPING_OPTIONS: ArrivalGroupingMode[] = ["bucket", "date"];
 const SORT_MODE_OPTIONS: SortMode[] = ["priority", "arrival", "units", "model"];
 const BOS_FILTER_OPTIONS: BosFilter[] = ["all", "y", "n"];
@@ -1715,6 +1715,19 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
               >
                 Full Log View
               </button>
+              {currentUser.isManager && matchSummary.matchedVehicleCount > 0 && (
+                <button
+                  onClick={() => setBoardView("matches")}
+                  aria-pressed={boardView === "matches"}
+                  className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+                    boardView === "matches"
+                      ? "bg-emerald-600 text-white"
+                      : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                  }`}
+                >
+                  Matches ({matchSummary.matchedOrderCount})
+                </button>
+              )}
             </div>
 
             {/* Mobile: show filter toggle button */}
@@ -1837,7 +1850,24 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
               </span>
             </div>
 
-            {boardView === "strategy" ? (
+            {boardView === "matches" && currentUser.isManager ? (
+              <div className="mt-5 space-y-4" data-testid="allocation-matches-view">
+                <p className="text-sm text-stone-500">
+                  Showing only vehicles that match customer pre-orders — {matchSummary.matchedVehicleCount} vehicle{matchSummary.matchedVehicleCount !== 1 ? "s" : ""} matching {matchSummary.matchedOrderCount} order{matchSummary.matchedOrderCount !== 1 ? "s" : ""}.
+                </p>
+                {matchedGroupedRows.length > 0 ? (
+                  <div className="space-y-3">
+                    {matchedGroupedRows.map((row) => (
+                      <div key={row.key}>
+                        {renderVariantCards(row)}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="py-8 text-center text-sm text-stone-400">No matching vehicles found with current filters.</p>
+                )}
+              </div>
+            ) : boardView === "strategy" ? (
               <div className="mt-5 space-y-6" data-testid="allocation-strategy-view">
                 {matchedGroupedRows.length > 0 && (
                   <div>
