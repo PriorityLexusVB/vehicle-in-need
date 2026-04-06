@@ -248,14 +248,27 @@ const OrderList: React.FC<OrderListProps> = ({
         <label htmlFor="searchQuery" className="sr-only">
           Search Orders
         </label>
-        <input
-          type="text"
-          id="searchQuery"
-          placeholder="Search by Customer, Salesperson, Model, Deal #, Stock #, or VIN..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="block w-full p-2.5 border border-stone-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-        />
+        <div className="relative">
+          <input
+            type="text"
+            id="searchQuery"
+            placeholder="Search by Customer, Salesperson, Model, Deal #, Stock #, or VIN..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="block w-full p-2.5 pr-9 border border-stone-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 transition-colors"
+              aria-label="Clear search"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
       {activeTab === "active" && (
@@ -266,7 +279,7 @@ const OrderList: React.FC<OrderListProps> = ({
             </span>
             <button
               onClick={() => setStatusFilter("all")}
-              className={`px-4 py-2.5 text-xs rounded-full border-2 font-semibold ${statusFilter === "all" ? "bg-indigo-600 border-indigo-600 text-white" : "bg-white border-stone-300 text-stone-600 hover:bg-stone-100"}`}
+              className={`px-3 py-1.5 text-xs rounded-full border font-semibold transition-colors ${statusFilter === "all" ? "bg-indigo-600 border-indigo-600 text-white" : "bg-white border-stone-300 text-stone-600 hover:bg-stone-100"}`}
             >
               All Active
             </button>
@@ -274,7 +287,7 @@ const OrderList: React.FC<OrderListProps> = ({
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
-                className={`px-4 py-2.5 text-xs rounded-full border-2 font-semibold ${statusFilter === status ? "bg-indigo-600 border-indigo-600 text-white" : "bg-white border-stone-300 text-stone-600 hover:bg-stone-100"}`}
+                className={`px-3 py-1.5 text-xs rounded-full border font-semibold transition-colors ${statusFilter === status ? "bg-indigo-600 border-indigo-600 text-white" : "bg-white border-stone-300 text-stone-600 hover:bg-stone-100"}`}
               >
                 {status}
               </button>
@@ -315,12 +328,18 @@ const OrderList: React.FC<OrderListProps> = ({
               />
             </svg>
             <h3 className="mt-2 text-sm font-semibold text-stone-900">
-              No Orders Found
+              {searchQuery
+                ? "No matching orders"
+                : activeTab === "active"
+                  ? "No active orders"
+                  : "No secured orders yet"}
             </h3>
             <p className="mt-1 text-sm text-stone-500">
-              {activeTab === "active"
-                ? "No active orders match your current search and filters."
-                : "There are no secured orders to display."}
+              {searchQuery
+                ? `No results for "${searchQuery}". Try a different search term.`
+                : activeTab === "active"
+                  ? "Orders will appear here once created."
+                  : "Completed orders will move here when marked as secured."}
             </p>
           </div>
         )}

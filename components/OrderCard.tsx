@@ -353,7 +353,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
     >
       <button
         type="button"
-        className="w-full p-4 cursor-pointer text-left"
+        className="w-full p-4 cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded-xl"
         onClick={() => setIsExpanded(!isExpanded)}
         aria-label="Toggle order details"
         aria-expanded={isExpanded}
@@ -367,33 +367,21 @@ const OrderCard: React.FC<OrderCardProps> = ({
             >
               {order.customerName}
             </h3>
-            <p className="text-sm text-stone-500 font-medium">
+            <p className="text-sm text-stone-600 font-semibold">
               {order.year} {order.model}
             </p>
             {/* Summary row for at-a-glance details */}
             <p
-              className="text-xs text-stone-400 mt-0.5 flex flex-wrap items-center gap-x-1"
+              className="text-xs text-stone-400 mt-0.5 truncate"
               data-testid="order-card-summary-row"
             >
-              <span data-testid="order-card-summary-salesperson">
-                {formatSalesperson(order)}
-              </span>
-              <span aria-hidden="true">•</span>
-              <span data-testid="order-card-summary-deposit">
-                Deposit: {formatDeposit(order)}
-              </span>
-              <span aria-hidden="true">•</span>
-              <span data-testid="order-card-summary-ext-color">
-                {formatExtColor(order)}
-              </span>
-              {modelNumberDisplay && (
-                <>
-                  <span aria-hidden="true">•</span>
-                  <span data-testid="order-card-summary-model">
-                    {modelNumberDisplay}
-                  </span>
-                </>
-              )}
+              <span data-testid="order-card-summary-salesperson">{formatSalesperson(order)}</span>
+              {" · "}
+              <span data-testid="order-card-summary-deposit">Dep: {formatDeposit(order)}</span>
+              {" · "}
+              <span data-testid="order-card-summary-ext-color">{formatExtColor(order)}</span>
+              {modelNumberDisplay && <><span> · </span><span data-testid="order-card-summary-model">{modelNumberDisplay}</span></>}
+              {typeof order.msrp === "number" && <><span> · </span><span>${order.msrp.toLocaleString()}</span></>}
             </p>
             {order.latestNoteText && (
               <p
@@ -411,7 +399,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <StatusBadge status={order.status} />
               {order.allocatedVehicleId && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
                   <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                   </svg>
@@ -507,7 +495,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                   )}
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   {/* Single "Mark Secured" button replaces the two-step Received/Delivered flow */}
                   {currentUser?.isManager && isActive && !isEditing && (
                     <button

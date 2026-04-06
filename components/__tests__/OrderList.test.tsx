@@ -160,7 +160,7 @@ describe("OrderList", () => {
     const searchInput = screen.getByPlaceholderText(/search/i);
     await user.type(searchInput, "NonexistentCustomer");
 
-    expect(screen.getByText(/no orders found/i)).toBeInTheDocument();
+    expect(screen.getByText(/no matching orders|no active orders/i)).toBeInTheDocument();
   });
 
   it("displays order count in active tab", () => {
@@ -225,7 +225,7 @@ describe("OrderList", () => {
       />,
     );
 
-    expect(screen.getByText(/no orders found/i)).toBeInTheDocument();
+    expect(screen.getByText(/no matching orders|no active orders/i)).toBeInTheDocument();
   });
 
   it("only shows Factory Order and Dealer Exchange filter buttons (Locate removed)", () => {
