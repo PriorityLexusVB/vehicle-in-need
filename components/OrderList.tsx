@@ -49,10 +49,12 @@ const OrderList: React.FC<OrderListProps> = ({
       const searchMatch =
         searchQuery === "" ||
         order.customerName.toLowerCase().includes(lowercasedQuery) ||
-        (order.dealNumber &&
-          order.dealNumber.toLowerCase().includes(lowercasedQuery)) ||
-        (order.stockNumber &&
-          order.stockNumber.toLowerCase().includes(lowercasedQuery)) ||
+        (order.salesperson && order.salesperson.toLowerCase().includes(lowercasedQuery)) ||
+        (order.model && order.model.toLowerCase().includes(lowercasedQuery)) ||
+        (order.year && order.year.toLowerCase().includes(lowercasedQuery)) ||
+        (order.modelNumber && order.modelNumber.toLowerCase().includes(lowercasedQuery)) ||
+        (order.dealNumber && order.dealNumber.toLowerCase().includes(lowercasedQuery)) ||
+        (order.stockNumber && order.stockNumber.toLowerCase().includes(lowercasedQuery)) ||
         (order.vin && order.vin.toLowerCase().includes(lowercasedQuery));
       if (!searchMatch) return false;
 
@@ -242,7 +244,7 @@ const OrderList: React.FC<OrderListProps> = ({
         <input
           type="text"
           id="searchQuery"
-          placeholder="Search by Customer, Deal #, Stock #, or VIN..."
+          placeholder="Search by Customer, Salesperson, Model, Deal #, Stock #, or VIN..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="block w-full p-2.5 border border-slate-300 rounded-lg shadow-sm focus:ring-sky-500 focus:border-sky-500 sm:text-sm"
