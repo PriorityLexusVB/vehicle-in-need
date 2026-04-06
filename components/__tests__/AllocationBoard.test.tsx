@@ -528,7 +528,7 @@ describe('AllocationBoard', () => {
     expect(screen.getAllByText('TX500H').length).toBeGreaterThan(0);
     expect(screen.getAllByText('RX350').length).toBeGreaterThan(0);
 
-    await user.click(screen.getByRole('button', { name: 'Full Log View' }));
+    await user.click(screen.getByRole('tab', { name: 'Full Log View' }));
 
     const logView = screen.getByTestId('allocation-log-view');
     expect(logView).toBeInTheDocument();
@@ -575,7 +575,7 @@ describe('AllocationBoard', () => {
       expect(screen.getByTestId('allocation-strategy-view')).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole('button', { name: 'Full Log View' }));
+    await user.click(screen.getByRole('tab', { name: 'Full Log View' }));
 
     const logView = screen.getByTestId('allocation-log-view');
     const bodyRows = within(logView).getAllByRole('row').slice(1);
@@ -681,7 +681,7 @@ describe('AllocationBoard', () => {
         expect(screen.getByText('John Smith')).toBeInTheDocument();
       });
 
-      await user.click(screen.getByRole('button', { name: 'Full Log View' }));
+      await user.click(screen.getByRole('tab', { name: 'Full Log View' }));
 
       const logView = screen.getByTestId('allocation-log-view');
       expect(within(logView).getByText('John Smith')).toBeInTheDocument();

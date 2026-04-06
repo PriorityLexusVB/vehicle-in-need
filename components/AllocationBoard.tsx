@@ -1362,7 +1362,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
             )}
           </div>
 
-          <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+          <dl className="mt-3 grid grid-cols-2 gap-2 text-sm lg:grid-cols-4 lg:gap-3">
             {detailRows.map((detail) => (
               <div key={`${row.key}-${variant.code}-${detail.label}`} className="rounded-md bg-stone-50 px-3 py-2">
                 <dt className="text-xs uppercase tracking-wide text-stone-400">{detail.label}</dt>
@@ -1384,7 +1384,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                         {m.orderDate?.trim() && <span className="font-medium text-xs text-stone-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
                         <span className="text-sm text-stone-500">{m.salesperson || "TBD"}</span>
                         <span className="text-xs text-stone-500">{m.model} / {m.modelNumber}</span>
-                        <a href={`/#/?highlight=${m.orderId}`} className="text-indigo-500 hover:text-indigo-700 text-xs font-medium" title="View order">View &rarr;</a>
+                        <a href={`/#/?highlight=${m.orderId}`} className="rounded bg-stone-100 px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors" title="View order">View</a>
                         {m.allocatedVehicleId === variantVehicleId ? (
                           <button
                             onClick={() => void handleUnlinkOrder(m.orderId)}
@@ -1424,7 +1424,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                         {m.orderDate?.trim() && <span className="font-medium text-xs text-stone-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
                         <span className="text-sm text-stone-500">{m.salesperson || "TBD"}</span>
                         <span className="text-xs text-stone-500">{m.model} / {m.modelNumber}</span>
-                        <a href={`/#/?highlight=${m.orderId}`} className="text-indigo-500 hover:text-indigo-700 text-xs font-medium" title="View order">View &rarr;</a>
+                        <a href={`/#/?highlight=${m.orderId}`} className="rounded bg-stone-100 px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors" title="View order">View</a>
                         {m.allocatedVehicleId === variantVehicleId ? (
                           <button
                             onClick={() => void handleUnlinkOrder(m.orderId)}
@@ -1464,7 +1464,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                         {m.orderDate?.trim() && <span className="font-medium text-xs text-stone-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
                         <span className="text-sm text-stone-500">{m.salesperson || "TBD"}</span>
                         <span className="text-xs text-stone-500">{m.model} / {m.modelNumber}</span>
-                        <a href={`/#/?highlight=${m.orderId}`} className="text-indigo-500 hover:text-indigo-700 text-xs font-medium" title="View order">View &rarr;</a>
+                        <a href={`/#/?highlight=${m.orderId}`} className="rounded bg-stone-100 px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors" title="View order">View</a>
                         {m.allocatedVehicleId === variantVehicleId ? (
                           <button
                             onClick={() => void handleUnlinkOrder(m.orderId)}
@@ -1508,7 +1508,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
 
   return (
     <section className="rounded-xl border border-stone-200 bg-white text-stone-800 shadow-sm">
-      <div className="border-b border-stone-200 px-6 py-5">
+      <div className="border-b border-stone-200 px-4 sm:px-6 py-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.24em] text-indigo-600">Live Allocation</p>
@@ -1587,7 +1587,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                 data-testid="allocation-pdf-input"
               />
               <p className="text-xs text-stone-400">
-                Drag and drop a Toyota allocation PDF here, or use Upload PDF.
+                Drag and drop a Lexus allocation PDF here, or use Upload PDF.
               </p>
             </div>
           </div>
@@ -1705,13 +1705,14 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
         </div>
       )}
 
-      <div className="px-6 py-5">
+      <div className="px-4 sm:px-6 py-5">
         <div className="sticky top-16 z-20">
           <div className="flex flex-col gap-4 rounded-xl border border-stone-200 bg-white/90 p-4 backdrop-blur-sm lg:flex-row lg:items-end lg:justify-between">
             <div className="flex flex-wrap items-center gap-2" role="tablist">
               <button
                 onClick={() => setBoardView("strategy")}
-                aria-pressed={boardView === "strategy"}
+                role="tab"
+                aria-selected={boardView === "strategy"}
                 className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                   boardView === "strategy"
                     ? "bg-indigo-600 text-white"
@@ -1722,7 +1723,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
               </button>
               <button
                 onClick={() => setBoardView("log")}
-                aria-pressed={boardView === "log"}
+                role="tab"
+                aria-selected={boardView === "log"}
                 className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                   boardView === "log"
                     ? "bg-indigo-600 text-white"
@@ -1734,7 +1736,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
               {currentUser.isManager && matchSummary.matchedVehicleCount > 0 && (
                 <button
                   onClick={() => setBoardView("matches")}
-                  aria-pressed={boardView === "matches"}
+                  role="tab"
+                  aria-selected={boardView === "matches"}
                   className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                     boardView === "matches"
                       ? "bg-emerald-600 text-white"
@@ -1751,7 +1754,10 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
               onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
               className="flex w-full items-center justify-between rounded-lg border border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-stone-700 lg:hidden"
             >
-              <span>Filters {categoryFilter !== "all" || modelFilter !== "all" || rankFilter !== "all" || bosFilter !== "all" || searchQuery ? "•" : ""}</span>
+              {(() => {
+                const activeCount = [categoryFilter !== "all", modelFilter !== "all", rankFilter !== "all", bosFilter !== "all", searchQuery.trim() !== ""].filter(Boolean).length;
+                return <span>Filters{activeCount > 0 ? ` (${activeCount})` : ""}</span>;
+              })()}
               <svg className={`h-4 w-4 transition-transform ${mobileFiltersOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
             </button>
             <div className={`${mobileFiltersOpen ? "grid" : "hidden"} gap-2 sm:grid-cols-2 lg:grid lg:grid-cols-7 lg:gap-3`}>
@@ -1834,10 +1840,43 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
                 <option value="model">Sort: Model</option>
               </select>
             </div>
+            {(categoryFilter !== "all" || modelFilter !== "all" || rankFilter !== "all" || bosFilter !== "all" || searchQuery) && (
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setCategoryFilter("all");
+                  setModelFilter("all");
+                  setRankFilter("all");
+                  setBosFilter("all");
+                }}
+                className="mt-2 text-xs font-medium text-indigo-600 hover:text-indigo-800 transition-colors lg:mt-0 lg:ml-auto"
+              >
+                Clear all filters
+              </button>
+            )}
           </div>
         </div>
 
-        {isLoading && <p className="mt-6 text-sm text-stone-500">Loading live allocation...</p>}
+        {isLoading && (
+          <div className="mt-6 space-y-4" aria-busy="true" aria-label="Loading allocation data">
+            <div className="flex gap-6">
+              <div className="h-6 w-20 animate-pulse rounded bg-stone-200" />
+              <div className="h-6 w-24 animate-pulse rounded bg-stone-200" />
+              <div className="h-6 w-32 animate-pulse rounded bg-stone-200" />
+            </div>
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="rounded-xl border border-stone-200 p-4 space-y-3">
+                <div className="h-5 w-48 animate-pulse rounded bg-stone-200" />
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                  <div className="h-12 animate-pulse rounded bg-stone-100" />
+                  <div className="h-12 animate-pulse rounded bg-stone-100" />
+                  <div className="h-12 animate-pulse rounded bg-stone-100" />
+                  <div className="h-12 animate-pulse rounded bg-stone-100" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
         {loadError && <p className="mt-6 text-sm text-red-600">{loadError}</p>}
 
         {!isLoading && !loadError && vehicles.length === 0 && (
@@ -2042,14 +2081,29 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
 
       {/* DX Pipeline — live data from Google Sheet */}
       {currentUser.isManager && (dxTrades.length > 0 || dxLoading || dxError) && (
-        <div className="mt-8">
-          <div className="mb-3 flex items-center gap-3 border-b border-amber-200 pb-2">
+        <div className="mt-8 px-6 pb-6">
+          <div className="mb-3 flex flex-wrap items-center gap-3 border-b border-amber-200 pb-2">
             <h3 className="text-lg font-bold text-amber-700">Dealer Exchange Pipeline</h3>
-            {dxTrades.length > 0 && (
-              <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-700">
-                {dxTrades.length}
-              </span>
-            )}
+            {dxTrades.length > 0 && (() => {
+              const incoming = dxTrades.filter(t => t.direction === "OURS").length;
+              const outgoing = dxTrades.filter(t => t.direction === "THEIRS").length;
+              const totalFee = dxTrades.reduce((sum, t) => sum + (Number(t.dxFee) || 0), 0);
+              return (
+                <>
+                  <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-700">
+                    {dxTrades.length}
+                  </span>
+                  <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs text-amber-600">
+                    {incoming} in / {outgoing} out
+                  </span>
+                  {totalFee > 0 && (
+                    <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-xs text-stone-600">
+                      ${totalFee.toLocaleString()} fees
+                    </span>
+                  )}
+                </>
+              );
+            })()}
             {dxLastFetched && (
               <span className="ml-auto text-xs text-stone-400">
                 Sheet synced {dxLastFetched.toLocaleTimeString()}
