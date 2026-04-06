@@ -1805,6 +1805,10 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                     setModelFilter("all");
                     setRankFilter("all");
                     setBosFilter("all");
+                    // Also clear persisted filter state so it doesn't stick across visits
+                    for (const key of Object.values(STORAGE_KEYS)) {
+                      window.localStorage.removeItem(key);
+                    }
                   }}
                   className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-100 transition-colors"
                 >
@@ -2089,24 +2093,15 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                                 vehicle.arrival ? `Arriving ${vehicle.arrival}` : null,
                               ].filter(Boolean).join(" — ");
                               return (
-                                <div className="space-y-1">
-                                  {matched.map((m) => (
-                                    <div key={m.orderId} className="flex flex-wrap items-center gap-1 text-xs">
-                                      <span className="font-semibold text-stone-900">{m.customerName}</span>
-                                      {m.orderDate?.trim() && <span className="font-medium text-xs text-stone-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
-                                      <span className="text-stone-500">({m.salesperson || "TBD"})</span>
-                                      {m.colorMatch === "exact" && (
-                                        <span className="rounded bg-emerald-100 px-1 py-0.5 text-xs font-semibold text-emerald-700">EXT</span>
-                                      )}
-                                      {m.colorMatch === "partial" && (
-                                        <span className="rounded bg-indigo-100 px-1 py-0.5 text-xs font-semibold text-indigo-700">~EXT</span>
-                                      )}
-                                      {m.interiorMatch === "exact" && (
-                                        <span className="rounded bg-emerald-100 px-1 py-0.5 text-xs font-semibold text-emerald-700">INT</span>
-                                      )}
-                                      {m.interiorMatch === "partial" && (
-                                        <span className="rounded bg-indigo-100 px-1 py-0.5 text-xs font-semibold text-indigo-700">~INT</span>
-                                      )}
+                                <div className="space-y-1.5">
+                                  {matched.map((m) => {
+                                    const matchDot = (m.colorMatch === "exact" || m.interiorMatch === "exact")
+                                      ? "bg-emerald-500" : (m.colorMatch === "partial" || m.interiorMatch === "partial")
+                                      ? "bg-indigo-400" : "bg-stone-300";
+                                    return (
+                                    <div key={m.orderId} className="flex items-center gap-1.5 text-xs">
+                                      <span className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${matchDot}`} />
+                                      <span className="font-semibold text-stone-900 truncate max-w-[100px]">{m.customerName}</span>
                                       {m.allocatedVehicleId === vehicle.id ? (
                                         <button
                                           onClick={() => void handleUnlinkOrder(m.orderId)}
@@ -2127,7 +2122,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                                         </button>
                                       )}
                                     </div>
-                                  ))}
+                                    );
+                                  })}
                                 </div>
                               );
                             })()}

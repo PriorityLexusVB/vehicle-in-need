@@ -55,6 +55,11 @@ const MatchPreviewModal: React.FC<MatchPreviewModalProps> = ({
         <div className="border-b border-stone-100 px-5 py-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Customer Preferences</p>
           <div className="flex flex-wrap gap-2 text-sm">
+            {order.modelNumber && (
+              <span className="rounded bg-stone-100 px-2 py-0.5 text-stone-700">
+                Model #: {order.modelNumber}
+              </span>
+            )}
             <span className="rounded bg-stone-100 px-2 py-0.5 text-stone-700">
               Ext: {order.exteriorColor1}
               {order.exteriorColor2 ? `, ${order.exteriorColor2}` : ""}
@@ -65,11 +70,6 @@ const MatchPreviewModal: React.FC<MatchPreviewModalProps> = ({
               {order.interiorColor2 ? `, ${order.interiorColor2}` : ""}
               {order.interiorColor3 ? `, ${order.interiorColor3}` : ""}
             </span>
-            {order.modelNumber && (
-              <span className="rounded bg-stone-100 px-2 py-0.5 text-stone-700">
-                Model #: {order.modelNumber}
-              </span>
-            )}
           </div>
         </div>
 
@@ -87,19 +87,19 @@ const MatchPreviewModal: React.FC<MatchPreviewModalProps> = ({
                 {matchSummary.exactCount > 0 && (
                   <p className="flex items-center gap-2">
                     <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
-                    {matchSummary.exactCount} exact color match{matchSummary.exactCount !== 1 ? "es" : ""}
+                    {matchSummary.exactCount} exact
                   </p>
                 )}
                 {matchSummary.partialCount > 0 && (
                   <p className="flex items-center gap-2">
                     <span className="inline-block h-2 w-2 rounded-full bg-indigo-500" />
-                    {matchSummary.partialCount} close color match{matchSummary.partialCount !== 1 ? "es" : ""}
+                    {matchSummary.partialCount} close
                   </p>
                 )}
                 {matchSummary.modelOnlyCount > 0 && (
                   <p className="flex items-center gap-2">
                     <span className="inline-block h-2 w-2 rounded-full bg-stone-300" />
-                    {matchSummary.modelOnlyCount} model-only
+                    {matchSummary.modelOnlyCount} model only
                   </p>
                 )}
               </div>
@@ -125,13 +125,13 @@ const MatchPreviewModal: React.FC<MatchPreviewModalProps> = ({
                 {matchSummary.dxExactCount > 0 && (
                   <p className="flex items-center gap-2">
                     <span className="inline-block h-2 w-2 rounded-full bg-amber-500" />
-                    {matchSummary.dxExactCount} exact color match{matchSummary.dxExactCount !== 1 ? "es" : ""}
+                    {matchSummary.dxExactCount} exact
                   </p>
                 )}
                 {matchSummary.dxPartialCount > 0 && (
                   <p className="flex items-center gap-2">
                     <span className="inline-block h-2 w-2 rounded-full bg-amber-300" />
-                    {matchSummary.dxPartialCount} close color match{matchSummary.dxPartialCount !== 1 ? "es" : ""}
+                    {matchSummary.dxPartialCount} close
                   </p>
                 )}
               </div>
