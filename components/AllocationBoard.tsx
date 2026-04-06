@@ -851,22 +851,31 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
 
   // Apply URL params (e.g., ?model=RX350&view=matches from dashboard badge click)
   // Stashes params on first render, applies model filter once modelOptions load
-  const stashedUrlParams = useRef<{ model: string | null; view: string | null } | null>(null);
+  const stashedUrlParams = useRef<{ model: string | null; view: string | null; scrollTo: string | null } | null>(null);
   useEffect(() => {
     if (urlModelApplied.current) return;
     // On first run, stash the URL params before they get cleared by navigation
     if (!stashedUrlParams.current) {
       const urlModel = searchParams.get("model");
       const urlView = searchParams.get("view");
-      if (urlModel || urlView) {
-        stashedUrlParams.current = { model: urlModel, view: urlView };
+      const urlScrollTo = searchParams.get("scrollTo");
+      if (urlModel || urlView || urlScrollTo) {
+        stashedUrlParams.current = { model: urlModel, view: urlView, scrollTo: urlScrollTo };
         // Apply view immediately (no dependency on data loading)
         if (urlView && BOARD_VIEW_OPTIONS.includes(urlView as BoardView)) {
           setBoardView(urlView as BoardView);
         }
+        // Scroll to target after a short delay (let DOM render)
+        if (urlScrollTo) {
+          setTimeout(() => {
+            const el = document.getElementById(urlScrollTo);
+            el?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }, 500);
+        }
         // Clean URL params
         searchParams.delete("model");
         searchParams.delete("view");
+        searchParams.delete("scrollTo");
         setSearchParams(searchParams, { replace: true });
       }
     }
@@ -2081,7 +2090,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
 
       {/* DX Pipeline — live data from Google Sheet */}
       {currentUser.isManager && (dxTrades.length > 0 || dxLoading || dxError) && (
-        <div className="mt-8 px-6 pb-6">
+        <div id="dx-pipeline" className="mt-8 px-6 pb-6">
           <div className="mb-3 flex flex-wrap items-center gap-3 border-b border-amber-200 pb-2">
             <h3 className="text-lg font-bold text-amber-700">Dealer Exchange Pipeline</h3>
             {dxTrades.length > 0 && (() => {

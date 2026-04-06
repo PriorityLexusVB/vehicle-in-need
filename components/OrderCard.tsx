@@ -431,7 +431,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                 // DX badge: link to matches view but don't filter by model (DX trades aren't in allocation filter)
                 return (
                   <Link
-                    to="/allocation?view=matches"
+                    to="/allocation?scrollTo=dx-pipeline"
                     onClick={(e) => e.stopPropagation()}
                     className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-semibold text-amber-700 hover:shadow-sm transition-shadow"
                     title="View matching DX vehicles on allocation board"
