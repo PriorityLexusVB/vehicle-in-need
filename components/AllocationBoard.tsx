@@ -870,8 +870,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
         // Highlight DX model matches
         if (urlDxModel) {
           setHighlightDxModel(urlDxModel.replace(/\s+/g, "").toUpperCase());
-          // Auto-clear highlight after 5 seconds
-          setTimeout(() => setHighlightDxModel(null), 5000);
+          // Auto-clear highlight after 30 seconds
+          setTimeout(() => setHighlightDxModel(null), 30000);
         }
         // Scroll to target after a short delay (let DOM render)
         if (urlScrollTo) {
