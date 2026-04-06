@@ -53,9 +53,6 @@ const ARRIVAL_BUCKET_ORDER: Record<string, number> = {
 };
 
 const BOARD_VIEW_OPTIONS: BoardView[] = ["strategy", "log", "matches"];
-const ARRIVAL_GROUPING_OPTIONS: ArrivalGroupingMode[] = ["bucket", "date"];
-const SORT_MODE_OPTIONS: SortMode[] = ["priority", "arrival", "units", "model"];
-const BOS_FILTER_OPTIONS: BosFilter[] = ["all", "y", "n"];
 
 const STORAGE_KEYS = {
   boardView: "allocation.boardView",
@@ -240,30 +237,6 @@ function formatBuildBucketLabel(value: string): string {
   return value;
 }
 
-function getStoredEnum<T extends string>(
-  key: string,
-  allowedValues: readonly T[],
-  fallback: T,
-): T {
-  if (typeof window === "undefined") {
-    return fallback;
-  }
-
-  const stored = window.localStorage.getItem(key);
-  if (!stored || !allowedValues.includes(stored as T)) {
-    return fallback;
-  }
-
-  return stored as T;
-}
-
-function getStoredText(key: string, fallback: string): string {
-  if (typeof window === "undefined") {
-    return fallback;
-  }
-
-  return window.localStorage.getItem(key) ?? fallback;
-}
 
 function persistSetting(key: string, value: string): void {
   if (typeof window === "undefined") {

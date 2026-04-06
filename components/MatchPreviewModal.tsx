@@ -26,9 +26,14 @@ const MatchPreviewModal: React.FC<MatchPreviewModalProps> = ({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      role="presentation"
       onClick={onClose}
+      onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
     >
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- stopPropagation prevents backdrop close when clicking dialog content */}
       <div
+        role="dialog"
+        aria-label={`Match preview for ${order.customerName}`}
         className="w-full max-w-lg rounded-2xl bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
