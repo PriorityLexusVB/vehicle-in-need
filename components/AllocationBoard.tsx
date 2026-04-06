@@ -819,10 +819,18 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
     const sorted = [...filteredVehicles];
 
     sorted.sort((first, second) => {
-      // Always sort matched vehicles to the top
-      const firstHasMatch = (orderMatchesByVehicle.get(first.id)?.length ?? 0) > 0;
-      const secondHasMatch = (orderMatchesByVehicle.get(second.id)?.length ?? 0) > 0;
-      if (firstHasMatch !== secondHasMatch) return firstHasMatch ? -1 : 1;
+      // Sort by best match quality: exact color (6) > partial (2) > model-only (0) > no match (-1)
+      const firstMatches = orderMatchesByVehicle.get(first.id) ?? [];
+      const secondMatches = orderMatchesByVehicle.get(second.id) ?? [];
+      const firstBestScore = firstMatches.length > 0 ? Math.max(...firstMatches.map(matchScore)) : -1;
+      const secondBestScore = secondMatches.length > 0 ? Math.max(...secondMatches.map(matchScore)) : -1;
+      if (firstBestScore !== secondBestScore) return secondBestScore - firstBestScore;
+
+      // Within same match tier, group by model code
+      if (firstBestScore >= 0 && secondBestScore >= 0) {
+        const codeDiff = first.code.localeCompare(second.code);
+        if (codeDiff !== 0) return codeDiff;
+      }
 
       switch (sortMode) {
         case "arrival": {
