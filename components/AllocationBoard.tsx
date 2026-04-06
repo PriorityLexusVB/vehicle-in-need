@@ -680,15 +680,28 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
     [orderMatchesByVehicle],
   );
 
+  // Vehicles with at least one color match (exact or partial ext/int) — excludes model-only
+  const colorMatchedVehicleIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const [vehicleId, matches] of orderMatchesByVehicle) {
+      if (matches.some((m) => m.colorMatch || m.interiorMatch)) {
+        ids.add(vehicleId);
+      }
+    }
+    return ids;
+  }, [orderMatchesByVehicle]);
+
   const matchSummary = useMemo(() => {
     const uniqueOrderIds = new Set<string>();
     for (const matched of orderMatchesByVehicle.values()) {
       for (const m of matched) {
-        uniqueOrderIds.add(m.orderId);
+        if (m.colorMatch || m.interiorMatch) {
+          uniqueOrderIds.add(m.orderId);
+        }
       }
     }
-    return { matchedVehicleCount: matchedVehicleIds.size, matchedOrderCount: uniqueOrderIds.size };
-  }, [orderMatchesByVehicle, matchedVehicleIds]);
+    return { matchedVehicleCount: colorMatchedVehicleIds.size, matchedOrderCount: uniqueOrderIds.size };
+  }, [orderMatchesByVehicle, colorMatchedVehicleIds]);
 
   const vehicles = useMemo<AllocationVehicle[]>(
     () => latestSnapshot?.vehicles ?? [],
@@ -905,8 +918,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser }) => {
   }, [modelOptions]); // eslint-disable-line react-hooks/exhaustive-deps -- one-time when options load
 
   const matchedFilteredVehicles = useMemo(
-    () => filteredVehicles.filter((v) => matchedVehicleIds.has(v.id)),
-    [filteredVehicles, matchedVehicleIds],
+    () => filteredVehicles.filter((v) => colorMatchedVehicleIds.has(v.id)),
+    [filteredVehicles, colorMatchedVehicleIds],
   );
 
   const unmatchedFilteredVehicles = useMemo(
