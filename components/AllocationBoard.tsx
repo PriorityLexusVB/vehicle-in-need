@@ -1820,7 +1820,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                   Matches ({matchSummary.matchedOrderCount})
                 </button>
               )}
-              {(categoryFilter !== "all" || modelFilter !== "all" || rankFilter !== "all" || bosFilter !== "all" || searchQuery) && (
+              {(categoryFilter !== "all" || modelFilter !== "all" || rankFilter !== "all" || bosFilter !== "all" || searchQuery || boardView === "matches") && (
                 <button
                   onClick={() => {
                     setSearchQuery("");
@@ -1828,14 +1828,14 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                     setModelFilter("all");
                     setRankFilter("all");
                     setBosFilter("all");
-                    // Also clear persisted filter state so it doesn't stick across visits
+                    setBoardView("strategy");
                     for (const key of Object.values(STORAGE_KEYS)) {
                       window.localStorage.removeItem(key);
                     }
                   }}
                   className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-100 transition-colors"
                 >
-                  Clear Filters
+                  Reset View
                 </button>
               )}
             </div>
