@@ -21,6 +21,7 @@ import {
   linkVehicleToOrder,
   unlinkVehicleFromOrder,
 } from "../services/orderLinkingService";
+import { fetchDxSheet, DxTrade } from "../src/utils/dxSheetParser";
 
 interface AllocationBoardProps {
   currentUser: AppUser;
@@ -500,6 +501,11 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
   const [loadError, setLoadError] = useState<string | null>(null);
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
 
+  const [dxTrades, setDxTrades] = useState<DxTrade[]>([]);
+  const [dxLoading, setDxLoading] = useState(false);
+  const [dxError, setDxError] = useState<string | null>(null);
+  const [dxLastFetched, setDxLastFetched] = useState<Date | null>(null);
+
   const [isManagerPanelOpen, setIsManagerPanelOpen] = useState(false);
   const [sourceText, setSourceText] = useState("");
   const [parsedResult, setParsedResult] = useState<ParsedAllocationResult | null>(
@@ -569,6 +575,33 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
       return;
     }
     return subscribeActiveOrders((orders) => setActiveOrders(orders));
+  }, [currentUser.isManager]);
+
+  // Fetch DX sheet data (managers only)
+  useEffect(() => {
+    if (!currentUser.isManager) return;
+    let cancelled = false;
+
+    const loadDx = async () => {
+      setDxLoading(true);
+      setDxError(null);
+      try {
+        const trades = await fetchDxSheet();
+        if (!cancelled) {
+          setDxTrades(trades);
+          setDxLastFetched(new Date());
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setDxError(err instanceof Error ? err.message : "Failed to load DX sheet");
+        }
+      } finally {
+        if (!cancelled) setDxLoading(false);
+      }
+    };
+
+    void loadDx();
+    return () => { cancelled = true; };
   }, [currentUser.isManager]);
 
   // Pre-compute order fields once so the O(V*O) loop doesn't repeat work
@@ -1930,59 +1963,113 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, variant 
         )}
       </div>
 
-      {/* DX Pipeline — shows Dealer Exchange orders alongside allocation (beta only) */}
-      {variant === "beta" && currentUser.isManager && (() => {
-        const dxOrders = activeOrders.filter(o => o.status === "Dealer Exchange");
-        if (dxOrders.length === 0) return null;
-        return (
-          <div className="mt-8">
-            <div className="mb-3 flex items-center gap-3 border-b border-amber-200 pb-2">
-              <h3 className="text-lg font-bold text-amber-700">Dealer Exchange Pipeline</h3>
+      {/* DX Pipeline — live data from Google Sheet */}
+      {currentUser.isManager && (dxTrades.length > 0 || dxLoading || dxError) && (
+        <div className="mt-8">
+          <div className="mb-3 flex items-center gap-3 border-b border-amber-200 pb-2">
+            <h3 className="text-lg font-bold text-amber-700">Dealer Exchange Pipeline</h3>
+            {dxTrades.length > 0 && (
               <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-700">
-                {dxOrders.length}
+                {dxTrades.length}
               </span>
-            </div>
-            <p className="mb-4 text-xs text-stone-500">
-              Incoming vehicles from other dealers — not in factory allocation. These arrive when the trade is completed.
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {dxOrders.map((order) => (
-                <div
-                  key={order.id}
-                  className="rounded-xl border border-amber-200 bg-amber-50/50 p-4"
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-stone-800">
-                        {order.year} {order.model}
-                      </p>
-                      <p className="text-xs text-stone-500">
-                        {order.customerName}
-                      </p>
-                    </div>
-                    <span className="rounded-full bg-amber-200 px-2 py-0.5 text-xs font-semibold text-amber-800">
-                      DX
-                    </span>
-                  </div>
-                  <div className="mt-3 space-y-1 text-xs text-stone-600">
-                    {order.exteriorColor1 && (
-                      <p>Color: {order.exteriorColor1}{order.exteriorColor2 ? `, ${order.exteriorColor2}` : ""}</p>
-                    )}
-                    {order.salesperson && <p>Salesperson: {order.salesperson}</p>}
-                    {order.dxDealerName && <p>Trading Dealer: {order.dxDealerName}</p>}
-                    {order.dxExpectedArrival && <p>Expected: {order.dxExpectedArrival}</p>}
-                    {order.vin && <p>VIN: {order.vin}</p>}
-                    {order.stockNumber && <p>Stock: {order.stockNumber}</p>}
-                    {!order.vin && !order.stockNumber && (
-                      <p className="italic text-stone-400">No VIN/Stock yet — awaiting arrival</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+            )}
+            {dxLastFetched && (
+              <span className="ml-auto text-xs text-stone-400">
+                Sheet synced {dxLastFetched.toLocaleTimeString()}
+              </span>
+            )}
+            <button
+              onClick={() => {
+                void (async () => {
+                  setDxLoading(true);
+                  setDxError(null);
+                  try {
+                    const trades = await fetchDxSheet();
+                    setDxTrades(trades);
+                    setDxLastFetched(new Date());
+                  } catch (err) {
+                    setDxError(err instanceof Error ? err.message : "Failed to refresh");
+                  } finally {
+                    setDxLoading(false);
+                  }
+                })();
+              }}
+              disabled={dxLoading}
+              className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-100 transition-colors disabled:opacity-50"
+            >
+              {dxLoading ? "Syncing..." : "Refresh"}
+            </button>
           </div>
-        );
-      })()}
+
+          {dxError && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {dxError}
+            </div>
+          )}
+
+          {dxLoading && dxTrades.length === 0 && (
+            <p className="py-6 text-center text-sm text-stone-400">Loading DX sheet...</p>
+          )}
+
+          {dxTrades.length > 0 && (
+            <div className="overflow-x-auto rounded-xl border border-stone-200">
+              <table className="min-w-full text-sm">
+                <thead className="bg-amber-50 text-left text-xs font-semibold uppercase tracking-wide text-amber-700">
+                  <tr>
+                    <th scope="col" className="px-3 py-3">Date</th>
+                    <th scope="col" className="px-3 py-3">Model</th>
+                    <th scope="col" className="px-3 py-3">Color</th>
+                    <th scope="col" className="px-3 py-3">VIN</th>
+                    <th scope="col" className="px-3 py-3">Trading Dealer</th>
+                    <th scope="col" className="px-3 py-3">Stock #</th>
+                    <th scope="col" className="px-3 py-3">Direction</th>
+                    <th scope="col" className="px-3 py-3">Sales</th>
+                    <th scope="col" className="px-3 py-3">Fee</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-200 bg-white">
+                  {dxTrades.map((trade) => (
+                    <tr key={trade.id} className="text-stone-700 hover:bg-stone-50 transition-colors">
+                      <td className="whitespace-nowrap px-3 py-2 text-stone-500">{trade.date}</td>
+                      <td className="px-3 py-2">
+                        <span className="font-semibold text-stone-900">{trade.description || trade.modelNumber}</span>
+                        <span className="ml-1 text-xs text-stone-400">{trade.year}</span>
+                      </td>
+                      <td className="px-3 py-2">
+                        {trade.colorCode && <span className="mr-1 text-xs text-stone-400">{trade.colorCode}</span>}
+                        {trade.color}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2 font-mono text-xs text-stone-500">
+                        {trade.vinIncoming || "—"}
+                      </td>
+                      <td className="px-3 py-2">
+                        <span className="font-medium">{trade.tradingDealer}</span>
+                        {trade.dealerCode && <span className="ml-1 text-xs text-stone-400">({trade.dealerCode})</span>}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2 font-mono text-xs">{trade.stockNumber}</td>
+                      <td className="px-3 py-2">
+                        {trade.direction && (
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                            trade.direction === "OURS"
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-indigo-100 text-indigo-700"
+                          }`}>
+                            {trade.direction}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-stone-600">{trade.salesConsultant || "—"}</td>
+                      <td className="px-3 py-2 text-stone-500">
+                        {trade.dxFee ? `$${trade.dxFee}` : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
     </section>
   );
 };
