@@ -136,7 +136,7 @@ const MatchPreviewModal: React.FC<MatchPreviewModalProps> = ({
                 )}
               </div>
               <Link
-                to={`/allocation?scrollTo=dx-pipeline&dxModel=${encodeURIComponent(order.model)}`}
+                to={`/allocation?view=log&scrollTo=dx-pipeline&dxModel=${encodeURIComponent(order.model)}`}
                 onClick={onClose}
                 className="mt-2 inline-flex items-center gap-1 rounded-lg bg-amber-600 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-700 transition-colors"
               >
