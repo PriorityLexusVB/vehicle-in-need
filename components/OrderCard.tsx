@@ -13,6 +13,7 @@ import {
 } from "../src/utils/orderCardFormatters";
 import OrderNotes from "./OrderNotes";
 import { unlinkVehicleFromOrder } from "../services/orderLinkingService";
+import { OrderMatchSummary } from "../src/utils/orderMatchSummary";
 
 interface OrderCardProps {
   order: Order;
@@ -24,6 +25,7 @@ interface OrderCardProps {
   onDeleteOrder: (orderId: string) => void;
   currentUser?: AppUser | null;
   highlighted?: boolean;
+  matchSummary?: OrderMatchSummary;
 }
 
 const DetailItem: React.FC<{ label: string; children: React.ReactNode }> = ({
@@ -45,6 +47,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
   onDeleteOrder,
   currentUser,
   highlighted,
+  matchSummary,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showUnsecureConfirm, setShowUnsecureConfirm] = useState(false);
@@ -412,6 +415,21 @@ const OrderCard: React.FC<OrderCardProps> = ({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                   </svg>
                   Vehicle Linked
+                </span>
+              )}
+              {matchSummary && matchSummary.exactCount > 0 && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                  {matchSummary.exactCount} exact match{matchSummary.exactCount !== 1 ? "es" : ""}
+                </span>
+              )}
+              {matchSummary && matchSummary.partialCount > 0 && !matchSummary.exactCount && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-xs font-semibold text-indigo-700">
+                  {matchSummary.partialCount} close match{matchSummary.partialCount !== 1 ? "es" : ""}
+                </span>
+              )}
+              {matchSummary && matchSummary.exactCount > 0 && matchSummary.partialCount > 0 && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-xs font-medium text-indigo-600">
+                  +{matchSummary.partialCount} close
                 </span>
               )}
             </div>

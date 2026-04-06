@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Routes, Route, useLocation, useSearchParams, Navigate } from "react-router-dom";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import {
@@ -44,6 +44,9 @@ import { PlusIcon } from "./components/icons/PlusIcon";
 import { CloseIcon } from "./components/icons/CloseIcon";
 import { UploadIcon } from "./components/icons/UploadIcon";
 import { useRegisterSW } from "virtual:pwa-register/react";
+import { subscribeLatestAllocationSnapshot } from "./services/allocationService";
+import { AllocationSnapshot } from "./src/utils/allocationTypes";
+import { computeOrderMatchSummaries, OrderMatchSummary } from "./src/utils/orderMatchSummary";
 
 // Type guard to verify if an error is a FirestoreError.
 // Checks for FirestoreError-specific properties to distinguish from generic errors.
@@ -83,6 +86,7 @@ const App: React.FC = () => {
   const [isOrderFormVisible, setIsOrderFormVisible] = useState(false);
   const [isCSVUploadVisible, setIsCSVUploadVisible] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
+  const [allocationSnapshot, setAllocationSnapshot] = useState<AllocationSnapshot | null>(null);
   const [stats, setStats] = useState({
     totalActive: 0,
     awaitingAction: 0,
@@ -518,10 +522,20 @@ const App: React.FC = () => {
       );
     }
 
+    // Subscribe to allocation snapshot for match badges on dashboard cards (managers only)
+    let unsubscribeAllocation: (() => void) | undefined;
+    if (user.isManager) {
+      unsubscribeAllocation = subscribeLatestAllocationSnapshot(
+        (snapshot) => setAllocationSnapshot(snapshot),
+        () => setAllocationSnapshot(null),
+      );
+    }
+
     return () => {
       unsubscribeOrders?.();
       unsubscribeOrdersFallback?.();
       unsubscribeUsers?.();
+      unsubscribeAllocation?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- processOrdersData is stable (useCallback with []), mapDocsToOrders/isFirestoreError are module-level functions
   }, [user]);
@@ -882,6 +896,14 @@ const App: React.FC = () => {
     return <LoadingSpinner />;
   }
 
+  // Compute allocation match summaries for dashboard order cards
+  const orderMatchSummaries = useMemo(() => {
+    if (!allocationSnapshot?.vehicles || orders.length === 0) {
+      return new Map<string, OrderMatchSummary>();
+    }
+    return computeOrderMatchSummaries(orders, allocationSnapshot.vehicles);
+  }, [orders, allocationSnapshot]);
+
   if (!user) {
     return <Login />;
   }
@@ -1041,6 +1063,7 @@ const App: React.FC = () => {
                     onDeleteOrder={handleDeleteOrder}
                     currentUser={user}
                     highlightedOrderId={highlightedOrderId}
+                    orderMatchSummaries={orderMatchSummaries}
                   />
                 </div>
               ) : (
@@ -1087,6 +1110,7 @@ const App: React.FC = () => {
                       onDeleteOrder={handleDeleteOrder}
                       currentUser={user}
                       highlightedOrderId={highlightedOrderId}
+                      orderMatchSummaries={orderMatchSummaries}
                     />
                   </div>
                 </div>
@@ -1115,6 +1139,7 @@ const App: React.FC = () => {
                         currentUser={user}
                         variant="beta"
                         highlightedOrderId={highlightedOrderId}
+                        orderMatchSummaries={orderMatchSummaries}
                       />
                     </div>
                   ) : (

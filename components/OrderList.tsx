@@ -8,6 +8,7 @@ import {
   isActiveStatus,
 } from "../constants";
 import { DownloadIcon } from "./icons/DownloadIcon";
+import { OrderMatchSummary } from "../src/utils/orderMatchSummary";
 
 interface OrderListProps {
   orders: Order[];
@@ -20,6 +21,7 @@ interface OrderListProps {
   currentUser?: AppUser | null;
   variant?: "beta";
   highlightedOrderId?: string | null;
+  orderMatchSummaries?: Map<string, OrderMatchSummary>;
 }
 
 const OrderList: React.FC<OrderListProps> = ({
@@ -29,6 +31,7 @@ const OrderList: React.FC<OrderListProps> = ({
   onDeleteOrder,
   currentUser,
   highlightedOrderId,
+  orderMatchSummaries,
 }) => {
   const [animateRef] = useAutoAnimate();
   const [searchQuery, setSearchQuery] = useState("");
@@ -291,6 +294,7 @@ const OrderList: React.FC<OrderListProps> = ({
               onDeleteOrder={onDeleteOrder}
               currentUser={currentUser}
               highlighted={highlightedOrderId === order.id}
+              matchSummary={orderMatchSummaries?.get(order.id)}
             />
           ))
         ) : (
