@@ -116,7 +116,8 @@ steps:
       - --platform=managed
       - --allow-unauthenticated
       - --service-account=pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com
-      - --set-env-vars=NODE_ENV=production,APP_VERSION=${SHORT_SHA},BUILD_TIME=${BUILD_ID}
+      - --set-env-vars=NODE_ENV=production,APP_VERSION=${SHORT_SHA},BUILD_TIME=${BUILD_ID},CALLDRIP_ENABLE_WEBHOOK=true
+      - --set-secrets=API_KEY=vehicle-in-need-gemini:latest,CALLDRIP_WEBHOOK_SECRET=calldrip-webhook-secret:latest
 
   # Verify CSS is deployed and accessible
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
