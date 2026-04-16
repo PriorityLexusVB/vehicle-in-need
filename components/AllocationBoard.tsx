@@ -670,16 +670,42 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
     [orderMatchesByVehicle],
   );
 
-  // Vehicles with at least one color match (exact or partial ext/int) — excludes model-only
-  const colorMatchedVehicleIds = useMemo(() => {
+  // Vehicles formally linked to a customer order via allocatedVehicleId
+  const linkedVehicleIds = useMemo(() => {
     const ids = new Set<string>();
     for (const [vehicleId, matches] of orderMatchesByVehicle) {
-      if (matches.some((m) => m.colorMatch || m.interiorMatch)) {
+      if (matches.some((m) => m.allocatedVehicleId === vehicleId)) {
         ids.add(vehicleId);
       }
     }
     return ids;
   }, [orderMatchesByVehicle]);
+
+  // Vehicles with at least one color match (exact or partial ext/int) — excludes model-only and already-linked
+  const colorMatchedVehicleIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const [vehicleId, matches] of orderMatchesByVehicle) {
+      // Exclude vehicles already formally linked — they appear in the "Linked to Customer" section
+      if (linkedVehicleIds.has(vehicleId)) continue;
+      if (matches.some((m) => m.colorMatch || m.interiorMatch)) {
+        ids.add(vehicleId);
+      }
+    }
+    return ids;
+  }, [orderMatchesByVehicle, linkedVehicleIds]);
+
+  const linkedSummary = useMemo(() => {
+    const uniqueOrderIds = new Set<string>();
+    for (const [vehicleId, matched] of orderMatchesByVehicle) {
+      if (!linkedVehicleIds.has(vehicleId)) continue;
+      for (const m of matched) {
+        if (m.allocatedVehicleId === vehicleId) {
+          uniqueOrderIds.add(m.orderId);
+        }
+      }
+    }
+    return { linkedVehicleCount: linkedVehicleIds.size, linkedOrderCount: uniqueOrderIds.size };
+  }, [orderMatchesByVehicle, linkedVehicleIds]);
 
   const matchSummary = useMemo(() => {
     const uniqueOrderIds = new Set<string>();
@@ -911,11 +937,19 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
     }
   }, [modelOptions]); // eslint-disable-line react-hooks/exhaustive-deps -- one-time when options load
 
+  // Formally linked: has an order where allocatedVehicleId === vehicle.id
+  const linkedFilteredVehicles = useMemo(
+    () => filteredVehicles.filter((v) => linkedVehicleIds.has(v.id)),
+    [filteredVehicles, linkedVehicleIds],
+  );
+
+  // Color-matched but not yet formally linked
   const matchedFilteredVehicles = useMemo(
     () => filteredVehicles.filter((v) => colorMatchedVehicleIds.has(v.id)),
     [filteredVehicles, colorMatchedVehicleIds],
   );
 
+  // No match at all (excludes linked and color-matched)
   const unmatchedFilteredVehicles = useMemo(
     () => filteredVehicles.filter((v) => !matchedVehicleIds.has(v.id)),
     [filteredVehicles, matchedVehicleIds],
@@ -1065,6 +1099,11 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
       }
     });
   };
+
+  const linkedGroupedRows = useMemo<GroupedAllocationRow[]>(
+    () => buildGroupedRows(linkedFilteredVehicles),
+    [linkedFilteredVehicles, arrivalGroupingMode, sortMode],
+  );
 
   const matchedGroupedRows = useMemo<GroupedAllocationRow[]>(
     () => buildGroupedRows(matchedFilteredVehicles),
@@ -1967,6 +2006,26 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
               </div>
             ) : boardView === "strategy" ? (
               <div className="mt-5 space-y-6" data-testid="allocation-strategy-view">
+                {linkedGroupedRows.length > 0 && (
+                  <div>
+                    <div className="mb-3 flex items-center gap-3 border-b border-indigo-200 pb-2">
+                      <h3 className="text-lg font-bold text-indigo-700">Linked to Customer</h3>
+                      <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-bold text-indigo-700">
+                        {linkedFilteredVehicles.length} vehicle{linkedFilteredVehicles.length === 1 ? "" : "s"} / {linkedSummary.linkedOrderCount} order{linkedSummary.linkedOrderCount === 1 ? "" : "s"}
+                      </span>
+                    </div>
+                    <div className="space-y-3">
+                      {linkedGroupedRows.map((row) => (
+                        <article key={`linked-${row.key}`} className="grid gap-3">
+                          <div className="grid gap-3">
+                            {renderVariantCards(row)}
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {matchedGroupedRows.length > 0 && (
                   <div>
                     <div className="mb-3 flex items-center gap-3 border-b border-emerald-200 pb-2">
@@ -2008,7 +2067,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                 )}
 
                 {/* Fallback: no vehicles at all after filtering */}
-                {matchedGroupedRows.length === 0 && unmatchedGroupedRows.length === 0 && (
+                {linkedGroupedRows.length === 0 && matchedGroupedRows.length === 0 && unmatchedGroupedRows.length === 0 && (
                   <p className="mt-4 text-center text-sm text-stone-400">No vehicles match current filters.</p>
                 )}
               </div>
