@@ -155,6 +155,26 @@ service cloud.firestore {
     }
 
     /****************************************
+     * Vehicle Links Collection
+     *
+     * vehicle_links/{vehicleId}
+     * One document per allocation vehicle; enforces one-order-per-vehicle
+     * uniqueness at the database level. Written and deleted atomically
+     * alongside order updates via orderLinkingService.ts transactions.
+     *
+     * Shape: { orderId: string, linkedAt: Timestamp, linkedByUid: string }
+     ****************************************/
+    match /vehicle_links/{vehicleId} {
+      // Any authenticated user may read (needed for AllocationBoard display)
+      allow read: if isSignedIn();
+
+      // Only managers may write (create, update, delete)
+      // Field-level consistency is enforced by the service transaction,
+      // not by these rules — keeping rules minimal and stable.
+      allow create, update, delete: if isManager();
+    }
+
+    /****************************************
      * Orders Collection
      ****************************************/
     match /orders/{orderId} {
