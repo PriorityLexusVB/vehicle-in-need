@@ -5,7 +5,7 @@
 # This Dockerfile is optimized for Google Cloud Build. Use `gcloud builds submit` for production builds.
 #
 # Stage 1: Build the application
-FROM node:20 AS builder
+FROM node:22 AS builder
 
 # Set build arguments for version info (no API keys)
 ARG COMMIT_SHA=unknown
@@ -49,7 +49,7 @@ RUN CSS_COUNT=$(find dist/assets -name "*.css" -type f | wc -l) && \
     ls -lh dist/assets/*.css
 
 # Stage 2: Production runtime with Node.js
-FROM node:20-alpine
+FROM node:22-alpine
 
 # Set NODE_ENV to production
 ENV NODE_ENV=production
