@@ -118,6 +118,20 @@ if (process.env.CALLDRIP_ENABLE_WEBHOOK === "true") {
 }
 // ── End CallDrip routes ────────────────────────────────────────────
 
+// ── CallDrip → Supabase aggregator (feature-gated) ─────────────────
+// Separate flag so the job can be enabled independently of the webhook.
+if (process.env.CALLDRIP_ENABLE_AGGREGATE === "true") {
+  const calldripAggregate = require("./src/handlers/calldripAggregate.cjs");
+  app.use("/jobs/calldrip-aggregate", calldripAggregate);
+  console.log("[CallDrip] Aggregator route mounted (CALLDRIP_ENABLE_AGGREGATE=true)");
+} else {
+  app.post("/jobs/calldrip-aggregate", (_req, res) => {
+    res.status(503).json({ error: "CallDrip aggregator is not enabled on this instance" });
+  });
+  console.log("[CallDrip] Aggregator route disabled (CALLDRIP_ENABLE_AGGREGATE not set)");
+}
+// ── End aggregator route ──────────────────────────────────────────
+
 // Serve static files from dist directory
 const distPath = path.join(__dirname, "..", "dist");
 app.use(

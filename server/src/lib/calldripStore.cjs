@@ -93,6 +93,8 @@ async function storeRawEvent(payload, headersSummary) {
     payload,                       // full raw body
     headersSummary,                // sanitized headers
     processed: false,              // future: set true after bdc-agent export
+    processed_by_supabase: false,  // flipped by calldripAggregate.cjs after
+                                   // successful kpi-ingest forward.
   };
 
   await docRef.set(doc);
