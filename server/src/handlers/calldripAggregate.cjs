@@ -80,14 +80,25 @@ function toETDateString(date) {
 
 /**
  * Extract the event date (YYYY-MM-DD in ET) from a webhook payload.
- * Walks several known shapes in order of preference.
+ *
+ * CallDrip webhook payload has `call.date_received` as a plain YYYY-MM-DD
+ * string already in ET, so no timezone arithmetic is needed for that shape.
+ * Other shapes (e.g. historical ISO timestamps) fall back to ET conversion.
  */
 function extractEventDate(payload) {
   if (!payload || typeof payload !== "object") return null;
+  // Plain date-string shape — CallDrip webhook preferred path.
+  const plainDate =
+    (payload.call && typeof payload.call.date_received === "string" && /^\d{4}-\d{2}-\d{2}$/.test(payload.call.date_received))
+      ? payload.call.date_received
+      : null;
+  if (plainDate) return plainDate;
+
   const candidates = [
     payload.call && payload.call.date_received,
     payload.call && payload.call.received_at,
     payload.call && payload.call.created_at,
+    payload.scored_call && payload.scored_call.created_at,
     payload.occurred_at,
     payload.created_at,
     payload.date_received,
@@ -101,25 +112,47 @@ function extractEventDate(payload) {
   return null;
 }
 
-/** Extract the agent full name from a webhook payload. */
+/**
+ * Extract the agent full name from a webhook payload.
+ *
+ * CallDrip webhook stores rep identity as an object with `first_name`,
+ * `last_name`, `email`. This is NOT the customer — customer info lives
+ * under `payload.lead`.
+ */
 function extractAgentName(payload) {
   if (!payload || typeof payload !== "object") return "";
-  // Common shapes across CallDrip webhook versions + API responses
+  // String shapes (possible in older versions / API responses)
   if (typeof payload.agent === "string") return payload.agent;
-  if (payload.agent && typeof payload.agent === "object") {
-    if (typeof payload.agent.name === "string") return payload.agent.name;
-    if (typeof payload.agent.full_name === "string") return payload.agent.full_name;
-  }
   if (typeof payload.scoredAgent === "string") return payload.scoredAgent;
+  if (typeof payload.agent_name === "string") return payload.agent_name;
+
+  if (payload.agent && typeof payload.agent === "object") {
+    if (typeof payload.agent.name === "string" && payload.agent.name) return payload.agent.name;
+    if (typeof payload.agent.full_name === "string" && payload.agent.full_name) return payload.agent.full_name;
+    const fn = typeof payload.agent.first_name === "string" ? payload.agent.first_name.trim() : "";
+    const ln = typeof payload.agent.last_name === "string" ? payload.agent.last_name.trim() : "";
+    if (fn || ln) return `${fn} ${ln}`.trim();
+  }
+
   if (payload.call && typeof payload.call === "object") {
-    if (typeof payload.call.agent === "string") return payload.call.agent;
-    if (payload.call.agent && typeof payload.call.agent === "object") {
-      if (typeof payload.call.agent.name === "string") return payload.call.agent.name;
-      if (typeof payload.call.agent.full_name === "string") return payload.call.agent.full_name;
+    if (typeof payload.call.answered_by === "string" && payload.call.answered_by) {
+      return payload.call.answered_by;
     }
+    if (typeof payload.call.agent === "string") return payload.call.agent;
     if (typeof payload.call.agent_name === "string") return payload.call.agent_name;
   }
-  if (typeof payload.agent_name === "string") return payload.agent_name;
+  return "";
+}
+
+/**
+ * Extract the agent email from a webhook payload.
+ * CallDrip webhook stores it at `payload.agent.email`.
+ */
+function extractAgentEmail(payload) {
+  if (!payload || typeof payload !== "object") return "";
+  if (payload.agent && typeof payload.agent === "object" && typeof payload.agent.email === "string") {
+    return payload.agent.email.trim().toLowerCase();
+  }
   return "";
 }
 
@@ -140,34 +173,125 @@ function getField(payload, ...paths) {
   return null;
 }
 
-/** Is this a scored/outbound call event? */
+/** Coerce a value that may be a number, string, or boolean flag to boolean. */
+function truthyFlag(v) {
+  if (v === 1 || v === true) return true;
+  if (typeof v === "string" && (v === "1" || v.toLowerCase() === "true")) return true;
+  return false;
+}
+
+/**
+ * Is this an outbound call event?
+ *
+ * CallDrip webhook exposes `call.outbound` (0/1 flag) and `call.inbound`
+ * (0/1 flag). String `leadtype` is only on the GET-API shape.
+ */
 function isOutbound(payload) {
+  if (payload && payload.call) {
+    if (truthyFlag(payload.call.outbound)) return true;
+    if (truthyFlag(payload.call.click_to_call) && !truthyFlag(payload.call.inbound)) {
+      // Click-to-call with no inbound flag is a rep-initiated outbound.
+      return true;
+    }
+  }
   const lt = getField(payload, ["leadtype"], ["call", "leadtype"], ["lead_type"], ["call", "direction"]);
   if (typeof lt === "string" && lt.toLowerCase() === "outbound") return true;
   return false;
 }
 
 function isInbound(payload) {
+  if (payload && payload.call && truthyFlag(payload.call.inbound)) return true;
   const lt = getField(payload, ["leadtype"], ["call", "leadtype"], ["lead_type"], ["call", "direction"]);
   if (typeof lt === "string" && lt.toLowerCase() === "inbound") return true;
-  if (!isOutbound(payload) && (lt === null || lt === "")) return true;
   return false;
 }
 
+/**
+ * Did this event result in an appointment?
+ *
+ * The CallDrip webhook doesn't send a direct `appointmentDate` for
+ * scored calls. The best proxy is `scored_call.is_goal === 1` which
+ * CallDrip marks when the call hit its success criterion (appointment
+ * set / booked). For shapes with `appointmentDate` (GET-API), fall
+ * through to that.
+ */
 function hasAppointment(payload) {
+  if (payload && payload.scored_call && truthyFlag(payload.scored_call.is_goal)) return true;
   const v = getField(payload, ["appointmentDate"], ["appointment_date"], ["call", "appointment_date"], ["call", "appointmentDate"]);
   return typeof v === "string" && v.trim().length > 0;
 }
 
+/**
+ * Parse an HH:MM:SS (or H:MM:SS) string to total seconds.
+ * Returns 0 for non-parseable values.
+ */
+function hmsToSec(s) {
+  if (typeof s !== "string") return 0;
+  const m = s.match(/^(\d{1,2}):(\d{2}):(\d{2})$/);
+  if (!m) return 0;
+  return Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]);
+}
+
+/**
+ * Extract response time in seconds.
+ *
+ * Webhook: `call.response_time` and `call.origination_time` are
+ *   HH:MM:SS timestamps on the same day → delta = response seconds.
+ * GET-API: `responseTime` is already a duration in seconds.
+ */
 function getResponseTimeSec(payload) {
-  const v = getField(payload, ["responseTime"], ["response_time"], ["call", "response_time"], ["call", "responseTime"]);
+  // Webhook shape — paired timestamps.
+  if (payload && payload.call) {
+    const rt = payload.call.response_time;
+    const ot = payload.call.origination_time;
+    if (typeof rt === "string" && typeof ot === "string") {
+      const rtSec = hmsToSec(rt);
+      const otSec = hmsToSec(ot);
+      if (rtSec > 0 && otSec > 0 && rtSec >= otSec) {
+        const delta = rtSec - otSec;
+        // Guardrail: ignore absurd values (>24h suggests mis-parse)
+        if (delta < 86400) return delta;
+      }
+    }
+    // Some shapes send a numeric response_time already.
+    if (typeof payload.call.response_time === "number" && payload.call.response_time > 0) {
+      return payload.call.response_time;
+    }
+  }
+  const v = getField(payload, ["responseTime"], ["response_time"], ["call", "responseTime"]);
   if (typeof v === "number" && v > 0) return v;
   return 0;
 }
 
+/**
+ * Did this event have a coach note / followup note attached?
+ *
+ * Webhook: `scored_call.note` or `coached_call.note` non-empty.
+ * GET-API: `coachNotes` non-empty.
+ */
 function hasFollowup(payload) {
+  if (payload && payload.scored_call && typeof payload.scored_call.note === "string" && payload.scored_call.note.trim().length > 0) {
+    return true;
+  }
+  if (payload && payload.coached_call && typeof payload.coached_call.note === "string" && payload.coached_call.note.trim().length > 0) {
+    return true;
+  }
   const v = getField(payload, ["coachNotes"], ["coach_notes"], ["call", "coach_notes"], ["call", "coachNotes"]);
   return typeof v === "string" && v.trim().length > 0;
+}
+
+/**
+ * Should this event type count toward KPIs?
+ *
+ * Webhook sends many event types — only `call_scored` carries rep
+ * attribution and full metrics. Other types (agent_presses_one,
+ * transcription_ready, etc.) are infrastructure signals and not
+ * counted, to stay aligned with the GET-API sync behavior.
+ */
+function isCountableEvent(payload) {
+  const t = payload && payload.type;
+  if (!t) return true; // unknown/legacy shape — count it
+  return t === "call_scored" || t === "scored_call";
 }
 
 /* ------------------------------------------------------------------ */
@@ -198,29 +322,48 @@ function aggregateEvents(docs) {
   const eventRefs = [];
   let unmatchedNoAgent = 0;
   let unmatchedNoDate = 0;
+  let skippedNotCountable = 0;
 
   for (const doc of docs) {
     const data = doc.data();
     const payload = data.payload || {};
+
+    // Skip events that aren't countable (agent_presses_one, etc.) —
+    // they get marked processed so we don't loop on them.
+    if (!isCountableEvent(payload)) {
+      skippedNotCountable++;
+      eventRefs.push({ ref: doc.ref, groupKey: null, skipReason: "not_countable" });
+      continue;
+    }
+
     const agentName = extractAgentName(payload);
+    const agentEmail = extractAgentEmail(payload);
     const date = extractEventDate(payload);
     const nameNorm = normName(agentName);
 
-    if (!nameNorm) {
+    if (!nameNorm && !agentEmail) {
       unmatchedNoAgent++;
-      eventRefs.push({ ref: doc.ref, groupKey: null });
+      eventRefs.push({ ref: doc.ref, groupKey: null, skipReason: "no_agent" });
       continue;
     }
     if (!date) {
       unmatchedNoDate++;
-      eventRefs.push({ ref: doc.ref, groupKey: null });
+      eventRefs.push({ ref: doc.ref, groupKey: null, skipReason: "no_date" });
       continue;
     }
 
-    const groupKey = `${nameNorm}|${date}`;
+    // Group key prefers email; falls back to name norm.
+    const repKey = agentEmail || nameNorm;
+    const groupKey = `${repKey}|${date}`;
     let group = groups.get(groupKey);
     if (!group) {
-      group = { agentName, agentNameNorm: nameNorm, date, agg: emptyAggregate() };
+      group = {
+        agentName,
+        agentNameNorm: nameNorm,
+        agentEmail,
+        date,
+        agg: emptyAggregate(),
+      };
       groups.set(groupKey, group);
     }
 
@@ -239,7 +382,7 @@ function aggregateEvents(docs) {
     eventRefs.push({ ref: doc.ref, groupKey });
   }
 
-  return { groups, eventRefs, unmatchedNoAgent, unmatchedNoDate };
+  return { groups, eventRefs, unmatchedNoAgent, unmatchedNoDate, skippedNotCountable };
 }
 
 /* ------------------------------------------------------------------ */
@@ -308,11 +451,16 @@ router.post("/", verifyAggregateAuth, async (req, res) => {
     });
   }
 
-  const { groups, eventRefs, unmatchedNoAgent, unmatchedNoDate } =
-    aggregateEvents(docs);
+  const {
+    groups,
+    eventRefs,
+    unmatchedNoAgent,
+    unmatchedNoDate,
+    skippedNotCountable,
+  } = aggregateEvents(docs);
 
   console.log(
-    `[CallDripAgg] Fetched ${docs.length} events → ${groups.size} (rep,date) groups | noAgent=${unmatchedNoAgent} noDate=${unmatchedNoDate}`,
+    `[CallDripAgg] Fetched ${docs.length} events → ${groups.size} (rep,date) groups | noAgent=${unmatchedNoAgent} noDate=${unmatchedNoDate} notCountable=${skippedNotCountable}`,
   );
 
   // Forward each group to kpi-ingest.
@@ -364,7 +512,11 @@ router.post("/", verifyAggregateAuth, async (req, res) => {
     });
   }
 
-  // Load active profiles name→email map.
+  // Load active profiles. We build two indexes:
+  //   emailToEmail: lowercased email → canonical email (identity map,
+  //       used to confirm the agent email exists on an active profile)
+  //   nameToEmail: normalized full_name → canonical email (fallback)
+  let emailSet = new Set();
   let nameToEmail = new Map();
   try {
     const profilesRes = await fetch(
@@ -382,6 +534,7 @@ router.post("/", verifyAggregateAuth, async (req, res) => {
     }
     const profiles = await profilesRes.json();
     for (const p of profiles) {
+      if (p.email) emailSet.add(String(p.email).toLowerCase());
       const n = normName(p.full_name);
       if (n && p.email) nameToEmail.set(n, String(p.email).toLowerCase());
     }
@@ -391,12 +544,18 @@ router.post("/", verifyAggregateAuth, async (req, res) => {
   }
 
   for (const [groupKey, group] of groups) {
-    const email = nameToEmail.get(group.agentNameNorm);
+    // Prefer direct email match; fall back to name.
+    let email = null;
+    if (group.agentEmail && emailSet.has(group.agentEmail)) {
+      email = group.agentEmail;
+    } else if (group.agentNameNorm) {
+      email = nameToEmail.get(group.agentNameNorm) || null;
+    }
     if (!email) {
       // Unknown agent — record as successful processing (so we don't loop)
       // but do not post. Sales Tracker calldrip-sync behaves the same way.
       console.log(
-        `[CallDripAgg] skip unmatched agent "${group.agentName}" date=${group.date} events=${group.agg.leads_worked}`,
+        `[CallDripAgg] skip unmatched agent "${group.agentName}" email="${group.agentEmail}" date=${group.date} events=${group.agg.leads_worked}`,
       );
       perGroupStatus.set(groupKey, true);
       continue;
@@ -421,6 +580,7 @@ router.post("/", verifyAggregateAuth, async (req, res) => {
     try {
       fullDayAgg = await computeFullDayAggregate(
         db,
+        group.agentEmail,
         group.agentNameNorm,
         group.date,
       );
@@ -552,10 +712,10 @@ router.post("/", verifyAggregateAuth, async (req, res) => {
  * we reduce the scan surface by using occurredAt bounds when present
  * and falling back to receivedAt.
  */
-async function computeFullDayAggregate(db, agentNameNorm, etDateStr) {
+async function computeFullDayAggregate(db, agentEmail, agentNameNorm, etDateStr) {
   // Build ET-local window. ET is UTC-5 (EST) or UTC-4 (EDT). Rather than
   // computing the offset ourselves, use a UTC window [day-1, day+1] and
-  // filter precisely in JS using the ET toDateString conversion.
+  // filter precisely in JS using the extracted ET date string.
   const dayStart = new Date(`${etDateStr}T00:00:00Z`);
   const lo = new Date(dayStart);
   lo.setUTCDate(lo.getUTCDate() - 1);
@@ -573,7 +733,15 @@ async function computeFullDayAggregate(db, agentNameNorm, etDateStr) {
   for (const doc of snap.docs) {
     const data = doc.data();
     const payload = data.payload || {};
-    if (normName(extractAgentName(payload)) !== agentNameNorm) continue;
+    if (!isCountableEvent(payload)) continue;
+    // Match by email first (strongest), fall back to normalized name.
+    const docEmail = extractAgentEmail(payload);
+    const docNameNorm = normName(extractAgentName(payload));
+    let matches = false;
+    if (agentEmail && docEmail === agentEmail) matches = true;
+    else if (!agentEmail && agentNameNorm && docNameNorm === agentNameNorm) matches = true;
+    else if (agentEmail && !docEmail && agentNameNorm && docNameNorm === agentNameNorm) matches = true;
+    if (!matches) continue;
     if (extractEventDate(payload) !== etDateStr) continue;
 
     agg.leads_worked++;
@@ -601,11 +769,14 @@ module.exports._testing = {
   toETDateString,
   extractEventDate,
   extractAgentName,
+  extractAgentEmail,
   isOutbound,
   isInbound,
   hasAppointment,
   getResponseTimeSec,
   hasFollowup,
+  hmsToSec,
+  isCountableEvent,
   aggregateEvents,
   emptyAggregate,
 };
