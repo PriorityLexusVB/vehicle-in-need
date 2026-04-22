@@ -67,17 +67,14 @@ describe("calldripAggregate — field extraction", () => {
     expect(agg.extractEventDate({})).toBe(null);
   });
 
-  it("isOutbound / isInbound classify CallDrip webhook flags", () => {
+  it("isOutbound classifies CallDrip webhook flags", () => {
     // Webhook integer flags
     expect(agg.isOutbound({ call: { outbound: 1 } })).toBe(true);
-    expect(agg.isInbound({ call: { inbound: 1 } })).toBe(true);
     expect(agg.isOutbound({ call: { outbound: 0, inbound: 0 } })).toBe(false);
-    expect(agg.isInbound({ call: { outbound: 0, inbound: 0 } })).toBe(false);
     // Click-to-call without inbound is treated as outbound
     expect(agg.isOutbound({ call: { click_to_call: 1, outbound: 0, inbound: 0 } })).toBe(true);
     // Legacy string leadtype
     expect(agg.isOutbound({ leadtype: "Outbound" })).toBe(true);
-    expect(agg.isInbound({ leadtype: "Inbound" })).toBe(true);
     expect(agg.isOutbound({})).toBe(false);
   });
 
@@ -94,11 +91,31 @@ describe("calldripAggregate — field extraction", () => {
     expect(agg.hasAppointment({})).toBe(false);
   });
 
-  it("hasFollowup reads scored_call.note", () => {
-    expect(agg.hasFollowup({ scored_call: { note: "call back tomorrow" } })).toBe(true);
-    expect(agg.hasFollowup({ scored_call: { note: "   " } })).toBe(false);
-    expect(agg.hasFollowup({ coached_call: { note: "debrief" } })).toBe(true);
-    expect(agg.hasFollowup({ coachNotes: "x" })).toBe(true);
+  it("extractAppointmentDateTime returns ISO for YYYY-MM-DD + HH:MM", () => {
+    const iso = agg.extractAppointmentDateTime({
+      scored_call: { appointmentDate: "2026-04-25", appointmentTime: "14:30" },
+    });
+    expect(iso).toMatch(/^2026-04-25T/);
+    // Default 9 AM ET when no time given
+    const iso2 = agg.extractAppointmentDateTime({
+      scored_call: { appointmentDate: "2026-04-25" },
+    });
+    expect(iso2).toMatch(/^2026-04-25T13:00:00.000Z$/); // 9 AM EDT = 13:00 UTC
+    // Missing → null
+    expect(agg.extractAppointmentDateTime({ scored_call: { is_goal: 1 } })).toBe(null);
+    expect(agg.extractAppointmentDateTime({})).toBe(null);
+  });
+
+  it("extractLeadName reads payload.lead", () => {
+    expect(agg.extractLeadName({ lead: { first_name: "Sam", last_name: "Jones" } })).toBe("Sam Jones");
+    expect(agg.extractLeadName({ lead: { name: "Acme Buyer" } })).toBe("Acme Buyer");
+    expect(agg.extractLeadName({})).toBe("");
+  });
+
+  it("extractLeadPhone reads payload.lead.phone", () => {
+    expect(agg.extractLeadPhone({ lead: { phone: "7575550123" } })).toBe("7575550123");
+    expect(agg.extractLeadPhone({ call: { caller_number: "+15555550123" } })).toBe("+15555550123");
+    expect(agg.extractLeadPhone({})).toBe("");
   });
 
   it("getResponseTimeSec uses HH:MM:SS delta on webhook shape", () => {
@@ -200,12 +217,13 @@ describe("calldripAggregate — grouping", () => {
     expect(groups.size).toBe(2);
     const jeff = groups.get("jeff.waugh@priorityautomotive.com|2026-04-22");
     expect(jeff).toBeDefined();
-    expect(jeff.agg.leads_worked).toBe(2);
+    // 2026-04-22 CLEANUP: leads_worked and calls_received removed from aggregate.
+    // Inbound is no longer counted; only outbound (calls_made) is tracked.
     expect(jeff.agg.calls_made).toBe(1);
-    expect(jeff.agg.calls_received).toBe(1);
     expect(jeff.agg.appts_set).toBe(1);
     expect(jeff.agg.response_count).toBe(2);
     expect(jeff.agg.response_sum_sec).toBe(30);
+    expect(jeff.agg.appointments).toEqual([]); // no appointmentDate in fixtures
     expect(skippedNotCountable).toBe(1);
     expect(unmatchedNoAgent).toBe(1);
     expect(eventRefs.length).toBe(5);

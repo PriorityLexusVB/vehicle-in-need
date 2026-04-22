@@ -199,12 +199,8 @@ function isOutbound(payload) {
   return false;
 }
 
-function isInbound(payload) {
-  if (payload && payload.call && truthyFlag(payload.call.inbound)) return true;
-  const lt = getField(payload, ["leadtype"], ["call", "leadtype"], ["lead_type"], ["call", "direction"]);
-  if (typeof lt === "string" && lt.toLowerCase() === "inbound") return true;
-  return false;
-}
+// NOTE: 2026-04-22 — `isInbound` removed along with `calls_received` (dead field).
+// If a future consumer needs inbound counts, reinstate from git history.
 
 /**
  * Did this event result in an appointment?
@@ -219,6 +215,141 @@ function hasAppointment(payload) {
   if (payload && payload.scored_call && truthyFlag(payload.scored_call.is_goal)) return true;
   const v = getField(payload, ["appointmentDate"], ["appointment_date"], ["call", "appointment_date"], ["call", "appointmentDate"]);
   return typeof v === "string" && v.trim().length > 0;
+}
+
+/**
+ * Extract a combined appointment datetime (ISO UTC string) from a payload.
+ *
+ * Checks several shapes. Order of preference:
+ *   1. scored_call.appointmentDate (+ optional appointmentTime)
+ *   2. scored_call.appointment_date (+ optional appointment_time)
+ *   3. payload.appointmentDate / appointment_date
+ *   4. call.appointment_date / appointment_datetime
+ *
+ * If only a date is present, defaults time to 09:00 local (ET) — interpreted
+ * as "start of business day" for upcoming-appts display purposes. Callers
+ * should treat this as a soft default, not a precise commitment.
+ *
+ * Returns null if no recognizable appointment datetime is present.
+ */
+function extractAppointmentDateTime(payload) {
+  if (!payload || typeof payload !== "object") return null;
+  const sc = payload.scored_call || {};
+  const call = payload.call || {};
+
+  const dateCandidate =
+    (typeof sc.appointmentDate === "string" && sc.appointmentDate.trim()) ||
+    (typeof sc.appointment_date === "string" && sc.appointment_date.trim()) ||
+    (typeof payload.appointmentDate === "string" && payload.appointmentDate.trim()) ||
+    (typeof payload.appointment_date === "string" && payload.appointment_date.trim()) ||
+    (typeof call.appointment_date === "string" && call.appointment_date.trim()) ||
+    null;
+
+  const timeCandidate =
+    (typeof sc.appointmentTime === "string" && sc.appointmentTime.trim()) ||
+    (typeof sc.appointment_time === "string" && sc.appointment_time.trim()) ||
+    (typeof payload.appointmentTime === "string" && payload.appointmentTime.trim()) ||
+    (typeof payload.appointment_time === "string" && payload.appointment_time.trim()) ||
+    (typeof call.appointment_time === "string" && call.appointment_time.trim()) ||
+    null;
+
+  // Full ISO datetime shapes — preferred when present.
+  const dtCandidate =
+    (typeof sc.appointment_datetime === "string" && sc.appointment_datetime.trim()) ||
+    (typeof call.appointment_datetime === "string" && call.appointment_datetime.trim()) ||
+    (typeof sc.appointmentDateTime === "string" && sc.appointmentDateTime.trim()) ||
+    null;
+
+  if (dtCandidate) {
+    const d = new Date(dtCandidate);
+    if (!isNaN(d.getTime())) return d.toISOString();
+  }
+
+  if (!dateCandidate) return null;
+
+  // If date is already ISO with Z/offset, parse directly.
+  if (/^\d{4}-\d{2}-\d{2}T/.test(dateCandidate)) {
+    const d = new Date(dateCandidate);
+    if (!isNaN(d.getTime())) return d.toISOString();
+  }
+
+  // Plain YYYY-MM-DD + optional HH:MM[:SS].
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateCandidate)) {
+    const timePart = timeCandidate && /^\d{1,2}:\d{2}(:\d{2})?$/.test(timeCandidate)
+      ? (timeCandidate.length === 5 ? `${timeCandidate}:00` : timeCandidate)
+      : "09:00:00"; // default to 9 AM ET if no time provided
+    // Interpret as America/New_York. Cheap offset calc: DST roughly Mar 2nd Sun
+    // → Nov 1st Sun. Use US/Eastern offset of the given date.
+    const etOffset = getETOffsetHours(dateCandidate); // -4 (EDT) or -5 (EST)
+    const sign = etOffset < 0 ? "-" : "+";
+    const abs = Math.abs(etOffset).toString().padStart(2, "0");
+    const iso = `${dateCandidate}T${timePart}${sign}${abs}:00`;
+    const d = new Date(iso);
+    if (!isNaN(d.getTime())) return d.toISOString();
+  }
+
+  return null;
+}
+
+/**
+ * Best-effort US Eastern UTC offset for a YYYY-MM-DD date string.
+ * Returns -4 for EDT dates, -5 for EST dates.
+ */
+function getETOffsetHours(ymd) {
+  const [y, m, d] = ymd.split("-").map(Number);
+  // US DST: second Sunday of March through first Sunday of November.
+  // We use a reference date at local noon to avoid edge-of-day quirks.
+  const ref = new Date(Date.UTC(y, m - 1, d, 17, 0, 0)); // 12pm EST == 17:00 UTC
+  const janOffset = new Date(Date.UTC(y, 0, 1, 17, 0, 0)).toLocaleString("en-US", { timeZone: "America/New_York", timeZoneName: "short" });
+  // Cheap heuristic: check whether the given date in ET is in EDT or EST
+  const label = ref.toLocaleString("en-US", { timeZone: "America/New_York", timeZoneName: "short" });
+  if (label.includes("EDT")) return -4;
+  if (label.includes("EST")) return -5;
+  // Fallback: if Jan 1 label contains EST (should), assume EST for edge dates.
+  return janOffset.includes("EST") ? -5 : -4;
+}
+
+/** Extract lead (customer) name from payload. */
+function extractLeadName(payload) {
+  if (!payload || typeof payload !== "object") return "";
+  const lead = payload.lead || {};
+  if (typeof lead.name === "string" && lead.name.trim()) return lead.name.trim();
+  const fn = typeof lead.first_name === "string" ? lead.first_name.trim() : "";
+  const ln = typeof lead.last_name === "string" ? lead.last_name.trim() : "";
+  const combined = `${fn} ${ln}`.trim();
+  if (combined) return combined;
+  if (typeof lead.full_name === "string" && lead.full_name.trim()) return lead.full_name.trim();
+  // Fallback: caller_name on call object
+  const call = payload.call || {};
+  if (typeof call.caller_name === "string" && call.caller_name.trim()) return call.caller_name.trim();
+  return "";
+}
+
+/** Extract lead phone from payload. */
+function extractLeadPhone(payload) {
+  if (!payload || typeof payload !== "object") return "";
+  const lead = payload.lead || {};
+  if (typeof lead.phone === "string" && lead.phone.trim()) return lead.phone.trim();
+  if (typeof lead.phone_number === "string" && lead.phone_number.trim()) return lead.phone_number.trim();
+  const call = payload.call || {};
+  if (typeof call.caller_number === "string" && call.caller_number.trim()) return call.caller_number.trim();
+  if (typeof call.from_number === "string" && call.from_number.trim()) return call.from_number.trim();
+  return "";
+}
+
+/** Stable source event id for upsert. */
+function extractSourceEventId(payload, docId) {
+  if (payload && typeof payload === "object") {
+    if (typeof payload.id === "string" && payload.id) return payload.id;
+    if (typeof payload.id === "number") return String(payload.id);
+    const sc = payload.scored_call || {};
+    if (typeof sc.id === "string" && sc.id) return sc.id;
+    if (typeof sc.id === "number") return String(sc.id);
+    const call = payload.call || {};
+    if (typeof call.id === "string" && call.id) return call.id;
+    if (typeof call.id === "number") return String(call.id);
+  }
+  return docId || null;
 }
 
 /**
@@ -263,22 +394,7 @@ function getResponseTimeSec(payload) {
   return 0;
 }
 
-/**
- * Did this event have a coach note / followup note attached?
- *
- * Webhook: `scored_call.note` or `coached_call.note` non-empty.
- * GET-API: `coachNotes` non-empty.
- */
-function hasFollowup(payload) {
-  if (payload && payload.scored_call && typeof payload.scored_call.note === "string" && payload.scored_call.note.trim().length > 0) {
-    return true;
-  }
-  if (payload && payload.coached_call && typeof payload.coached_call.note === "string" && payload.coached_call.note.trim().length > 0) {
-    return true;
-  }
-  const v = getField(payload, ["coachNotes"], ["coach_notes"], ["call", "coach_notes"], ["call", "coachNotes"]);
-  return typeof v === "string" && v.trim().length > 0;
-}
+// NOTE: 2026-04-22 — `hasFollowup` removed along with `followups` (dead field).
 
 /**
  * Should this event type count toward KPIs?
@@ -301,12 +417,13 @@ function isCountableEvent(payload) {
 function emptyAggregate() {
   return {
     calls_made: 0,
-    calls_received: 0,
     appts_set: 0,
-    leads_worked: 0,
     response_sum_sec: 0,
     response_count: 0,
-    followups: 0,
+    // Collected appointment datetimes (ISO UTC) + lead context.
+    // One entry per scored-call event that has a usable appointment datetime.
+    // Upserted into Supabase `upcoming_appts` after aggregation.
+    appointments: [],
   };
 }
 
@@ -368,16 +485,28 @@ function aggregateEvents(docs) {
     }
 
     const a = group.agg;
-    a.leads_worked++;
     if (isOutbound(payload)) a.calls_made++;
-    else if (isInbound(payload)) a.calls_received++;
     if (hasAppointment(payload)) a.appts_set++;
     const rt = getResponseTimeSec(payload);
     if (rt > 0) {
       a.response_sum_sec += rt;
       a.response_count++;
     }
-    if (hasFollowup(payload)) a.followups++;
+
+    // --- Appointment extraction (2026-04-22) ---
+    // Collect a concrete appt datetime when present. Missing datetimes
+    // are silently skipped — we do NOT fabricate times for is_goal-only
+    // events, because a "when" row with no real "when" is worse than
+    // absent from the Upcoming Appointments view.
+    const apptIso = extractAppointmentDateTime(payload);
+    if (apptIso) {
+      a.appointments.push({
+        appt_datetime: apptIso,
+        lead_name: extractLeadName(payload) || null,
+        lead_phone: extractLeadPhone(payload) || null,
+        source_event_id: extractSourceEventId(payload, doc.id),
+      });
+    }
 
     eventRefs.push({ ref: doc.ref, groupKey });
   }
@@ -543,6 +672,31 @@ router.post("/", verifyAggregateAuth, async (req, res) => {
     return res.status(502).json({ error: "Failed to load profiles", detail: err.message });
   }
 
+  // Rep email → profile UUID (for upcoming_appts.rep_id). Loaded once per run.
+  const emailToRepId = new Map();
+  try {
+    const resp = await fetch(
+      `${supabaseUrl}/rest/v1/profiles?select=id,email&is_active=eq.true`,
+      {
+        headers: {
+          apikey: serviceRoleKey,
+          Authorization: `Bearer ${serviceRoleKey}`,
+        },
+      },
+    );
+    if (resp.ok) {
+      const rows = await resp.json();
+      for (const r of rows) {
+        if (r.email && r.id) emailToRepId.set(String(r.email).toLowerCase(), r.id);
+      }
+    }
+  } catch (err) {
+    console.warn("[CallDripAgg] rep id map load failed (non-fatal):", err.message);
+  }
+
+  let appointmentsUpserted = 0;
+  const appointmentsErrors = [];
+
   for (const [groupKey, group] of groups) {
     // Prefer direct email match; fall back to name.
     let email = null;
@@ -601,11 +755,8 @@ router.post("/", verifyAggregateAuth, async (req, res) => {
         rep_email: email,
         date: group.date,
         calls_made: fullDayAgg.calls_made,
-        calls_received: fullDayAgg.calls_received,
         appts_set: fullDayAgg.appts_set,
-        leads_worked: fullDayAgg.leads_worked,
         avg_response_sec: fullAvg,
-        followups: fullDayAgg.followups,
         source_system: "calldrip-firestore",
       },
     ];
@@ -644,6 +795,56 @@ router.post("/", verifyAggregateAuth, async (req, res) => {
         `[CallDripAgg] ok ${email} ${group.date}`,
         JSON.stringify(fullDayAgg),
       );
+
+      // --- Upcoming appointments upsert ---
+      // Per-batch: the event-level appts collected in this run's group.
+      // This is additive (not cumulative), and upsert uses source_event_id
+      // as a unique natural key so repeat events are idempotent.
+      const apptRows = group.agg.appointments || [];
+      if (apptRows.length > 0) {
+        const repId = emailToRepId.get(email) || null;
+        const body = apptRows
+          .filter((a) => a.source_event_id) // require stable key
+          .map((a) => ({
+            rep_id: repId,
+            rep_email: email,
+            appt_datetime: a.appt_datetime,
+            lead_name: a.lead_name,
+            lead_phone: a.lead_phone,
+            source_event_id: a.source_event_id,
+            source_system: "calldrip-firestore",
+          }));
+        if (body.length > 0) {
+          try {
+            const apptRes = await fetch(
+              `${supabaseUrl}/rest/v1/upcoming_appts?on_conflict=source_event_id`,
+              {
+                method: "POST",
+                headers: {
+                  apikey: serviceRoleKey,
+                  Authorization: `Bearer ${serviceRoleKey}`,
+                  "Content-Type": "application/json",
+                  Prefer: "resolution=merge-duplicates,return=minimal",
+                },
+                body: JSON.stringify(body),
+              },
+            );
+            if (!apptRes.ok) {
+              const t = await apptRes.text();
+              const m = `${email} ${group.date}: upcoming_appts ${apptRes.status} — ${t.slice(0, 200)}`;
+              console.error("[CallDripAgg]", m);
+              appointmentsErrors.push(m);
+            } else {
+              appointmentsUpserted += body.length;
+              console.log(`[CallDripAgg] upcoming_appts +${body.length} for ${email}`);
+            }
+          } catch (err) {
+            const m = `${email} ${group.date}: upcoming_appts threw — ${String(err)}`;
+            console.error("[CallDripAgg]", m);
+            appointmentsErrors.push(m);
+          }
+        }
+      }
     } catch (err) {
       const msg = `${email} ${group.date}: fetch threw — ${String(err)}`;
       console.error("[CallDripAgg]", msg);
@@ -687,6 +888,8 @@ router.post("/", verifyAggregateAuth, async (req, res) => {
     events_fetched: docs.length,
     events_processed: eventsProcessed,
     aggregates_posted: aggregatesPosted,
+    appointments_upserted: appointmentsUpserted,
+    appointments_errors: appointmentsErrors.length > 0 ? appointmentsErrors : undefined,
     groups: groups.size,
     unmatched_no_agent: unmatchedNoAgent,
     unmatched_no_date: unmatchedNoDate,
@@ -744,16 +947,17 @@ async function computeFullDayAggregate(db, agentEmail, agentNameNorm, etDateStr)
     if (!matches) continue;
     if (extractEventDate(payload) !== etDateStr) continue;
 
-    agg.leads_worked++;
     if (isOutbound(payload)) agg.calls_made++;
-    else if (isInbound(payload)) agg.calls_received++;
     if (hasAppointment(payload)) agg.appts_set++;
     const rt = getResponseTimeSec(payload);
     if (rt > 0) {
       agg.response_sum_sec += rt;
       agg.response_count++;
     }
-    if (hasFollowup(payload)) agg.followups++;
+    // Note: full-day recompute intentionally does NOT re-collect
+    // appointments. Appointment UPSERTs happen per-batch in the main
+    // handler using the current batch's newly-seen events — avoiding
+    // duplicate re-inserts that would otherwise occur on every run.
   }
   return agg;
 }
@@ -771,12 +975,14 @@ module.exports._testing = {
   extractAgentName,
   extractAgentEmail,
   isOutbound,
-  isInbound,
   hasAppointment,
   getResponseTimeSec,
-  hasFollowup,
   hmsToSec,
   isCountableEvent,
   aggregateEvents,
   emptyAggregate,
+  extractAppointmentDateTime,
+  extractLeadName,
+  extractLeadPhone,
+  extractSourceEventId,
 };
