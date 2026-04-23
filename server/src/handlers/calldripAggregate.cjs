@@ -136,7 +136,20 @@ function extractAgentName(payload) {
 
   if (payload.call && typeof payload.call === "object") {
     if (typeof payload.call.answered_by === "string" && payload.call.answered_by) {
-      return payload.call.answered_by;
+      const candidate = payload.call.answered_by;
+      // Fix #3 (2026-04-23): reject phone-number-shaped answered_by values.
+      // When no named rep answered (BDC queue, voicemail, unrouted call),
+      // CallDrip sets answered_by to the destination phone number. These
+      // should not be treated as agent names — return "" so the event gets
+      // routed to queue_calls tracking, not attributed to a phantom rep.
+      if (/^[\+\d\s\(\)\-\.]{7,}$/.test(candidate)) {
+        console.log(
+          "[CallDripAgg] extractAgentName: answered_by looks like a phone number — returning empty (queue call)",
+          { answered_by: candidate },
+        );
+        return "";
+      }
+      return candidate;
     }
     if (typeof payload.call.agent === "string") return payload.call.agent;
     if (typeof payload.call.agent_name === "string") return payload.call.agent_name;
@@ -199,20 +212,56 @@ function isOutbound(payload) {
   return false;
 }
 
-// NOTE: 2026-04-22 — `isInbound` removed along with `calls_received` (dead field).
-// If a future consumer needs inbound counts, reinstate from git history.
+/**
+ * Is this an inbound call event? (Fix #2 — 2026-04-23)
+ *
+ * Inbound calls are real sales activity and were previously dropped entirely.
+ * CallDrip sets `call.inbound = 1` for calls where the customer dialed in.
+ * click_to_call is never inbound. GET-API shape uses leadtype "inbound".
+ *
+ * Note: a call can be neither outbound nor inbound when click_to_call=1 and
+ * both flags are zero — isOutbound() handles that case. This function only
+ * returns true for genuine `call.inbound` flag signals.
+ */
+function isInbound(payload) {
+  if (payload && payload.call) {
+    if (truthyFlag(payload.call.inbound)) return true;
+  }
+  const lt = getField(payload, ["leadtype"], ["call", "leadtype"], ["lead_type"], ["call", "direction"]);
+  if (typeof lt === "string" && lt.toLowerCase() === "inbound") return true;
+  return false;
+}
 
 /**
  * Did this event result in an appointment?
  *
- * The CallDrip webhook doesn't send a direct `appointmentDate` for
- * scored calls. The best proxy is `scored_call.is_goal === 1` which
- * CallDrip marks when the call hit its success criterion (appointment
- * set / booked). For shapes with `appointmentDate` (GET-API), fall
- * through to that.
+ * Fix #1 (2026-04-23): switched from `scored_call.is_goal` to
+ * `scored_call.result` contains "appointment" (case-insensitive).
+ *
+ * is_goal fires on ANY scorecard goal (e.g. "Service Introduction") so
+ * it over-counted on service-department calls. result is a human-readable
+ * string CallDrip sets explicitly; values like "Appointment" or
+ * "Appointment Set" map cleanly to a real appointment outcome.
+ *
+ * is_goal is retained in the log output for observability but NOT used
+ * to increment appts_set.
+ *
+ * For legacy GET-API shapes that carry an explicit appointmentDate field,
+ * fall through to that as before.
  */
 function hasAppointment(payload) {
-  if (payload && payload.scored_call && truthyFlag(payload.scored_call.is_goal)) return true;
+  if (payload && payload.scored_call) {
+    const result = (payload.scored_call.result || "").toLowerCase();
+    if (result.includes("appointment")) return true;
+    // Observability: log is_goal even though we don't count it.
+    // This lets us diff old vs new counts during the rollout window.
+    if (truthyFlag(payload.scored_call.is_goal)) {
+      console.log(
+        "[CallDripAgg] hasAppointment: is_goal=1 but result did not include 'appointment' — not counted",
+        { result: payload.scored_call.result || "(empty)" },
+      );
+    }
+  }
   const v = getField(payload, ["appointmentDate"], ["appointment_date"], ["call", "appointment_date"], ["call", "appointmentDate"]);
   return typeof v === "string" && v.trim().length > 0;
 }
@@ -416,7 +465,11 @@ function isCountableEvent(payload) {
 
 function emptyAggregate() {
   return {
+    // calls_made = union of outbound + inbound (Fix #2 — 2026-04-23).
+    // Kept as the primary counter so existing UI columns need no change.
     calls_made: 0,
+    outbound_calls: 0,   // split: rep-initiated (outbound flag or click_to_call)
+    inbound_calls: 0,    // split: customer-initiated (inbound flag)
     appts_set: 0,
     response_sum_sec: 0,
     response_count: 0,
@@ -434,12 +487,21 @@ function emptyAggregate() {
  *   - unmatchedNoAgent: number
  *   - unmatchedNoDate: number
  */
+// Regex used by Fix #3 to identify phone-number-shaped answered_by values.
+// Duplicated here (not shared by reference) so aggregateEvents can count
+// queue_calls without re-calling extractAgentName a second time.
+const PHONE_PATTERN = /^[\+\d\s\(\)\-\.]{7,}$/;
+
 function aggregateEvents(docs) {
   const groups = new Map();
   const eventRefs = [];
   let unmatchedNoAgent = 0;
   let unmatchedNoDate = 0;
   let skippedNotCountable = 0;
+  // Fix #3 (2026-04-23): separate counter for calls answered by a BDC queue
+  // phone number (i.e. no named rep). Visible in the response summary so Rob
+  // can see the volume without attributing it to anyone.
+  let queueCalls = 0;
 
   for (const doc of docs) {
     const data = doc.data();
@@ -459,8 +521,17 @@ function aggregateEvents(docs) {
     const nameNorm = normName(agentName);
 
     if (!nameNorm && !agentEmail) {
-      unmatchedNoAgent++;
-      eventRefs.push({ ref: doc.ref, groupKey: null, skipReason: "no_agent" });
+      // Fix #3: if answered_by was a phone number, count as queue_call rather
+      // than plain no_agent so we can distinguish BDC volume from missing data.
+      const answeredBy = (payload.call && typeof payload.call.answered_by === "string")
+        ? payload.call.answered_by : "";
+      if (answeredBy && PHONE_PATTERN.test(answeredBy)) {
+        queueCalls++;
+        eventRefs.push({ ref: doc.ref, groupKey: null, skipReason: "queue_call" });
+      } else {
+        unmatchedNoAgent++;
+        eventRefs.push({ ref: doc.ref, groupKey: null, skipReason: "no_agent" });
+      }
       continue;
     }
     if (!date) {
@@ -485,7 +556,17 @@ function aggregateEvents(docs) {
     }
 
     const a = group.agg;
-    if (isOutbound(payload)) a.calls_made++;
+    // Fix #2 (2026-04-23): count both inbound and outbound toward calls_made.
+    // outbound_calls and inbound_calls are split counters for kpi-ingest.
+    const outbound = isOutbound(payload);
+    const inbound = isInbound(payload);
+    if (outbound) {
+      a.outbound_calls++;
+      a.calls_made++;
+    } else if (inbound) {
+      a.inbound_calls++;
+      a.calls_made++;
+    }
     if (hasAppointment(payload)) a.appts_set++;
     const rt = getResponseTimeSec(payload);
     if (rt > 0) {
@@ -511,7 +592,7 @@ function aggregateEvents(docs) {
     eventRefs.push({ ref: doc.ref, groupKey });
   }
 
-  return { groups, eventRefs, unmatchedNoAgent, unmatchedNoDate, skippedNotCountable };
+  return { groups, eventRefs, unmatchedNoAgent, unmatchedNoDate, skippedNotCountable, queueCalls };
 }
 
 /* ------------------------------------------------------------------ */
@@ -586,10 +667,11 @@ router.post("/", verifyAggregateAuth, async (req, res) => {
     unmatchedNoAgent,
     unmatchedNoDate,
     skippedNotCountable,
+    queueCalls,
   } = aggregateEvents(docs);
 
   console.log(
-    `[CallDripAgg] Fetched ${docs.length} events → ${groups.size} (rep,date) groups | noAgent=${unmatchedNoAgent} noDate=${unmatchedNoDate} notCountable=${skippedNotCountable}`,
+    `[CallDripAgg] Fetched ${docs.length} events → ${groups.size} (rep,date) groups | noAgent=${unmatchedNoAgent} noDate=${unmatchedNoDate} notCountable=${skippedNotCountable} queueCalls=${queueCalls}`,
   );
 
   // Forward each group to kpi-ingest.
@@ -754,7 +836,9 @@ router.post("/", verifyAggregateAuth, async (req, res) => {
       {
         rep_email: email,
         date: group.date,
-        calls_made: fullDayAgg.calls_made,
+        calls_made: fullDayAgg.calls_made,         // union (outbound + inbound)
+        outbound_calls: fullDayAgg.outbound_calls, // Fix #2 split
+        inbound_calls: fullDayAgg.inbound_calls,   // Fix #2 split
         appts_set: fullDayAgg.appts_set,
         avg_response_sec: fullAvg,
         source_system: "calldrip-firestore",
@@ -893,6 +977,7 @@ router.post("/", verifyAggregateAuth, async (req, res) => {
     groups: groups.size,
     unmatched_no_agent: unmatchedNoAgent,
     unmatched_no_date: unmatchedNoDate,
+    queue_calls: queueCalls, // Fix #3: BDC queue calls (answered_by = phone number)
     errors,
     dryRun,
     elapsedMs,
@@ -947,7 +1032,16 @@ async function computeFullDayAggregate(db, agentEmail, agentNameNorm, etDateStr)
     if (!matches) continue;
     if (extractEventDate(payload) !== etDateStr) continue;
 
-    if (isOutbound(payload)) agg.calls_made++;
+    // Fix #2 mirror: full-day recompute also counts inbound + outbound splits.
+    const outbound = isOutbound(payload);
+    const inbound = isInbound(payload);
+    if (outbound) {
+      agg.outbound_calls++;
+      agg.calls_made++;
+    } else if (inbound) {
+      agg.inbound_calls++;
+      agg.calls_made++;
+    }
     if (hasAppointment(payload)) agg.appts_set++;
     const rt = getResponseTimeSec(payload);
     if (rt > 0) {
@@ -975,6 +1069,7 @@ module.exports._testing = {
   extractAgentName,
   extractAgentEmail,
   isOutbound,
+  isInbound,          // Fix #2
   hasAppointment,
   getResponseTimeSec,
   hmsToSec,
@@ -985,4 +1080,5 @@ module.exports._testing = {
   extractLeadName,
   extractLeadPhone,
   extractSourceEventId,
+  PHONE_PATTERN,      // Fix #3
 };
