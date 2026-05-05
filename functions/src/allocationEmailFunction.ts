@@ -49,7 +49,7 @@ export const processAllocationEmail = onRequest(
       let resolvedText: string;
       if (pdfBase64) {
         const buffer = Buffer.from(pdfBase64, "base64");
-        const parser = new PDFParse(buffer);
+        const parser = new PDFParse({ data: buffer });
         const parsed = await parser.getText();
         resolvedText = parsed.text;
         console.log(`[processAllocationEmail] Extracted ${resolvedText.length} chars from base64 PDF`);
