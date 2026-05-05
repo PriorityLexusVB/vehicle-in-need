@@ -13,6 +13,7 @@ import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { onRequest } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { parseAllocationSource, AllocationVehicle } from "./allocationParser.js";
+import { PDFParse } from "pdf-parse";
 
 const allocationApiKey = defineSecret("ALLOCATION_API_KEY");
 
@@ -36,17 +37,35 @@ export const processAllocationEmail = onRequest(
       return;
     }
 
-    const { pdfText, senderEmail, subject } = req.body;
+    const { pdfText, pdfBase64, senderEmail, subject } = req.body;
 
-    if (!pdfText || typeof pdfText !== "string") {
-      res.status(400).json({ error: "Missing or invalid pdfText" });
+    if (!pdfText && !pdfBase64) {
+      res.status(400).json({ error: "Missing pdfText or pdfBase64" });
       return;
     }
 
     try {
+      // Resolve PDF text — prefer base64 (server-side extraction), fall back to pre-extracted text
+      let resolvedText: string;
+      if (pdfBase64) {
+        const buffer = Buffer.from(pdfBase64, "base64");
+        const parser = new PDFParse(buffer);
+        const parsed = await parser.getText();
+        resolvedText = parsed.text;
+        console.log(`[processAllocationEmail] Extracted ${resolvedText.length} chars from base64 PDF`);
+      } else {
+        resolvedText = pdfText as string;
+        console.log(`[processAllocationEmail] Using pre-extracted pdfText (${resolvedText.length} chars)`);
+      }
+
+      if (!resolvedText || resolvedText.trim().length < 50) {
+        res.status(400).json({ error: "PDF text too short or empty after extraction" });
+        return;
+      }
+
       // Parse using the robust shared parser (same one used by the frontend)
-      console.log(`[processAllocationEmail] Parsing pdfText (${pdfText.length} chars) from subject: ${subject ?? "(none)"}`);
-      const parsed = parseAllocationSource(pdfText);
+      console.log(`[processAllocationEmail] Parsing from subject: ${subject ?? "(none)"}`);
+      const parsed = parseAllocationSource(resolvedText);
 
       if (parsed.errors.length > 0) {
         console.error("[processAllocationEmail] Parser errors:", parsed.errors);

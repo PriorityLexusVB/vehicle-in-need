@@ -120,13 +120,9 @@ function processAllocationMessage(message, config) {
     return { success: false, error: 'No PDF attachment found' };
   }
 
-  // Extract text from PDF
-  // Apps Script can't natively parse PDFs, so we use Google Drive's OCR conversion
-  var pdfText = extractTextFromPdf(pdfAttachment);
-
-  if (!pdfText || pdfText.trim().length < 50) {
-    return { success: false, error: 'Could not extract text from PDF (empty or too short)' };
-  }
+  // Send PDF as base64 — Cloud Function extracts text server-side with pdf-parse.
+  // This avoids Google Drive OCR rate limits entirely.
+  var pdfBase64 = Utilities.base64Encode(pdfAttachment.getBytes());
 
   // Send to Cloud Function
   try {
@@ -137,7 +133,7 @@ function processAllocationMessage(message, config) {
         'X-Api-Key': config.apiKey,
       },
       payload: JSON.stringify({
-        pdfText: pdfText,
+        pdfBase64: pdfBase64,
         senderEmail: message.getFrom(),
         subject: message.getSubject(),
       }),
@@ -161,44 +157,6 @@ function processAllocationMessage(message, config) {
   }
 }
 
-/**
- * Extract text from a PDF attachment using Google Drive's OCR.
- * Uploads the PDF to Drive as a Google Doc (with OCR), reads the text, then deletes.
- */
-function extractTextFromPdf(pdfAttachment) {
-  var tempFile = null;
-  var tempDoc = null;
-
-  try {
-    // Upload PDF to Drive with OCR conversion
-    var blob = pdfAttachment.copyBlob();
-    blob.setName('temp_allocation_' + new Date().getTime() + '.pdf');
-
-    tempFile = Drive.Files.insert(
-      { title: blob.getName(), mimeType: 'application/pdf' },
-      blob,
-      { ocr: true, ocrLanguage: 'en' }
-    );
-
-    // Open as Doc and extract text
-    tempDoc = DocumentApp.openById(tempFile.id);
-    var text = tempDoc.getBody().getText();
-
-    return text;
-  } catch (e) {
-    Logger.log('PDF extraction error: ' + e.toString());
-    return null;
-  } finally {
-    // Clean up temp file
-    try {
-      if (tempFile && tempFile.id) {
-        Drive.Files.remove(tempFile.id);
-      }
-    } catch (cleanupError) {
-      Logger.log('Cleanup warning: ' + cleanupError.toString());
-    }
-  }
-}
 
 // ─── Setup & Utility ────────────────────────────────────────────────────────
 
