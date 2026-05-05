@@ -425,7 +425,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                   Vehicle Linked
                 </span>
               )}
-              {matchSummary && (matchSummary.exactCount > 0 || matchSummary.partialCount > 0 || matchSummary.dxExactCount > 0 || matchSummary.dxPartialCount > 0) && (() => {
+              {matchSummary && !order.allocatedVehicleId && (matchSummary.exactCount > 0 || matchSummary.partialCount > 0 || matchSummary.dxExactCount > 0 || matchSummary.dxPartialCount > 0) && (() => {
                 const allocParts: string[] = [];
                 if (matchSummary.exactCount > 0) allocParts.push(`${matchSummary.exactCount} exact`);
                 if (matchSummary.partialCount > 0) allocParts.push(`${matchSummary.partialCount} close`);
@@ -611,12 +611,10 @@ const OrderCard: React.FC<OrderCardProps> = ({
             {order.status === OrderStatus.FactoryOrder &&
               currentUser?.isManager &&
               !isSecured &&
+              !order.allocatedVehicleId &&
               allocationVehicles &&
               allocationVehicles.length > 0 && (
                 <div className="mb-4">
-                  <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-stone-400">
-                    Allocation Vehicle
-                  </p>
                   <VehicleLinkSelector
                     order={order}
                     vehicles={allocationVehicles}

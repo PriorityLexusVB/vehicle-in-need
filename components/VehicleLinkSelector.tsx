@@ -241,7 +241,7 @@ export default function VehicleLinkSelector({
             {alreadyLinked.length > 0 && (
               <div>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-300">
-                  Already Linked
+                  Linked to Another Customer
                 </p>
                 {alreadyLinked.map((s) => (
                   <VehicleRow key={s.vehicleId} scored={s} disabled />

@@ -1450,7 +1450,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                         {m.orderDate?.trim() && <span className="font-medium text-xs text-stone-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
                         <span className="text-sm text-stone-500">{m.salesperson || "TBD"}</span>
                         <span className="text-xs text-stone-500">{m.model} / {m.modelNumber}</span>
-                        <a href={`/#/?highlight=${m.orderId}`} className="rounded bg-stone-100 px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors" title="View order">View</a>
+                        <a href={`/#/?highlight=${m.orderId}`} target="_blank" rel="noopener noreferrer" className="rounded bg-stone-100 px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors" title="View order in new tab">View ↗</a>
                         {m.allocatedVehicleId === variantVehicleId ? (
                           <button
                             onClick={() => void handleUnlinkOrder(m.orderId)}
@@ -1492,7 +1492,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                         {m.orderDate?.trim() && <span className="font-medium text-xs text-stone-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
                         <span className="text-sm text-stone-500">{m.salesperson || "TBD"}</span>
                         <span className="text-xs text-stone-500">{m.model} / {m.modelNumber}</span>
-                        <a href={`/#/?highlight=${m.orderId}`} className="rounded bg-stone-100 px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors" title="View order">View</a>
+                        <a href={`/#/?highlight=${m.orderId}`} target="_blank" rel="noopener noreferrer" className="rounded bg-stone-100 px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors" title="View order in new tab">View ↗</a>
                         {m.allocatedVehicleId === variantVehicleId ? (
                           <button
                             onClick={() => void handleUnlinkOrder(m.orderId)}
@@ -1534,7 +1534,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                         {m.orderDate?.trim() && <span className="font-medium text-xs text-stone-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
                         <span className="text-sm text-stone-500">{m.salesperson || "TBD"}</span>
                         <span className="text-xs text-stone-500">{m.model} / {m.modelNumber}</span>
-                        <a href={`/#/?highlight=${m.orderId}`} className="rounded bg-stone-100 px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors" title="View order">View</a>
+                        <a href={`/#/?highlight=${m.orderId}`} target="_blank" rel="noopener noreferrer" className="rounded bg-stone-100 px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors" title="View order in new tab">View ↗</a>
                         {m.allocatedVehicleId === variantVehicleId ? (
                           <button
                             onClick={() => void handleUnlinkOrder(m.orderId)}
@@ -2153,6 +2153,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                                         </button>
                                       ) : m.allocatedVehicleId ? (
                                         <span className="rounded bg-stone-100 px-1.5 py-0.5 text-xs text-stone-400" title="Linked to another vehicle">⊘</span>
+                                      ) : linkedVehicleIds.has(vehicle.id) ? (
+                                        <span className="rounded bg-stone-100 px-1.5 py-0.5 text-xs text-stone-400" title="Vehicle already linked to another customer">⊘</span>
                                       ) : (
                                         <button
                                           onClick={() => void handleLinkOrder(m.orderId, vehicle.id, logVehicleInfo)}
