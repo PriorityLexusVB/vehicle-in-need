@@ -31,7 +31,7 @@ export const processAllocationEmail = onRequest(
 
     // Validate API key
     const providedKey = req.headers["x-api-key"] || req.body?.apiKey;
-    if (!providedKey || providedKey !== allocationApiKey.value()) {
+    if (!providedKey || providedKey !== allocationApiKey.value().trim()) {
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
