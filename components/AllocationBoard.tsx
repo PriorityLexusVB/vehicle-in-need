@@ -22,6 +22,7 @@ import {
   linkVehicleToOrder,
   unlinkVehicleFromOrder,
 } from "../services/orderLinkingService";
+import { useVehicleLinks } from "../services/useVehicleLinks";
 import { fetchDxSheet, DxTrade } from "../src/utils/dxSheetParser";
 
 interface AllocationBoardProps {
@@ -534,6 +535,9 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
 
   const urlModelApplied = useRef(false);
 
+  // Live subscription to vehicle_links collection — accurate O(1) linked-vehicle lookup
+  const { linksByVehicleId } = useVehicleLinks();
+
   // Use shared snapshot from App.tsx if available, otherwise subscribe independently
   useEffect(() => {
     if (sharedSnapshot !== undefined) {
@@ -672,16 +676,12 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
     [orderMatchesByVehicle],
   );
 
-  // Vehicles formally linked to a customer order via allocatedVehicleId
-  const linkedVehicleIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (const [vehicleId, matches] of orderMatchesByVehicle) {
-      if (matches.some((m) => m.allocatedVehicleId === vehicleId)) {
-        ids.add(vehicleId);
-      }
-    }
-    return ids;
-  }, [orderMatchesByVehicle]);
+  // Vehicles formally linked to a customer order — sourced directly from vehicle_links
+  // subscription so the set is accurate regardless of color/model match state.
+  const linkedVehicleIds = useMemo(
+    () => new Set(linksByVehicleId.keys()),
+    [linksByVehicleId],
+  );
 
   // Vehicles with at least one color match (exact or partial ext/int) — excludes model-only and already-linked
   const colorMatchedVehicleIds = useMemo(() => {
@@ -697,17 +697,12 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
   }, [orderMatchesByVehicle, linkedVehicleIds]);
 
   const linkedSummary = useMemo(() => {
-    const uniqueOrderIds = new Set<string>();
-    for (const [vehicleId, matched] of orderMatchesByVehicle) {
-      if (!linkedVehicleIds.has(vehicleId)) continue;
-      for (const m of matched) {
-        if (m.allocatedVehicleId === vehicleId) {
-          uniqueOrderIds.add(m.orderId);
-        }
-      }
+    const linkedOrderIds = new Set<string>();
+    for (const doc of linksByVehicleId.values()) {
+      linkedOrderIds.add(doc.orderId);
     }
-    return { linkedVehicleCount: linkedVehicleIds.size, linkedOrderCount: uniqueOrderIds.size };
-  }, [orderMatchesByVehicle, linkedVehicleIds]);
+    return { linkedVehicleCount: linksByVehicleId.size, linkedOrderCount: linkedOrderIds.size };
+  }, [linksByVehicleId]);
 
   const matchSummary = useMemo(() => {
     const uniqueOrderIds = new Set<string>();
