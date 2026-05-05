@@ -12,10 +12,6 @@
  *   const { linksByVehicleId, loading } = useVehicleLinks();
  *   const link = linksByVehicleId.get(vehicleId); // undefined if not linked
  *
- * TODO: Wire AllocationBoard to use this for O(1) linked-vehicle lookups
- *   instead of the current scan over orderMatchesByVehicle. Deferred because
- *   it would require targeted surgery on AllocationBoard's linkedVehicleIds
- *   and linkedSummary memos. Safe to add incrementally.
  */
 
 import { useEffect, useState } from "react";
