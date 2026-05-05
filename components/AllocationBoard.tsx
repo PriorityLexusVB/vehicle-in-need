@@ -1462,6 +1462,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                           </button>
                         ) : m.allocatedVehicleId ? (
                           <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-500">Linked elsewhere</span>
+                        ) : linkedVehicleIds.has(variantVehicleId) ? (
+                          <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-400">Vehicle Taken</span>
                         ) : (
                           <button
                             onClick={() => void handleLinkOrder(m.orderId, variantVehicleId, variantVehicleInfo)}
@@ -1502,6 +1504,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                           </button>
                         ) : m.allocatedVehicleId ? (
                           <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-500">Linked elsewhere</span>
+                        ) : linkedVehicleIds.has(variantVehicleId) ? (
+                          <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-400">Vehicle Taken</span>
                         ) : (
                           <button
                             onClick={() => void handleLinkOrder(m.orderId, variantVehicleId, variantVehicleInfo)}
@@ -1542,6 +1546,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                           </button>
                         ) : m.allocatedVehicleId ? (
                           <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-500">Linked elsewhere</span>
+                        ) : linkedVehicleIds.has(variantVehicleId) ? (
+                          <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-400">Vehicle Taken</span>
                         ) : (
                           <button
                             onClick={() => void handleLinkOrder(m.orderId, variantVehicleId, variantVehicleInfo)}
