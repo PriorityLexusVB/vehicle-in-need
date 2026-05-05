@@ -911,6 +911,14 @@ const App: React.FC = () => {
     return computeOrderMatchSummaries(orders, vehicles, dxTrades);
   }, [orders, allocationSnapshot, dxTrades]);
 
+  const linkedVehicleIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const order of orders) {
+      if (order.allocatedVehicleId) ids.add(order.allocatedVehicleId);
+    }
+    return ids;
+  }, [orders]);
+
   if (isLoading) {
     return <LoadingSpinner />;
   }
@@ -1075,6 +1083,8 @@ const App: React.FC = () => {
                     currentUser={user}
                     highlightedOrderId={highlightedOrderId}
                     orderMatchSummaries={orderMatchSummaries}
+                    allocationVehicles={allocationSnapshot?.vehicles ?? []}
+                    linkedVehicleIds={linkedVehicleIds}
                   />
                 </div>
               ) : (
@@ -1122,6 +1132,8 @@ const App: React.FC = () => {
                       currentUser={user}
                       highlightedOrderId={highlightedOrderId}
                       orderMatchSummaries={orderMatchSummaries}
+                      allocationVehicles={allocationSnapshot?.vehicles ?? []}
+                      linkedVehicleIds={linkedVehicleIds}
                     />
                   </div>
                 </div>

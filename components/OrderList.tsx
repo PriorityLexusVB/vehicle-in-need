@@ -9,6 +9,7 @@ import {
 } from "../constants";
 import { DownloadIcon } from "./icons/DownloadIcon";
 import { OrderMatchSummary } from "../src/utils/orderMatchSummary";
+import { AllocationVehicle } from "../src/utils/allocationTypes";
 
 interface OrderListProps {
   orders: Order[];
@@ -22,6 +23,8 @@ interface OrderListProps {
   variant?: "beta";
   highlightedOrderId?: string | null;
   orderMatchSummaries?: Map<string, OrderMatchSummary>;
+  allocationVehicles?: AllocationVehicle[];
+  linkedVehicleIds?: Set<string>;
 }
 
 const OrderList: React.FC<OrderListProps> = ({
@@ -32,6 +35,8 @@ const OrderList: React.FC<OrderListProps> = ({
   currentUser,
   highlightedOrderId,
   orderMatchSummaries,
+  allocationVehicles,
+  linkedVehicleIds,
 }) => {
   const [animateRef] = useAutoAnimate();
   const [searchQuery, setSearchQuery] = useState("");
@@ -308,6 +313,8 @@ const OrderList: React.FC<OrderListProps> = ({
               currentUser={currentUser}
               highlighted={highlightedOrderId === order.id}
               matchSummary={orderMatchSummaries?.get(order.id)}
+              allocationVehicles={allocationVehicles}
+              linkedVehicleIds={linkedVehicleIds}
             />
           ))
         ) : (

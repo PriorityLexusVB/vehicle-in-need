@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { AppUser, Order } from "../types";
+import { AppUser, Order, OrderStatus } from "../types";
 import {
   parseAllocationSource,
   groupArrivalBucket,
@@ -563,7 +563,9 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
       setActiveOrders([]);
       return;
     }
-    return subscribeActiveOrders((orders) => setActiveOrders(orders));
+    return subscribeActiveOrders((orders) =>
+      setActiveOrders(orders.filter((o) => o.status !== OrderStatus.DealerExchange))
+    );
   }, [currentUser.isManager]);
 
   // Use shared DX trades from App.tsx if available, otherwise fetch independently

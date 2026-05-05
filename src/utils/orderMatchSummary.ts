@@ -4,7 +4,7 @@
  * used to show match badges on dashboard order cards.
  */
 
-import { Order } from "../../types";
+import { Order, OrderStatus } from "../../types";
 import { AllocationVehicle } from "./allocationTypes";
 import { DxTrade } from "./dxSheetParser";
 import { MODEL_CODE_TO_ALLOCATION } from "./allocationReference";
@@ -91,12 +91,18 @@ export function computeOrderMatchSummaries(
 
   const precomputed = precomputeOrders(orders);
 
+  // DealerExchange orders are sourced via DX pipeline, not factory allocation —
+  // exclude them from allocation vehicle matching.
+  const allocPrecomputed = precomputed.filter(
+    (pc) => pc.order.status !== OrderStatus.DealerExchange,
+  );
+
   // Allocation vehicle matching
   for (const vehicle of vehicles) {
     const vehicleCode = normalizeModel(vehicle.code);
     const vehicleSourceCode = vehicle.sourceCode ? extractFourDigitCode(vehicle.sourceCode) : null;
 
-    for (const pc of precomputed) {
+    for (const pc of allocPrecomputed) {
       const modelMatch = vehicleCode !== "" && pc.normalizedModel === vehicleCode;
       const codeMatch = vehicleSourceCode !== null && pc.fourDigitCode !== null && vehicleSourceCode === pc.fourDigitCode;
       const bridgeMatch = pc.bridgedModel !== null && vehicleCode !== "" && pc.bridgedModel === vehicleCode;

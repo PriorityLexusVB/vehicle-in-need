@@ -13,8 +13,10 @@ import {
   formatModelNumber,
 } from "../src/utils/orderCardFormatters";
 import OrderNotes from "./OrderNotes";
-import { unlinkVehicleFromOrder } from "../services/orderLinkingService";
+import { linkVehicleToOrder, unlinkVehicleFromOrder } from "../services/orderLinkingService";
 import { OrderMatchSummary } from "../src/utils/orderMatchSummary";
+import VehicleLinkSelector from "./VehicleLinkSelector";
+import { AllocationVehicle } from "../src/utils/allocationTypes";
 
 interface OrderCardProps {
   order: Order;
@@ -27,6 +29,8 @@ interface OrderCardProps {
   currentUser?: AppUser | null;
   highlighted?: boolean;
   matchSummary?: OrderMatchSummary;
+  allocationVehicles?: AllocationVehicle[];
+  linkedVehicleIds?: Set<string>;
 }
 
 const DetailItem: React.FC<{ label: string; children: React.ReactNode }> = ({
@@ -49,6 +53,8 @@ const OrderCard: React.FC<OrderCardProps> = ({
   currentUser,
   highlighted,
   matchSummary,
+  allocationVehicles,
+  linkedVehicleIds,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showUnsecureConfirm, setShowUnsecureConfirm] = useState(false);
@@ -81,6 +87,17 @@ const OrderCard: React.FC<OrderCardProps> = ({
       alert(msg);
     } finally {
       setIsUnlinking(false);
+    }
+  };
+
+  const handleLinkVehicle = async (vehicleId: string, vehicleInfo: string) => {
+    if (!currentUser?.uid) return;
+    try {
+      await linkVehicleToOrder(order.id, vehicleId, vehicleInfo, currentUser.uid);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Failed to link vehicle";
+      console.error("Link failed:", msg);
+      alert(msg);
     }
   };
 
@@ -590,6 +607,25 @@ const OrderCard: React.FC<OrderCardProps> = ({
                 </div>
               </div>
             )}
+
+            {order.status === OrderStatus.FactoryOrder &&
+              currentUser?.isManager &&
+              !isSecured &&
+              allocationVehicles &&
+              allocationVehicles.length > 0 && (
+                <div className="mb-4">
+                  <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-stone-400">
+                    Allocation Vehicle
+                  </p>
+                  <VehicleLinkSelector
+                    order={order}
+                    vehicles={allocationVehicles}
+                    linkedVehicleIds={linkedVehicleIds ?? new Set()}
+                    onLink={(vehicleId, vehicleInfo) => void handleLinkVehicle(vehicleId, vehicleInfo)}
+                    onUnlink={() => void handleUnlinkVehicle()}
+                  />
+                </div>
+              )}
 
             <div className="space-y-6">
               {isEditing && currentUser?.isManager && isActive && (
