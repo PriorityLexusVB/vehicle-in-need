@@ -48,6 +48,7 @@ import { subscribeLatestAllocationSnapshot } from "./services/allocationService"
 import { AllocationSnapshot } from "./src/utils/allocationTypes";
 import { computeOrderMatchSummaries, OrderMatchSummary } from "./src/utils/orderMatchSummary";
 import { fetchDxSheet, DxTrade } from "./src/utils/dxSheetParser";
+import { unlinkVehicleFromOrder } from "./services/orderLinkingService";
 
 // Type guard to verify if an error is a FirestoreError.
 // Checks for FirestoreError-specific properties to distinguish from generic errors.
@@ -778,6 +779,15 @@ const App: React.FC = () => {
     async (orderId: string, status: OrderStatus) => {
       if (!user?.isManager) return; // Security check
       try {
+        // When securing an order, clean up any vehicle link so the allocation
+        // vehicle becomes available again for other customers.
+        if (isSecuredStatus(status)) {
+          const order = orders.find((o) => o.id === orderId);
+          if (order?.allocatedVehicleId) {
+            await unlinkVehicleFromOrder(orderId);
+          }
+        }
+
         const orderDocRef = doc(db, "orders", orderId);
         await updateDoc(orderDocRef, { status });
 
@@ -863,6 +873,10 @@ const App: React.FC = () => {
         )
       ) {
         try {
+          const orderToDelete = orders.find((o) => o.id === orderId);
+          if (orderToDelete?.allocatedVehicleId) {
+            await unlinkVehicleFromOrder(orderId);
+          }
           await deleteDoc(doc(db, "orders", orderId));
         } catch (error) {
           console.error("Error deleting order: ", error);

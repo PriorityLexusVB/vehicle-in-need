@@ -28,10 +28,6 @@ interface VehicleLinkSelectorProps {
   onUnlink: () => void;
 }
 
-function buildVehicleId(v: AllocationVehicle): string {
-  return `${v.code}-${v.color}-${v.id}`;
-}
-
 function buildVehicleInfo(v: AllocationVehicle): string {
   const parts = [
     v.model || v.code,
@@ -74,7 +70,7 @@ export default function VehicleLinkSelector({
 
     return vehicles
       .map((v): ScoredVehicle => {
-        const vehicleId = buildVehicleId(v);
+        const vehicleId = v.id;
         const vehicleInfo = buildVehicleInfo(v);
         const vCode = (v.code || "").toUpperCase().replace(/\s+/g, "");
         const vModel = (v.model || "").toUpperCase().replace(/\s+/g, "");
