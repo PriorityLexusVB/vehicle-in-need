@@ -51,7 +51,7 @@ export interface Order {
   latestNoteByName?: string;
 
   // Allocation vehicle linking (manager-only writes, enforced by Firestore rules)
-  allocatedVehicleId?: string;       // ID of linked allocation vehicle (e.g. "RX350-6X4-001")
+  allocatedVehicleId?: string;       // ID of linked allocation vehicle — vehicle.id from the allocation snapshot
   allocatedVehicleInfo?: string;     // Human-readable summary (e.g. "RX 350 - Eminent White Pearl - May 2026")
   linkedAt?: Timestamp;              // When the link was created
   linkedByUid?: string;              // Manager who created the link
