@@ -1386,8 +1386,12 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
       if (fa) detailRows.push({ label: "Factory Accessories", value: fa });
       if (ppo) detailRows.push({ label: "Post-Production Options", value: ppo });
 
-      // Vehicle ID and info for linking
-      const variantVehicleId = variant.vehicleIds[0];
+      // Vehicle ID and info for linking — use first AVAILABLE slot so that
+      // linking one unit of a qty>1 variant doesn't block the remaining slots.
+      const availableVehicleIds = variant.vehicleIds.filter((vid) => !linkedVehicleIds.has(vid));
+      const linkedSlotCount = variant.vehicleIds.length - availableVehicleIds.length;
+      const allSlotsTaken = availableVehicleIds.length === 0;
+      const variantVehicleId = availableVehicleIds[0] ?? variant.vehicleIds[0];
       const variantVehicleInfo = [
         getDisplayModel(variant.model, variant.code),
         formatColorDisplay(variant.color),
@@ -1417,8 +1421,18 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
               <p className="mt-1 text-sm text-stone-500">Trim: {getDisplayTrim(variant.sourceCode, variant.code, variant.grade)}</p>
             </div>
             {variant.units > 1 && (
-              <span className="rounded-full border border-stone-300 bg-stone-50 px-2.5 py-1 text-xs font-semibold text-stone-800">
-                Qty: {variant.units}
+              <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
+                allSlotsTaken
+                  ? "border-stone-200 bg-stone-100 text-stone-400"
+                  : linkedSlotCount > 0
+                    ? "border-amber-200 bg-amber-50 text-amber-700"
+                    : "border-stone-300 bg-stone-50 text-stone-800"
+              }`}>
+                {allSlotsTaken
+                  ? `Qty: ${variant.units} · All claimed`
+                  : linkedSlotCount > 0
+                    ? `Qty: ${variant.units} · ${availableVehicleIds.length} available`
+                    : `Qty: ${variant.units}`}
               </span>
             )}
           </div>
@@ -1446,7 +1460,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                         <span className="text-sm text-stone-500">{m.salesperson || "TBD"}</span>
                         <span className="text-xs text-stone-500">{m.model} / {m.modelNumber}</span>
                         <a href={`/#/?highlight=${m.orderId}`} target="_blank" rel="noopener noreferrer" className="rounded bg-stone-100 px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors" title="View order in new tab">View ↗</a>
-                        {m.allocatedVehicleId === variantVehicleId ? (
+                        {variant.vehicleIds.includes(m.allocatedVehicleId ?? "") ? (
                           <button
                             onClick={() => void handleUnlinkOrder(m.orderId)}
                             disabled={linkingOrderId === m.orderId}
@@ -1457,7 +1471,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                           </button>
                         ) : m.allocatedVehicleId ? (
                           <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-500">Linked elsewhere</span>
-                        ) : linkedVehicleIds.has(variantVehicleId) ? (
+                        ) : allSlotsTaken ? (
                           <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-400">Vehicle Taken</span>
                         ) : (
                           <button
@@ -1488,7 +1502,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                         <span className="text-sm text-stone-500">{m.salesperson || "TBD"}</span>
                         <span className="text-xs text-stone-500">{m.model} / {m.modelNumber}</span>
                         <a href={`/#/?highlight=${m.orderId}`} target="_blank" rel="noopener noreferrer" className="rounded bg-stone-100 px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors" title="View order in new tab">View ↗</a>
-                        {m.allocatedVehicleId === variantVehicleId ? (
+                        {variant.vehicleIds.includes(m.allocatedVehicleId ?? "") ? (
                           <button
                             onClick={() => void handleUnlinkOrder(m.orderId)}
                             disabled={linkingOrderId === m.orderId}
@@ -1499,7 +1513,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                           </button>
                         ) : m.allocatedVehicleId ? (
                           <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-500">Linked elsewhere</span>
-                        ) : linkedVehicleIds.has(variantVehicleId) ? (
+                        ) : allSlotsTaken ? (
                           <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-400">Vehicle Taken</span>
                         ) : (
                           <button
@@ -1530,7 +1544,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                         <span className="text-sm text-stone-500">{m.salesperson || "TBD"}</span>
                         <span className="text-xs text-stone-500">{m.model} / {m.modelNumber}</span>
                         <a href={`/#/?highlight=${m.orderId}`} target="_blank" rel="noopener noreferrer" className="rounded bg-stone-100 px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors" title="View order in new tab">View ↗</a>
-                        {m.allocatedVehicleId === variantVehicleId ? (
+                        {variant.vehicleIds.includes(m.allocatedVehicleId ?? "") ? (
                           <button
                             onClick={() => void handleUnlinkOrder(m.orderId)}
                             disabled={linkingOrderId === m.orderId}
@@ -1541,7 +1555,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                           </button>
                         ) : m.allocatedVehicleId ? (
                           <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-500">Linked elsewhere</span>
-                        ) : linkedVehicleIds.has(variantVehicleId) ? (
+                        ) : allSlotsTaken ? (
                           <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-400">Vehicle Taken</span>
                         ) : (
                           <button
