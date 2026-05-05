@@ -801,7 +801,7 @@ const App: React.FC = () => {
         alert("Failed to update status. Please try again.");
       }
     },
-    [user],
+    [user, orders],
   );
 
   const handleUpdateOrderDetails = useCallback(
@@ -884,7 +884,7 @@ const App: React.FC = () => {
         }
       }
     },
-    [user],
+    [user, orders],
   );
 
   const handleUpdateUserRole = useCallback(
