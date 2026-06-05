@@ -273,8 +273,16 @@ jobs:
           fi
           echo "✅ Build succeeded"
 
+      # Post-deploy belt-and-suspenders checks. NON-FATAL (continue-on-error):
+      # the real deploy is already verified by "Wait for build completion" +
+      # "Verify build status" (the Cloud Build job includes the Cloud Run
+      # deploy step). These two extra checks require Artifact Registry
+      # read/pull perms that the deployer SA (cloud-build-deployer) does not
+      # hold, so a failure here does NOT mean the deploy failed. Kept for
+      # signal, but must never red-mark a successful deploy. (2026-06-05)
       - name: Verify image in Artifact Registry
         if: steps.auth-status.outputs.auth_ok == 'true'
+        continue-on-error: true
         run: |
           IMAGE_PATH="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.SERVICE_NAME }}"
           SHORT_SHA="${{ steps.build.outputs.short_sha }}"
@@ -283,12 +291,12 @@ jobs:
           if gcloud artifacts docker images list $IMAGE_PATH --limit=1 | grep -q "$SHORT_SHA"; then
             echo "✅ Image found in Artifact Registry with tag: $SHORT_SHA"
           else
-            echo "❌ Image not found in Artifact Registry"
-            exit 1
+            echo "⚠️ Could not confirm image via AR list (deployer SA lacks AR read) — deploy already verified upstream; non-fatal."
           fi
 
       - name: Inspect image structure (validation)
         if: steps.auth-status.outputs.auth_ok == 'true'
+        continue-on-error: true
         run: |
           SHORT_SHA="${{ steps.build.outputs.short_sha }}"
           IMAGE_PATH="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.SERVICE_NAME }}:$SHORT_SHA"
