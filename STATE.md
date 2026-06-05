@@ -3,7 +3,7 @@
 > Per-repo memory file. The repo's single source of truth for "where is this project."
 > Rewrite to current truth each working session — do NOT append session logs.
 
-**Last updated:** 2026-06-04 · **By:** HOME PC / Claude · **HEAD:** `3ec2ea1`
+**Last updated:** 2026-06-05 · **By:** WORK PC / Claude · **HEAD:** `386d003`
 
 ---
 
@@ -15,7 +15,7 @@ React 19 + Vite 7 + Tailwind 4 frontend · Firebase backend (Firestore, Cloud Fu
 
 ## Current state — is it live?
 - Deployed: yes — Cloud Run `https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/`
-- Last shipped: `3ec2ea1` (2026-06-04) — K8 DX-sheet loading skeleton (replaced plain-text "Loading DX sheet..." with a table-shaped animate-pulse skeleton). Prior substantive ship `32d7e41` (2026-05-05) — pdf-parse v2 constructor fix; email-automation pipeline live end-to-end.
+- Last shipped: `386d003` (2026-06-05) — K3 side-panel order preview (vaul `direction="right"` Drawer replaces the 3 "View ↗" new-tab links on the strategy board; in-place full-order detail without leaving the board). Prior: `3ec2ea1` (2026-06-04) K8 DX-sheet loading skeleton · `32d7e41` (2026-05-05) pdf-parse v2 fix.
 - Deploy mechanism: `git push origin main` → GitHub Actions (Cloud Build) → Cloud Run. Pushing to `main` IS deploying.
 - Build/CI: `npm run build` green (vite build + CSS-in-build verify). NOTE: bare `npx tsc --noEmit` reports pre-existing errors in TEST files only (`components/__tests__/OrderList.test.tsx` Order-mock typing; `functions/src/__tests__/setManagerRole.test.ts` jest-namespace) — these are excluded from the production vite build and are NOT regressions.
 
@@ -30,7 +30,7 @@ React 19 + Vite 7 + Tailwind 4 frontend · Firebase backend (Firestore, Cloud Fu
 The K1-K10 queue in the claude-sync spine was stale. Grep-verified current status:
 - **K8 — VIN loading skeletons → DONE.** Main board skeleton was already shipped; DX sub-panel skeleton closed `3ec2ea1`. App-level `<LoadingSpinner />` (App.tsx:936) is the correct app-shell bootstrap phase — intentionally NOT a board skeleton (route unknown at that point).
 - **K4 — URL-driven filters → LARGELY ALREADY BUILT.** `AllocationBoard.tsx` already wires `useSearchParams` for `model`/`view`/`scrollTo`/`dxModel` (≈lines 886-918); App.tsx has `highlight`. Remaining is a verify-and-gap-fill task (confirm shareable-state coverage for the in-board filter chips: category/model/rank/bos/search at AllocationBoard.tsx ≈1942), NOT a from-scratch build.
-- **K3 — side panel preview (View order without leaving board) → genuinely unbuilt.** Full-wave cadence. `vaul` Drawer dep already present (used in `VehicleLinkSelector.tsx`), so the primitive exists. Currently "View" uses `highlight` URL param / navigation rather than an in-place side panel.
+- **K3 — side panel preview → DONE (`386d003`, 2026-06-05).** New `components/OrderPreviewDrawer.tsx` (controlled vaul `direction="right"` Drawer, read-only) + `AllocationBoard.tsx` wiring (previewOrderId state + stale-id cleanup useEffect + 3 link→button swaps + drawer mount). Replaced the 3 "View ↗" new-tab links (strategy view Color-Match / Similar-Color / model-only sub-sections). Codex adversarial = SHIP (2 polishes applied). NOT added to log-view (:2152) or DealLog — strategy-view-only by design; revisit if Rob wants those rows to preview too.
 - **K1 Firebase App Check / K7 Sheets sync / K10 PWA icons (192/512) → Rob-blocked** (auth perimeter / credential / asset-gen).
 
 ## What is NOT trustworthy yet
@@ -41,8 +41,7 @@ The K1-K10 queue in the claude-sync spine was stale. Grep-verified current statu
 ## Open loops (close or kill before new builds)
 - [ ] 39 dependabot vulnerabilities — decision: accept (breaking-change risk) or schedule a tested upgrade window. Owner: Rob.
 - [ ] Stale root-level markdown docs (BRANCH_*, CLOUD_BUILD_*, IMPLEMENTATION_*) — prune or move to `docs/`.
-- [ ] K4 verify-and-gap-fill: confirm in-board filter chips (category/model/rank/bos/search) persist to URL for shareable state, or document the intentional scope boundary.
-- [ ] K3 side-panel preview — the only genuinely-unbuilt autonomous K-item; full-wave cadence.
+- [ ] K4 verify-and-gap-fill: confirm in-board filter chips (category/model/rank/bos/search) persist to URL for shareable state, or document the intentional scope boundary. **← now the only remaining autonomous K-item (K3 shipped `386d003`).**
 
 ## Credentials / access needed
 - GCP / Cloud Run — deploy via GitHub Actions (`build-and-deploy.yml`, Cloud Build) — have it (CI configured)
@@ -53,10 +52,11 @@ The K1-K10 queue in the claude-sync spine was stale. Grep-verified current statu
 
 ## Next 3 actions
 1. (Rob) Decide on the 39 dependabot vulnerabilities (accept vs. schedule upgrade window).
-2. K3 side-panel preview — next autonomous full-wave build (vaul Drawer primitive already available).
-3. K4 verify-and-gap-fill OR document the filter-chip URL-persistence scope boundary.
+2. K4 verify-and-gap-fill OR document the filter-chip URL-persistence scope boundary — last autonomous K-item.
+3. (Rob-blocked) K1 Firebase App Check / K7 Sheets sync / K10 PWA icons.
 
 ## Decisions log (newest first)
+- 2026-06-05 — K3 shipped `386d003` (WORK): in-place side-panel order preview (vaul `direction="right"` Drawer) replaced the 3 strategy-board "View ↗" new-tab links. Codex adversarial = SHIP. K-queue now: K4 = last autonomous item; K1/K7/K10 Rob-blocked. Push needed `--reset-author` to `robbrascojr@gmail.com` (WORK PC GH007 email-privacy block per `feedback_cross_pc_git_transfer.md`).
 - 2026-06-04 — K8 closed: DX sub-panel skeleton shipped `3ec2ea1`; main board skeleton was already live. K-queue corrected after Rule-18 already-built check (K4 found largely-built, K8 ~done, only K3 genuinely unbuilt).
 - 2026-05-05 — Switched email pipeline from Drive OCR to base64 PDF — Drive OCR hit rate limits.
 - 2026-05-05 — Toyota DM qty>1 handled as two identical-spec rows, both slots independently linkable — no Firestore schema change needed.
