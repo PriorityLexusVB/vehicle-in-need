@@ -96,7 +96,7 @@ jobs:
         env:
           WIF_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-          SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          SA_KEY: ${{ secrets.GCP_SA_KEY || secrets.GCP_CREDENTIALS }}
         run: |
           set -euo pipefail
           echo "Validating GCP auth inputs..."
@@ -179,7 +179,7 @@ jobs:
         if: steps.validate-gcp-auth.outputs.use_sa_key == 'true' && (steps.validate-gcp-auth.outputs.use_wif != 'true' || steps.auth-wif.outcome == 'failure')
         uses: google-github-actions/auth@v3
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          credentials_json: ${{ secrets.GCP_SA_KEY || secrets.GCP_CREDENTIALS }}
 
       - name: Check authentication status
         id: auth-status
@@ -338,7 +338,7 @@ jobs:
         env:
           WIF_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-          SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          SA_KEY: ${{ secrets.GCP_SA_KEY || secrets.GCP_CREDENTIALS }}
         run: |
           set -euo pipefail
           echo "Validating GCP auth inputs..."
@@ -421,7 +421,7 @@ jobs:
         if: steps.validate-gcp-auth.outputs.use_sa_key == 'true' && (steps.validate-gcp-auth.outputs.use_wif != 'true' || steps.auth-wif.outcome == 'failure')
         uses: google-github-actions/auth@v3
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          credentials_json: ${{ secrets.GCP_SA_KEY || secrets.GCP_CREDENTIALS }}
 
       - name: Check authentication status
         run: |
