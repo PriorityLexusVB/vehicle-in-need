@@ -24,6 +24,7 @@ import {
 } from "../services/orderLinkingService";
 import { useVehicleLinks } from "../services/useVehicleLinks";
 import { fetchDxSheet, DxTrade } from "../src/utils/dxSheetParser";
+import OrderPreviewDrawer from "./OrderPreviewDrawer";
 
 interface AllocationBoardProps {
   currentUser: AppUser;
@@ -531,7 +532,20 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
   const [sortMode, setSortMode] = useState<SortMode>("priority");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [linkingOrderId, setLinkingOrderId] = useState<string | null>(null);
+  // K3 side-panel preview — order id currently shown in the OrderPreviewDrawer.
+  // null = closed. Resolved to a full Order via activeOrders.find() at the mount.
+  const [previewOrderId, setPreviewOrderId] = useState<string | null>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
+
+  // Clear a dangling preview id if its order leaves activeOrders (e.g. a live
+  // Firestore delete, or a transient subscription gap). Without this the id
+  // stays non-null and the drawer could re-open without a click if the same id
+  // re-appears in the snapshot. Per Codex K3 review.
+  useEffect(() => {
+    if (previewOrderId !== null && !activeOrders.some((o) => o.id === previewOrderId)) {
+      setPreviewOrderId(null);
+    }
+  }, [activeOrders, previewOrderId]);
 
   const urlModelApplied = useRef(false);
 
@@ -1459,7 +1473,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                         {m.orderDate?.trim() && <span className="font-medium text-xs text-stone-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
                         <span className="text-sm text-stone-500">{m.salesperson || "TBD"}</span>
                         <span className="text-xs text-stone-500">{m.model} / {m.modelNumber}</span>
-                        <a href={`/#/?highlight=${m.orderId}`} target="_blank" rel="noopener noreferrer" className="rounded bg-stone-100 px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors" title="View order in new tab">View ↗</a>
+                        <button type="button" onClick={() => setPreviewOrderId(m.orderId)} aria-label={`Preview ${m.customerName}'s order`} className="rounded bg-stone-100 px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors" title="Preview order details">View</button>
                         {variant.vehicleIds.includes(m.allocatedVehicleId ?? "") ? (
                           <button
                             onClick={() => void handleUnlinkOrder(m.orderId)}
@@ -1501,7 +1515,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                         {m.orderDate?.trim() && <span className="font-medium text-xs text-stone-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
                         <span className="text-sm text-stone-500">{m.salesperson || "TBD"}</span>
                         <span className="text-xs text-stone-500">{m.model} / {m.modelNumber}</span>
-                        <a href={`/#/?highlight=${m.orderId}`} target="_blank" rel="noopener noreferrer" className="rounded bg-stone-100 px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors" title="View order in new tab">View ↗</a>
+                        <button type="button" onClick={() => setPreviewOrderId(m.orderId)} aria-label={`Preview ${m.customerName}'s order`} className="rounded bg-stone-100 px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors" title="Preview order details">View</button>
                         {variant.vehicleIds.includes(m.allocatedVehicleId ?? "") ? (
                           <button
                             onClick={() => void handleUnlinkOrder(m.orderId)}
@@ -1543,7 +1557,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                         {m.orderDate?.trim() && <span className="font-medium text-xs text-stone-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
                         <span className="text-sm text-stone-500">{m.salesperson || "TBD"}</span>
                         <span className="text-xs text-stone-500">{m.model} / {m.modelNumber}</span>
-                        <a href={`/#/?highlight=${m.orderId}`} target="_blank" rel="noopener noreferrer" className="rounded bg-stone-100 px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors" title="View order in new tab">View ↗</a>
+                        <button type="button" onClick={() => setPreviewOrderId(m.orderId)} aria-label={`Preview ${m.customerName}'s order`} className="rounded bg-stone-100 px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors" title="Preview order details">View</button>
                         {variant.vehicleIds.includes(m.allocatedVehicleId ?? "") ? (
                           <button
                             onClick={() => void handleUnlinkOrder(m.orderId)}
@@ -2345,6 +2359,14 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
           )}
         </div>
       )}
+
+      {/* K3 side-panel order preview — controlled drawer, opened by the row
+          "View" buttons setting previewOrderId. Resolves the full Order from
+          activeOrders (already in state, no fetch). */}
+      <OrderPreviewDrawer
+        order={activeOrders.find((o) => o.id === previewOrderId) ?? null}
+        onClose={() => setPreviewOrderId(null)}
+      />
     </section>
   );
 };
