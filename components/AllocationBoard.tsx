@@ -2254,7 +2254,32 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
           )}
 
           {dxLoading && dxTrades.length === 0 && (
-            <p className="py-6 text-center text-sm text-stone-400">Loading DX sheet...</p>
+            <div
+              className="overflow-hidden rounded-xl border border-stone-200"
+              aria-busy="true"
+              aria-label="Loading dealer exchange sheet"
+            >
+              <div className="flex flex-wrap gap-3 bg-amber-50 px-3 py-3">
+                <div className="h-3 w-16 animate-pulse rounded bg-amber-200/70" />
+                <div className="h-3 w-24 animate-pulse rounded bg-amber-200/70" />
+                <div className="h-3 w-20 animate-pulse rounded bg-amber-200/70" />
+                <div className="h-3 w-28 animate-pulse rounded bg-amber-200/70" />
+                <div className="h-3 w-24 animate-pulse rounded bg-amber-200/70" />
+                <div className="h-3 w-14 animate-pulse rounded bg-amber-200/70" />
+              </div>
+              <div className="divide-y divide-stone-200 bg-white">
+                {[1, 2, 3, 4].map((r) => (
+                  <div key={r} className="flex flex-wrap items-center gap-3 px-3 py-3">
+                    <div className="h-4 w-16 animate-pulse rounded bg-stone-100" />
+                    <div className="h-4 w-28 animate-pulse rounded bg-stone-200" />
+                    <div className="h-4 w-20 animate-pulse rounded bg-stone-100" />
+                    <div className="h-4 w-24 animate-pulse rounded bg-stone-100" />
+                    <div className="h-4 w-28 animate-pulse rounded bg-stone-100" />
+                    <div className="h-4 w-14 animate-pulse rounded bg-stone-100" />
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
           {dxTrades.length > 0 && (
