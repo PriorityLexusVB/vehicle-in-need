@@ -3,7 +3,7 @@
 > Per-repo memory file. The repo's single source of truth for "where is this project."
 > Rewrite to current truth each working session — do NOT append session logs.
 
-**Last updated:** 2026-05-17 · **By:** HOME PC / Claude · **HEAD:** `650bd80`
+**Last updated:** 2026-06-04 · **By:** HOME PC / Claude · **HEAD:** `3ec2ea1`
 
 ---
 
@@ -15,24 +15,34 @@ React 19 + Vite 7 + Tailwind 4 frontend · Firebase backend (Firestore, Cloud Fu
 
 ## Current state — is it live?
 - Deployed: yes — Cloud Run `https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/`
-- Last shipped: `650bd80` — CSS-in-build verification utility script. Prior substantive ship `32d7e41` (2026-05-05) — pdf-parse v2 constructor fix; email-automation pipeline live end-to-end
-- Build/CI: green — `git status` clean, `main` up to date with `origin/main` (HOME pulled up 2026-05-17)
+- Last shipped: `3ec2ea1` (2026-06-04) — K8 DX-sheet loading skeleton (replaced plain-text "Loading DX sheet..." with a table-shaped animate-pulse skeleton). Prior substantive ship `32d7e41` (2026-05-05) — pdf-parse v2 constructor fix; email-automation pipeline live end-to-end.
+- Deploy mechanism: `git push origin main` → GitHub Actions (Cloud Build) → Cloud Run. Pushing to `main` IS deploying.
+- Build/CI: `npm run build` green (vite build + CSS-in-build verify). NOTE: bare `npx tsc --noEmit` reports pre-existing errors in TEST files only (`components/__tests__/OrderList.test.tsx` Order-mock typing; `functions/src/__tests__/setManagerRole.test.ts` jest-namespace) — these are excluded from the production vite build and are NOT regressions.
 
 ## What works (trustworthy)
 - Allocation board live — robust PDF parser, verified end-to-end (Allocation 051, 59 vehicles)
 - Email automation pipeline LIVE — Apps Script watcher (5-min trigger) → `processAllocationEmail` Cloud Function (us-central1) → Firestore `allocationSnapshots`
 - Vehicle linking: ID-mismatch, orphaned-link, multi-slot qty>1 bugs all fixed
 - Role-based access (manager vs user), service worker auto-update, Firestore rules tested
+- Loading skeletons: main allocation board (`isLoading`) + DX sub-panel both render accessible animate-pulse skeletons (K8 complete)
+
+## K-series queue — VERIFIED against source 2026-06-04 (was stale; corrected)
+The K1-K10 queue in the claude-sync spine was stale. Grep-verified current status:
+- **K8 — VIN loading skeletons → DONE.** Main board skeleton was already shipped; DX sub-panel skeleton closed `3ec2ea1`. App-level `<LoadingSpinner />` (App.tsx:936) is the correct app-shell bootstrap phase — intentionally NOT a board skeleton (route unknown at that point).
+- **K4 — URL-driven filters → LARGELY ALREADY BUILT.** `AllocationBoard.tsx` already wires `useSearchParams` for `model`/`view`/`scrollTo`/`dxModel` (≈lines 886-918); App.tsx has `highlight`. Remaining is a verify-and-gap-fill task (confirm shareable-state coverage for the in-board filter chips: category/model/rank/bos/search at AllocationBoard.tsx ≈1942), NOT a from-scratch build.
+- **K3 — side panel preview (View order without leaving board) → genuinely unbuilt.** Full-wave cadence. `vaul` Drawer dep already present (used in `VehicleLinkSelector.tsx`), so the primitive exists. Currently "View" uses `highlight` URL param / navigation rather than an in-place side panel.
+- **K1 Firebase App Check / K7 Sheets sync / K10 PWA icons (192/512) → Rob-blocked** (auth perimeter / credential / asset-gen).
 
 ## What is NOT trustworthy yet
-- 18 npm vulnerabilities remain — all require breaking dep downgrades (firebase-admin, firebase-tools, vite-plugin-node-polyfills). Do NOT fix without testing.
+- 39 npm/dependabot vulnerabilities reported by GitHub on `main` (2 critical, 15 high, 19 moderate, 3 low — includes `functions/` subdir; up from the 18 noted 2026-05-17). Most require breaking dep changes (firebase-admin, firebase-tools, vite-plugin-node-polyfills). Do NOT fix without a tested upgrade window. Owner: Rob.
 - Parser is robust but inherits the dealership-wide email lead-parsing fragility pattern (open-loops registry #1) — no canonical tested parser module.
-- `~50` legacy root-level `*.md` design/deployment docs (Mar 2026) — likely stale, not pruned.
+- `~20` legacy root-level `*.md` design/deployment docs (Mar 2026, BRANCH_*/CLOUD_BUILD_*/IMPLEMENTATION_*) — likely stale, not pruned.
 
 ## Open loops (close or kill before new builds)
-- [ ] 18 npm vulnerabilities — decision: accept (breaking-change risk) or schedule a tested upgrade window. Owner: Rob.
+- [ ] 39 dependabot vulnerabilities — decision: accept (breaking-change risk) or schedule a tested upgrade window. Owner: Rob.
 - [ ] Stale root-level markdown docs (BRANCH_*, CLOUD_BUILD_*, IMPLEMENTATION_*) — prune or move to `docs/`.
-- [ ] No open Dependabot PRs noted in memory — confirm against GitHub.
+- [ ] K4 verify-and-gap-fill: confirm in-board filter chips (category/model/rank/bos/search) persist to URL for shareable state, or document the intentional scope boundary.
+- [ ] K3 side-panel preview — the only genuinely-unbuilt autonomous K-item; full-wave cadence.
 
 ## Credentials / access needed
 - GCP / Cloud Run — deploy via GitHub Actions (`build-and-deploy.yml`, Cloud Build) — have it (CI configured)
@@ -42,11 +52,12 @@ React 19 + Vite 7 + Tailwind 4 frontend · Firebase backend (Firestore, Cloud Fu
 - Gmail account the watcher polls for Toyota/Lexus allocation PDFs — <unknown — confirm which mailbox>
 
 ## Next 3 actions
-1. Decide on the 18 npm vulnerabilities (accept vs. schedule upgrade window).
-2. Prune the stale root-level `*.md` docs into `docs/` or archive.
-3. Confirm GitHub for any open Dependabot PRs before the next build.
+1. (Rob) Decide on the 39 dependabot vulnerabilities (accept vs. schedule upgrade window).
+2. K3 side-panel preview — next autonomous full-wave build (vaul Drawer primitive already available).
+3. K4 verify-and-gap-fill OR document the filter-chip URL-persistence scope boundary.
 
 ## Decisions log (newest first)
+- 2026-06-04 — K8 closed: DX sub-panel skeleton shipped `3ec2ea1`; main board skeleton was already live. K-queue corrected after Rule-18 already-built check (K4 found largely-built, K8 ~done, only K3 genuinely unbuilt).
 - 2026-05-05 — Switched email pipeline from Drive OCR to base64 PDF — Drive OCR hit rate limits.
 - 2026-05-05 — Toyota DM qty>1 handled as two identical-spec rows, both slots independently linkable — no Firestore schema change needed.
 
