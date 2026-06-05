@@ -889,6 +889,24 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
     }
   }, [modelFilter, modelOptions]);
 
+  // ── URL state scope boundary (K4, decided 2026-06-05, Codex-confirmed) ──────
+  // V-i-N has TWO deliberate board-state mechanisms, and intentionally does NOT
+  // serialize live filter state into the URL:
+  //   1. Per-user PERSISTENT preferences via localStorage (STORAGE_KEYS above +
+  //      persistSetting effects below): search/category/model/rank/bos/sort/
+  //      grouping survive reloads for each manager's own browser.
+  //   2. One-shot FOCUS deep-links (the block right below): ?model / ?view /
+  //      ?scrollTo / ?dxModel are read on first load, applied, then DELETED from
+  //      the URL — for "open the board focused on the RX 350 / this vehicle"
+  //      shares from the dashboard.
+  // Arbitrary "share my exact filtered view via the URL" (live two-way sync of
+  // every filter chip to query params) is OUT OF SCOPE. Reasons: filters already
+  // persist per-user (localStorage), focus-sharing is already covered (deep-link),
+  // and live URL sync would create THREE competing sources of truth (URL vs
+  // localStorage vs consume-and-clear deep-link) for a handful of internal
+  // managers with no demonstrated arbitrary-filter-sharing workflow. Revisit only
+  // if a real "send a colleague this precise filtered board" need appears.
+  // ────────────────────────────────────────────────────────────────────────────
   // Apply URL params (e.g., ?model=RX350&view=matches from dashboard badge click)
   // Stashes params on first render, applies model filter once modelOptions load
   const [highlightDxModel, setHighlightDxModel] = useState<string | null>(null);

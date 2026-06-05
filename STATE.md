@@ -3,7 +3,7 @@
 > Per-repo memory file. The repo's single source of truth for "where is this project."
 > Rewrite to current truth each working session — do NOT append session logs.
 
-**Last updated:** 2026-06-05 · **By:** WORK PC / Claude · **HEAD:** `386d003`
+**Last updated:** 2026-06-05 · **By:** WORK PC / Claude · **HEAD:** `c6e7fb6`+ (K4 close commit) — deploy pipeline FIXED, all K-items resolved
 
 ---
 
@@ -33,7 +33,7 @@ React 19 + Vite 7 + Tailwind 4 frontend · Firebase backend (Firestore, Cloud Fu
 ## K-series queue — VERIFIED against source 2026-06-04 (was stale; corrected)
 The K1-K10 queue in the claude-sync spine was stale. Grep-verified current status:
 - **K8 — VIN loading skeletons → DONE.** Main board skeleton was already shipped; DX sub-panel skeleton closed `3ec2ea1`. App-level `<LoadingSpinner />` (App.tsx:936) is the correct app-shell bootstrap phase — intentionally NOT a board skeleton (route unknown at that point).
-- **K4 — URL-driven filters → LARGELY ALREADY BUILT.** `AllocationBoard.tsx` already wires `useSearchParams` for `model`/`view`/`scrollTo`/`dxModel` (≈lines 886-918); App.tsx has `highlight`. Remaining is a verify-and-gap-fill task (confirm shareable-state coverage for the in-board filter chips: category/model/rank/bos/search at AllocationBoard.tsx ≈1942), NOT a from-scratch build.
+- **K4 — URL-driven filters → CLOSED 2026-06-05 (DOCUMENTED SCOPE BOUNDARY, no build; Codex-confirmed).** Decision: V-i-N intentionally does NOT serialize live filter state into the URL. It already has two deliberate mechanisms — (1) per-user PERSISTENT filter prefs via localStorage (`STORAGE_KEYS` + `persistSetting`, AllocationBoard.tsx:60-66/759-776), and (2) one-shot FOCUS deep-links (`?model`/`?view`/`?scrollTo`/`?dxModel`, consumed-and-cleared on load). Arbitrary "share my exact filtered view via URL" is out of scope: filters already persist, focus-sharing already covered, and live URL sync would create 3 competing sources of truth for a handful of internal managers with no demonstrated workflow. Codex (`codex-20260605-130828.md`) verdict = DOCUMENT, not build. Boundary documented in code at AllocationBoard.tsx (the URL-state comment block above the deep-link useEffect). **All K-items now resolved (K8 ✅ / K3 ✅ / K4 ✅-documented); K1/K7/K10 Rob-blocked.**
 - **K3 — side panel preview → DONE (`386d003`, 2026-06-05).** New `components/OrderPreviewDrawer.tsx` (controlled vaul `direction="right"` Drawer, read-only) + `AllocationBoard.tsx` wiring (previewOrderId state + stale-id cleanup useEffect + 3 link→button swaps + drawer mount). Replaced the 3 "View ↗" new-tab links (strategy view Color-Match / Similar-Color / model-only sub-sections). Codex adversarial = SHIP (2 polishes applied). NOT added to log-view (:2152) or DealLog — strategy-view-only by design; revisit if Rob wants those rows to preview too.
 - **K1 Firebase App Check / K7 Sheets sync / K10 PWA icons (192/512) → Rob-blocked** (auth perimeter / credential / asset-gen).
 
@@ -46,7 +46,7 @@ The K1-K10 queue in the claude-sync spine was stale. Grep-verified current statu
 - [x] ✅ GCP deploy auth — FIXED 2026-06-05 (full chain: SA-key fallback wiring + cloud-build-deployer key vaulted + actAs on compute-default build SA + non-fatal post-checks). K3+K8 live.
 - [ ] 39 dependabot vulnerabilities — decision: accept (breaking-change risk) or schedule a tested upgrade window. Owner: Rob.
 - [ ] Stale root-level markdown docs (BRANCH_*, CLOUD_BUILD_*, IMPLEMENTATION_*) — prune or move to `docs/`.
-- [ ] K4 verify-and-gap-fill: confirm in-board filter chips (category/model/rank/bos/search) persist to URL for shareable state, or document the intentional scope boundary. **← now the only remaining autonomous K-item (K3 shipped `386d003`).**
+- [x] ✅ K4 CLOSED 2026-06-05 — documented scope boundary (Codex-confirmed Path B, no build). All K-items resolved; only Rob-blocked K1/K7/K10 + 39 dependabot CVEs remain.
 
 ## Credentials / access needed
 - GCP / Cloud Run — deploy via GitHub Actions (`build-and-deploy.yml`, Cloud Build) — have it (CI configured)
@@ -56,11 +56,12 @@ The K1-K10 queue in the claude-sync spine was stale. Grep-verified current statu
 - Gmail account the watcher polls for Toyota/Lexus allocation PDFs — <unknown — confirm which mailbox>
 
 ## Next 3 actions
-1. (Rob) Decide on the 39 dependabot vulnerabilities (accept vs. schedule upgrade window).
-2. K4 verify-and-gap-fill OR document the filter-chip URL-persistence scope boundary — last autonomous K-item.
-3. (Rob-blocked) K1 Firebase App Check / K7 Sheets sync / K10 PWA icons.
+1. (Rob) Decide the 39 dependabot CVEs — accept (breaking-change risk) vs scheduled upgrade window.
+2. (Rob-blocked) K1 Firebase App Check / K7 Sheets sync / K10 PWA icons (192/512).
+3. No autonomous V-i-N work remains — K3/K4/K8 all resolved, deploy pipeline fixed.
 
 ## Decisions log (newest first)
+- 2026-06-05 — K4 CLOSED as DOCUMENTED SCOPE BOUNDARY (no build). Codex-confirmed (`codex-20260605-130828.md`): live filter→URL sync is product creep (filters already localStorage-persist; deep-links cover focus-sharing; 3-sources-of-truth complexity for undemonstrated workflow). Boundary documented in AllocationBoard.tsx URL-state comment block. **V-i-N K-series fully resolved.** Also: deploy pipeline FIXED this session (6-day GCP-auth outage) — see 'Current state'.
 - 2026-06-05 — K3 shipped `386d003` (WORK): in-place side-panel order preview (vaul `direction="right"` Drawer) replaced the 3 strategy-board "View ↗" new-tab links. Codex adversarial = SHIP. K-queue now: K4 = last autonomous item; K1/K7/K10 Rob-blocked. Push needed `--reset-author` to `robbrascojr@gmail.com` (WORK PC GH007 email-privacy block per `feedback_cross_pc_git_transfer.md`).
 - 2026-06-04 — K8 closed: DX sub-panel skeleton shipped `3ec2ea1`; main board skeleton was already live. K-queue corrected after Rule-18 already-built check (K4 found largely-built, K8 ~done, only K3 genuinely unbuilt).
 - 2026-05-05 — Switched email pipeline from Drive OCR to base64 PDF — Drive OCR hit rate limits.
