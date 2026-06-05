@@ -240,8 +240,18 @@ jobs:
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           echo "Using SHORT_SHA: $SHORT_SHA (from commit: ${{ github.sha }})"
 
+          # 2026-06-05: run the build explicitly AS pre-order-dealer-exchange-860.
+          # Without --service-account, `gcloud builds submit` falls back to the
+          # project's default build SA (unique id 109495422803475379349), which
+          # cloud-build-deployer is NOT granted actAs on -> PERMISSION_DENIED.
+          # cloud-build-deployer DOES have actAs on pre-order-dealer-exchange-860
+          # (Rob granted it 2026-06-05), so pinning the build SA to it bypasses
+          # the default-SA dependency. cloudbuild.yaml already sets
+          # `options.logging: CLOUD_LOGGING_ONLY`, which user-specified build SAs
+          # require.
           BUILD_ID=$(gcloud builds submit \
             --config cloudbuild.yaml \
+            --service-account=projects/${{ env.GCP_PROJECT_ID }}/serviceAccounts/pre-order-dealer-exchange-860@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
             --substitutions=SHORT_SHA=$SHORT_SHA,_REGION=${{ env.GCP_REGION }},_SERVICE=${{ env.SERVICE_NAME }} \
             --format='value(id)')
 
