@@ -15,6 +15,19 @@ on:
       - 'server/**'
       - 'components/**'
       - 'services/**'
+      - 'public/**'
+      # Root-level app entry + shared modules (2026-06-07: were OMITTED — a
+      # change to any of these merged + never triggered a deploy → silent
+      # stale prod, same class as the 6-day outage. Codex-found.)
+      - 'App.tsx'
+      - 'index.tsx'
+      - 'index.html'
+      - 'types.ts'
+      - 'constants.ts'
+      - 'vite.config.ts'
+      - 'tsconfig.json'
+      - 'tailwind.config.js'
+      - 'postcss.config.js'
       - 'Dockerfile'
       - 'cloudbuild.yaml'
       - 'package.json'
@@ -27,18 +40,29 @@ on:
       - 'server/**'
       - 'components/**'
       - 'services/**'
+      - 'public/**'
+      # Root-level app entry + shared modules (2026-06-07: were OMITTED — a
+      # change to any of these merged + never triggered a deploy → silent
+      # stale prod, same class as the 6-day outage. Codex-found.)
+      - 'App.tsx'
+      - 'index.tsx'
+      - 'index.html'
+      - 'types.ts'
+      - 'constants.ts'
+      - 'vite.config.ts'
+      - 'tsconfig.json'
+      - 'tailwind.config.js'
+      - 'postcss.config.js'
       - 'Dockerfile'
       - 'cloudbuild.yaml'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/build-and-deploy.yml'
+  # Manual trigger: builds the current main + deploys via cloudbuild.yaml's
+  # deploy-cloud-run step (same path as push). 2026-06-07: the old `deploy`
+  # input + separate `deploy` job were removed — that job duplicated
+  # cloudbuild's deploy AND could never run (needed the push-only `build`).
   workflow_dispatch:
-    inputs:
-      deploy:
-        description: 'Deploy to Cloud Run after build'
-        required: false
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -85,7 +109,9 @@ jobs:
     name: Build Container Image
     runs-on: ubuntu-latest
     needs: validate
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # main-only for BOTH triggers: a manual workflow_dispatch must also be on
+    # main so it can never build+deploy a feature branch's code to prod.
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
 
     steps:
       - uses: actions/checkout@v4
@@ -336,172 +362,3 @@ jobs:
           echo "- **Commit SHA**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Short SHA**: $SHORT_SHA" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-
-  # Manual deployment gate - only runs on workflow_dispatch with deploy=true
-  deploy:
-    name: Deploy to Cloud Run
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy == 'true'
-    environment: production
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Validate GCP auth inputs
-        id: validate-gcp-auth
-        shell: bash
-        env:
-          WIF_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-          SA_KEY: ${{ secrets.GCP_SA_KEY || secrets.GCP_CREDENTIALS }}
-        run: |
-          set -euo pipefail
-          echo "Validating GCP auth inputs..."
-
-          # Check for authentication methods (WIF or Service Account Key)
-          HAS_WIF=false
-          HAS_SA_KEY=false
-
-          if [ -n "$WIF_PROVIDER" ] && [ -n "$SERVICE_ACCOUNT" ]; then
-            HAS_WIF=true
-          fi
-
-          if [ -n "$SA_KEY" ]; then
-            HAS_SA_KEY=true
-          fi
-
-          # At least one method must be available
-          if [ "$HAS_WIF" = false ] && [ "$HAS_SA_KEY" = false ]; then
-            echo "::error::No GCP authentication configured"
-            echo ""
-            echo "Configure one of the following authentication methods:"
-            echo "  1. Workload Identity Federation (recommended):"
-            echo "     - GCP_WORKLOAD_IDENTITY_PROVIDER"
-            echo "     - GCP_SERVICE_ACCOUNT"
-            echo "  2. Service Account Key:"
-            echo "     - GCP_SA_KEY"
-            exit 1
-          fi
-
-          # Validate WIF if provided
-          if [ "$HAS_WIF" = true ]; then
-            echo "Validating Workload Identity Federation credentials..."
-
-            # Validate GCP_WORKLOAD_IDENTITY_PROVIDER format
-            if ! echo "$WIF_PROVIDER" | grep -qE '^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$'; then
-              echo "::error::GCP_WORKLOAD_IDENTITY_PROVIDER has invalid format"
-              echo "Expected format: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER"
-              if [ "$HAS_SA_KEY" = false ]; then
-                exit 1
-              else
-                echo "Will attempt Service Account Key authentication as fallback"
-                HAS_WIF=false
-              fi
-            else
-              echo "✅ GCP_WORKLOAD_IDENTITY_PROVIDER format is valid"
-            fi
-
-            # Validate GCP_SERVICE_ACCOUNT format
-            if [ "$HAS_WIF" = true ] && ! echo "$SERVICE_ACCOUNT" | grep -qE '^[^@]+@[^@]+\.iam\.gserviceaccount\.com$'; then
-              echo "::warning::GCP_SERVICE_ACCOUNT may have invalid format"
-              echo "Expected format: SERVICE_ACCOUNT_NAME@PROJECT_ID.iam.gserviceaccount.com"
-            elif [ "$HAS_WIF" = true ]; then
-              echo "✅ GCP_SERVICE_ACCOUNT format is valid"
-            fi
-          fi
-
-          # Set outputs for downstream steps
-          echo "use_wif=$HAS_WIF" >> $GITHUB_OUTPUT
-          echo "use_sa_key=$HAS_SA_KEY" >> $GITHUB_OUTPUT
-
-          if [ "$HAS_WIF" = true ]; then
-            echo "Will attempt Workload Identity Federation authentication"
-          fi
-
-          if [ "$HAS_SA_KEY" = true ]; then
-            echo "Will use Service Account Key authentication"
-          fi
-
-      - name: Authenticate to Google Cloud (Workload Identity Federation)
-        id: auth-wif
-        if: steps.validate-gcp-auth.outputs.use_wif == 'true'
-        continue-on-error: true
-        uses: google-github-actions/auth@v3
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-
-      - name: Authenticate to Google Cloud (Service Account Key)
-        id: auth-sa-key
-        if: steps.validate-gcp-auth.outputs.use_sa_key == 'true' && (steps.validate-gcp-auth.outputs.use_wif != 'true' || steps.auth-wif.outcome == 'failure')
-        uses: google-github-actions/auth@v3
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY || secrets.GCP_CREDENTIALS }}
-
-      - name: Check authentication status
-        run: |
-          if [ "${{ steps.auth-wif.outcome }}" = "success" ]; then
-            echo "✅ Authenticated using Workload Identity Federation"
-          elif [ "${{ steps.auth-sa-key.outcome }}" = "success" ]; then
-            echo "✅ Authenticated using Service Account Key"
-          else
-            echo "::error::All authentication methods failed"
-            echo ""
-            if [ "${{ steps.validate-gcp-auth.outputs.use_wif }}" = "true" ]; then
-              echo "Workload Identity Federation failed - the pool or provider may not exist or be disabled"
-              echo "To fix:"
-              echo "  1. Verify the pool and provider exist in GCP"
-              echo "  2. Or configure GCP_SA_KEY secret as a fallback"
-              echo "  3. See docs/CI.md for setup instructions"
-            elif [ "${{ steps.validate-gcp-auth.outputs.use_sa_key }}" = "true" ]; then
-              echo "Service Account Key authentication failed - the key may be invalid or missing required permissions"
-              echo "To fix:"
-              echo "  1. Ensure the GCP_SA_KEY secret contains a valid service account key JSON"
-              echo "  2. Verify the service account has the necessary IAM roles (Cloud Build Editor, Artifact Registry Writer)"
-              echo "  3. See docs/CI.md for setup instructions"
-            fi
-            exit 1
-          fi
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v3
-
-      - name: Deploy to Cloud Run
-        run: |
-          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-
-          gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --image=${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.SERVICE_NAME }}:$SHORT_SHA \
-            --region=${{ env.GCP_REGION }} \
-            --platform=managed \
-            --allow-unauthenticated \
-            --set-env-vars=NODE_ENV=production,APP_VERSION=$SHORT_SHA,BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-
-      - name: Verify deployment
-        run: |
-          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-
-          SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
-            --region=${{ env.GCP_REGION }} \
-            --format='value(status.url)')
-
-          echo "Service deployed at: $SERVICE_URL"
-
-          # Health check
-          if curl -f "$SERVICE_URL/health"; then
-            echo "✅ Health check passed"
-          else
-            echo "❌ Health check failed"
-            exit 1
-          fi
-
-          # Status check
-          VERSION=$(curl -s "$SERVICE_URL/api/status" | jq -r '.version')
-          echo "Deployed version: $VERSION"
-
-          if [ "$VERSION" = "$SHORT_SHA" ]; then
-            echo "✅ Version matches deployment"
-          else
-            echo "⚠️  Version mismatch - deployed: $VERSION, expected: $SHORT_SHA"
-          fi
