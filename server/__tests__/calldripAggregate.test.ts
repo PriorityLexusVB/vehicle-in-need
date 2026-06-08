@@ -84,8 +84,13 @@ describe("calldripAggregate — field extraction", () => {
     expect(agg.hmsToSec("bad")).toBe(0);
   });
 
-  it("hasAppointment uses scored_call.is_goal proxy", () => {
-    expect(agg.hasAppointment({ scored_call: { is_goal: 1 } })).toBe(true);
+  it("hasAppointment requires result~='appointment' or an appointmentDate (Wave A f664f65 — is_goal alone is NOT counted)", () => {
+    // Wave A (f664f65) replaced the is_goal proxy with a result-based filter:
+    // is_goal fires on ANY scorecard goal (e.g. a service scorecard), so it
+    // over-counted. Appointments now require scored_call.result to include
+    // "appointment", or an explicit appointmentDate field.
+    expect(agg.hasAppointment({ scored_call: { result: "Appointment Set" } })).toBe(true);
+    expect(agg.hasAppointment({ scored_call: { is_goal: 1 } })).toBe(false);
     expect(agg.hasAppointment({ scored_call: { is_goal: 0 } })).toBe(false);
     expect(agg.hasAppointment({ appointmentDate: "2026-04-23" })).toBe(true);
     expect(agg.hasAppointment({})).toBe(false);
@@ -217,10 +222,13 @@ describe("calldripAggregate — grouping", () => {
     expect(groups.size).toBe(2);
     const jeff = groups.get("jeff.waugh@priorityautomotive.com|2026-04-22");
     expect(jeff).toBeDefined();
-    // 2026-04-22 CLEANUP: leads_worked and calls_received removed from aggregate.
-    // Inbound is no longer counted; only outbound (calls_made) is tracked.
-    expect(jeff.agg.calls_made).toBe(1);
-    expect(jeff.agg.appts_set).toBe(1);
+    // leads_worked / calls_received removed from aggregate.
+    // Wave A (f664f65, Fix #2): calls_made = UNION of outbound + inbound.
+    // Jeff's fixtures: event "a" inbound + event "b" outbound = 2.
+    expect(jeff.agg.calls_made).toBe(2);
+    // Wave A: appts_set requires result~='appointment' or appointmentDate.
+    // Event "a" has scored_call.is_goal:1 but no result/appointmentDate → 0.
+    expect(jeff.agg.appts_set).toBe(0);
     expect(jeff.agg.response_count).toBe(2);
     expect(jeff.agg.response_sum_sec).toBe(30);
     expect(jeff.agg.appointments).toEqual([]); // no appointmentDate in fixtures
