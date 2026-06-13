@@ -14,6 +14,9 @@
 
 const crypto = require("crypto");
 const { getFirestore, admin } = require("./firebaseAdmin.cjs");
+// v1.5.0 commit 2 — PII redaction before Firestore write + transcription enqueue
+const { redactPiiDeep } = require("./redactPii.cjs");
+const { extractTranscriptionJob, enqueueTranscription } = require("./transcriptionQueue.cjs");
 
 const RAW_EVENTS_COLLECTION = "calldrip_raw_events";
 const STATUS_DOC_PATH = "system_ingestion/calldrip_status";
@@ -67,6 +70,9 @@ function buildDedupeKey(payload) {
  */
 async function storeRawEvent(payload, headersSummary) {
   const db = getFirestore();
+  // v1.5.0 commit 2: dedupe key is computed against the RAW (pre-redact)
+  // payload so the same upstream event keys consistently even after
+  // redaction pattern updates change the redacted bytes.
   const dedupeKey = buildDedupeKey(payload);
   const docRef = db.collection(RAW_EVENTS_COLLECTION).doc(dedupeKey);
 
@@ -76,6 +82,28 @@ async function storeRawEvent(payload, headersSummary) {
     // Duplicate — increment counter on status doc, but don't re-store
     await incrementDuplicateCount(db);
     return { duplicate: true, dedupeKey };
+  }
+
+  // v1.5.0 commit 2: deep-redact PII BEFORE Firestore write. The 4-agent +
+  // Codex gap audit on 2026-06-13 confirmed transcripts arrive with spoken
+  // SSNs / card numbers / DOB / DL / phone / email — must never persist
+  // unredacted. Pipeline-key passthrough preserves leadPhoneNumber /
+  // leadPhoneDigits / personId / dealId / callId / recording_url so
+  // downstream joins still work.
+  const { result: payloadRedacted, counts: piiRedactionCounts } = redactPiiDeep(payload);
+
+  // v1.5.0 commit 2: enqueue transcription job if payload carries a
+  // recording_url + duration >= 30s. Idempotent per callId. Worker
+  // (commit 3 re-transcribe-call.mjs) consumes from this queue.
+  let transcriptionEnqueue = null;
+  try {
+    const job = extractTranscriptionJob(payload); // read from RAW for url accuracy
+    if (job) {
+      transcriptionEnqueue = await enqueueTranscription(job);
+    }
+  } catch (err) {
+    // Don't let queue failures block raw-event persistence — log and continue
+    console.warn("[CallDrip] transcription enqueue failed:", err.message);
   }
 
   const doc = {
@@ -90,7 +118,10 @@ async function storeRawEvent(payload, headersSummary) {
     callId: payload.call_id || null,
     textInboxId: payload.text_inbox_id || null,
     occurredAt: payload.occurred_at || null,
-    payload,                       // full raw body
+    payload: payloadRedacted,      // v1.5.0: redacted body, never raw
+    piiRedactionCounts,            // v1.5.0: telemetry — how much was scrubbed
+    transcriptionEnqueued: !!(transcriptionEnqueue && transcriptionEnqueue.enqueued),
+    transcriptionCallId: transcriptionEnqueue ? transcriptionEnqueue.callId : null,
     headersSummary,                // sanitized headers
     processed: false,              // future: set true after bdc-agent export
     processed_by_supabase: false,  // flipped by calldripAggregate.cjs after
