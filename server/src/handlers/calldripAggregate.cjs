@@ -832,14 +832,19 @@ router.post("/", verifyAggregateAuth, async (req, res) => {
       ? Math.round((fullDayAgg.response_sum_sec / fullDayAgg.response_count) * 100) / 100
       : null;
 
+    // CALL-FIELD STOP (Rob 2026-06-27): the BDC agent is now the SOLE producer of
+    // call KPIs (calls_made/outbound_calls/inbound_calls/connected_calls), deduped
+    // by callId. This legacy aggregator has NO per-call dedup and was double-writing
+    // those fields via last-writer-wins → inflated counts (the "Nemanja 81" bug).
+    // Strip the 3 call fields so this producer no longer competes on them. kpi-ingest
+    // carries forward existing call values for OMITTED writable fields (it does not
+    // zero them), so BDC's deduped counts are preserved. appts_set is already dropped
+    // by kpi-ingest's writable contract; avg_response_sec stays (ring/answer latency,
+    // independent of call counts). The separate upcoming_appts upsert is untouched.
     const payload = [
       {
         rep_email: email,
         date: group.date,
-        calls_made: fullDayAgg.calls_made,         // union (outbound + inbound)
-        outbound_calls: fullDayAgg.outbound_calls, // Fix #2 split
-        inbound_calls: fullDayAgg.inbound_calls,   // Fix #2 split
-        appts_set: fullDayAgg.appts_set,
         avg_response_sec: fullAvg,
         source_system: "calldrip-firestore",
       },
