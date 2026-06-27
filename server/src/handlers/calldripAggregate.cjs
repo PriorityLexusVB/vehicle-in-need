@@ -164,7 +164,19 @@ function extractAgentName(payload) {
 function extractAgentEmail(payload) {
   if (!payload || typeof payload !== "object") return "";
   if (payload.agent && typeof payload.agent === "object" && typeof payload.agent.email === "string") {
-    return payload.agent.email.trim().toLowerCase();
+    const email = payload.agent.email.trim().toLowerCase();
+    // PII-redaction guard (2026-06-27): since v1.5.0 (e54a416) redactPii scrubs
+    // agent.email to the sentinel "[REDACTED:EMAIL]" BEFORE docs hit Firestore.
+    // Returning that sentinel made grouping (repKey = agentEmail || nameNorm)
+    // and matching (docEmail === agentEmail) key on the SAME redacted string for
+    // every rep -> all events collapsed into one group -> avg_response_sec was a
+    // store-wide average, not per-rep. Treat the sentinel as ABSENT so the
+    // existing name-fallback (intact agent NAME, which redactPii does not touch)
+    // restores correct per-rep attribution. Clean payloads (API path / pre-
+    // redaction) still return the real email unchanged. No redaction change ->
+    // zero customer-PII impact; heals historical docs (names intact) on next run.
+    if (!email || email.includes("[redacted")) return "";
+    return email;
   }
   return "";
 }

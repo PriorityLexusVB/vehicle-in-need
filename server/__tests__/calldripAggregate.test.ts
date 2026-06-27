@@ -55,6 +55,18 @@ describe("calldripAggregate — field extraction", () => {
     expect(agg.extractAgentEmail({})).toBe("");
   });
 
+  it("extractAgentEmail treats the PII-redaction sentinel as absent (2026-06-27 fix)", () => {
+    // Since v1.5.0 (e54a416) redactPii scrubs agent.email to "[REDACTED:EMAIL]"
+    // before the doc is stored. extractAgentEmail MUST return "" for the sentinel
+    // so grouping/matching fall through to the intact agent NAME (per-rep) instead
+    // of keying every rep on the same redacted string (store-wide collapse).
+    expect(agg.extractAgentEmail({ agent: { name: "Jeff Waugh", email: "[REDACTED:EMAIL]" } })).toBe("");
+    expect(agg.extractAgentEmail({ agent: { name: "Jeff Waugh", email: "[redacted:email]" } })).toBe("");
+    // Real emails (clean / API path) still pass through unchanged.
+    expect(agg.extractAgentEmail({ agent: { email: "jeff.waugh@priorityautomotive.com" } }))
+      .toBe("jeff.waugh@priorityautomotive.com");
+  });
+
   it("extractEventDate walks multiple shapes", () => {
     // CallDrip webhook real shape — plain YYYY-MM-DD string, passed through
     expect(agg.extractEventDate({ call: { date_received: "2026-04-22" } })).toBe("2026-04-22");
@@ -235,6 +247,51 @@ describe("calldripAggregate — grouping", () => {
     expect(skippedNotCountable).toBe(1);
     expect(unmatchedNoAgent).toBe(1);
     expect(eventRefs.length).toBe(5);
+  });
+
+  it("groups by intact NAME (per-rep) when agent emails are PII-redacted (2026-06-27 fix)", () => {
+    // Real production shape since v1.5.0: agent.email is redacted to the sentinel
+    // on EVERY doc. Before the fix, repKey = (agentEmail || nameNorm) keyed every
+    // rep on "[redacted:email]" -> ONE collapsed group -> store-wide
+    // avg_response_sec. After the fix, extractAgentEmail returns "" for the
+    // sentinel -> grouping falls back to the intact agent NAME -> correct per-rep.
+    const docs = [
+      {
+        ref: { id: "r1" },
+        data: () => ({
+          payload: {
+            type: "call_scored",
+            agent: { first_name: "Jeff", last_name: "Waugh", email: "[REDACTED:EMAIL]" },
+            call: { inbound: 1, outbound: 0, date_received: "2026-06-20", response_time: "13:10:10", origination_time: "13:10:00" },
+          },
+        }),
+      },
+      {
+        ref: { id: "r2" },
+        data: () => ({
+          payload: {
+            type: "call_scored",
+            agent: { first_name: "Jane", last_name: "Doe", email: "[REDACTED:EMAIL]" },
+            call: { inbound: 0, outbound: 1, date_received: "2026-06-20", response_time: "14:00:30", origination_time: "14:00:00" },
+          },
+        }),
+      },
+    ];
+    const { groups } = agg.aggregateEvents(docs);
+    // Two distinct reps -> two groups (NOT collapsed into one redacted-email group).
+    expect(groups.size).toBe(2);
+    const jeff = groups.get("jeff waugh|2026-06-20");
+    const jane = groups.get("jane doe|2026-06-20");
+    expect(jeff).toBeDefined();
+    expect(jane).toBeDefined();
+    // Per-rep response times stay SEPARATE (Jeff 10s, Jane 30s) — not averaged together.
+    expect(jeff.agg.response_sum_sec).toBe(10);
+    expect(jeff.agg.response_count).toBe(1);
+    expect(jane.agg.response_sum_sec).toBe(30);
+    expect(jane.agg.response_count).toBe(1);
+    // Group's agentEmail is empty (sentinel treated as absent); name carries identity.
+    expect(jeff.agentEmail).toBe("");
+    expect(jeff.agentNameNorm).toBe("jeff waugh");
   });
 });
 
