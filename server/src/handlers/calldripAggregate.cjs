@@ -779,6 +779,14 @@ router.post("/", verifyAggregateAuth, async (req, res) => {
   let appointmentsUpserted = 0;
   const appointmentsErrors = [];
 
+  // COST FIX (2026-06-27): per-run cache of the full-day window scan, keyed by
+  // ET-date string. The [lo,hi) window in computeFullDayAggregate is fully
+  // determined by the date, so every (rep) group sharing a date previously
+  // re-ran the SAME unbounded `calldrip_raw_events` scan — once per rep per
+  // 15-min run → ~139M Firestore reads/mo. Caching collapses that to one scan
+  // per DATE per run. Output is byte-identical (same docs, same per-rep filter).
+  const windowDocsCache = new Map();
+
   for (const [groupKey, group] of groups) {
     // Prefer direct email match; fall back to name.
     let email = null;
@@ -819,6 +827,7 @@ router.post("/", verifyAggregateAuth, async (req, res) => {
         group.agentEmail,
         group.agentNameNorm,
         group.date,
+        windowDocsCache,
       );
     } catch (err) {
       const msg = `${group.agentName} ${group.date}: full-day recompute failed — ${err.message}`;
@@ -1005,7 +1014,7 @@ router.post("/", verifyAggregateAuth, async (req, res) => {
  * we reduce the scan surface by using occurredAt bounds when present
  * and falling back to receivedAt.
  */
-async function computeFullDayAggregate(db, agentEmail, agentNameNorm, etDateStr) {
+async function computeFullDayAggregate(db, agentEmail, agentNameNorm, etDateStr, windowDocsCache) {
   // Build ET-local window. ET is UTC-5 (EST) or UTC-4 (EDT). Rather than
   // computing the offset ourselves, use a UTC window [day-1, day+1] and
   // filter precisely in JS using the extracted ET date string.
@@ -1016,14 +1025,25 @@ async function computeFullDayAggregate(db, agentEmail, agentNameNorm, etDateStr)
   hi.setUTCDate(hi.getUTCDate() + 2);
 
   // Query on receivedAt — we always set that on the doc.
-  const snap = await db
-    .collection(RAW_EVENTS_COLLECTION)
-    .where("receivedAt", ">=", lo)
-    .where("receivedAt", "<", hi)
-    .get();
+  // COST FIX (2026-06-27): the [lo,hi) window is fully determined by etDateStr,
+  // so groups sharing a date re-ran the SAME unbounded scan (once per rep per
+  // run → ~139M reads/mo). Reuse a per-run cache keyed by ET-date so the scan
+  // runs once per DATE per run. Identical docs → byte-identical aggregate.
+  let docs;
+  if (windowDocsCache && windowDocsCache.has(etDateStr)) {
+    docs = windowDocsCache.get(etDateStr);
+  } else {
+    const snap = await db
+      .collection(RAW_EVENTS_COLLECTION)
+      .where("receivedAt", ">=", lo)
+      .where("receivedAt", "<", hi)
+      .get();
+    docs = snap.docs;
+    if (windowDocsCache) windowDocsCache.set(etDateStr, docs);
+  }
 
   const agg = emptyAggregate();
-  for (const doc of snap.docs) {
+  for (const doc of docs) {
     const data = doc.data();
     const payload = data.payload || {};
     if (!isCountableEvent(payload)) continue;
