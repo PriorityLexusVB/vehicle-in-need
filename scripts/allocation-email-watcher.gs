@@ -11,8 +11,11 @@
  * 3. Set the script properties (Project Settings → Script Properties):
  *    - CLOUD_FUNCTION_URL: The deployed Cloud Function URL
  *    - ALLOCATION_API_KEY: The shared secret for authentication
+ *    - REMINDER_JOB_URL: Optional. Defaults to the live Cloud Run reminder job.
+ *    - REMINDER_API_KEY: Optional. Defaults to ALLOCATION_API_KEY.
  * 4. Run setupTrigger() once to create the automatic check
- * 5. Authorize when prompted (Gmail access required)
+ * 5. Run setupUnsecuredReminderTrigger() once to create reminder checks
+ * 6. Authorize when prompted (Gmail access required)
  *
  * The script checks every 5 minutes for new allocation emails.
  * It processes only unread emails and marks them as read after processing.
@@ -28,6 +31,13 @@ function getConfig() {
   return {
     cloudFunctionUrl: props.getProperty('CLOUD_FUNCTION_URL') || '',
     apiKey: props.getProperty('ALLOCATION_API_KEY') || '',
+    reminderJobUrl: props.getProperty('REMINDER_JOB_URL') ||
+      'https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/jobs/unsecured-order-reminders',
+    reminderApiKey: props.getProperty('REMINDER_API_KEY') ||
+      props.getProperty('ALLOCATION_API_KEY') ||
+      '',
+    reminderEveryDays: parseInt(props.getProperty('REMINDER_EVERY_DAYS') || '3', 10),
+    reminderMaxPerRun: parseInt(props.getProperty('REMINDER_MAX_PER_RUN') || '50', 10),
     // Label to mark processed emails (auto-created if missing)
     processedLabel: 'Allocation/Processed',
     // Gmail search query — catches Toyota/Lexus DSM allocation emails
@@ -219,4 +229,134 @@ function testSearch() {
  */
 function processLatest() {
   checkForAllocationEmails();
+}
+
+/**
+ * Sends due unsecured-order reminders.
+ *
+ * Cloud Run returns the due orders and email bodies. Apps Script sends the
+ * emails from the dealership Google account, then acknowledges successful sends
+ * so each order waits REMINDER_EVERY_DAYS before emailing again.
+ */
+function sendUnsecuredOrderReminders() {
+  var config = getConfig();
+
+  if (!config.reminderJobUrl || !config.reminderApiKey) {
+    Logger.log('ERROR: Missing REMINDER_JOB_URL or REMINDER_API_KEY/ALLOCATION_API_KEY in Script Properties');
+    return;
+  }
+
+  var dueResponse = UrlFetchApp.fetch(config.reminderJobUrl, {
+    method: 'post',
+    contentType: 'application/json',
+    headers: {
+      'X-Api-Key': config.reminderApiKey,
+    },
+    payload: JSON.stringify({
+      action: 'due',
+      everyDays: config.reminderEveryDays,
+      maxPerRun: config.reminderMaxPerRun,
+    }),
+    muteHttpExceptions: true,
+  });
+
+  var dueStatusCode = dueResponse.getResponseCode();
+  var dueBody = JSON.parse(dueResponse.getContentText() || '{}');
+  if (dueStatusCode !== 200 || !dueBody.success) {
+    Logger.log('FAILED: Reminder due lookup returned ' + dueStatusCode + ': ' + (dueBody.error || dueResponse.getContentText()));
+    return;
+  }
+
+  var reminders = dueBody.reminders || [];
+  if (reminders.length === 0) {
+    Logger.log('No unsecured-order reminders due.');
+    return;
+  }
+
+  var sent = [];
+  var failed = [];
+
+  for (var i = 0; i < reminders.length; i++) {
+    var reminder = reminders[i];
+    try {
+      MailApp.sendEmail({
+        to: reminder.email,
+        subject: reminder.subject,
+        body: reminder.textBody,
+        htmlBody: reminder.htmlBody,
+        name: 'Priority Lexus Vehicle Orders',
+      });
+      sent.push({ orderId: reminder.orderId, email: reminder.email });
+      Logger.log('SENT: ' + reminder.orderId + ' -> ' + reminder.email + ' (' + reminder.customerName + ')');
+    } catch (e) {
+      failed.push({
+        orderId: reminder.orderId,
+        email: reminder.email,
+        error: e.toString(),
+      });
+      Logger.log('FAILED SEND: ' + reminder.orderId + ' -> ' + reminder.email + ': ' + e.toString());
+    }
+  }
+
+  if (sent.length > 0) {
+    var ackResponse = UrlFetchApp.fetch(config.reminderJobUrl, {
+      method: 'post',
+      contentType: 'application/json',
+      headers: {
+        'X-Api-Key': config.reminderApiKey,
+      },
+      payload: JSON.stringify({
+        action: 'ack',
+        sent: sent,
+        failed: failed,
+      }),
+      muteHttpExceptions: true,
+    });
+    Logger.log('ACK: ' + ackResponse.getResponseCode() + ' ' + ackResponse.getContentText());
+  }
+
+  Logger.log('Unsecured reminders complete. Sent: ' + sent.length + ', failed: ' + failed.length);
+}
+
+/**
+ * Run this ONCE to set up automatic unsecured-order reminders.
+ * Sends once per day; Cloud Run enforces the every-few-days cadence per order.
+ */
+function setupUnsecuredReminderTrigger() {
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === 'sendUnsecuredOrderReminders') {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+
+  ScriptApp.newTrigger('sendUnsecuredOrderReminders')
+    .timeBased()
+    .everyDays(1)
+    .atHour(9)
+    .create();
+
+  Logger.log('Trigger created: sendUnsecuredOrderReminders will run daily around 9 AM.');
+}
+
+/**
+ * Run this manually to test due reminders without sending emails.
+ */
+function previewUnsecuredOrderReminders() {
+  var config = getConfig();
+  var response = UrlFetchApp.fetch(config.reminderJobUrl, {
+    method: 'post',
+    contentType: 'application/json',
+    headers: {
+      'X-Api-Key': config.reminderApiKey,
+    },
+    payload: JSON.stringify({
+      action: 'due',
+      everyDays: config.reminderEveryDays,
+      maxPerRun: config.reminderMaxPerRun,
+    }),
+    muteHttpExceptions: true,
+  });
+
+  Logger.log(response.getResponseCode() + ' ' + response.getContentText());
 }

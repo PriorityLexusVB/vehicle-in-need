@@ -132,6 +132,18 @@ if (process.env.CALLDRIP_ENABLE_AGGREGATE === "true") {
 }
 // ── End aggregator route ──────────────────────────────────────────
 
+// Unsecured order reminder job (Apps Script sender)
+if (process.env.UNSECURED_REMINDERS_ENABLED === "true") {
+  const unsecuredOrderReminders = require("./src/handlers/unsecuredOrderReminders.cjs");
+  app.use("/jobs/unsecured-order-reminders", unsecuredOrderReminders);
+  console.log("[UnsecuredReminders] Route mounted (UNSECURED_REMINDERS_ENABLED=true)");
+} else {
+  app.post("/jobs/unsecured-order-reminders", (_req, res) => {
+    res.status(503).json({ error: "Unsecured order reminders are not enabled on this instance" });
+  });
+  console.log("[UnsecuredReminders] Route disabled (UNSECURED_REMINDERS_ENABLED not set)");
+}
+
 // Serve static files from dist directory
 const distPath = path.join(__dirname, "..", "dist");
 app.use(

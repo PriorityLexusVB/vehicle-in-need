@@ -43,6 +43,7 @@ export interface Order {
   createdAt?: Timestamp; // Firestore server timestamp for ordering
   createdByUid?: string; // UID of user who created the order
   createdByEmail?: string; // Email of user who created the order
+  salespersonEmail?: string; // Optional explicit reminder recipient for the salesperson
 
   // Denormalized note preview fields (written by managers when adding process notes)
   latestNoteText?: string;
@@ -59,6 +60,12 @@ export interface Order {
   // Dealer Exchange additional fields (optional, for DX pipeline tracking)
   dxDealerName?: string;             // Trading dealer name
   dxExpectedArrival?: string;        // Expected arrival date
+
+  // Unsecured reminder automation (server-written after email sends)
+  lastUnsecuredReminderAt?: Timestamp;
+  unsecuredReminderCount?: number;
+  unsecuredReminderLastEmail?: string;
+  unsecuredReminderMuted?: boolean;
 }
 
 export interface AppUser {

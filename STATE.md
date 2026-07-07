@@ -3,7 +3,7 @@
 > Per-repo memory file. The repo's single source of truth for "where is this project."
 > Rewrite to current truth each working session — do NOT append session logs.
 
-**Last updated:** 2026-07-07 - **By:** WORK PC / Codex - **HEAD:** vehicle linking atomic/unit-slot hardening
+**Last updated:** 2026-07-07 - **By:** WORK PC / Codex - **HEAD:** unsecured-order reminder automation
 
 ---
 
@@ -19,6 +19,7 @@ React 19 + Vite 7 + Tailwind 4 frontend · Firebase backend (Firestore, Cloud Fu
 
 - **AUTH HASH-ROUTE LOGIN FIXED (2026-07-07).** Starting Google sign-in from the dashboard hash URL (`/#/`) broke Firebase Auth because the SDK uses `location.href` as the auth redirect URL and Firebase rejects fragments (`INVALID_CONTINUE_URI: fragment not allowed`). `Login.tsx` now strips the hash before Firebase popup/redirect auth starts, stores the pending hash in sessionStorage, and restores it after popup/redirect completion so deep links still work after login. Verified with focused auth tests (`21/21`) and `npm run build` exit 0. Live pre-patch app was healthy at `46e553f`.
 - **VEHICLE LINKING HARDENED (2026-07-07).** `orderLinkingService` now keeps Firestore transaction reads before writes and exposes atomic "release + secure status" and "release + delete order" operations so linked vehicles cannot be released separately from the order action. Allocation parser now expands qty>1 rows into one linkable unit record per car with deterministic spec-derived IDs, and AllocationBoard uses `vehicle_links` as the claimed-vehicle guard, including stale/orphaned link docs. Verified with full Vitest (`304/304`), focused link/parser/board tests (`51/51`), lint exit 0 (3 pre-existing AllocationBoard hook warnings), and `npm run build` exit 0.
+- **UNSECURED ORDER REMINDERS ADDED (2026-07-07).** Cloud Run now exposes a protected `/jobs/unsecured-order-reminders` endpoint that returns active orders due for follow-up every 3 days until secured. Apps Script `allocation-email-watcher.gs` now includes `sendUnsecuredOrderReminders`, `previewUnsecuredOrderReminders`, and `setupUnsecuredReminderTrigger` so Gmail/MailApp sends the emails and acks successful sends back to Firestore. Recipient resolution is explicit `salespersonEmail`, then unique active `users.displayName` match, then `createdByEmail`; only `@priorityautomotive.com` emails are used. Runbook: `docs/UNSECURED_ORDER_REMINDERS.md`.
 - 🟢 **DEPLOY FIXED + LIVE (2026-06-05).** K3 (`386d003`) + K8 (`3ec2ea1`) are deployed on Cloud Run: `https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/` (HTTP 200; served bundle `index-Dmute-Ae.js` contains the K3 OrderPreviewDrawer). The 6-day deploy outage is resolved. **Root cause was a 3-link auth/IAM chain, all now fixed:**
   1. WIF pool/provider deleted ~5/30 → primary auth dead (still dead; SA-key path is the live one).
   2. SA-key fallback referenced a non-existent secret `GCP_SA_KEY` → FIXED `0a96803` (now `${{ secrets.GCP_SA_KEY || secrets.GCP_CREDENTIALS }}`).
@@ -33,6 +34,7 @@ React 19 + Vite 7 + Tailwind 4 frontend · Firebase backend (Firestore, Cloud Fu
 - Allocation board live — robust PDF parser, verified end-to-end (Allocation 051, 59 vehicles)
 - Email automation pipeline LIVE — Apps Script watcher (5-min trigger) → `processAllocationEmail` Cloud Function (us-central1) → Firestore `allocationSnapshots`
 - Vehicle linking: newly parsed snapshots have one linkable unit per car; secure/delete release links atomically; stale `vehicle_links` docs mark vehicles taken. Boundary: legacy allocation snapshots that still store `quantity > 1` on a single row must be re-published to get per-unit links. Live read-only audit found one old Delivered order (`ALocqSZHhr3hOXhF2ggQ`) still carrying stale `allocatedVehicleId: auto-25` with zero `vehicle_links`; backfill now skips inactive/secured orders instead of recreating that link.
+- Unsecured-order reminder automation ready: Apps Script daily trigger calls Cloud Run, sends due emails, and records `lastUnsecuredReminderAt`/`unsecuredReminderCount`; setup/runbook in `docs/UNSECURED_ORDER_REMINDERS.md`.
 - Role-based access (manager vs user), service worker auto-update, Firestore rules tested
 - Loading skeletons: main allocation board (`isLoading`) + DX sub-panel both render accessible animate-pulse skeletons (K8 complete)
 
