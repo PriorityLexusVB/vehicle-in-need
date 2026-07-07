@@ -8,6 +8,10 @@ import {
   safeSignInWithPopup,
   getRecommendedAuthMethod,
 } from "../services/safePopupAuth";
+import {
+  restoreHashAfterFirebaseAuth,
+  stripHashForFirebaseAuth,
+} from "../services/authRedirectUrl";
 import { GoogleIcon } from "./icons/GoogleIcon";
 
 // A sub-component for the specific error. This keeps things clean.
@@ -133,8 +137,10 @@ const Login: React.FC = () => {
         if (result) {
           // The onAuthStateChanged listener in App.tsx will handle setting the user
           // Keep isSigningIn true while App.tsx processes the auth state
+          restoreHashAfterFirebaseAuth();
         } else {
           // No pending redirect result (normal page load)
+          restoreHashAfterFirebaseAuth();
           setIsSigningIn(false);
         }
       } catch (err) {
@@ -199,6 +205,7 @@ const Login: React.FC = () => {
             message: `An error occurred during sign-in: ${error.message || "Please try again."}`,
           });
         }
+        restoreHashAfterFirebaseAuth();
         setIsSigningIn(false);
       }
     };
@@ -208,6 +215,7 @@ const Login: React.FC = () => {
   const handleLogin = async () => {
     setError(null);
     setIsSigningIn(true);
+    stripHashForFirebaseAuth();
     
     // Detect iOS Safari and other browsers with storage partitioning issues
     // These browsers have problems with signInWithRedirect due to ITP/sessionStorage
@@ -254,11 +262,15 @@ const Login: React.FC = () => {
       });
       
       if (result.success) {
+        if (!result.usedRedirectFallback) {
+          restoreHashAfterFirebaseAuth();
+        }
         return;
       }
       
       // Handle popup failure
       const error = result.error;
+      restoreHashAfterFirebaseAuth();
       console.warn(
         "%c⚠️ Login - Popup sign-in failed",
         "color: #f59e0b; font-weight: bold;"
@@ -303,6 +315,7 @@ const Login: React.FC = () => {
     } catch (unexpectedError) {
       // This catch handles unexpected errors not caught by popup auth functions
       const error = unexpectedError as { code?: string; message?: string };
+      restoreHashAfterFirebaseAuth();
       console.error(
         "%c❌ Login - Unexpected Authentication Error",
         "color: #ef4444; font-weight: bold;",
