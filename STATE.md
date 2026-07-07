@@ -51,16 +51,16 @@ The K1-K10 queue in the claude-sync spine was stale. Grep-verified current statu
 
 ## What is NOT trustworthy yet
 
-- 39 npm/dependabot vulnerabilities reported by GitHub on `main` (2 critical, 15 high, 19 moderate, 3 low — includes `functions/` subdir; up from the 18 noted 2026-05-17). Most require breaking dep changes (firebase-admin, firebase-tools, vite-plugin-node-polyfills). Do NOT fix without a tested upgrade window. Owner: Rob.
+- 64 npm/dependabot vulnerabilities reported by GitHub on `main` (2 critical, 28 high, 29 moderate, 5 low — includes `functions/` subdir; up from the 39 noted earlier on 2026-07-07). Most require breaking dep changes (firebase-admin, firebase-tools, vite-plugin-node-polyfills). Do NOT fix without a tested upgrade window. Owner: Rob.
 - Parser is robust but inherits the dealership-wide email lead-parsing fragility pattern (open-loops registry #1) — no canonical tested parser module.
 - `~20` legacy root-level `*.md` design/deployment docs (Mar 2026, BRANCH_*/CLOUD_BUILD_*/IMPLEMENTATION_*) — likely stale, not pruned.
 
 ## Open loops (close or kill before new builds)
 
 - [x] ✅ GCP deploy auth — FIXED 2026-06-05 (full chain: SA-key fallback wiring + cloud-build-deployer key vaulted + actAs on compute-default build SA + non-fatal post-checks). K3+K8 live.
-- [ ] 39 dependabot vulnerabilities — decision: accept (breaking-change risk) or schedule a tested upgrade window. Owner: Rob.
+- [ ] 64 dependabot vulnerabilities — decision: accept (breaking-change risk) or schedule a tested upgrade window. Owner: Rob.
 - [ ] Stale root-level markdown docs (BRANCH_*, CLOUD_BUILD_*, IMPLEMENTATION_*) — prune or move to `docs/`.
-- [x] ✅ K4 CLOSED 2026-06-05 — documented scope boundary (Codex-confirmed Path B, no build). All K-items resolved; only Rob-blocked K1/K7/K10 + 39 dependabot CVEs remain.
+- [x] ✅ K4 CLOSED 2026-06-05 — documented scope boundary (Codex-confirmed Path B, no build). All K-items resolved; only Rob-blocked K1/K7/K10 + 64 dependabot CVEs remain.
 
 ## Credentials / access needed
 
