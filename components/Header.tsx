@@ -14,6 +14,53 @@ interface HeaderProps {
   currentPath?: string;
 }
 
+interface HeaderLinkProps {
+  to: string;
+  active: boolean;
+  children: React.ReactNode;
+  testId?: string;
+  ariaLabel?: string;
+  compact?: boolean;
+  onClick?: () => void;
+}
+
+const desktopNavClass = (active: boolean, compact = false) =>
+  [
+    "inline-flex items-center justify-center gap-2 rounded-full text-sm font-semibold transition-colors",
+    compact ? "px-2 py-1.5 sm:px-4" : "px-4 py-1.5",
+    active
+      ? "bg-white text-stone-950 shadow-sm"
+      : "text-stone-300 hover:bg-white/10 hover:text-white",
+  ].join(" ");
+
+const mobileNavClass = (active: boolean) =>
+  [
+    "flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold transition-colors",
+    active
+      ? "bg-white text-stone-950 shadow-sm"
+      : "text-stone-200 hover:bg-white/10 hover:text-white",
+  ].join(" ");
+
+const HeaderLink: React.FC<HeaderLinkProps> = ({
+  to,
+  active,
+  children,
+  testId,
+  ariaLabel,
+  compact,
+  onClick,
+}) => (
+  <Link
+    to={to}
+    onClick={onClick}
+    className={onClick ? mobileNavClass(active) : desktopNavClass(active, compact)}
+    data-testid={testId}
+    aria-label={ariaLabel}
+  >
+    {children}
+  </Link>
+);
+
 const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPath }) => {
   const isNonManager = !user.isManager;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -21,97 +68,95 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
   return (
-    <header className="bg-white/80 backdrop-blur-lg sticky top-0 z-10 border-b border-stone-200">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-6">
-            <div>
-              <Link to="/" className="inline-block">
-                <h1 className="text-xl md:text-2xl font-bold text-stone-800 tracking-tight hover:text-indigo-700 transition-colors">
+    <header className="sticky top-0 z-30 border-b border-stone-800 bg-stone-950 text-white shadow-lg shadow-stone-950/10">
+      <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8">
+        <div className="flex min-h-20 items-center justify-between gap-4 py-3">
+          <div className="flex min-w-0 items-center gap-5 lg:gap-8">
+            <div className="min-w-0">
+              <p className="hidden text-[11px] font-bold uppercase text-amber-300 sm:block">
+                Priority Lexus Virginia Beach
+              </p>
+              <Link to="/" className="group inline-flex items-baseline gap-2">
+                <h1 className="text-xl font-bold text-white transition-colors group-hover:text-amber-100 md:text-2xl">
                   Vehicle Order Tracker
                   <VersionBadge />
                 </h1>
               </Link>
-              <p className="text-sm text-stone-500 hidden sm:block">
-                  Welcome, {user.displayName || user.email} {user.isManager && '(Manager)'}
+              <p className="hidden text-sm text-stone-300 sm:block">
+                Welcome, {user.displayName || user.email} {user.isManager && '(Manager)'}
               </p>
             </div>
-            {/* Desktop nav -- hidden on mobile */}
-            <nav className="hidden md:flex items-center gap-2 p-1 bg-stone-200/80 rounded-full" data-testid="main-nav">
+
+            <nav
+              className="hidden items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1 md:flex"
+              data-testid="main-nav"
+            >
               {user.isManager && (
-                <Link
-                  to="/"
-                  className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-colors ${currentPath === '/' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-600 hover:text-stone-900'}`}
-                  data-testid="dashboard-nav-link"
-                >
+                <HeaderLink to="/" active={currentPath === '/'} testId="dashboard-nav-link">
                   Dashboard
-                </Link>
+                </HeaderLink>
               )}
-              <Link
+              <HeaderLink
                 to="/allocation"
-                className={`flex items-center justify-center rounded-full transition-colors text-sm font-semibold ${currentPath === '/allocation' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-600 hover:text-stone-900'} ${isNonManager ? 'px-2 py-1.5 sm:px-4' : 'px-4 py-1.5'}`}
-                data-testid="allocation-nav-link"
-                aria-label="Allocation Board"
+                active={currentPath === '/allocation'}
+                testId="allocation-nav-link"
+                ariaLabel="Allocation Board"
+                compact={isNonManager}
               >
                 {isNonManager ? (
                   <>
-                    <BriefcaseIcon className="w-5 h-5 sm:hidden" aria-hidden="true" />
+                    <BriefcaseIcon className="h-5 w-5 sm:hidden" aria-hidden="true" />
                     <span className="hidden sm:inline">Allocation Board</span>
                   </>
                 ) : (
                   'Allocation Board'
                 )}
-              </Link>
+              </HeaderLink>
               {isNonManager && (
-                <Link
+                <HeaderLink
                   to="/requests"
-                  className={`flex items-center justify-center px-3 py-1.5 sm:px-4 text-sm font-semibold rounded-full transition-colors ${currentPath === '/requests' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-600 hover:text-stone-900'}`}
-                  data-testid="requests-nav-link"
-                  aria-label="Requests"
+                  active={currentPath === '/requests'}
+                  testId="requests-nav-link"
+                  ariaLabel="Requests"
                 >
-                  <DocumentTextIcon className="w-5 h-5 sm:hidden" aria-hidden="true" />
+                  <DocumentTextIcon className="h-5 w-5 sm:hidden" aria-hidden="true" />
                   <span className="hidden sm:inline">Requests</span>
-                </Link>
+                </HeaderLink>
               )}
               {user.isManager && (
-                <Link
-                  to="/admin"
-                  className={`flex items-center gap-2 px-4 py-1.5 text-sm font-semibold rounded-full transition-colors ${currentPath === '/admin' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-600 hover:text-stone-900'}`}
-                  data-testid="admin-nav-link"
-                >
-                  <SettingsIcon className="w-4 h-4" />
+                <HeaderLink to="/admin" active={currentPath === '/admin'} testId="admin-nav-link">
+                  <SettingsIcon className="h-4 w-4" aria-hidden="true" />
                   <span>User Management</span>
-                </Link>
+                </HeaderLink>
               )}
             </nav>
           </div>
+
           <div className="flex items-center gap-2 sm:gap-4">
             {user.isManager && (
               <>
-                <div className="text-right hidden md:block">
-                  <span className="text-2xl font-bold text-indigo-600">{totalOrders}</span>
-                  <p className="text-xs text-stone-500 font-medium">Active Orders</p>
+                <div className="hidden rounded-lg border border-amber-300/30 bg-amber-200/10 px-4 py-2 text-right md:block">
+                  <span className="text-2xl font-bold leading-none text-amber-200">{totalOrders}</span>
+                  <p className="mt-1 text-[11px] font-semibold uppercase text-stone-300">Active Orders</p>
                 </div>
-                <div className="h-6 w-px bg-stone-200 hidden md:block"></div>
               </>
             )}
             <button
               onClick={onLogout}
-              className="flex items-center gap-2 p-2 rounded-full text-stone-500 hover:bg-stone-200 hover:text-stone-800 transition-colors"
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 p-2 text-stone-300 transition-colors hover:bg-white/10 hover:text-white sm:px-3"
               aria-label="Sign Out"
             >
-              <LogoutIcon className="w-6 h-6" />
-              <span className="text-sm font-medium hidden sm:block">Sign Out</span>
+              <LogoutIcon className="h-5 w-5" />
+              <span className="hidden text-sm font-semibold sm:block">Sign Out</span>
             </button>
-            {/* Mobile hamburger button */}
             <button
-              className="md:hidden flex items-center justify-center p-2 rounded-lg text-stone-600 hover:bg-stone-100 transition-colors"
+              className="flex items-center justify-center rounded-lg border border-white/10 p-2 text-stone-200 transition-colors hover:bg-white/10 md:hidden"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
               aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={mobileMenuOpen}
               data-testid="mobile-menu-button"
             >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 {mobileMenuOpen ? (
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 ) : (
@@ -122,48 +167,32 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
           </div>
         </div>
       </div>
-      {/* Mobile dropdown menu */}
+
       <div
-        className={`md:hidden overflow-hidden transition-all duration-200 ease-in-out ${mobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
+        className={`overflow-hidden border-t border-white/10 bg-stone-950 transition-all duration-200 ease-in-out md:hidden ${mobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
         data-testid="mobile-menu"
       >
-        <nav className="bg-stone-50 border-t border-stone-200 px-4 py-2">
+        <nav className="space-y-1 px-4 py-3">
           {user.isManager && (
-            <Link
-              to="/"
-              onClick={closeMobileMenu}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${currentPath === '/' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-600 hover:bg-white hover:text-stone-900'}`}
-            >
+            <HeaderLink to="/" active={currentPath === '/'} onClick={closeMobileMenu}>
               Dashboard
-            </Link>
+            </HeaderLink>
           )}
-          <Link
-            to="/allocation"
-            onClick={closeMobileMenu}
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${currentPath === '/allocation' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-600 hover:bg-white hover:text-stone-900'}`}
-          >
-            <BriefcaseIcon className="w-5 h-5" aria-hidden="true" />
+          <HeaderLink to="/allocation" active={currentPath === '/allocation'} onClick={closeMobileMenu}>
+            <BriefcaseIcon className="h-5 w-5" aria-hidden="true" />
             Allocation Board
-          </Link>
+          </HeaderLink>
           {isNonManager && (
-            <Link
-              to="/requests"
-              onClick={closeMobileMenu}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${currentPath === '/requests' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-600 hover:bg-white hover:text-stone-900'}`}
-            >
-              <DocumentTextIcon className="w-5 h-5" aria-hidden="true" />
+            <HeaderLink to="/requests" active={currentPath === '/requests'} onClick={closeMobileMenu}>
+              <DocumentTextIcon className="h-5 w-5" aria-hidden="true" />
               Requests
-            </Link>
+            </HeaderLink>
           )}
           {user.isManager && (
-            <Link
-              to="/admin"
-              onClick={closeMobileMenu}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${currentPath === '/admin' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-600 hover:bg-white hover:text-stone-900'}`}
-            >
-              <SettingsIcon className="w-4 h-4" aria-hidden="true" />
+            <HeaderLink to="/admin" active={currentPath === '/admin'} onClick={closeMobileMenu}>
+              <SettingsIcon className="h-4 w-4" aria-hidden="true" />
               User Management
-            </Link>
+            </HeaderLink>
           )}
         </nav>
       </div>

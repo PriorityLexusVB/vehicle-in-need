@@ -25,6 +25,7 @@ import {
 import { useVehicleLinks } from "../services/useVehicleLinks";
 import { fetchDxSheet, DxTrade } from "../src/utils/dxSheetParser";
 import OrderPreviewDrawer from "./OrderPreviewDrawer";
+import { chipClasses } from "./ui/chipStyles";
 
 interface AllocationBoardProps {
   currentUser: AppUser;
@@ -1819,18 +1820,14 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
       )}
 
       <div className="px-4 sm:px-6 py-5">
-        <div className="sticky top-16 z-20">
-          <div className="flex flex-col gap-4 rounded-xl border border-stone-200 bg-white/90 p-4 backdrop-blur-sm lg:flex-row lg:items-end lg:justify-between">
+        <div className="sticky top-20 z-20">
+          <div className="flex flex-col gap-4 rounded-lg border border-stone-200 bg-white/95 p-4 shadow-sm backdrop-blur-sm lg:flex-row lg:items-end lg:justify-between">
             <div className="flex flex-wrap items-center gap-2" role="tablist">
               <button
                 onClick={() => setBoardView("strategy")}
                 role="tab"
                 aria-selected={boardView === "strategy"}
-                className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                  boardView === "strategy"
-                    ? "bg-indigo-600 text-white"
-                    : "bg-stone-100 text-stone-500 hover:bg-stone-200"
-                }`}
+                className={chipClasses({ active: boardView === "strategy", tone: "brand", size: "md" })}
               >
                 Strategy View
               </button>
@@ -1838,11 +1835,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                 onClick={() => setBoardView("log")}
                 role="tab"
                 aria-selected={boardView === "log"}
-                className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                  boardView === "log"
-                    ? "bg-indigo-600 text-white"
-                    : "bg-stone-100 text-stone-500 hover:bg-stone-200"
-                }`}
+                className={chipClasses({ active: boardView === "log", tone: "brand", size: "md" })}
               >
                 Full Log View
               </button>
@@ -1851,11 +1844,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                   onClick={() => setBoardView("matches")}
                   role="tab"
                   aria-selected={boardView === "matches"}
-                  className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                    boardView === "matches"
-                      ? "bg-emerald-600 text-white"
-                      : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                  }`}
+                  className={chipClasses({ active: boardView === "matches", tone: "success", size: "md" })}
                 >
                   Matches ({matchSummary.matchedOrderCount})
                 </button>
@@ -1873,7 +1862,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                       window.localStorage.removeItem(key);
                     }
                   }}
-                  className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-100 transition-colors"
+                  className={chipClasses({ tone: "danger", size: "md" })}
                 >
                   Reset View
                 </button>
@@ -1883,7 +1872,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
             {/* Mobile: show filter toggle button */}
             <button
               onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
-              className="flex w-full items-center justify-between rounded-lg border border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-stone-700 lg:hidden"
+              className="flex w-full items-center justify-between rounded-lg border border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-50 lg:hidden"
             >
               {(() => {
                 const activeCount = [categoryFilter !== "all", modelFilter !== "all", rankFilter !== "all", bosFilter !== "all", searchQuery.trim() !== ""].filter(Boolean).length;
@@ -1897,13 +1886,13 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Search code, model, customer, salesperson..."
                 aria-label="Search allocation vehicles"
-                className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 outline-none ring-indigo-500 transition focus:ring"
+                className="rounded-md border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-800 outline-none transition focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
               />
               <select
                 value={categoryFilter}
                 onChange={(event) => setCategoryFilter(event.target.value)}
                 aria-label="Filter by category"
-                className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 outline-none ring-indigo-500 transition focus:ring"
+                className="rounded-md border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-800 outline-none transition focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
               >
                 <option value="all">All Categories</option>
                 {categoryOptions.map((category) => (
@@ -1916,7 +1905,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                 value={modelFilter}
                 onChange={(event) => setModelFilter(event.target.value)}
                 aria-label="Filter by model"
-                className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 outline-none ring-indigo-500 transition focus:ring"
+                className="rounded-md border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-800 outline-none transition focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
               >
                 <option value="all">All Models</option>
                 {modelOptions.map((opt) => (
@@ -1929,7 +1918,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                 value={rankFilter}
                 onChange={(event) => setRankFilter(event.target.value)}
                 aria-label="Filter by priority"
-                className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 outline-none ring-indigo-500 transition focus:ring"
+                className="rounded-md border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-800 outline-none transition focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
               >
                 <option value="all">All Priorities</option>
                 {rankOptions.map((rank) => (
@@ -1942,7 +1931,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                 value={bosFilter}
                 onChange={(event) => setBosFilter(event.target.value as BosFilter)}
                 aria-label="Filter by BOS"
-                className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 outline-none ring-indigo-500 transition focus:ring"
+                className="rounded-md border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-800 outline-none transition focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
               >
                 <option value="all">All BOS</option>
                 <option value="y">BOS: Y (Changeable)</option>
@@ -1954,7 +1943,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                   setArrivalGroupingMode(event.target.value as ArrivalGroupingMode)
                 }
                 aria-label="Build date grouping mode"
-                className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 outline-none ring-indigo-500 transition focus:ring"
+                className="rounded-md border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-800 outline-none transition focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
               >
                 <option value="bucket">Build Date: Bucket</option>
                 <option value="date">Build Date: Exact Date</option>
@@ -1963,7 +1952,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                 value={sortMode}
                 onChange={(event) => setSortMode(event.target.value as SortMode)}
                 aria-label="Sort allocation rows"
-                className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 outline-none ring-indigo-500 transition focus:ring"
+                className="rounded-md border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-800 outline-none transition focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
               >
                 <option value="priority">Sort: Priority</option>
                 <option value="arrival">Sort: Build Date</option>
@@ -1980,7 +1969,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                   setRankFilter("all");
                   setBosFilter("all");
                 }}
-                className="mt-2 text-xs font-medium text-indigo-600 hover:text-indigo-800 transition-colors lg:mt-0 lg:ml-auto"
+                className="mt-2 text-xs font-semibold text-stone-600 transition-colors hover:text-stone-950 lg:mt-0 lg:ml-auto"
               >
                 Clear all filters
               </button>

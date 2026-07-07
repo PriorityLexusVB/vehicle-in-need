@@ -28,7 +28,7 @@ const VersionBadge: React.FC = () => {
 
   return (
     <span 
-      className="ml-2 text-xs font-mono text-stone-400 hover:text-stone-600 transition-colors cursor-help" 
+      className="ml-2 text-xs font-mono text-stone-400 transition-colors hover:text-amber-200 cursor-help" 
       title={buildTime ? `Built: ${formatBuildTime(buildTime)}` : 'Version information'}
     >
       v{version}

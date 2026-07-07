@@ -4,6 +4,7 @@ import { ACTIVE_STATUS_OPTIONS } from '../constants';
 import { PlusIcon } from './icons/PlusIcon';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
 import ButtonSpinner from './ButtonSpinner';
+import { chipClasses } from './ui/chipStyles';
 
 interface OrderFormProps {
   onAddOrder: (order: Omit<Order, 'id'>) => Promise<boolean>;
@@ -163,11 +164,11 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
   // Use ACTIVE_STATUS_OPTIONS directly instead of filtering STATUS_OPTIONS
   // ACTIVE_STATUS_OPTIONS now only contains Factory Order and Dealer Exchange (Locate removed)
   const activeStatusOptions = ACTIVE_STATUS_OPTIONS;
-  const inputClass = (name: keyof typeof formState) => `block w-full p-2.5 border ${errors[name] ? 'border-red-500' : 'border-stone-300'} rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors`;
-  const moneyInputClass = (name: keyof typeof formState) => `pl-8 block w-full p-2.5 border ${errors[name] ? 'border-red-500' : 'border-stone-300'} rounded-lg focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors`;
+  const inputClass = (name: keyof typeof formState) => `block w-full rounded-lg border ${errors[name] ? 'border-red-500' : 'border-stone-300'} bg-stone-50 p-2.5 shadow-sm outline-none transition focus:border-stone-500 focus:ring-2 focus:ring-stone-200 sm:text-sm`;
+  const moneyInputClass = (name: keyof typeof formState) => `block w-full rounded-lg border ${errors[name] ? 'border-red-500' : 'border-stone-300'} bg-stone-50 p-2.5 pl-8 outline-none transition focus:border-stone-500 focus:ring-2 focus:ring-stone-200 sm:text-sm`;
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200">
+    <div className="rounded-lg border border-stone-200 bg-white/95 p-6 shadow-sm">
       <h2 className="text-2xl font-bold text-stone-800 mb-6">Add New Order</h2>
 
       {submitSuccess && (
@@ -294,12 +295,22 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
         </div>
 
         <div className="space-y-4">
-             <h3 className="text-base font-semibold text-stone-600 border-b pb-2">Status & Notes</h3>
+             <h3 className="border-b border-stone-200 pb-2 text-base font-semibold text-stone-900">Status & Notes</h3>
               <div>
                 <label htmlFor="status-buttons" className="block text-sm font-medium text-stone-700">Status*</label>
                 <div id="status-buttons" className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Select status">
                     {activeStatusOptions.map(status => (
-                    <button key={status} type="button" aria-pressed={formState.status === status} onClick={() => setFormState(s => ({...s, status}))} className={`px-4 py-2 text-sm rounded-full border-2 transition-colors ${formState.status === status ? 'bg-indigo-600 border-indigo-600 text-white font-semibold' : 'bg-white border-stone-300 text-stone-600 hover:bg-stone-100 hover:border-stone-400'}`}>
+                    <button
+                      key={status}
+                      type="button"
+                      aria-pressed={formState.status === status}
+                      onClick={() => setFormState(s => ({...s, status}))}
+                      className={chipClasses({
+                        active: formState.status === status,
+                        tone: status === OrderStatus.DealerExchange ? 'warning' : 'brand',
+                        size: 'md',
+                      })}
+                    >
                         {status}
                     </button>
                     ))}
@@ -317,7 +328,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
           type="submit" 
           disabled={isSubmitting} 
           data-testid="submit-order-button"
-          className="w-full flex justify-center items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-stone-950 px-4 py-3 font-bold text-white shadow-sm transition-colors duration-200 hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-50">
           {isSubmitting ? (
             <>
               <ButtonSpinner className="-ml-1 mr-2 h-5 w-5" />

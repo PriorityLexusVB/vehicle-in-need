@@ -364,15 +364,15 @@ const OrderCard: React.FC<OrderCardProps> = ({
     <div
       ref={cardRef}
       id={`order-${order.id}`}
-      className={`rounded-xl shadow-sm transition-all duration-300 ${
+      className={`rounded-lg shadow-sm transition-all duration-300 ${
         isSecured
           ? "bg-stone-100/70 border-stone-200"
-          : "bg-white border-stone-200 hover:shadow-md hover:border-stone-300"
+          : "bg-white/95 border-stone-200 hover:shadow-md hover:border-stone-300"
       } border`}
     >
       <button
         type="button"
-        className="w-full p-4 cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded-xl"
+        className="w-full cursor-pointer rounded-lg p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 focus-visible:ring-offset-2"
         onClick={() => setIsExpanded(!isExpanded)}
         aria-label="Toggle order details"
         aria-expanded={isExpanded}
@@ -436,7 +436,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                 return (
                   <button
                     onClick={(e) => { e.stopPropagation(); setShowMatchPreview(true); }}
-                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold hover:shadow-sm transition-shadow cursor-pointer ${hasExact ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-indigo-50 border-indigo-200 text-indigo-700"}`}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold hover:shadow-sm transition-shadow cursor-pointer ${hasExact ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-stone-50 border-stone-200 text-stone-700"}`}
                     title="Preview matching vehicles"
                   >
                     {allocParts.length > 0 && <span>{allocParts.join(", ")}</span>}

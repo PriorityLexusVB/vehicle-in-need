@@ -10,6 +10,7 @@ import {
 import { DownloadIcon } from "./icons/DownloadIcon";
 import { OrderMatchSummary } from "../src/utils/orderMatchSummary";
 import { AllocationVehicle } from "../src/utils/allocationTypes";
+import { chipClasses } from "./ui/chipStyles";
 
 interface OrderListProps {
   orders: Order[];
@@ -188,8 +189,8 @@ const OrderList: React.FC<OrderListProps> = ({
   };
 
   return (
-    <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-stone-200">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+    <div className="rounded-lg border border-stone-200 bg-white/95 p-4 shadow-sm sm:p-6">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm text-stone-500 mt-1">
             Showing {filteredOrders.length} of{" "}
@@ -199,7 +200,7 @@ const OrderList: React.FC<OrderListProps> = ({
         </div>
         <button
           onClick={handleExport}
-          className="mt-4 sm:mt-0 flex-shrink-0 flex items-center justify-center gap-2 text-sm bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex flex-shrink-0 items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors duration-200 hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
           disabled={filteredOrders.length === 0}
         >
           <DownloadIcon />
@@ -207,8 +208,8 @@ const OrderList: React.FC<OrderListProps> = ({
         </button>
       </div>
 
-      <div className="mb-4 border-b border-stone-200">
-        <div className="-mb-px flex space-x-6" role="tablist" aria-label="Tabs">
+      <div className="mb-5 border-b border-stone-200">
+        <div className="-mb-px flex flex-wrap gap-2" role="tablist" aria-label="Tabs">
           <button
             role="tab"
             aria-selected={activeTab === "active"}
@@ -216,15 +217,15 @@ const OrderList: React.FC<OrderListProps> = ({
               setActiveTab("active");
               setStatusFilter("all");
             }}
-            className={`whitespace-nowrap pb-3 px-3 border-b-2 font-semibold text-sm transition-colors ${
+            className={`whitespace-nowrap border-b-2 px-3 pb-3 text-sm font-semibold transition-colors ${
               activeTab === "active"
-                ? "border-indigo-500 text-indigo-600"
+                ? "border-stone-950 text-stone-950"
                 : "border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300"
             }`}
           >
             Active Orders{" "}
             <span
-              className={`ml-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold ${activeTab === "active" ? "bg-indigo-100 text-indigo-700" : "bg-stone-200 text-stone-700"}`}
+              className={`ml-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold ${activeTab === "active" ? "bg-amber-100 text-stone-950" : "bg-stone-200 text-stone-700"}`}
             >
               {totalActiveOrders}
             </span>
@@ -233,15 +234,15 @@ const OrderList: React.FC<OrderListProps> = ({
             role="tab"
             aria-selected={activeTab === "secured"}
             onClick={() => setActiveTab("secured")}
-            className={`whitespace-nowrap pb-3 px-3 border-b-2 font-semibold text-sm transition-colors ${
+            className={`whitespace-nowrap border-b-2 px-3 pb-3 text-sm font-semibold transition-colors ${
               activeTab === "secured"
-                ? "border-indigo-500 text-indigo-600"
+                ? "border-stone-950 text-stone-950"
                 : "border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300"
             }`}
           >
             Secured History{" "}
             <span
-              className={`ml-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold ${activeTab === "secured" ? "bg-indigo-100 text-indigo-700" : "bg-stone-200 text-stone-700"}`}
+              className={`ml-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold ${activeTab === "secured" ? "bg-emerald-100 text-emerald-800" : "bg-stone-200 text-stone-700"}`}
             >
               {totalSecuredOrders}
             </span>
@@ -260,7 +261,7 @@ const OrderList: React.FC<OrderListProps> = ({
             placeholder="Search by Customer, Salesperson, Model, Deal #, Stock #, or VIN..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="block w-full p-2.5 pr-9 border border-stone-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            className="block w-full rounded-lg border border-stone-300 bg-stone-50 p-2.5 pr-9 text-stone-900 shadow-sm outline-none transition focus:border-stone-500 focus:ring-2 focus:ring-stone-200 sm:text-sm"
           />
           {searchQuery && (
             <button
@@ -279,12 +280,12 @@ const OrderList: React.FC<OrderListProps> = ({
       {activeTab === "active" && (
         <div className="mb-6">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-medium text-stone-600 mr-2">
+            <span className="mr-2 text-sm font-semibold text-stone-600">
               Filter:
             </span>
             <button
               onClick={() => setStatusFilter("all")}
-              className={`px-3 py-1.5 text-xs rounded-full border font-semibold transition-colors ${statusFilter === "all" ? "bg-indigo-600 border-indigo-600 text-white" : "bg-white border-stone-300 text-stone-600 hover:bg-stone-100"}`}
+              className={chipClasses({ active: statusFilter === "all", tone: "brand" })}
             >
               All Active
             </button>
@@ -292,7 +293,10 @@ const OrderList: React.FC<OrderListProps> = ({
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
-                className={`px-3 py-1.5 text-xs rounded-full border font-semibold transition-colors ${statusFilter === status ? "bg-indigo-600 border-indigo-600 text-white" : "bg-white border-stone-300 text-stone-600 hover:bg-stone-100"}`}
+                className={chipClasses({
+                  active: statusFilter === status,
+                  tone: status === OrderStatus.DealerExchange ? "warning" : "brand",
+                })}
               >
                 {status}
               </button>

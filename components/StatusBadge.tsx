@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { OrderStatus } from '../types';
-import { STATUS_COLORS, normalizeStatusForUI } from '../constants';
+import { normalizeStatusForUI } from '../constants';
+import { chipClasses, type ChipTone } from './ui/chipStyles';
 
 interface StatusBadgeProps {
   status: OrderStatus;
@@ -10,10 +11,17 @@ interface StatusBadgeProps {
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
   // Normalize status for UI display (maps Received/Delivered to Secured)
   const displayStatus = normalizeStatusForUI(status);
-  const colorClasses = STATUS_COLORS[displayStatus] || 'bg-stone-100 text-stone-800 border-stone-300';
+  const toneByStatus: Partial<Record<OrderStatus, ChipTone>> = {
+    [OrderStatus.FactoryOrder]: "brand",
+    [OrderStatus.Locate]: "warning",
+    [OrderStatus.DealerExchange]: "warning",
+    [OrderStatus.Received]: "success",
+    [OrderStatus.Delivered]: "success",
+    [OrderStatus.Secured]: "success",
+  };
 
   return (
-    <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${colorClasses}`}>
+    <span className={chipClasses({ tone: toneByStatus[displayStatus] ?? "neutral" })}>
       {displayStatus}
     </span>
   );

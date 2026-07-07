@@ -942,22 +942,22 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 font-sans">
+    <div className="min-h-screen bg-[#f6f1ea] font-sans text-stone-900">
       {needRefresh && (
-        <div className="bg-indigo-600 text-white py-3 px-4 flex items-center justify-between shadow-lg">
+        <div className="bg-stone-950 text-white py-3 px-4 flex items-center justify-between shadow-lg">
           <span className="text-sm font-medium">
             A new version is available!
           </span>
           <div className="flex gap-2">
             <button
               onClick={() => updateServiceWorker(true)}
-              className="bg-white text-indigo-600 px-4 py-1 rounded-md text-sm font-semibold hover:bg-stone-100 transition-colors"
+              className="bg-white text-stone-950 px-4 py-1 rounded-md text-sm font-semibold hover:bg-amber-50 transition-colors"
             >
               Reload
             </button>
             <button
               onClick={() => setNeedRefresh(false)}
-              className="text-white px-3 py-1 text-sm hover:bg-indigo-700 rounded-md transition-colors"
+              className="text-white px-3 py-1 text-sm hover:bg-white/10 rounded-md transition-colors"
             >
               Dismiss
             </button>
@@ -970,7 +970,7 @@ const App: React.FC = () => {
         onLogout={handleLogout}
         currentPath={location.pathname}
       />
-      <main className="container mx-auto p-4 sm:p-6 lg:p-8">
+      <main className="mx-auto max-w-screen-2xl p-4 sm:p-6 lg:p-8">
         <ZeroManagerWarning
           hasManagers={allUsers.some((u) => u.isManager)}
           isCurrentUserManager={user.isManager}
@@ -1015,11 +1015,19 @@ const App: React.FC = () => {
               user.isManager ? (
                 <div>
                   <DashboardStats {...stats} />
-                  <div className="flex flex-wrap gap-y-2 items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-stone-800">
-                      All Orders
-                    </h2>
-                    <div className="flex items-center gap-3">
+                  <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                      <p className="text-xs font-bold uppercase text-amber-700">
+                        Operations Dashboard
+                      </p>
+                      <h2 className="mt-1 text-3xl font-bold text-stone-950">
+                        All Orders
+                      </h2>
+                      <p className="mt-1 text-sm text-stone-600">
+                        Factory orders, dealer exchanges, linked inventory, and secured history in one queue.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3">
                       <button
                         onClick={() => {
                           setIsCSVUploadVisible((prev) => !prev);
@@ -1027,10 +1035,10 @@ const App: React.FC = () => {
                             setIsOrderFormVisible(false);
                           }
                         }}
-                        className={`flex items-center gap-2 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-colors duration-200 ${
+                        className={`flex items-center gap-2 text-white font-bold py-2.5 px-4 rounded-lg shadow-sm transition-colors duration-200 ${
                           isCSVUploadVisible
-                            ? "bg-stone-600 hover:bg-stone-700"
-                            : "bg-emerald-600 hover:bg-emerald-700"
+                            ? "bg-stone-700 hover:bg-stone-800"
+                            : "bg-emerald-700 hover:bg-emerald-800"
                         }`}
                       >
                         {isCSVUploadVisible ? (
@@ -1052,10 +1060,10 @@ const App: React.FC = () => {
                             setIsCSVUploadVisible(false);
                           }
                         }}
-                        className={`flex items-center gap-2 text-white font-bold py-2 px-5 rounded-lg shadow-md hover:shadow-lg transition-colors duration-200 ${
+                        className={`flex items-center gap-2 text-white font-bold py-2.5 px-5 rounded-lg shadow-sm transition-colors duration-200 ${
                           isOrderFormVisible
-                            ? "bg-stone-600 hover:bg-stone-700"
-                            : "bg-indigo-600 hover:bg-indigo-700"
+                            ? "bg-stone-700 hover:bg-stone-800"
+                            : "bg-stone-950 hover:bg-stone-800"
                         }`}
                       >
                         {isOrderFormVisible ? (

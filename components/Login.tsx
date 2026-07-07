@@ -76,7 +76,7 @@ const UnauthorizedDomainError: React.FC = () => {
             href={`https://console.firebase.google.com/u/0/project/${firebaseConfig.projectId}/authentication/settings`}
             target="_blank"
             rel="noopener noreferrer"
-            className="block w-full text-center mt-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-lg text-sm transition-colors"
+            className="block w-full text-center mt-1 bg-stone-950 hover:bg-stone-800 text-white font-bold py-2.5 px-4 rounded-lg text-sm transition-colors"
           >
             Open Firebase Auth Settings
           </a>
@@ -339,7 +339,7 @@ const Login: React.FC = () => {
     if (!error) return null;
 
     return (
-      <div role="alert" className="bg-red-50 border border-red-200 p-4 rounded-lg text-sm mb-6">
+      <div role="alert" className="bg-red-50 border border-red-200 p-4 rounded-lg text-sm mb-6 text-left text-red-800">
         {error.type === "unauthorized-domain" ? (
           <UnauthorizedDomainError />
         ) : (
@@ -350,15 +350,20 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-stone-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#f6f1ea] px-4 py-8">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-xl border border-stone-200 p-8 text-center">
-          <h1 className="text-2xl font-bold text-stone-800 tracking-tight mb-2">
-            Vehicle Order Tracker
-          </h1>
-          <p className="text-stone-500 mb-8">
-            Please sign in with your company Google account.
-          </p>
+        <div className="rounded-lg border border-stone-200 bg-white/95 p-6 text-center shadow-xl shadow-stone-300/30 sm:p-8">
+          <div className="mb-7">
+            <p className="text-xs font-semibold text-amber-700">
+              Priority Lexus Virginia Beach
+            </p>
+            <h1 className="mt-2 text-2xl font-bold text-stone-950 sm:text-3xl">
+              Vehicle Order Tracker
+            </h1>
+            <p className="mt-3 text-sm text-stone-600 sm:text-base">
+              Please sign in with your company Google account.
+            </p>
+          </div>
 
           {renderError()}
 
@@ -366,12 +371,12 @@ const Login: React.FC = () => {
             onClick={handleLogin}
             disabled={isSigningIn}
             aria-busy={isSigningIn}
-            className="w-full flex items-center justify-center gap-3 bg-white border-2 border-stone-300 hover:bg-stone-100 text-stone-700 font-semibold py-3 px-4 rounded-lg shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex w-full items-center justify-center gap-3 rounded-lg border border-stone-300 bg-white px-4 py-3 font-semibold text-stone-800 shadow-sm transition-colors duration-200 hover:border-amber-300 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <GoogleIcon />
             {isSigningIn ? "Processing sign-in..." : "Sign in with Google"}
           </button>
-          <p className="mt-6 text-xs text-stone-400">
+          <p className="mt-5 rounded-md bg-stone-950 px-3 py-2 text-xs font-medium text-stone-100">
             Access is restricted to @priorityautomotive.com accounts.
           </p>
         </div>
