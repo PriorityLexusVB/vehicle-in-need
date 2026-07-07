@@ -14,7 +14,7 @@
  *
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   collection,
   onSnapshot,
@@ -40,14 +40,19 @@ export interface UseVehicleLinksResult {
  * Returns a stable Map reference that updates reactively.
  * Unsubscribes automatically when the component unmounts.
  */
-export function useVehicleLinks(): UseVehicleLinksResult {
+export function useVehicleLinks(enabled = true): UseVehicleLinksResult {
   const [linksByVehicleId, setLinksByVehicleId] = useState<Map<string, VehicleLinkDoc>>(
     () => new Map(),
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const disabledLinksByVehicleId = useMemo(() => new Map<string, VehicleLinkDoc>(), []);
 
   useEffect(() => {
+    if (!enabled) {
+      return undefined;
+    }
+
     const ref = collection(db, VEHICLE_LINKS_COLLECTION);
 
     const unsubscribe = onSnapshot(
@@ -69,7 +74,11 @@ export function useVehicleLinks(): UseVehicleLinksResult {
     );
 
     return unsubscribe;
-  }, []); // no deps — collection path is static
+  }, [enabled]); // collection path is static; enabled follows auth state
+
+  if (!enabled) {
+    return { linksByVehicleId: disabledLinksByVehicleId, loading: false, error: null };
+  }
 
   return { linksByVehicleId, loading, error };
 }

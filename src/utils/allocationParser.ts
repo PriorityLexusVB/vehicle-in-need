@@ -101,6 +101,64 @@ function canonicalizeMatchedCode(matched: string): string {
   return matched.replace(/[\s-]+/g, "").toUpperCase();
 }
 
+function normalizeVehicleIdPart(value: string | undefined): string {
+  const normalized = (value ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9+]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return normalized || "NA";
+}
+
+function hashString(value: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(36).toUpperCase();
+}
+
+function buildVehicleIdBase(input: {
+  code: string;
+  sourceCode?: string;
+  grade: string;
+  color: string;
+  interiorColor: string;
+  bos: string;
+  factoryAccessories: string[];
+  postProductionOptions: string[];
+}): string {
+  const stableOptions = [
+    ...input.factoryAccessories.map((value) => `FA:${value}`),
+    ...input.postProductionOptions.map((value) => `PPO:${value}`),
+  ]
+    .map((value) => value.trim().toUpperCase())
+    .filter(Boolean)
+    .sort();
+
+  // Arrival dates are intentionally excluded: build/port timing can move while
+  // the underlying allocation unit is still the same car to the sales team.
+  const signature = [
+    input.code,
+    input.sourceCode ?? "",
+    input.grade,
+    input.color,
+    input.interiorColor,
+    input.bos,
+    ...stableOptions,
+  ]
+    .map((value) => value.trim().toUpperCase())
+    .join("|");
+
+  return [
+    normalizeVehicleIdPart(input.sourceCode ?? input.code),
+    normalizeVehicleIdPart(input.code),
+    hashString(signature),
+  ].join("-");
+}
+
 const FLEXIBLE_CODE_REGEXES = LEXUS_REFERENCE_CODES.map((code) =>
   buildFlexibleCodeRegex(code),
 );
@@ -1105,6 +1163,10 @@ function detectQuantity(
   const after = uppercaseLine.slice(endIndex, Math.min(uppercaseLine.length, endIndex + 14));
   const afterMatch = after.match(QUANTITY_AFTER_CODE_REGEX);
   if (afterMatch?.[1]) {
+    const nextNonSpace = after.slice(afterMatch[0].length).trimStart()[0];
+    if (nextNonSpace === "/" || nextNonSpace === "-") {
+      return 1;
+    }
     const numeric = Number(afterMatch[1]);
     if (numeric > 0) {
       return numeric;
@@ -1170,6 +1232,7 @@ export function parseAllocationSource(sourceText: string): ParsedAllocationResul
 
   const vehicles: AllocationVehicle[] = [];
   const warnings: string[] = [];
+  const emittedUnitCountsByBaseId = new Map<string, number>();
 
   // Keep whitespace for fixed-column slicing (PDF-style paste), but ignore empty lines.
   const lines = normalized
@@ -1295,41 +1358,57 @@ export function parseAllocationSource(sourceText: string): ParsedAllocationResul
       const msrp = 0;
       const profit = 0;
       const totalValue = 0;
-
-      const vehicle: AllocationVehicle = {
-        id: `${match.code}-${block.startLineIndex}-${match.start}-${vehicles.length}`,
+      const grade = detectGrade(block.blockTextUpper, reference);
+      const vehicleIdBase = buildVehicleIdBase({
         code: match.code,
-        model: reference.code,
         sourceCode,
-        quantity,
+        grade,
         color: exteriorColor,
         interiorColor,
         bos,
-        arrival,
-        grade: detectGrade(block.blockTextUpper, reference),
-        engine: reference.engine,
-        msrp,
-        category: reference.category,
-        type: reference.type,
-        rank: reference.rank,
-        profit,
-        totalValue,
-      };
+        factoryAccessories,
+        postProductionOptions,
+      });
 
-      const vehicleWithOptions = vehicle as AllocationVehicle & {
-        factoryAccessories?: string[];
-        postProductionOptions?: string[];
-      };
+      for (let unitIndex = 0; unitIndex < quantity; unitIndex++) {
+        const nextUnitNumber = (emittedUnitCountsByBaseId.get(vehicleIdBase) ?? 0) + 1;
+        emittedUnitCountsByBaseId.set(vehicleIdBase, nextUnitNumber);
 
-      if (factoryAccessories.length > 0) {
-        vehicleWithOptions.factoryAccessories = factoryAccessories;
+        const vehicle: AllocationVehicle = {
+          id: `${vehicleIdBase}-U${String(nextUnitNumber).padStart(2, "0")}`,
+          code: match.code,
+          model: reference.code,
+          sourceCode,
+          quantity: 1,
+          color: exteriorColor,
+          interiorColor,
+          bos,
+          arrival,
+          grade,
+          engine: reference.engine,
+          msrp,
+          category: reference.category,
+          type: reference.type,
+          rank: reference.rank,
+          profit,
+          totalValue,
+        };
+
+        const vehicleWithOptions = vehicle as AllocationVehicle & {
+          factoryAccessories?: string[];
+          postProductionOptions?: string[];
+        };
+
+        if (factoryAccessories.length > 0) {
+          vehicleWithOptions.factoryAccessories = factoryAccessories;
+        }
+
+        if (postProductionOptions.length > 0) {
+          vehicleWithOptions.postProductionOptions = postProductionOptions;
+        }
+
+        vehicles.push(vehicleWithOptions);
       }
-
-      if (postProductionOptions.length > 0) {
-        vehicleWithOptions.postProductionOptions = postProductionOptions;
-      }
-
-      vehicles.push(vehicleWithOptions);
     });
 
     // If we detected a block but still produced nothing, warn.

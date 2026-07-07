@@ -22,9 +22,24 @@ describe('parseAllocationSource', () => {
     const result = parseAllocationSource(source);
 
     expect(result.errors).toHaveLength(0);
-    expect(result.vehicles[0].quantity).toBe(2);
-    expect(result.vehicles[1].quantity).toBe(3);
+    expect(result.itemCount).toBe(5);
+    expect(result.vehicles).toHaveLength(5);
+    expect(result.vehicles.every((vehicle) => vehicle.quantity === 1)).toBe(true);
+    expect(result.vehicles.filter((vehicle) => vehicle.code === 'RX350')).toHaveLength(2);
+    expect(result.vehicles.filter((vehicle) => vehicle.code === 'TX350')).toHaveLength(3);
+    expect(new Set(result.vehicles.map((vehicle) => vehicle.id)).size).toBe(5);
     expect(result.summary.units).toBe(5);
+  });
+
+  it('keeps unit IDs stable when source rows are reordered', () => {
+    const first = parseAllocationSource('2x RX350 Black\nTX350 White');
+    const second = parseAllocationSource('TX350 White\n2x RX350 Black');
+
+    expect(first.errors).toHaveLength(0);
+    expect(second.errors).toHaveLength(0);
+    expect(first.vehicles.map((vehicle) => vehicle.id).sort()).toEqual(
+      second.vehicles.map((vehicle) => vehicle.id).sort(),
+    );
   });
 
   it('returns validation error when no mapped code is found', () => {
@@ -45,7 +60,7 @@ describe('parseAllocationSource', () => {
     const result = parseAllocationSource(source);
 
     expect(result.errors).toHaveLength(0);
-    expect(result.itemCount).toBe(2);
+    expect(result.itemCount).toBe(3);
     expect(result.vehicles[0].code).toBe('RX350');
     expect(result.vehicles[0].arrival).toBe('2026-03-12');
     expect(result.vehicles[0].color).toBe('223 CAVIAR');
@@ -57,7 +72,10 @@ describe('parseAllocationSource', () => {
     expect(result.vehicles[1].color).toBe('085 ULTRA WHITE');
     expect(result.vehicles[1].interiorColor).toBe('LC10 RED');
     expect(result.vehicles[1].bos).toBe('N');
-    expect(result.vehicles[1].quantity).toBe(2);
+    expect(result.vehicles[1].quantity).toBe(1);
+    expect(result.vehicles[2].code).toBe('TX500H');
+    expect(result.vehicles[2].quantity).toBe(1);
+    expect(new Set(result.vehicles.map((vehicle) => vehicle.id)).size).toBe(3);
   });
 
   it('supports wrapped/PDF-like blocks where exterior color is on a continuation line', () => {

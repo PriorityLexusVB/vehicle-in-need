@@ -13,7 +13,6 @@ import {
   addDoc,
   serverTimestamp,
   updateDoc,
-  deleteDoc,
   writeBatch,
   Timestamp,
   FirestoreError,
@@ -48,7 +47,11 @@ import { subscribeLatestAllocationSnapshot } from "./services/allocationService"
 import { AllocationSnapshot } from "./src/utils/allocationTypes";
 import { computeOrderMatchSummaries, OrderMatchSummary } from "./src/utils/orderMatchSummary";
 import { fetchDxSheet, DxTrade } from "./src/utils/dxSheetParser";
-import { unlinkVehicleFromOrder } from "./services/orderLinkingService";
+import {
+  deleteOrderAndReleaseVehicle,
+  releaseVehicleAndUpdateOrderStatus,
+} from "./services/orderLinkingService";
+import { useVehicleLinks } from "./services/useVehicleLinks";
 
 // Type guard to verify if an error is a FirestoreError.
 // Checks for FirestoreError-specific properties to distinguish from generic errors.
@@ -95,6 +98,7 @@ const App: React.FC = () => {
     awaitingAction: 0,
     securedLast30Days: 0,
   });
+  const { linksByVehicleId } = useVehicleLinks(Boolean(user));
 
   // Track if we've already shown the fallback warning
   const fallbackWarningShown = useRef(false);
@@ -782,14 +786,11 @@ const App: React.FC = () => {
         // When securing an order, clean up any vehicle link so the allocation
         // vehicle becomes available again for other customers.
         if (isSecuredStatus(status)) {
-          const order = orders.find((o) => o.id === orderId);
-          if (order?.allocatedVehicleId) {
-            await unlinkVehicleFromOrder(orderId);
-          }
+          await releaseVehicleAndUpdateOrderStatus(orderId, status);
+        } else {
+          const orderDocRef = doc(db, "orders", orderId);
+          await updateDoc(orderDocRef, { status });
         }
-
-        const orderDocRef = doc(db, "orders", orderId);
-        await updateDoc(orderDocRef, { status });
 
         // Celebrate when a vehicle is delivered (the big win moment)
         if (status === OrderStatus.Delivered) {
@@ -801,7 +802,7 @@ const App: React.FC = () => {
         alert("Failed to update status. Please try again.");
       }
     },
-    [user, orders],
+    [user],
   );
 
   const handleUpdateOrderDetails = useCallback(
@@ -873,18 +874,14 @@ const App: React.FC = () => {
         )
       ) {
         try {
-          const orderToDelete = orders.find((o) => o.id === orderId);
-          if (orderToDelete?.allocatedVehicleId) {
-            await unlinkVehicleFromOrder(orderId);
-          }
-          await deleteDoc(doc(db, "orders", orderId));
+          await deleteOrderAndReleaseVehicle(orderId);
         } catch (error) {
           console.error("Error deleting order: ", error);
           alert("Failed to delete order. Please try again.");
         }
       }
     },
-    [user, orders],
+    [user],
   );
 
   const handleUpdateUserRole = useCallback(
@@ -930,8 +927,11 @@ const App: React.FC = () => {
     for (const order of orders) {
       if (order.allocatedVehicleId) ids.add(order.allocatedVehicleId);
     }
+    for (const vehicleId of linksByVehicleId.keys()) {
+      ids.add(vehicleId);
+    }
     return ids;
-  }, [orders]);
+  }, [orders, linksByVehicleId]);
 
   if (isLoading) {
     return <LoadingSpinner />;

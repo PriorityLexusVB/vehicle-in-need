@@ -23,8 +23,19 @@ const pdfMocks = vi.hoisted(() => ({
   extractAllocationTextFromPdf: vi.fn(),
 }));
 
+const linkMocks = vi.hoisted(() => ({
+  linkVehicleToOrder: vi.fn(),
+  unlinkVehicleFromOrder: vi.fn(),
+}));
+
+const vehicleLinksMocks = vi.hoisted(() => ({
+  useVehicleLinks: vi.fn(),
+}));
+
 const { subscribeLatestAllocationSnapshot, publishAllocationSnapshot } = serviceMocks;
 const { extractAllocationTextFromPdf } = pdfMocks;
+const { linkVehicleToOrder, unlinkVehicleFromOrder } = linkMocks;
+const { useVehicleLinks } = vehicleLinksMocks;
 
 vi.mock('../../services/allocationService', () => serviceMocks);
 vi.mock('../../src/utils/pdfTextExtractor', () => pdfMocks);
@@ -33,10 +44,8 @@ vi.mock('../../services/orderService', () => ({
   subscribeActiveOrders: vi.fn(() => vi.fn()),
 }));
 
-vi.mock('../../services/orderLinkingService', () => ({
-  linkVehicleToOrder: vi.fn(),
-  unlinkVehicleFromOrder: vi.fn(),
-}));
+vi.mock('../../services/orderLinkingService', () => linkMocks);
+vi.mock('../../services/useVehicleLinks', () => vehicleLinksMocks);
 
 vi.mock('../../src/utils/dxSheetParser', () => ({
   fetchDxSheet: vi.fn(() => Promise.resolve([])),
@@ -123,6 +132,15 @@ beforeEach(() => {
   subscribeLatestAllocationSnapshot.mockReset();
   publishAllocationSnapshot.mockReset();
   extractAllocationTextFromPdf.mockReset();
+  linkVehicleToOrder.mockReset();
+  unlinkVehicleFromOrder.mockReset();
+  mockSubscribeActiveOrders.mockReset();
+  useVehicleLinks.mockReset();
+  useVehicleLinks.mockReturnValue({
+    linksByVehicleId: new Map(),
+    loading: false,
+    error: null,
+  });
   subscribeLatestAllocationSnapshot.mockImplementation((callback: (snapshot: unknown) => void) => {
     callback(sampleSnapshot);
     return () => undefined;
@@ -709,6 +727,108 @@ describe('AllocationBoard', () => {
         // Partial matches should appear in the "Similar Color" section
         expect(screen.getAllByText(/Similar Color/).length).toBeGreaterThan(0);
       });
+    });
+
+    it('keeps an identical remaining unit linkable when another slot is already linked', async () => {
+      const twoUnitSnapshot = {
+        ...sampleSnapshot,
+        itemCount: 2,
+        summary: {
+          units: 2,
+          value: 0,
+          hybridMix: 0,
+        },
+        vehicles: [
+          { ...sampleSnapshot.vehicles[1], id: 'rx-unit-1' },
+          { ...sampleSnapshot.vehicles[1], id: 'rx-unit-2' },
+        ],
+      };
+
+      subscribeLatestAllocationSnapshot.mockImplementation((callback: (snapshot: unknown) => void) => {
+        callback(twoUnitSnapshot);
+        return () => undefined;
+      });
+      useVehicleLinks.mockReturnValue({
+        linksByVehicleId: new Map([
+          ['rx-unit-1', { orderId: 'order-1', linkedAt: null, linkedByUid: 'manager-1' }],
+        ]),
+        loading: false,
+        error: null,
+      });
+      mockSubscribeActiveOrders.mockImplementation((callback) => {
+        callback([
+          {
+            ...sampleOrders[0],
+            id: 'order-1',
+            allocatedVehicleId: 'rx-unit-1',
+          },
+          {
+            ...sampleOrders[0],
+            id: 'order-2',
+            customerName: 'Alice Brown',
+            allocatedVehicleId: undefined,
+          },
+        ] as unknown as import('../../types').Order[]);
+        return () => undefined;
+      });
+      linkVehicleToOrder.mockResolvedValue(undefined);
+
+      renderBoard({ currentUser: managerUser });
+      const user = userEvent.setup();
+
+      const linkButton = await screen.findByRole('button', {
+        name: 'Link Alice Brown to this vehicle',
+      });
+      await user.click(linkButton);
+
+      expect(linkVehicleToOrder).toHaveBeenCalledWith(
+        'order-2',
+        'rx-unit-2',
+        expect.stringContaining('RX350'),
+        'manager-1',
+      );
+    });
+
+    it('treats a vehicle_links doc as taken even when no active order claims that vehicle', async () => {
+      const staleLinkSnapshot = {
+        ...sampleSnapshot,
+        vehicles: [
+          sampleSnapshot.vehicles[0],
+          { ...sampleSnapshot.vehicles[1], id: 'rx-stale-link' },
+        ],
+      };
+
+      subscribeLatestAllocationSnapshot.mockImplementation((callback: (snapshot: unknown) => void) => {
+        callback(staleLinkSnapshot);
+        return () => undefined;
+      });
+      useVehicleLinks.mockReturnValue({
+        linksByVehicleId: new Map([
+          ['rx-stale-link', { orderId: 'missing-active-order', linkedAt: null, linkedByUid: 'manager-1' }],
+        ]),
+        loading: false,
+        error: null,
+      });
+      mockSubscribeActiveOrders.mockImplementation((callback) => {
+        callback([
+          {
+            ...sampleOrders[0],
+            id: 'order-1',
+            customerName: 'John Smith',
+            allocatedVehicleId: undefined,
+          },
+        ] as unknown as import('../../types').Order[]);
+        return () => undefined;
+      });
+
+      renderBoard({ currentUser: managerUser });
+
+      await waitFor(() => {
+        expect(screen.getByText('John Smith')).toBeInTheDocument();
+        expect(screen.getByText('Vehicle Taken')).toBeInTheDocument();
+      });
+      expect(screen.queryByRole('button', { name: 'Link John Smith to this vehicle' })).toBeNull();
+      expect(linkVehicleToOrder).not.toHaveBeenCalled();
     });
   });
 });

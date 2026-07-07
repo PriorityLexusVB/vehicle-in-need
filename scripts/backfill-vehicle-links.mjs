@@ -25,9 +25,10 @@
  *
  * What it does:
  *   1. Queries all orders where allocatedVehicleId is not null/missing
- *   2. For each, checks if vehicle_links/{allocatedVehicleId} already exists
- *   3. If not, creates it using the order's linkedAt, linkedByUid, and orderId
- *   4. Reports counts at the end
+ *   2. Skips secured/closed orders; those should not hold allocation links
+ *   3. For each active order, checks if vehicle_links/{allocatedVehicleId} already exists
+ *   4. If not, creates it using the order's linkedAt, linkedByUid, and orderId
+ *   5. Reports counts at the end
  *
  * Conflict handling:
  *   If vehicle_links/{vehicleId} already points to a DIFFERENT orderId, the
@@ -75,6 +76,7 @@ if (!getApps().length) {
 }
 
 const db = getFirestore();
+const ACTIVE_STATUSES = new Set(['Factory Order', 'Locate', 'Dealer Exchange']);
 
 // ---------------------------------------------------------------------------
 // Backfill logic
@@ -95,17 +97,25 @@ async function run() {
   let skippedAlreadyExists = 0;
   let skippedConflict = 0;
   let skippedMissingData = 0;
+  let skippedInactiveStatus = 0;
 
   for (const orderDoc of snap.docs) {
     const data = orderDoc.data();
     const vehicleId   = data.allocatedVehicleId;
     const orderId     = orderDoc.id;
+    const status      = data.status;
     const linkedAt    = data.linkedAt    ?? null; // may be absent on very old records
     const linkedByUid = data.linkedByUid ?? null;
 
     if (!vehicleId) {
       // Shouldn't happen given the query, but guard anyway
       skippedMissingData++;
+      continue;
+    }
+
+    if (!ACTIVE_STATUSES.has(status)) {
+      skippedInactiveStatus++;
+      console.log(`  SKIP   order ${orderId} — status ${status ?? '<missing>'} is not active`);
       continue;
     }
 
@@ -155,6 +165,7 @@ async function run() {
   console.log(`  Already OK : ${skippedAlreadyExists}`);
   console.log(`  Conflicts  : ${skippedConflict} (resolve manually)`);
   console.log(`  Bad data   : ${skippedMissingData}`);
+  console.log(`  Inactive   : ${skippedInactiveStatus} (not backfilled)`);
 
   if (DRY_RUN && created > 0) {
     console.log('\nRe-run with --apply to write these documents.');

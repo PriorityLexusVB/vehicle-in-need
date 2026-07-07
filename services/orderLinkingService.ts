@@ -14,12 +14,16 @@
  */
 
 import {
+  DocumentData,
+  DocumentReference,
   doc,
   runTransaction,
   serverTimestamp,
   deleteField,
+  Transaction,
 } from "firebase/firestore";
 import { db } from "./firebase";
+import { OrderStatus } from "../types";
 
 const ORDERS_COLLECTION = "orders";
 const VEHICLE_LINKS_COLLECTION = "vehicle_links";
@@ -32,6 +36,55 @@ export interface VehicleLinkDoc {
   orderId: string;       // references orders/{id}
   linkedAt: unknown;     // FieldValue.serverTimestamp() at write time; Timestamp when read
   linkedByUid: string;   // manager UID who created the link
+}
+
+async function readOrderLinkState(
+  transaction: Transaction,
+  orderRef: DocumentReference<DocumentData>,
+) {
+  const orderSnap = await transaction.get(orderRef);
+  if (!orderSnap.exists()) {
+    throw new Error("Order not found");
+  }
+
+  const currentData = orderSnap.data();
+  const vehicleId: string | undefined = currentData.allocatedVehicleId;
+  const vehicleLinkRef = vehicleId ? doc(db, VEHICLE_LINKS_COLLECTION, vehicleId) : null;
+  const vehicleLinkSnap = vehicleLinkRef ? await transaction.get(vehicleLinkRef) : null;
+
+  return { vehicleId, vehicleLinkRef, vehicleLinkSnap };
+}
+
+function deleteMatchingVehicleLink(
+  transaction: Transaction,
+  vehicleId: string | undefined,
+  vehicleLinkRef: DocumentReference<DocumentData> | null,
+  vehicleLinkSnap: Awaited<ReturnType<Transaction["get"]>> | null,
+  orderId: string,
+) {
+  if (!vehicleLinkRef || !vehicleLinkSnap?.exists()) {
+    return;
+  }
+
+  const linkData = vehicleLinkSnap.data() as VehicleLinkDoc;
+  if (linkData.orderId === orderId) {
+    transaction.delete(vehicleLinkRef);
+    return;
+  }
+
+  console.warn(
+    `[orderLinkingService] release link skipped: vehicle_links/${vehicleId} ` +
+    `points to order ${linkData.orderId}, not ${orderId}`,
+  );
+}
+
+function clearedVehicleLinkFields() {
+  return {
+    allocatedVehicleId: deleteField(),
+    allocatedVehicleInfo: deleteField(),
+    linkedAt: deleteField(),
+    linkedByUid: deleteField(),
+  };
 }
 
 /**
@@ -131,42 +184,64 @@ export async function unlinkVehicleFromOrder(orderId: string): Promise<void> {
   const orderRef = doc(db, ORDERS_COLLECTION, orderId);
 
   await runTransaction(db, async (transaction) => {
-    // Step 1: Read the order to learn which vehicle is linked
-    const orderSnap = await transaction.get(orderRef);
-    if (!orderSnap.exists()) {
-      throw new Error("Order not found");
-    }
-
-    const currentData = orderSnap.data();
-    const vehicleId: string | undefined = currentData.allocatedVehicleId;
+    const { vehicleId, vehicleLinkRef, vehicleLinkSnap } =
+      await readOrderLinkState(transaction, orderRef);
 
     // Step 2: Null the order's link fields
-    transaction.update(orderRef, {
-      allocatedVehicleId: deleteField(),
-      allocatedVehicleInfo: deleteField(),
-      linkedAt: deleteField(),
-      linkedByUid: deleteField(),
-    });
+    transaction.update(orderRef, clearedVehicleLinkFields());
 
     // Step 3: Clean up vehicle_links doc only if it still points to this order
-    if (vehicleId) {
-      const vehicleLinkRef = doc(db, VEHICLE_LINKS_COLLECTION, vehicleId);
-      const vehicleLinkSnap = await transaction.get(vehicleLinkRef);
-      if (vehicleLinkSnap.exists()) {
-        const linkData = vehicleLinkSnap.data() as VehicleLinkDoc;
-        if (linkData.orderId === orderId) {
-          transaction.delete(vehicleLinkRef);
-        } else {
-          console.warn(
-            `[orderLinkingService] unlinkVehicleFromOrder: vehicle_links/${vehicleId} ` +
-            `points to order ${linkData.orderId}, not ${orderId} — skipping delete`,
-          );
-        }
-      }
-    }
+    deleteMatchingVehicleLink(transaction, vehicleId, vehicleLinkRef, vehicleLinkSnap, orderId);
   });
 
   console.info(
     `[orderLinkingService] Unlinked order ${orderId}`,
+  );
+}
+
+/**
+ * Atomically release any linked allocation vehicle and update the order status.
+ *
+ * Use this when moving an order to a secured/closed status so the vehicle is
+ * released only if the status update commits too.
+ */
+export async function releaseVehicleAndUpdateOrderStatus(
+  orderId: string,
+  status: OrderStatus,
+): Promise<void> {
+  const orderRef = doc(db, ORDERS_COLLECTION, orderId);
+
+  await runTransaction(db, async (transaction) => {
+    const { vehicleId, vehicleLinkRef, vehicleLinkSnap } =
+      await readOrderLinkState(transaction, orderRef);
+
+    transaction.update(orderRef, {
+      status,
+      ...clearedVehicleLinkFields(),
+    });
+    deleteMatchingVehicleLink(transaction, vehicleId, vehicleLinkRef, vehicleLinkSnap, orderId);
+  });
+
+  console.info(
+    `[orderLinkingService] Released vehicle link and updated order ${orderId} to ${status}`,
+  );
+}
+
+/**
+ * Atomically release any linked allocation vehicle and delete the order.
+ */
+export async function deleteOrderAndReleaseVehicle(orderId: string): Promise<void> {
+  const orderRef = doc(db, ORDERS_COLLECTION, orderId);
+
+  await runTransaction(db, async (transaction) => {
+    const { vehicleId, vehicleLinkRef, vehicleLinkSnap } =
+      await readOrderLinkState(transaction, orderRef);
+
+    deleteMatchingVehicleLink(transaction, vehicleId, vehicleLinkRef, vehicleLinkSnap, orderId);
+    transaction.delete(orderRef);
+  });
+
+  console.info(
+    `[orderLinkingService] Deleted order ${orderId} and released vehicle link`,
   );
 }
