@@ -123,10 +123,10 @@ function isNewOrderNotificationDue(order, startAtMs) {
 
 function detailRow(label, value) {
   return `
-    <tr>
-      <td style="padding:10px 12px;color:#78716c;font-size:12px;text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid #e7e5e4">${escapeHtml(label)}</td>
-      <td style="padding:10px 12px;color:#1c1917;font-size:14px;font-weight:600;border-bottom:1px solid #e7e5e4">${escapeHtml(value || "N/A")}</td>
-    </tr>
+    <div style="padding:11px 12px;border-bottom:1px solid #e7e5e4">
+      <div style="color:#78716c;font-size:11px;text-transform:uppercase;letter-spacing:.08em;line-height:1.3">${escapeHtml(label)}</div>
+      <div style="margin-top:4px;color:#1c1917;font-size:14px;font-weight:700;line-height:1.35;word-break:break-word;overflow-wrap:anywhere">${escapeHtml(value || "N/A")}</div>
+    </div>
   `;
 }
 
@@ -135,13 +135,15 @@ function luxuryEmailShell({ preheader, title, subtitle, bodyHtml, ctaUrl, ctaLab
     <div style="display:none;max-height:0;overflow:hidden">${escapeHtml(preheader)}</div>
     <style>
       @media only screen and (max-width: 520px) {
+        .vin-email-shell { width:calc(100vw - 16px) !important; max-width:calc(100vw - 16px) !important; }
+        .vin-email-container { width:100% !important; max-width:100% !important; }
         .vin-email-header { padding:22px 20px !important; }
-        .vin-email-body { padding:20px !important; }
+        .vin-email-body { max-width:330px !important; padding:20px !important; }
         .vin-metric-cell { display:block !important; width:100% !important; padding:0 0 10px 0 !important; }
       }
     </style>
-    <div style="width:100%;max-width:100%;margin:0;background:#f7f3ed;padding:24px 8px;font-family:Arial,Helvetica,sans-serif;color:#1c1917;box-sizing:border-box">
-      <div style="max-width:720px;margin:0 auto;background:#fff;border:1px solid #e7e0d4;border-radius:14px;overflow:hidden;box-sizing:border-box">
+    <div class="vin-email-shell" style="width:100%;max-width:100%;margin:0;background:#f7f3ed;padding:24px 0;font-family:Arial,Helvetica,sans-serif;color:#1c1917;box-sizing:border-box">
+      <div class="vin-email-container" style="width:100%;max-width:720px;margin:0 auto;background:#fff;border:1px solid #e7e0d4;border-radius:14px;overflow:hidden;box-sizing:border-box">
         <div class="vin-email-header" style="background:#111827;padding:24px;border-bottom:4px solid #c8a45d">
           <div style="color:#c8a45d;font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase">Priority Lexus Virginia Beach</div>
           <h1 style="margin:10px 0 4px;color:#fff;font-size:24px;line-height:1.25;font-weight:700">${escapeHtml(title)}</h1>
@@ -191,17 +193,17 @@ function buildNewOrderNotification(order, recipients, appUrl) {
     <p style="margin:0 0 18px;color:#44403c;font-size:15px;line-height:1.6">
       A new vehicle order was submitted and is ready for manager review.
     </p>
-    <table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;border:1px solid #e7e5e4;border-radius:10px;overflow:hidden">
+    <div style="width:100%;box-sizing:border-box;border:1px solid #e7e5e4;border-radius:10px;overflow:hidden">
       ${rows.map(([label, value]) => detailRow(label, value)).join("")}
-    </table>
+    </div>
     ${
       order.options
-        ? `<h2 style="margin:24px 0 8px;font-size:14px;color:#111827;text-transform:uppercase;letter-spacing:.08em">Options</h2><p style="margin:0;color:#44403c;font-size:14px;line-height:1.6">${escapeHtml(order.options)}</p>`
+        ? `<h2 style="margin:24px 0 8px;font-size:14px;color:#111827;text-transform:uppercase;letter-spacing:.08em">Options</h2><p style="margin:0;color:#44403c;font-size:14px;line-height:1.6;word-break:break-word;overflow-wrap:anywhere">${escapeHtml(order.options)}</p>`
         : ""
     }
     ${
       order.notes
-        ? `<h2 style="margin:24px 0 8px;font-size:14px;color:#111827;text-transform:uppercase;letter-spacing:.08em">Notes</h2><p style="margin:0;color:#44403c;font-size:14px;line-height:1.6">${escapeHtml(order.notes)}</p>`
+        ? `<h2 style="margin:24px 0 8px;font-size:14px;color:#111827;text-transform:uppercase;letter-spacing:.08em">Notes</h2><p style="margin:0;color:#44403c;font-size:14px;line-height:1.6;word-break:break-word;overflow-wrap:anywhere">${escapeHtml(order.notes)}</p>`
         : ""
     }
   `;
