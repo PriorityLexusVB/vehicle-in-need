@@ -52,7 +52,10 @@ function initializeFirebaseAdmin() {
   // Locally, this uses GOOGLE_APPLICATION_CREDENTIALS or ADC
   const app = admin.initializeApp({
     credential: admin.credential.applicationDefault(),
-    projectId: process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT,
+    projectId:
+      process.env.FIREBASE_PROJECT_ID ||
+      process.env.GOOGLE_CLOUD_PROJECT ||
+      process.env.GCLOUD_PROJECT,
   });
 
   console.log(
