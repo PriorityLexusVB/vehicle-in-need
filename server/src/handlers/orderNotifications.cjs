@@ -133,14 +133,21 @@ function detailRow(label, value) {
 function luxuryEmailShell({ preheader, title, subtitle, bodyHtml, ctaUrl, ctaLabel }) {
   return `
     <div style="display:none;max-height:0;overflow:hidden">${escapeHtml(preheader)}</div>
-    <div style="margin:0;background:#f7f3ed;padding:24px 8px;font-family:Arial,Helvetica,sans-serif;color:#1c1917;box-sizing:border-box">
-      <div style="width:100%;max-width:720px;margin:0 auto;background:#fff;border:1px solid #e7e0d4;border-radius:14px;overflow:hidden;box-sizing:border-box">
-        <div style="background:#111827;padding:24px;border-bottom:4px solid #c8a45d">
+    <style>
+      @media only screen and (max-width: 520px) {
+        .vin-email-header { padding:22px 20px !important; }
+        .vin-email-body { padding:20px !important; }
+        .vin-metric-cell { display:block !important; width:100% !important; padding:0 0 10px 0 !important; }
+      }
+    </style>
+    <div style="width:100%;max-width:100%;margin:0;background:#f7f3ed;padding:24px 8px;font-family:Arial,Helvetica,sans-serif;color:#1c1917;box-sizing:border-box">
+      <div style="max-width:720px;margin:0 auto;background:#fff;border:1px solid #e7e0d4;border-radius:14px;overflow:hidden;box-sizing:border-box">
+        <div class="vin-email-header" style="background:#111827;padding:24px;border-bottom:4px solid #c8a45d">
           <div style="color:#c8a45d;font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase">Priority Lexus Virginia Beach</div>
           <h1 style="margin:10px 0 4px;color:#fff;font-size:24px;line-height:1.25;font-weight:700">${escapeHtml(title)}</h1>
           <div style="color:#d6d3d1;font-size:14px;line-height:1.5">${escapeHtml(subtitle)}</div>
         </div>
-        <div style="padding:24px">
+        <div class="vin-email-body" style="padding:24px;box-sizing:border-box">
           ${bodyHtml}
           ${
             ctaUrl
@@ -251,7 +258,7 @@ function buildOrderRows(orders, appUrl, nowMs, includeAge = false) {
       const vehicle = compactOrderLine(order) || "Vehicle order";
       const age = orderAgeDays(order, nowMs);
       return `
-        <div style="border:1px solid #e7e5e4;border-radius:10px;padding:14px;margin:0 0 10px;background:#fff">
+        <div style="width:100%;box-sizing:border-box;border:1px solid #e7e5e4;border-radius:10px;padding:14px;margin:0 0 10px;background:#fff">
           <a href="${escapeHtml(orderUrl(order.id, appUrl))}" style="color:#111827;font-size:16px;line-height:1.25;font-weight:800;text-decoration:none">${escapeHtml(order.customerName || "Customer")}</a>
           <div style="color:#78716c;font-size:12px;line-height:1.4;margin-top:2px">${escapeHtml(order.salesperson || "TBD")}</div>
           <table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin-top:10px;table-layout:fixed">
@@ -278,10 +285,11 @@ function buildOrderRows(orders, appUrl, nowMs, includeAge = false) {
     .join("");
 }
 
-function metricCard(label, value) {
+function metricCard(label, value, side = "left") {
+  const padding = side === "right" ? "0 0 12px 6px" : "0 6px 12px 0";
   return `
-    <td style="width:50%;padding:0 6px 12px 0;vertical-align:top">
-      <div style="border:1px solid #e7e5e4;border-radius:10px;padding:14px;background:#fafaf9">
+    <td class="vin-metric-cell" style="width:50%;padding:${padding};vertical-align:top;box-sizing:border-box">
+      <div style="box-sizing:border-box;border:1px solid #e7e5e4;border-radius:10px;padding:14px;background:#fafaf9">
         <div style="color:#78716c;font-size:11px;text-transform:uppercase;letter-spacing:.08em">${escapeHtml(label)}</div>
         <div style="margin-top:6px;color:#111827;font-size:26px;font-weight:800">${escapeHtml(value)}</div>
       </div>
@@ -316,11 +324,11 @@ function buildWeeklyDigest({ orders, recipients, appUrl, nowMs }) {
     <table cellpadding="0" cellspacing="0" style="width:100%;margin-bottom:18px;table-layout:fixed">
       <tr>
         ${metricCard("Active", String(activeOrders.length))}
-        ${metricCard("New 7d", String(newOrders.length))}
+        ${metricCard("New 7d", String(newOrders.length), "right")}
       </tr>
       <tr>
         ${metricCard("Factory", String(factoryOrders.length))}
-        ${metricCard("DX", String(dealerExchangeOrders.length))}
+        ${metricCard("DX", String(dealerExchangeOrders.length), "right")}
       </tr>
     </table>
 
