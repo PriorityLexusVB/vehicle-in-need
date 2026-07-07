@@ -3,7 +3,7 @@
 > Per-repo memory file. The repo's single source of truth for "where is this project."
 > Rewrite to current truth each working session — do NOT append session logs.
 
-**Last updated:** 2026-07-07 - **By:** WORK PC / Codex - **HEAD:** UI shell polish live (code commit `001fcc5`)
+**Last updated:** 2026-07-07 - **By:** WORK PC / Codex - **HEAD:** dependency security pass
 
 ---
 
@@ -22,6 +22,7 @@ React 19 + Vite 7 + Tailwind 4 frontend · Firebase backend (Firestore, Cloud Fu
 - **UNSECURED ORDER REMINDERS ADDED (2026-07-07).** Cloud Run now exposes a protected `/jobs/unsecured-order-reminders` endpoint that returns active orders due for follow-up every 3 days until secured. Apps Script `allocation-email-watcher.gs` now includes `sendUnsecuredOrderReminders`, `previewUnsecuredOrderReminders`, and `setupUnsecuredReminderTrigger` so Gmail/MailApp sends the emails and acks successful sends back to Firestore. Recipient resolution is explicit `salespersonEmail`, then unique active `users.displayName` match, then `createdByEmail`; only `@priorityautomotive.com` emails are used. Runbook: `docs/UNSECURED_ORDER_REMINDERS.md`.
 - **MANAGER ORDER NOTIFICATIONS LIVE (2026-07-07).** Cloud Run exposes protected `/jobs/order-notifications` for new-order manager emails and Monday weekly digest; Apps Script trigger setup was confirmed in execution logs (`sendNewOrderNotifications` every 5 minutes; `sendWeeklyOrderDigest` Mondays around 8 AM). Dry-run preview returned 200 with live manager recipients: Grady Harris, Jack Babashanian, Rob Brasco, Tony Riccio. Recipients are active app users marked `isManager === true` with `@priorityautomotive.com` email; add/remove recipients in Vehicle-in-Need Settings by toggling Manager/active status. New-order sends are cut over from `ORDER_NOTIFICATION_START_AT=2026-07-07T15:55:15Z` and require real `createdAt` to avoid blasting old orders. Cloud Run sets `FIREBASE_PROJECT_ID=vehicles-in-need` so Admin SDK jobs read the live app Firestore, not the hosting project Firestore. Dedicated GCP secret `order-notification-key` exists and matching Apps Script key is vaulted at `env-vault/order-notification-api-key-vehicle-in-need.md.enc`. Email layout polish deployed at `b811e0b`: weekly digest and new-order alerts render as mobile-safe cards with wrapped long fields. Runbook: `docs/MANAGER_ORDER_NOTIFICATIONS.md`.
 - **UI SHELL + ORDER SURFACE POLISH LIVE (2026-07-07).** Commit `001fcc5` deployed to Cloud Run revision `pre-order-dealer-exchange-tracker-00312-z7t` with 100% traffic. Scope: dark Priority Lexus Virginia Beach header, warm app/login/loading shell, shared chip system, cleaner manager dashboard page header/stat cards, order list tabs/filter chips, order form status chips, allocation board sticky tabs/filter panel, and normalized status badges. Verified with `npm run build` exit 0 (CSS `index-Bca-bnfm.css`), `npm test` 318/318, `npm run lint` 0 errors / 3 known pre-existing AllocationBoard hook warnings, subagent diff review (P1 untracked helper fixed by committing `components/ui/chipStyles.ts`), live `/api/status` `version=001fcc5`, and live browser check showing the new login text plus final CSS loaded.
+- **DEPENDENCY SECURITY PASS READY (2026-07-07).** Root package audit reduced from 42 findings (1 critical / 12 high / 22 moderate / 7 low) to 16 findings (0 critical / 0 high / 10 moderate / 6 low). Functions package audit reduced from 22 findings (1 critical / 3 high / 16 moderate / 2 low) to 10 findings (0 critical / 0 high / 10 moderate / 0 low). Direct root upgrades: `firebase-admin` 14.1.0, `firebase-tools` 15.22.4, `markdownlint-cli2` 0.23.0; safe lockfile updates also moved Vite/Vitest/React Router/Express chains to patched versions. Test config updates: Vitest app runner capped at 2 workers with 15s timeouts for stable Vitest 4.1 Windows runs; Functions Jest maps NodeNext `.js` relative imports back to TS source; ESLint ignores generated `functions/lib`. Verified locally with `npm run build`, `npm test` 318/318, `npm run lint` 0 errors / 3 known AllocationBoard warnings, `npm run lint:md` 118 files / 0 errors, `npm --prefix functions run build`, and `npm --prefix functions test` 9/9. Residual audit items are moderate/low and blocked by upstream Firebase/Google SDK dependency chains plus `vite-plugin-node-polyfills`; do not downgrade SDKs/CLI to satisfy npm's misleading forced-fix suggestions.
 - 🟢 **DEPLOY FIXED + LIVE (2026-06-05).** K3 (`386d003`) + K8 (`3ec2ea1`) are deployed on Cloud Run: `https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/` (HTTP 200; served bundle `index-Dmute-Ae.js` contains the K3 OrderPreviewDrawer). The 6-day deploy outage is resolved. **Root cause was a 3-link auth/IAM chain, all now fixed:**
   1. WIF pool/provider deleted ~5/30 → primary auth dead (still dead; SA-key path is the live one).
   2. SA-key fallback referenced a non-existent secret `GCP_SA_KEY` → FIXED `0a96803` (now `${{ secrets.GCP_SA_KEY || secrets.GCP_CREDENTIALS }}`).
@@ -29,7 +30,7 @@ React 19 + Vite 7 + Tailwind 4 frontend · Firebase backend (Firestore, Cloud Fu
   4. `cloud-build-deployer` lacked actAs on the **default build SA** `842946218691-compute@developer.gserviceaccount.com` (the SA `gcloud builds submit` runs the build as). Rob granted `roles/iam.serviceAccountUser` 2026-06-05 → push + deploy work (the compute-default SA already holds AR Writer + Cloud Run deploy perms). (A transient mis-step pinned the build to `pre-order-dealer-exchange-860`, which lacked AR Writer — reverted `9201899`.)
   5. Post-deploy "Verify image in Artifact Registry" + "Inspect image" workflow steps made `continue-on-error` (`49a3b45`) — they needed AR read/pull perms the deployer SA lacks and were red-marking successful deploys; the real deploy is verified upstream by Wait-for-build-completion.
 - **Deploy is now self-sufficient: `git push origin main` → auto-builds + deploys.** Full runbook (two-SA model, restore-from-vault procedure) → `~/OneDrive/claude-sync/memory/reference_vehicle_in_need_deploy_auth.md`.
-- Build/CI: `npm run build` green (vite build + CSS-in-build verify). NOTE: bare `npx tsc --noEmit` reports pre-existing errors in TEST files only (`components/__tests__/OrderList.test.tsx` Order-mock typing; `functions/src/__tests__/setManagerRole.test.ts` jest-namespace) — these are excluded from the production vite build and are NOT regressions.
+- Build/CI: `npm run build` green (vite build + CSS-in-build verify), `npm test` green (318/318), `npm run lint` green except 3 known AllocationBoard hook warnings, `npm run lint:md` green, Functions build/test green (9/9). NOTE: bare `npx tsc --noEmit` reports pre-existing errors in TEST files only (`components/__tests__/OrderList.test.tsx` Order-mock typing; `functions/src/__tests__/setManagerRole.test.ts` jest-namespace) — these are excluded from the production vite build and are NOT regressions.
 
 ## What works (trustworthy)
 
@@ -52,16 +53,16 @@ The K1-K10 queue in the claude-sync spine was stale. Grep-verified current statu
 
 ## What is NOT trustworthy yet
 
-- 64 npm/dependabot vulnerabilities reported by GitHub on `main` (2 critical, 28 high, 29 moderate, 5 low — includes `functions/` subdir; up from the 39 noted earlier on 2026-07-07). Most require breaking dep changes (firebase-admin, firebase-tools, vite-plugin-node-polyfills). Do NOT fix without a tested upgrade window. Owner: Rob.
+- Residual npm audit items remain after the 2026-07-07 upgrade pass: root audit is 16 total (0 critical / 0 high / 10 moderate / 6 low), root production audit is 6 moderate, Functions audit is 10 moderate, and Functions production audit is 8 moderate. These are upstream Firebase/Google SDK chains plus `vite-plugin-node-polyfills`; npm's proposed forced fixes include downgrades and should NOT be applied blindly.
 - Parser is robust but inherits the dealership-wide email lead-parsing fragility pattern (open-loops registry #1) — no canonical tested parser module.
 - `~20` legacy root-level `*.md` design/deployment docs (Mar 2026, BRANCH_*/CLOUD_BUILD_*/IMPLEMENTATION_*) — likely stale, not pruned.
 
 ## Open loops (close or kill before new builds)
 
 - [x] ✅ GCP deploy auth — FIXED 2026-06-05 (full chain: SA-key fallback wiring + cloud-build-deployer key vaulted + actAs on compute-default build SA + non-fatal post-checks). K3+K8 live.
-- [ ] 64 dependabot vulnerabilities — decision: accept (breaking-change risk) or schedule a tested upgrade window. Owner: Rob.
+- [x] Dependency/security upgrade window — completed 2026-07-07 for safe upgrades; high/critical findings eliminated. Residual moderate/low findings require upstream Firebase/Google SDK/plugin movement or a separate replacement decision.
 - [ ] Stale root-level markdown docs (BRANCH_*, CLOUD_BUILD_*, IMPLEMENTATION_*) — prune or move to `docs/`.
-- [x] ✅ K4 CLOSED 2026-06-05 — documented scope boundary (Codex-confirmed Path B, no build). All K-items resolved; only Rob-blocked K1/K7/K10 + 64 dependabot CVEs remain.
+- [x] ✅ K4 CLOSED 2026-06-05 — documented scope boundary (Codex-confirmed Path B, no build). All K-items resolved; only Rob-blocked K1/K7/K10 plus residual upstream dependency audit items remain.
 
 ## Credentials / access needed
 
@@ -74,11 +75,12 @@ The K1-K10 queue in the claude-sync spine was stale. Grep-verified current statu
 ## Next 3 actions
 
 1. Let the live manager-notification automations run through their first real cycle, then check sent mail/logs for: first new-order alert, first unsecured salesperson reminder, and Monday weekly digest.
-2. Decide whether to schedule a controlled dependency/security upgrade window for the GitHub Dependabot vulnerabilities (breaking-change risk), or explicitly accept/defer them.
+2. Review residual moderate/low dependency audit items only when upstream Firebase/Google SDKs or `vite-plugin-node-polyfills` replacement options change; do not apply npm's forced downgrade fixes.
 3. Decide which Rob-blocked polish/infrastructure item matters next: K1 Firebase App Check, K7 Sheets sync, K10 PWA icons, or stale root-level markdown cleanup.
 
 ## Decisions log (newest first)
 
+- 2026-07-07 — Dependency/security pass completed: root + Functions high/critical audit findings eliminated, safe direct upgrades applied, and residual moderate/low items documented as upstream SDK/plugin blockers rather than blindly downgraded.
 - 2026-07-07 — Manager new-order + weekly digest automation added: recipients intentionally reuse active Manager users instead of a separate email list. This keeps notification access tied to app permissions and avoids maintaining a second source of truth.
 - 2026-06-05 — K4 CLOSED as DOCUMENTED SCOPE BOUNDARY (no build). Codex-confirmed (`codex-20260605-130828.md`): live filter→URL sync is product creep (filters already localStorage-persist; deep-links cover focus-sharing; 3-sources-of-truth complexity for undemonstrated workflow). Boundary documented in AllocationBoard.tsx URL-state comment block. **V-i-N K-series fully resolved.** Also: deploy pipeline FIXED this session (6-day GCP-auth outage) — see 'Current state'.
 - 2026-06-05 — K3 shipped `386d003` (WORK): in-place side-panel order preview (vaul `direction="right"` Drawer) replaced the 3 strategy-board "View ↗" new-tab links. Codex adversarial = SHIP. K-queue now: K4 = last autonomous item; K1/K7/K10 Rob-blocked. Push needed `--reset-author` to `robbrascojr@gmail.com` (WORK PC GH007 email-privacy block per `feedback_cross_pc_git_transfer.md`).

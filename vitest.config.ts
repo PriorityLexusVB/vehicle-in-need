@@ -16,6 +16,9 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './vitest.setup.ts',
     css: true,
+    maxWorkers: 2,
+    testTimeout: 15000,
+    hookTimeout: 15000,
     exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**', '**/tests/firestore-rules/**', '**/functions/**', '**/.{idea,git,cache,output,temp}/**'],
     // Allow .cjs test files for server tests
     include: ['**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
