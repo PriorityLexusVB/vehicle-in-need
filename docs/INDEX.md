@@ -1,18 +1,20 @@
 # Documentation Index
 
-This directory contains operational documentation for the Pre-Order & Dealer Exchange Tracker application.
+This directory contains operational and development documentation for the
+Pre-Order & Dealer Exchange Tracker application.
 
 ## Quick Start
 
 - **New to the project?** Start with [`../README.md`](../README.md)
-- **Deploying?** See [`../DEPLOYMENT_GUIDE.md`](../DEPLOYMENT_GUIDE.md)
+- **Deploying?** See [`DEPLOYMENT_RUNBOOK.md`](DEPLOYMENT_RUNBOOK.md) and [`operations/CLOUD_RUN_DEPLOYMENT_RUNBOOK.md`](operations/CLOUD_RUN_DEPLOYMENT_RUNBOOK.md)
 
 ## Operational Runbooks
 
-These are current, maintained operational guides:
+These are current, maintained operational guides.
 
 ### Cloud Build & Deployment
 
+- [`DEPLOYMENT_RUNBOOK.md`](DEPLOYMENT_RUNBOOK.md) - Cloud Run container deployment overview
 - [`operations/CLOUD_BUILD_TRIGGER_RUNBOOK.md`](operations/CLOUD_BUILD_TRIGGER_RUNBOOK.md) - Cloud Build trigger configuration and troubleshooting
 - [`operations/CLOUD_RUN_DEPLOYMENT_RUNBOOK.md`](operations/CLOUD_RUN_DEPLOYMENT_RUNBOOK.md) - Cloud Run deployment procedures
 - [`operations/DEPLOYMENT_CHECKLIST.md`](operations/DEPLOYMENT_CHECKLIST.md) - Pre-deployment verification checklist
@@ -28,7 +30,7 @@ These are current, maintained operational guides:
 - [`CI_AND_MCP_DOCUMENTATION.md`](CI_AND_MCP_DOCUMENTATION.md) - CI/CD and Model Context Protocol setup
 - [`VERSION_TRACKING.md`](VERSION_TRACKING.md) - Deployment traceability and version management system
 - [`GITHUB_ISSUE_TEMPLATE.md`](GITHUB_ISSUE_TEMPLATE.md) - Template for creating GitHub issues
-- [`DATA_MODEL_SUMMARY.md`](DATA_MODEL_SUMMARY.md) - Firestore data model for orders/deals (bulk operations guide)
+- [`DATA_MODEL_SUMMARY.md`](DATA_MODEL_SUMMARY.md) - Firestore data model for orders/deals
 
 ## PR Reviews
 
@@ -36,38 +38,38 @@ These are current, maintained operational guides:
 
 ## Archived Documentation
 
-The [`archive/`](archive/) directory contains historical documentation from previous fixes and investigations. These are kept for reference but are not actively maintained:
+The [`archive/`](archive/) directory contains historical documentation from
+previous fixes and investigations. These are kept for reference but are not
+actively maintained.
+
+Archived materials include:
 
 - Cloud Build fixes and investigations
 - CSS deployment investigations
 - IAM configuration iterations
 - Firestore rules fixes
+- Archived root-level branch/deployment/implementation reports from 2024-2025
 - Various PR summaries and completion reports
 
-**Note**: If you're looking for current deployment or troubleshooting information, use the operational runbooks above, not the archived docs.
+Current deployment or troubleshooting information belongs in the maintained
+operational runbooks above, not archived docs.
 
 ## Repository Structure
 
-```
+```text
 vehicle-in-need/
-├── README.md                    # Main project documentation
-├── DEPLOYMENT_GUIDE.md          # Deployment procedures (primary reference)
-├── docs/
-│   ├── INDEX.md                 # This file
-│   ├── operations/              # Current operational runbooks
-│   │   ├── CLOUD_BUILD_TRIGGER_RUNBOOK.md
-│   │   ├── CLOUD_RUN_DEPLOYMENT_RUNBOOK.md
-│   │   ├── DEPLOYMENT_CHECKLIST.md
-│   │   ├── GCP_MANUAL_CONFIGURATION_CHECKLIST.md
-│   │   └── TAILWIND_CSS_SAFEGUARDS.md
-│   ├── archive/                 # Historical documentation (not actively maintained)
-│   ├── CI_AND_MCP_DOCUMENTATION.md
-│   └── GITHUB_ISSUE_TEMPLATE.md
-├── scripts/                     # Build and deployment scripts
-│   ├── verify-css-in-build.sh
-│   ├── pre-deploy-css-check.sh
-│   └── ...
-└── cloudbuild.yaml              # Cloud Build configuration
+|-- README.md                    # Main project documentation
+|-- STATE.md                     # Current project truth
+|-- docs/
+|   |-- INDEX.md                 # This file
+|   |-- DEPLOYMENT_RUNBOOK.md    # Current deployment overview
+|   |-- operations/              # Current operational runbooks
+|   |-- archive/                 # Historical documentation
+|   |   `-- root-legacy-2026-07-07/
+|   |-- CI_AND_MCP_DOCUMENTATION.md
+|   `-- GITHUB_ISSUE_TEMPLATE.md
+|-- scripts/                     # Build and deployment scripts
+`-- cloudbuild.yaml              # Cloud Build configuration
 ```
 
 ## Contributing Documentation
@@ -76,7 +78,7 @@ When adding new documentation:
 
 1. **Operational guides** go in `docs/operations/`
 2. **Development guides** go in `docs/`
-3. **Deployment procedures** should update `DEPLOYMENT_GUIDE.md`
+3. **Deployment procedures** should update `docs/DEPLOYMENT_RUNBOOK.md` or the relevant `docs/operations/` runbook
 4. **Archived materials** go in `docs/archive/`
 
 Keep documentation:
@@ -88,8 +90,6 @@ Keep documentation:
 
 ## Document Lifecycle
 
-1. **Active** - Current operational documentation (in `operations/`)
+1. **Active** - Current operational documentation
 2. **Superseded** - Move to `archive/` when replaced by newer docs
 3. **Historical** - Keep in `archive/` for reference only
-
-The `archive/` directory is not a dumping ground—it contains completed investigations and fixes that led to the current system state. If something in the archive is still relevant, it should be incorporated into active documentation.

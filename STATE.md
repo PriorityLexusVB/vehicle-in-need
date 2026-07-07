@@ -3,7 +3,7 @@
 > Per-repo memory file. The repo's single source of truth for "where is this project."
 > Rewrite to current truth each working session — do NOT append session logs.
 
-**Last updated:** 2026-07-07 - **By:** WORK PC / Codex - **HEAD:** Firebase Admin v14 server compat hotfix
+**Last updated:** 2026-07-07 - **By:** WORK PC / Codex - **HEAD:** root docs archive cleanup
 
 ---
 
@@ -24,6 +24,7 @@ React 19 + Vite 7 + Tailwind 4 frontend · Firebase backend (Firestore, Cloud Fu
 - **UI SHELL + ORDER SURFACE POLISH LIVE (2026-07-07).** Commit `001fcc5` deployed to Cloud Run revision `pre-order-dealer-exchange-tracker-00312-z7t` with 100% traffic. Scope: dark Priority Lexus Virginia Beach header, warm app/login/loading shell, shared chip system, cleaner manager dashboard page header/stat cards, order list tabs/filter chips, order form status chips, allocation board sticky tabs/filter panel, and normalized status badges. Verified with `npm run build` exit 0 (CSS `index-Bca-bnfm.css`), `npm test` 318/318, `npm run lint` 0 errors / 3 known pre-existing AllocationBoard hook warnings, subagent diff review (P1 untracked helper fixed by committing `components/ui/chipStyles.ts`), live `/api/status` `version=001fcc5`, and live browser check showing the new login text plus final CSS loaded.
 - **DEPENDENCY SECURITY PASS READY (2026-07-07).** Root package audit reduced from 42 findings (1 critical / 12 high / 22 moderate / 7 low) to 16 findings (0 critical / 0 high / 10 moderate / 6 low). Functions package audit reduced from 22 findings (1 critical / 3 high / 16 moderate / 2 low) to 10 findings (0 critical / 0 high / 10 moderate / 0 low). Direct root upgrades: `firebase-admin` 14.1.0, `firebase-tools` 15.22.4, `markdownlint-cli2` 0.23.0; safe lockfile updates also moved Vite/Vitest/React Router/Express chains to patched versions. Test config updates: Vitest app runner capped at 2 workers with 15s timeouts for stable Vitest 4.1 Windows runs; Functions Jest maps NodeNext `.js` relative imports back to TS source; ESLint ignores generated `functions/lib`. Verified locally with `npm run build`, `npm test` 318/318, `npm run lint` 0 errors / 3 known AllocationBoard warnings, `npm run lint:md` 118 files / 0 errors, `npm --prefix functions run build`, and `npm --prefix functions test` 9/9. Residual audit items are moderate/low and blocked by upstream Firebase/Google SDK dependency chains plus `vite-plugin-node-polyfills`; do not downgrade SDKs/CLI to satisfy npm's misleading forced-fix suggestions.
 - **FIREBASE ADMIN V14 SERVER COMPAT HOTFIX READY (2026-07-07).** Post-deploy log check found `/jobs/order-notifications` returning 503 on revision `00315-ls9` because Admin SDK v14 removed the old namespace surface (`admin.apps`, `admin.firestore()`, `admin.firestore.FieldValue`, `admin.auth()`). `server/src/lib/firebaseAdmin.cjs` now wraps the modular v14 APIs while preserving the handler-facing compatibility surface, and the duplicate admin-delete initializer now uses the shared helper. Regression coverage: `server/__tests__/firebaseAdminCompat.test.ts`; focused server tests passed 19/19, full Vitest passed 319/319. Local ADC initialization check returned `projectId=vehicles-in-need`, Firestore collection function present, and `admin.apps.length=1`.
+- **ROOT DOCS ARCHIVED (2026-07-07).** Legacy root-level branch analysis, Cloud Build fix, deployment completion, PR integration, and implementation summary docs moved to `docs/archive/root-legacy-2026-07-07/`. Root docs are now only `README.md` and `STATE.md`; active deployment links point to `docs/DEPLOYMENT_RUNBOOK.md` and maintained `docs/operations/` runbooks.
 - 🟢 **DEPLOY FIXED + LIVE (2026-06-05).** K3 (`386d003`) + K8 (`3ec2ea1`) are deployed on Cloud Run: `https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/` (HTTP 200; served bundle `index-Dmute-Ae.js` contains the K3 OrderPreviewDrawer). The 6-day deploy outage is resolved. **Root cause was a 3-link auth/IAM chain, all now fixed:**
   1. WIF pool/provider deleted ~5/30 → primary auth dead (still dead; SA-key path is the live one).
   2. SA-key fallback referenced a non-existent secret `GCP_SA_KEY` → FIXED `0a96803` (now `${{ secrets.GCP_SA_KEY || secrets.GCP_CREDENTIALS }}`).
@@ -56,13 +57,13 @@ The K1-K10 queue in the claude-sync spine was stale. Grep-verified current statu
 
 - Residual npm audit items remain after the 2026-07-07 upgrade pass: root audit is 16 total (0 critical / 0 high / 10 moderate / 6 low), root production audit is 6 moderate, Functions audit is 10 moderate, and Functions production audit is 8 moderate. These are upstream Firebase/Google SDK chains plus `vite-plugin-node-polyfills`; npm's proposed forced fixes include downgrades and should NOT be applied blindly.
 - Parser is robust but inherits the dealership-wide email lead-parsing fragility pattern (open-loops registry #1) — no canonical tested parser module.
-- `~20` legacy root-level `*.md` design/deployment docs (Mar 2026, BRANCH_*/CLOUD_BUILD_*/IMPLEMENTATION_*) — likely stale, not pruned.
+- Some historical docs under `docs/` still mention archived filenames because they are themselves historical reports; current entry points now route to maintained runbooks.
 
 ## Open loops (close or kill before new builds)
 
 - [x] ✅ GCP deploy auth — FIXED 2026-06-05 (full chain: SA-key fallback wiring + cloud-build-deployer key vaulted + actAs on compute-default build SA + non-fatal post-checks). K3+K8 live.
 - [x] Dependency/security upgrade window — completed 2026-07-07 for safe upgrades; high/critical findings eliminated. Residual moderate/low findings require upstream Firebase/Google SDK/plugin movement or a separate replacement decision.
-- [ ] Stale root-level markdown docs (BRANCH_*, CLOUD_BUILD_*, IMPLEMENTATION_*) — prune or move to `docs/`.
+- [x] Stale root-level markdown docs — archived 2026-07-07 to `docs/archive/root-legacy-2026-07-07/`; root now only has `README.md` + `STATE.md`.
 - [x] ✅ K4 CLOSED 2026-06-05 — documented scope boundary (Codex-confirmed Path B, no build). All K-items resolved; only Rob-blocked K1/K7/K10 plus residual upstream dependency audit items remain.
 
 ## Credentials / access needed
@@ -77,9 +78,11 @@ The K1-K10 queue in the claude-sync spine was stale. Grep-verified current statu
 
 1. Let the live manager-notification automations run through their first real cycle, then check sent mail/logs for: first new-order alert, first unsecured salesperson reminder, and Monday weekly digest.
 2. Review residual moderate/low dependency audit items only when upstream Firebase/Google SDKs or `vite-plugin-node-polyfills` replacement options change; do not apply npm's forced downgrade fixes.
-3. Decide which Rob-blocked polish/infrastructure item matters next: K1 Firebase App Check, K7 Sheets sync, K10 PWA icons, or stale root-level markdown cleanup.
+3. Decide which Rob-blocked polish/infrastructure item matters next: K1 Firebase App Check, K7 Sheets sync, or K10 PWA icons.
 
 ## Decisions log (newest first)
+
+- 2026-07-07 — Root docs cleanup: moved stale BRANCH_/CLOUD_BUILD_/IMPLEMENTATION_/GCP-auth root docs into `docs/archive/root-legacy-2026-07-07/` and repointed active docs to maintained deployment runbooks.
 
 - 2026-07-07 — Firebase Admin v14 server compatibility hotfix: modular Admin SDK wrapped behind the existing CommonJS helper after Cloud Run logs showed manager notifications/CallDrip crashing on `admin.apps.length`.
 - 2026-07-07 — Dependency/security pass completed: root + Functions high/critical audit findings eliminated, safe direct upgrades applied, and residual moderate/low items documented as upstream SDK/plugin blockers rather than blindly downgraded.

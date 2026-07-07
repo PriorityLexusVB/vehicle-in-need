@@ -216,7 +216,7 @@ gcloud run services update-traffic pre-order-dealer-exchange-tracker \
 - `docs/DEPLOYMENT_RUNBOOK.md` - Complete deployment guide
 - `docs/CSS_EXECUTION_FINAL.md` - CSS & deployment summary
 - `docs/operations/CLOUD_BUILD_TRIGGER_RUNBOOK.md` - Trigger management
-- `DEPLOYMENT_GUIDE.md` - High-level guide
+- `docs/operations/CLOUD_RUN_DEPLOYMENT_RUNBOOK.md` - Cloud Run operations runbook
 
 ---
 
