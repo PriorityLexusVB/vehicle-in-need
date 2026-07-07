@@ -133,14 +133,14 @@ function detailRow(label, value) {
 function luxuryEmailShell({ preheader, title, subtitle, bodyHtml, ctaUrl, ctaLabel }) {
   return `
     <div style="display:none;max-height:0;overflow:hidden">${escapeHtml(preheader)}</div>
-    <div style="margin:0;background:#f7f3ed;padding:28px 0;font-family:Arial,Helvetica,sans-serif;color:#1c1917">
-      <div style="max-width:720px;margin:0 auto;background:#fff;border:1px solid #e7e0d4;border-radius:14px;overflow:hidden">
-        <div style="background:#111827;padding:26px 30px;border-bottom:4px solid #c8a45d">
+    <div style="margin:0;background:#f7f3ed;padding:24px 8px;font-family:Arial,Helvetica,sans-serif;color:#1c1917;box-sizing:border-box">
+      <div style="width:100%;max-width:720px;margin:0 auto;background:#fff;border:1px solid #e7e0d4;border-radius:14px;overflow:hidden;box-sizing:border-box">
+        <div style="background:#111827;padding:24px;border-bottom:4px solid #c8a45d">
           <div style="color:#c8a45d;font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase">Priority Lexus Virginia Beach</div>
           <h1 style="margin:10px 0 4px;color:#fff;font-size:24px;line-height:1.25;font-weight:700">${escapeHtml(title)}</h1>
           <div style="color:#d6d3d1;font-size:14px;line-height:1.5">${escapeHtml(subtitle)}</div>
         </div>
-        <div style="padding:28px 30px">
+        <div style="padding:24px">
           ${bodyHtml}
           ${
             ctaUrl
@@ -246,42 +246,41 @@ function buildOrderRows(orders, appUrl, nowMs, includeAge = false) {
     return `<p style="margin:0;color:#78716c;font-size:14px">None.</p>`;
   }
 
-  const rows = orders
+  return orders
     .map((order) => {
       const vehicle = compactOrderLine(order) || "Vehicle order";
       const age = orderAgeDays(order, nowMs);
       return `
-        <tr>
-          <td style="padding:10px 12px;border-bottom:1px solid #e7e5e4">
-            <a href="${escapeHtml(orderUrl(order.id, appUrl))}" style="color:#111827;font-weight:700;text-decoration:none">${escapeHtml(order.customerName || "Customer")}</a>
-            <div style="color:#78716c;font-size:12px;margin-top:2px">${escapeHtml(order.salesperson || "TBD")}</div>
-          </td>
-          <td style="padding:10px 12px;border-bottom:1px solid #e7e5e4;color:#44403c">${escapeHtml(vehicle)}</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #e7e5e4;color:#44403c">${escapeHtml(order.status || "Active")}</td>
-          ${includeAge ? `<td style="padding:10px 12px;border-bottom:1px solid #e7e5e4;color:#44403c">${age == null ? "N/A" : `${age}d`}</td>` : ""}
-        </tr>
+        <div style="border:1px solid #e7e5e4;border-radius:10px;padding:14px;margin:0 0 10px;background:#fff">
+          <a href="${escapeHtml(orderUrl(order.id, appUrl))}" style="color:#111827;font-size:16px;line-height:1.25;font-weight:800;text-decoration:none">${escapeHtml(order.customerName || "Customer")}</a>
+          <div style="color:#78716c;font-size:12px;line-height:1.4;margin-top:2px">${escapeHtml(order.salesperson || "TBD")}</div>
+          <table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin-top:10px;table-layout:fixed">
+            <tr>
+              <td style="width:82px;padding:5px 10px 5px 0;color:#78716c;font-size:11px;text-transform:uppercase;letter-spacing:.08em;vertical-align:top">Vehicle</td>
+              <td style="padding:5px 0;color:#1c1917;font-size:14px;font-weight:600;line-height:1.35;word-break:break-word">${escapeHtml(vehicle)}</td>
+            </tr>
+            <tr>
+              <td style="width:82px;padding:5px 10px 5px 0;color:#78716c;font-size:11px;text-transform:uppercase;letter-spacing:.08em;vertical-align:top">Status</td>
+              <td style="padding:5px 0;color:#44403c;font-size:14px;line-height:1.35">${escapeHtml(order.status || "Active")}</td>
+            </tr>
+            ${
+              includeAge
+                ? `<tr>
+                    <td style="width:82px;padding:5px 10px 5px 0;color:#78716c;font-size:11px;text-transform:uppercase;letter-spacing:.08em;vertical-align:top">Age</td>
+                    <td style="padding:5px 0;color:#44403c;font-size:14px;line-height:1.35">${age == null ? "N/A" : `${age}d`}</td>
+                  </tr>`
+                : ""
+            }
+          </table>
+        </div>
       `;
     })
     .join("");
-
-  return `
-    <table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;border:1px solid #e7e5e4">
-      <thead>
-        <tr style="background:#fafaf9">
-          <th style="text-align:left;padding:9px 12px;color:#78716c;font-size:12px;text-transform:uppercase;letter-spacing:.08em">Customer</th>
-          <th style="text-align:left;padding:9px 12px;color:#78716c;font-size:12px;text-transform:uppercase;letter-spacing:.08em">Vehicle</th>
-          <th style="text-align:left;padding:9px 12px;color:#78716c;font-size:12px;text-transform:uppercase;letter-spacing:.08em">Status</th>
-          ${includeAge ? `<th style="text-align:left;padding:9px 12px;color:#78716c;font-size:12px;text-transform:uppercase;letter-spacing:.08em">Age</th>` : ""}
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>
-  `;
 }
 
 function metricCard(label, value) {
   return `
-    <td style="width:25%;padding:0 6px 12px 0">
+    <td style="width:50%;padding:0 6px 12px 0;vertical-align:top">
       <div style="border:1px solid #e7e5e4;border-radius:10px;padding:14px;background:#fafaf9">
         <div style="color:#78716c;font-size:11px;text-transform:uppercase;letter-spacing:.08em">${escapeHtml(label)}</div>
         <div style="margin-top:6px;color:#111827;font-size:26px;font-weight:800">${escapeHtml(value)}</div>
@@ -314,10 +313,12 @@ function buildWeeklyDigest({ orders, recipients, appUrl, nowMs }) {
     .slice(0, 12);
 
   const bodyHtml = `
-    <table cellpadding="0" cellspacing="0" style="width:100%;margin-bottom:18px">
+    <table cellpadding="0" cellspacing="0" style="width:100%;margin-bottom:18px;table-layout:fixed">
       <tr>
         ${metricCard("Active", String(activeOrders.length))}
         ${metricCard("New 7d", String(newOrders.length))}
+      </tr>
+      <tr>
         ${metricCard("Factory", String(factoryOrders.length))}
         ${metricCard("DX", String(dealerExchangeOrders.length))}
       </tr>
