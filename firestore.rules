@@ -194,6 +194,33 @@ service cloud.firestore {
           && request.resource.data.status != resource.data.status;
       }
 
+      function fieldUnchangedIfPresent(field) {
+        return (
+          !(field in resource.data)
+          || (
+            field in request.resource.data
+            && request.resource.data[field] == resource.data[field]
+          )
+        )
+        && (!(field in request.resource.data) || field in resource.data);
+      }
+
+      function serverAutomationFieldsUnchanged() {
+        return fieldUnchangedIfPresent('lastUnsecuredReminderAt')
+          && fieldUnchangedIfPresent('unsecuredReminderCount')
+          && fieldUnchangedIfPresent('unsecuredReminderLastEmail')
+          && fieldUnchangedIfPresent('unsecuredReminderMuted')
+          && fieldUnchangedIfPresent('newOrderNotificationSentAt')
+          && fieldUnchangedIfPresent('newOrderNotificationRecipientEmails')
+          && fieldUnchangedIfPresent('newOrderNotificationMuted')
+          && fieldUnchangedIfPresent('newOrderNotificationQueuedAt')
+          && fieldUnchangedIfPresent('newOrderNotificationQueueId')
+          && fieldUnchangedIfPresent('newOrderNotificationQueuedRecipientEmails')
+          && fieldUnchangedIfPresent('newOrderNotificationLastFailureAt')
+          && fieldUnchangedIfPresent('newOrderNotificationLastFailure')
+          && fieldUnchangedIfPresent('newOrderNotificationLastFailureRecipients');
+      }
+
       // CREATE:
       // Authenticated user can create an order but must set ownership fields correctly.
       // Enforce required fields and simple schema constraints.
@@ -221,6 +248,8 @@ service cloud.firestore {
         && request.resource.data.createdByUid == resource.data.createdByUid
         && ('createdByEmail' in request.resource.data)
         && request.resource.data.createdByEmail == resource.data.createdByEmail
+        && ('createdAt' in request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
         // Restrict which keys owner may touch (cannot add/remove ownership fields or other protected fields)
         && request.resource.data.keys().hasOnly(resource.data.keys())
         // STATUS CHANGES ARE MANAGER-ONLY: Owners cannot change status field
@@ -243,7 +272,8 @@ service cloud.firestore {
         && (!('latestNoteByUid' in resource.data) || request.resource.data.latestNoteByUid == resource.data.latestNoteByUid)
         && (!('latestNoteByUid' in request.resource.data) || ('latestNoteByUid' in resource.data))
         && (!('latestNoteAt' in resource.data) || request.resource.data.latestNoteAt == resource.data.latestNoteAt)
-        && (!('latestNoteAt' in request.resource.data) || ('latestNoteAt' in resource.data));
+        && (!('latestNoteAt' in request.resource.data) || ('latestNoteAt' in resource.data))
+        && serverAutomationFieldsUnchanged();
 
       // DELETE: Managers only (via custom claims or Firestore document).
       allow delete: if isManager();

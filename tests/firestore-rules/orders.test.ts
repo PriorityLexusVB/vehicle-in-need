@@ -300,9 +300,14 @@ describe('Firestore Security Rules - Orders Collection', () => {
         await setDoc(doc(adminDb, 'orders', 'order123'), {
           createdByUid: 'user123',
           createdByEmail: 'user@example.com',
-          createdAt: new Date(),
+          createdAt: new Date('2026-07-07T12:00:00Z'),
           status: 'Factory Order',
           notes: 'Original notes',
+          lastUnsecuredReminderAt: new Date('2026-07-06T12:00:00Z'),
+          unsecuredReminderCount: 1,
+          unsecuredReminderLastEmail: 'user@example.com',
+          newOrderNotificationSentAt: new Date('2026-07-07T12:05:00Z'),
+          newOrderNotificationRecipientEmails: ['manager@priorityautomotive.com'],
         });
       });
     });
@@ -342,9 +347,39 @@ describe('Firestore Security Rules - Orders Collection', () => {
         updateDoc(orderRef, {
           createdByUid: 'user123',
           createdByEmail: 'user@example.com',
-          createdAt: new Date(),
           status: 'Factory Order', // Same status - not a change
           notes: 'Updated by owner',
+        })
+      );
+    });
+
+    it('should deny owner changing createdAt', async () => {
+      const userId = 'user123';
+      const userDb = testEnv
+        .authenticatedContext(userId, { email: 'user@example.com' })
+        .firestore();
+      const orderRef = doc(userDb, 'orders', 'order123');
+
+      await assertFails(
+        updateDoc(orderRef, {
+          createdAt: new Date('2030-01-01T12:00:00Z'),
+        })
+      );
+    });
+
+    it('should deny owner changing server automation fields', async () => {
+      const userId = 'user123';
+      const userDb = testEnv
+        .authenticatedContext(userId, { email: 'user@example.com' })
+        .firestore();
+      const orderRef = doc(userDb, 'orders', 'order123');
+
+      await assertFails(
+        updateDoc(orderRef, {
+          newOrderNotificationSentAt: new Date('2030-01-01T12:00:00Z'),
+          newOrderNotificationRecipientEmails: ['owner@priorityautomotive.com'],
+          lastUnsecuredReminderAt: new Date('2030-01-01T12:00:00Z'),
+          unsecuredReminderCount: 99,
         })
       );
     });
@@ -878,7 +913,6 @@ describe('Firestore Security Rules - Orders Collection', () => {
         updateDoc(orderRef, {
           createdByUid: 'user123',
           createdByEmail: 'user@example.com',
-          createdAt: new Date(),
           status: 'Factory Order', // Same as original
           notes: 'Updated notes by owner',
         })

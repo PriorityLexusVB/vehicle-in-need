@@ -144,6 +144,18 @@ if (process.env.UNSECURED_REMINDERS_ENABLED === "true") {
   console.log("[UnsecuredReminders] Route disabled (UNSECURED_REMINDERS_ENABLED not set)");
 }
 
+// Manager new-order notifications and weekly digest (Apps Script sender)
+if (process.env.ORDER_NOTIFICATIONS_ENABLED === "true") {
+  const orderNotifications = require("./src/handlers/orderNotifications.cjs");
+  app.use("/jobs/order-notifications", orderNotifications);
+  console.log("[OrderNotifications] Route mounted (ORDER_NOTIFICATIONS_ENABLED=true)");
+} else {
+  app.post("/jobs/order-notifications", (_req, res) => {
+    res.status(503).json({ error: "Order notifications are not enabled on this instance" });
+  });
+  console.log("[OrderNotifications] Route disabled (ORDER_NOTIFICATIONS_ENABLED not set)");
+}
+
 // Serve static files from dist directory
 const distPath = path.join(__dirname, "..", "dist");
 app.use(

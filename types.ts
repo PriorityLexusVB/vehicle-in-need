@@ -66,6 +66,17 @@ export interface Order {
   unsecuredReminderCount?: number;
   unsecuredReminderLastEmail?: string;
   unsecuredReminderMuted?: boolean;
+
+  // Manager notification automation (server-written after email sends)
+  newOrderNotificationSentAt?: Timestamp;
+  newOrderNotificationRecipientEmails?: string[];
+  newOrderNotificationMuted?: boolean;
+  newOrderNotificationQueuedAt?: Timestamp;
+  newOrderNotificationQueueId?: string;
+  newOrderNotificationQueuedRecipientEmails?: string[];
+  newOrderNotificationLastFailureAt?: Timestamp;
+  newOrderNotificationLastFailure?: string;
+  newOrderNotificationLastFailureRecipients?: string[];
 }
 
 export interface AppUser {

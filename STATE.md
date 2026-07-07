@@ -3,7 +3,7 @@
 > Per-repo memory file. The repo's single source of truth for "where is this project."
 > Rewrite to current truth each working session — do NOT append session logs.
 
-**Last updated:** 2026-07-07 - **By:** WORK PC / Codex - **HEAD:** unsecured-order reminder automation
+**Last updated:** 2026-07-07 - **By:** WORK PC / Codex - **HEAD:** manager order notification automation
 
 ---
 
@@ -20,6 +20,7 @@ React 19 + Vite 7 + Tailwind 4 frontend · Firebase backend (Firestore, Cloud Fu
 - **AUTH HASH-ROUTE LOGIN FIXED (2026-07-07).** Starting Google sign-in from the dashboard hash URL (`/#/`) broke Firebase Auth because the SDK uses `location.href` as the auth redirect URL and Firebase rejects fragments (`INVALID_CONTINUE_URI: fragment not allowed`). `Login.tsx` now strips the hash before Firebase popup/redirect auth starts, stores the pending hash in sessionStorage, and restores it after popup/redirect completion so deep links still work after login. Verified with focused auth tests (`21/21`) and `npm run build` exit 0. Live pre-patch app was healthy at `46e553f`.
 - **VEHICLE LINKING HARDENED (2026-07-07).** `orderLinkingService` now keeps Firestore transaction reads before writes and exposes atomic "release + secure status" and "release + delete order" operations so linked vehicles cannot be released separately from the order action. Allocation parser now expands qty>1 rows into one linkable unit record per car with deterministic spec-derived IDs, and AllocationBoard uses `vehicle_links` as the claimed-vehicle guard, including stale/orphaned link docs. Verified with full Vitest (`304/304`), focused link/parser/board tests (`51/51`), lint exit 0 (3 pre-existing AllocationBoard hook warnings), and `npm run build` exit 0.
 - **UNSECURED ORDER REMINDERS ADDED (2026-07-07).** Cloud Run now exposes a protected `/jobs/unsecured-order-reminders` endpoint that returns active orders due for follow-up every 3 days until secured. Apps Script `allocation-email-watcher.gs` now includes `sendUnsecuredOrderReminders`, `previewUnsecuredOrderReminders`, and `setupUnsecuredReminderTrigger` so Gmail/MailApp sends the emails and acks successful sends back to Firestore. Recipient resolution is explicit `salespersonEmail`, then unique active `users.displayName` match, then `createdByEmail`; only `@priorityautomotive.com` emails are used. Runbook: `docs/UNSECURED_ORDER_REMINDERS.md`.
+- **MANAGER ORDER NOTIFICATIONS ADDED (2026-07-07).** Cloud Run now exposes a protected `/jobs/order-notifications` endpoint for new-order manager emails and a weekly Monday digest. Apps Script `allocation-email-watcher.gs` now includes `sendNewOrderNotifications`, `sendWeeklyOrderDigest`, previews, and `setupManagerOrderNotificationTriggers`. Recipients are active app users marked `isManager === true` with `@priorityautomotive.com` email; add/remove recipients in Vehicle-in-Need Settings by toggling Manager/active status. New-order sends are cut over from `ORDER_NOTIFICATION_START_AT=2026-07-07T15:55:15Z` and require real `createdAt` to avoid blasting old orders. Dedicated GCP secret `order-notification-key` created; latest value was copied to clipboard for Apps Script `ORDER_NOTIFICATION_API_KEY`. Runbook: `docs/MANAGER_ORDER_NOTIFICATIONS.md`.
 - 🟢 **DEPLOY FIXED + LIVE (2026-06-05).** K3 (`386d003`) + K8 (`3ec2ea1`) are deployed on Cloud Run: `https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app/` (HTTP 200; served bundle `index-Dmute-Ae.js` contains the K3 OrderPreviewDrawer). The 6-day deploy outage is resolved. **Root cause was a 3-link auth/IAM chain, all now fixed:**
   1. WIF pool/provider deleted ~5/30 → primary auth dead (still dead; SA-key path is the live one).
   2. SA-key fallback referenced a non-existent secret `GCP_SA_KEY` → FIXED `0a96803` (now `${{ secrets.GCP_SA_KEY || secrets.GCP_CREDENTIALS }}`).
@@ -35,6 +36,7 @@ React 19 + Vite 7 + Tailwind 4 frontend · Firebase backend (Firestore, Cloud Fu
 - Email automation pipeline LIVE — Apps Script watcher (5-min trigger) → `processAllocationEmail` Cloud Function (us-central1) → Firestore `allocationSnapshots`
 - Vehicle linking: newly parsed snapshots have one linkable unit per car; secure/delete release links atomically; stale `vehicle_links` docs mark vehicles taken. Boundary: legacy allocation snapshots that still store `quantity > 1` on a single row must be re-published to get per-unit links. Live read-only audit found one old Delivered order (`ALocqSZHhr3hOXhF2ggQ`) still carrying stale `allocatedVehicleId: auto-25` with zero `vehicle_links`; backfill now skips inactive/secured orders instead of recreating that link.
 - Unsecured-order reminder automation ready: Apps Script daily trigger calls Cloud Run, sends due emails, and records `lastUnsecuredReminderAt`/`unsecuredReminderCount`; setup/runbook in `docs/UNSECURED_ORDER_REMINDERS.md`.
+- Manager order notification automation ready: Apps Script checks for new active orders every 5 minutes, sends polished manager emails, acks `newOrderNotificationSentAt`, and sends a Monday weekly digest. It reserves notifications before sending to avoid duplicate manager emails after transient ACK failures. Recipients are managed through existing app Manager toggles; setup/runbook in `docs/MANAGER_ORDER_NOTIFICATIONS.md`.
 - Role-based access (manager vs user), service worker auto-update, Firestore rules tested
 - Loading skeletons: main allocation board (`isLoading`) + DX sub-panel both render accessible animate-pulse skeletons (K8 complete)
 
@@ -65,17 +67,18 @@ The K1-K10 queue in the claude-sync spine was stale. Grep-verified current statu
 - GCP / Cloud Run — deploy via GitHub Actions (`build-and-deploy.yml`, Cloud Build) — have it (CI configured)
 - Firebase project `vehicles-in-need` — Firestore, Functions, Auth — have it
 - `ALLOCATION_API_KEY` — X-Api-Key for `processAllocationEmail`, secret v4 in GCP Secret Manager — have it
-- Apps Script watcher — script ID `1aAe8DVQqFniVa3rLR1B7Aj4nh-5NyVsPeLmL6SJq-D3da8B6QMkP2J90`, Script Properties (CLOUD_FUNCTION_URL + ALLOCATION_API_KEY) set — have it
+- Apps Script watcher — script ID `1aAe8DVQqFniVa3rLR1B7Aj4nh-5NyVsPeLmL6SJq-D3da8B6QMkP2J90`, Script Properties need `CLOUD_FUNCTION_URL`, `ALLOCATION_API_KEY`, and `ORDER_NOTIFICATION_API_KEY` — notification key value is currently on clipboard
 - Gmail account the watcher polls for Toyota/Lexus allocation PDFs — <unknown — confirm which mailbox>
 
 ## Next 3 actions
 
 1. (Rob) Decide the 39 dependabot CVEs — accept (breaking-change risk) vs scheduled upgrade window.
 2. (Rob-blocked) K1 Firebase App Check / K7 Sheets sync / K10 PWA icons (192/512).
-3. No autonomous V-i-N work remains — K3/K4/K8 all resolved, deploy pipeline fixed.
+3. After deploy, paste latest `scripts/allocation-email-watcher.gs` into Apps Script, set Script Property `ORDER_NOTIFICATION_API_KEY` from clipboard, then run `setupManagerOrderNotificationTriggers()` once.
 
 ## Decisions log (newest first)
 
+- 2026-07-07 — Manager new-order + weekly digest automation added: recipients intentionally reuse active Manager users instead of a separate email list. This keeps notification access tied to app permissions and avoids maintaining a second source of truth.
 - 2026-06-05 — K4 CLOSED as DOCUMENTED SCOPE BOUNDARY (no build). Codex-confirmed (`codex-20260605-130828.md`): live filter→URL sync is product creep (filters already localStorage-persist; deep-links cover focus-sharing; 3-sources-of-truth complexity for undemonstrated workflow). Boundary documented in AllocationBoard.tsx URL-state comment block. **V-i-N K-series fully resolved.** Also: deploy pipeline FIXED this session (6-day GCP-auth outage) — see 'Current state'.
 - 2026-06-05 — K3 shipped `386d003` (WORK): in-place side-panel order preview (vaul `direction="right"` Drawer) replaced the 3 strategy-board "View ↗" new-tab links. Codex adversarial = SHIP. K-queue now: K4 = last autonomous item; K1/K7/K10 Rob-blocked. Push needed `--reset-author` to `robbrascojr@gmail.com` (WORK PC GH007 email-privacy block per `feedback_cross_pc_git_transfer.md`).
 - 2026-06-04 — K8 closed: DX sub-panel skeleton shipped `3ec2ea1`; main board skeleton was already live. K-queue corrected after Rule-18 already-built check (K4 found largely-built, K8 ~done, only K3 genuinely unbuilt).
