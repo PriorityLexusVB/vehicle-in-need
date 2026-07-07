@@ -35,7 +35,11 @@
 "use strict";
 
 const express = require("express");
-const admin = require("firebase-admin");
+const {
+  admin,
+  getApp: getFirebaseApp,
+  getFirestore,
+} = require("../lib/firebaseAdmin.cjs");
 
 /**
  * Initialize Firebase Admin SDK
@@ -43,34 +47,7 @@ const admin = require("firebase-admin");
  * @returns {admin.app.App} The initialized Firebase app
  */
 function initializeFirebaseAdmin() {
-  if (admin.apps.length > 0) {
-    return admin.app();
-  }
-
-  // Initialize with application default credentials
-  // In production (Cloud Run), this uses the service account attached to the service
-  // Locally, this uses GOOGLE_APPLICATION_CREDENTIALS or ADC
-  const app = admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
-    projectId:
-      process.env.FIREBASE_PROJECT_ID ||
-      process.env.GOOGLE_CLOUD_PROJECT ||
-      process.env.GCLOUD_PROJECT,
-  });
-
-  console.log(
-    "[FirebaseAdmin] Initialized with project:",
-    app.options.projectId
-  );
-  return app;
-}
-
-/**
- * Get Firestore instance
- * @returns {admin.firestore.Firestore}
- */
-function getFirestore() {
-  return admin.firestore();
+  return getFirebaseApp();
 }
 
 /**

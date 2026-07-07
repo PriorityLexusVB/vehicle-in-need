@@ -12,15 +12,39 @@
 
 "use strict";
 
-const admin = require("firebase-admin");
+const firebaseAdmin = require("firebase-admin");
+const {
+  applicationDefault,
+  getApp: getDefaultApp,
+  getApps,
+  initializeApp,
+} = require("firebase-admin/app");
+const {
+  FieldValue,
+  Timestamp,
+  getFirestore: getDefaultFirestore,
+} = require("firebase-admin/firestore");
+const { getAuth } = require("firebase-admin/auth");
+
+const admin = {
+  ...firebaseAdmin,
+  get apps() {
+    return getApps();
+  },
+  app: getDefaultApp,
+  auth: () => getAuth(getApp()),
+  credential: { applicationDefault },
+  firestore: Object.assign(() => getFirestore(), { FieldValue, Timestamp }),
+  initializeApp,
+};
 
 /** @returns {admin.app.App} */
 function getApp() {
-  if (admin.apps.length > 0) {
-    return admin.app();
+  if (getApps().length > 0) {
+    return getDefaultApp();
   }
-  const app = admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
+  const app = initializeApp({
+    credential: applicationDefault(),
     projectId:
       process.env.FIREBASE_PROJECT_ID ||
       process.env.GOOGLE_CLOUD_PROJECT ||
@@ -33,7 +57,7 @@ function getApp() {
 /** @returns {admin.firestore.Firestore} */
 function getFirestore() {
   getApp(); // ensure initialized
-  return admin.firestore();
+  return getDefaultFirestore();
 }
 
 module.exports = { getApp, getFirestore, admin };
