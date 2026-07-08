@@ -1,6 +1,37 @@
 /* Tailwind CSS v4 - Uses @import instead of @tailwind directives */
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+   Luxury redesign — theme primitives (Slice 1)
+
+   Semantic palette tokens so the redesign has a single source of truth instead
+   of scattered warm literals. Tailwind v4 emits matching utilities from these
+   (`bg-canvas`, `text-graphite`, `bg-platinum`, `border-platinum`, ...).
+
+   Direction (locked by product):
+     - Light, COOL operational canvas (no cream / tan / sand).
+     - Dark GRAPHITE focal surfaces for vehicle / order cards.
+     - PLATINUM is the normal premium accent. Gold is NOT a default accent.
+
+   Slice 1 wires `--color-canvas` into the app/login/loading shell. The graphite
+   and platinum tokens are defined here as the vocabulary later slices migrate
+   the card/accent surfaces onto; they are intentionally not yet mass-applied.
+--------------------------------------------------------------------------- */
+@theme {
+  /* Operational canvas — cool, light, replaces the warm #f6f1ea cream shell. */
+  --color-canvas: #eef1f5;
+  --color-canvas-elevated: #f7f9fb;
+
+  /* Focal graphite surfaces (dark vehicle/order cards) — neutral, not warm. */
+  --color-graphite: #17181c;
+  --color-graphite-800: #24262c;
+  --color-graphite-700: #31343b;
+
+  /* Platinum — the default premium accent. */
+  --color-platinum: #cbd0d8;
+  --color-platinum-strong: #aab2bd;
+}
+
 /* @source directives tell Tailwind where to find classes to generate
    Paths are relative to this CSS file (src/index.css)
    Using specific paths to avoid scanning node_modules and build artifacts */

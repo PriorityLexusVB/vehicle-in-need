@@ -942,7 +942,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f6f1ea] font-sans text-stone-900">
+    <div className="min-h-screen bg-canvas font-sans text-stone-900">
       {needRefresh && (
         <div className="bg-stone-950 text-white py-3 px-4 flex items-center justify-between shadow-lg">
           <span className="text-sm font-medium">
