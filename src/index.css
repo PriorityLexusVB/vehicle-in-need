@@ -18,16 +18,18 @@
    the card/accent surfaces onto; they are intentionally not yet mass-applied.
 --------------------------------------------------------------------------- */
 @theme {
-  /* Operational canvas — cool, light, replaces the warm #f6f1ea cream shell. */
-  --color-canvas: #eef1f5;
-  --color-canvas-elevated: #f7f9fb;
+  /* Operational canvas — clean platinum/smoke neutral, replaces the warm
+     #f6f1ea cream shell. Value per redesign plan (closer to #EEF2F6 than beige). */
+  --color-canvas: #eef2f6;
+  --color-canvas-elevated: #f8fafc;
 
-  /* Focal graphite surfaces (dark vehicle/order cards) — neutral, not warm. */
-  --color-graphite: #17181c;
-  --color-graphite-800: #24262c;
-  --color-graphite-700: #31343b;
+  /* Focal graphite surfaces (header + high-signal vehicle/order cards) — warm
+     showroom near-black, NOT cool navy. Values per redesign plan. */
+  --color-graphite: #0e1418;
+  --color-graphite-elevated: #162033;
 
-  /* Platinum — the default premium accent. */
+  /* Platinum — the default prestige accent (active nav, selected filters,
+     model-total pills, dividers). Gold is NOT a default accent. */
   --color-platinum: #cbd0d8;
   --color-platinum-strong: #aab2bd;
 }
