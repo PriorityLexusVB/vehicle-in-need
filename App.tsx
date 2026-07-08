@@ -330,6 +330,10 @@ const App: React.FC = () => {
         setOrders([]);
         setAllUsers([]);
         setPermissionError(null);
+        // Clear manager-only allocation/DX state so it can't leak into a
+        // rep's surfaces after a same-session account switch.
+        setAllocationSnapshot(null);
+        setDxTrades([]);
         setStats({
           totalActive: 0,
           awaitingAction: 0,
@@ -542,6 +546,13 @@ const App: React.FC = () => {
       void fetchDxSheet()
         .then((trades) => { if (!dxCancelled) setDxTrades(trades); })
         .catch(() => { /* DX fetch failure is non-critical */ });
+    } else {
+      // Non-manager (incl. a manager→rep same-session switch): clear any
+      // allocation/DX state left over from a prior manager session so the
+      // order-card availability chip / match badges never render manager-only
+      // allocation data on a rep's cards.
+      setAllocationSnapshot(null);
+      setDxTrades([]);
     }
 
     return () => {
@@ -947,6 +958,13 @@ const App: React.FC = () => {
     [allocationSnapshot, linksByVehicleId],
   );
 
+  // Keyed by model for order-card lookup (order → matchedAllocModels → totals).
+  // Same pure-claim totals as the dashboard strip and board pills.
+  const modelSlotTotalsByModel = useMemo(
+    () => new Map(modelSlotTotals.map((total) => [total.model, total] as const)),
+    [modelSlotTotals],
+  );
+
   if (isLoading) {
     return <LoadingSpinner />;
   }
@@ -1121,6 +1139,7 @@ const App: React.FC = () => {
                     orderMatchSummaries={orderMatchSummaries}
                     allocationVehicles={allocationSnapshot?.vehicles ?? []}
                     linkedVehicleIds={linkedVehicleIds}
+                    modelSlotTotalsByModel={modelSlotTotalsByModel}
                   />
                 </div>
               ) : (
@@ -1170,6 +1189,7 @@ const App: React.FC = () => {
                       orderMatchSummaries={orderMatchSummaries}
                       allocationVehicles={allocationSnapshot?.vehicles ?? []}
                       linkedVehicleIds={linkedVehicleIds}
+                      modelSlotTotalsByModel={modelSlotTotalsByModel}
                     />
                   </div>
                 </div>

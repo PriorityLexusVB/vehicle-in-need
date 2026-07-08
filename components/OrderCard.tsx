@@ -17,6 +17,7 @@ import { linkVehicleToOrder, unlinkVehicleFromOrder } from "../services/orderLin
 import { OrderMatchSummary } from "../src/utils/orderMatchSummary";
 import VehicleLinkSelector from "./VehicleLinkSelector";
 import { AllocationVehicle } from "../src/utils/allocationTypes";
+import type { ModelSlotTotals } from "../src/utils/allocationModelTotals";
 
 interface OrderCardProps {
   order: Order;
@@ -31,6 +32,7 @@ interface OrderCardProps {
   matchSummary?: OrderMatchSummary;
   allocationVehicles?: AllocationVehicle[];
   linkedVehicleIds?: Set<string>;
+  modelSlotTotalsByModel?: Map<string, ModelSlotTotals>;
 }
 
 const DetailItem: React.FC<{ label: string; children: React.ReactNode }> = ({
@@ -55,6 +57,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
   matchSummary,
   allocationVehicles,
   linkedVehicleIds,
+  modelSlotTotalsByModel,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showUnsecureConfirm, setShowUnsecureConfirm] = useState(false);
@@ -445,6 +448,27 @@ const OrderCard: React.FC<OrderCardProps> = ({
                     <span>→</span>
                   </button>
                 );
+              })()}
+              {modelSlotTotalsByModel && matchSummary && !order.allocatedVehicleId && matchSummary.matchedAllocModels.size > 0 && (() => {
+                // Availability for the customer's matched allocation model(s) —
+                // complements the color-match badge above. Uses the same pure
+                // vehicle_links totals as the board pills / dashboard strip.
+                const rows = Array.from(matchSummary.matchedAllocModels)
+                  .map((model) => modelSlotTotalsByModel.get(model))
+                  .filter((total): total is ModelSlotTotals => Boolean(total));
+                if (rows.length === 0) return null;
+                return rows.map((total) => (
+                  <span
+                    key={total.model}
+                    data-testid="order-card-availability"
+                    className="inline-flex items-center gap-1 rounded-full border border-stone-200 bg-stone-50 px-2.5 py-0.5 text-xs font-semibold text-stone-600"
+                    title={`${total.model} allocation — ${total.totalSlots} total, ${total.availableSlots} open, ${total.linkedSlots} linked`}
+                  >
+                    {total.model}: <span className="text-stone-900">{total.availableSlots} open</span>
+                    <span className="text-stone-300">/</span>
+                    {total.totalSlots} total
+                  </span>
+                ));
               })()}
             </div>
           </div>

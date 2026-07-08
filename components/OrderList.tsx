@@ -10,6 +10,7 @@ import {
 import { DownloadIcon } from "./icons/DownloadIcon";
 import { OrderMatchSummary } from "../src/utils/orderMatchSummary";
 import { AllocationVehicle } from "../src/utils/allocationTypes";
+import type { ModelSlotTotals } from "../src/utils/allocationModelTotals";
 import { chipClasses } from "./ui/chipStyles";
 
 interface OrderListProps {
@@ -26,6 +27,7 @@ interface OrderListProps {
   orderMatchSummaries?: Map<string, OrderMatchSummary>;
   allocationVehicles?: AllocationVehicle[];
   linkedVehicleIds?: Set<string>;
+  modelSlotTotalsByModel?: Map<string, ModelSlotTotals>;
 }
 
 const OrderList: React.FC<OrderListProps> = ({
@@ -38,6 +40,7 @@ const OrderList: React.FC<OrderListProps> = ({
   orderMatchSummaries,
   allocationVehicles,
   linkedVehicleIds,
+  modelSlotTotalsByModel,
 }) => {
   const [animateRef] = useAutoAnimate();
   const [searchQuery, setSearchQuery] = useState("");
@@ -319,6 +322,7 @@ const OrderList: React.FC<OrderListProps> = ({
               matchSummary={orderMatchSummaries?.get(order.id)}
               allocationVehicles={allocationVehicles}
               linkedVehicleIds={linkedVehicleIds}
+              modelSlotTotalsByModel={modelSlotTotalsByModel}
             />
           ))
         ) : (
