@@ -45,6 +45,7 @@ import { UploadIcon } from "./components/icons/UploadIcon";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { subscribeLatestAllocationSnapshot } from "./services/allocationService";
 import { AllocationSnapshot } from "./src/utils/allocationTypes";
+import { buildModelSlotTotals, type ModelSlotTotals } from "./src/utils/allocationModelTotals";
 import { computeOrderMatchSummaries, OrderMatchSummary } from "./src/utils/orderMatchSummary";
 import { fetchDxSheet, DxTrade } from "./src/utils/dxSheetParser";
 import {
@@ -933,6 +934,19 @@ const App: React.FC = () => {
     return ids;
   }, [orders, linksByVehicleId]);
 
+  // Per-model slot totals for the dashboard strip. Uses the PURE vehicle_links
+  // claim set (not the linkedVehicleIds superset above, which also unions
+  // order.allocatedVehicleId) so these counts match the Allocation board's
+  // model-total pills exactly.
+  const modelSlotTotals = useMemo<ModelSlotTotals[]>(
+    () =>
+      buildModelSlotTotals(
+        allocationSnapshot?.vehicles ?? [],
+        new Set(linksByVehicleId.keys()),
+      ),
+    [allocationSnapshot, linksByVehicleId],
+  );
+
   if (isLoading) {
     return <LoadingSpinner />;
   }
@@ -1014,7 +1028,7 @@ const App: React.FC = () => {
             element={
               user.isManager ? (
                 <div>
-                  <DashboardStats {...stats} />
+                  <DashboardStats {...stats} modelTotals={modelSlotTotals} />
                   <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div>
                       <p className="text-xs font-bold uppercase text-amber-700">
