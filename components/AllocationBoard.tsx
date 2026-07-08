@@ -26,6 +26,16 @@ import { useVehicleLinks } from "../services/useVehicleLinks";
 import { fetchDxSheet, DxTrade } from "../src/utils/dxSheetParser";
 import OrderPreviewDrawer from "./OrderPreviewDrawer";
 import { chipClasses } from "./ui/chipStyles";
+import {
+  derivePowertrainBucket,
+  isElectrified,
+  isHybrid,
+  isPlugIn,
+  isEV,
+  POWERTRAINS,
+  type Powertrain,
+} from "../src/utils/powertrainClassifier";
+import { buildModelSlotTotals, getVehicleModelKey } from "../src/utils/allocationModelTotals";
 
 interface AllocationBoardProps {
   currentUser: AppUser;
@@ -37,8 +47,9 @@ interface AllocationBoardProps {
 
 type BoardView = "strategy" | "log" | "matches";
 type ArrivalGroupingMode = "bucket" | "date";
-type SortMode = "priority" | "arrival" | "units" | "model";
+type SortMode = "priority" | "arrival" | "units" | "model" | "powertrain";
 type BosFilter = "all" | "y" | "n";
+type PowertrainFilter = "all" | "electrified" | "hybrid" | "plugin" | "ev";
 type ParseConfidence = "High" | "Medium" | "Needs Review";
 
 const RANK_ORDER: Record<string, number> = {
@@ -64,9 +75,21 @@ const STORAGE_KEYS = {
   modelFilter: "allocation.modelFilter",
   rankFilter: "allocation.rankFilter",
   bosFilter: "allocation.bosFilter",
+  powertrainFilter: "allocation.powertrainFilter",
   arrivalGrouping: "allocation.arrivalGrouping",
   sortMode: "allocation.sortMode",
 } as const;
+
+// Powertrain quick-filter segments. Typed (not `as`-cast) so a bad value is a
+// compile error rather than a silent no-op. The "ev" segment is shown only when
+// the snapshot contains an EV (see hasEV).
+const POWERTRAIN_SEGMENTS: { value: PowertrainFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "electrified", label: "Electrified" },
+  { value: "hybrid", label: "Hybrid" },
+  { value: "plugin", label: "Plug-in" },
+  { value: "ev", label: "EV" },
+];
 
 /** Normalize a model string for matching: strip spaces, uppercase, e.g. "RX 350" → "RX350" */
 function normalizeModelForMatch(model: string): string {
@@ -529,6 +552,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
   const [modelFilter, setModelFilter] = useState("all");
   const [rankFilter, setRankFilter] = useState("all");
   const [bosFilter, setBosFilter] = useState<BosFilter>("all");
+  const [powertrainFilter, setPowertrainFilter] = useState<PowertrainFilter>("all");
   const [arrivalGroupingMode, setArrivalGroupingMode] = useState<ArrivalGroupingMode>("bucket");
   const [sortMode, setSortMode] = useState<SortMode>("priority");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -736,6 +760,37 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
     [latestSnapshot],
   );
 
+  // True when the current snapshot contains at least one EV — gates the EV
+  // segment of the powertrain control so it only shows when relevant.
+  const hasEV = useMemo(
+    () => vehicles.some((vehicle) => derivePowertrainBucket(vehicle) === "EV"),
+    [vehicles],
+  );
+
+  // Per-model slot totals (count-based: total/linked/available), keyed by the
+  // same display-model key the cards render. `linkedVehicleIds` (vehicle_links)
+  // is the authoritative claim source — NOT order status.
+  const modelSlotTotals = useMemo(
+    () =>
+      new Map(
+        buildModelSlotTotals(vehicles, linkedVehicleIds).map(
+          (total) => [total.model, total] as const,
+        ),
+      ),
+    [vehicles, linkedVehicleIds],
+  );
+
+  // If the snapshot no longer contains an EV the EV segment is hidden — reset an
+  // active EV filter so it can't silently zero the board with no visible control
+  // to clear it (mirrors the modelFilter option-guard). hasEV is computed over
+  // the whole snapshot, so the EV toggle stays available whenever any EV exists
+  // regardless of the other active filters.
+  useEffect(() => {
+    if (powertrainFilter === "ev" && !hasEV) {
+      setPowertrainFilter("all");
+    }
+  }, [powertrainFilter, hasEV]);
+
   const categoryOptions = useMemo<string[]>(() => {
     const cats: string[] = vehicles.map((vehicle) => vehicle.category);
     return [...new Set(cats)].sort((a, b) => a.localeCompare(b));
@@ -771,6 +826,10 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
   useEffect(() => {
     persistSetting(STORAGE_KEYS.bosFilter, bosFilter);
   }, [bosFilter]);
+
+  useEffect(() => {
+    persistSetting(STORAGE_KEYS.powertrainFilter, powertrainFilter);
+  }, [powertrainFilter]);
 
   useEffect(() => {
     persistSetting(STORAGE_KEYS.arrivalGrouping, arrivalGroupingMode);
@@ -828,6 +887,14 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
       if (bosFilter === "n" && normalizedBos !== "N") {
         return false;
       }
+
+      if (powertrainFilter !== "all") {
+        if (powertrainFilter === "electrified" && !isElectrified(vehicle)) return false;
+        if (powertrainFilter === "hybrid" && !isHybrid(vehicle)) return false;
+        if (powertrainFilter === "plugin" && !isPlugIn(vehicle)) return false;
+        if (powertrainFilter === "ev" && !isEV(vehicle)) return false;
+      }
+
       if (!normalizedQuery) {
         return true;
       }
@@ -862,7 +929,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
 
       return orderFieldsMatch;
     });
-  }, [vehicles, categoryFilter, rankFilter, bosFilter, searchQuery, orderMatchesByVehicle]);
+  }, [vehicles, categoryFilter, rankFilter, bosFilter, powertrainFilter, searchQuery, orderMatchesByVehicle]);
 
   const filteredVehicles = useMemo(() => {
     if (modelFilter === "all") {
@@ -1027,6 +1094,16 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
           return compareArrivalValues(first.arrival, second.arrival);
         }
 
+        case "powertrain": {
+          const ptDiff =
+            POWERTRAINS.indexOf(derivePowertrainBucket(first)) -
+            POWERTRAINS.indexOf(derivePowertrainBucket(second));
+          if (ptDiff !== 0) {
+            return ptDiff;
+          }
+          return first.code.localeCompare(second.code);
+        }
+
         case "priority":
         default: {
           const rankDiff = (RANK_ORDER[first.rank] ?? 99) - (RANK_ORDER[second.rank] ?? 99);
@@ -1101,6 +1178,16 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
       return models[0] ?? "";
     };
 
+    // A grouped row spans multiple vehicles; sort by the most-electrified
+    // powertrain present (min POWERTRAINS index across the row) so plug-in /
+    // hybrid / EV rows surface ahead of gas rows.
+    const getRowPowertrainIndex = (row: GroupedAllocationRow): number =>
+      Math.min(
+        ...row.vehicles.map((vehicle) =>
+          POWERTRAINS.indexOf(derivePowertrainBucket(vehicle)),
+        ),
+      );
+
     return Array.from(grouped.values()).sort((first, second) => {
       switch (sortMode) {
         case "arrival": {
@@ -1117,6 +1204,11 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
           const modelDiff = getPrimaryModel(first).localeCompare(getPrimaryModel(second));
           if (modelDiff !== 0) return modelDiff;
           return compareRowArrival(first, second);
+        }
+        case "powertrain": {
+          const ptDiff = getRowPowertrainIndex(first) - getRowPowertrainIndex(second);
+          if (ptDiff !== 0) return ptDiff;
+          return (RANK_ORDER[first.rank] ?? 99) - (RANK_ORDER[second.rank] ?? 99);
         }
         case "priority":
         default: {
@@ -1469,6 +1561,22 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
               </span>
             )}
           </div>
+
+          {(() => {
+            const totals = modelSlotTotals.get(getVehicleModelKey(variant));
+            if (!totals) return null;
+            return (
+              <div
+                className="mt-2 flex flex-wrap items-center gap-1.5 text-xs"
+                data-testid="model-total-pills"
+                title={`${getVehicleModelKey(variant)} across this allocation: ${totals.totalSlots} total, ${totals.availableSlots} open, ${totals.linkedSlots} linked`}
+              >
+                <span className="rounded-full bg-stone-100 px-2.5 py-1 font-semibold text-stone-700">{totals.totalSlots} total</span>
+                <span className="rounded-full bg-stone-100 px-2.5 py-1 font-semibold text-stone-600">{totals.availableSlots} open</span>
+                <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-700">{totals.linkedSlots} linked</span>
+              </div>
+            );
+          })()}
 
           <dl className="mt-3 grid grid-cols-2 gap-2 text-sm lg:grid-cols-4 lg:gap-3">
             {detailRows.map((detail) => (
@@ -1849,7 +1957,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                   Matches ({matchSummary.matchedOrderCount})
                 </button>
               )}
-              {(categoryFilter !== "all" || modelFilter !== "all" || rankFilter !== "all" || bosFilter !== "all" || searchQuery || boardView === "matches") && (
+              {(categoryFilter !== "all" || modelFilter !== "all" || rankFilter !== "all" || bosFilter !== "all" || powertrainFilter !== "all" || searchQuery || boardView === "matches") && (
                 <button
                   onClick={() => {
                     setSearchQuery("");
@@ -1857,6 +1965,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                     setModelFilter("all");
                     setRankFilter("all");
                     setBosFilter("all");
+                    setPowertrainFilter("all");
                     setBoardView("strategy");
                     for (const key of Object.values(STORAGE_KEYS)) {
                       window.localStorage.removeItem(key);
@@ -1869,13 +1978,31 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
               )}
             </div>
 
+            {/* Powertrain quick-filter — Electrified umbrella + Hybrid / Plug-in
+                split (EV only when the snapshot has one). Own row so it stays a
+                primary, always-visible control (the filter grid is at capacity). */}
+            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filter by powertrain">
+              <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-stone-400">Powertrain</span>
+              {POWERTRAIN_SEGMENTS.filter((seg) => seg.value !== "ev" || hasEV).map((seg) => (
+                <button
+                  key={seg.value}
+                  type="button"
+                  onClick={() => setPowertrainFilter(seg.value)}
+                  aria-pressed={powertrainFilter === seg.value}
+                  className={chipClasses({ active: powertrainFilter === seg.value, tone: "brand", size: "sm" })}
+                >
+                  {seg.label}
+                </button>
+              ))}
+            </div>
+
             {/* Mobile: show filter toggle button */}
             <button
               onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
               className="flex w-full items-center justify-between rounded-lg border border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-50 lg:hidden"
             >
               {(() => {
-                const activeCount = [categoryFilter !== "all", modelFilter !== "all", rankFilter !== "all", bosFilter !== "all", searchQuery.trim() !== ""].filter(Boolean).length;
+                const activeCount = [categoryFilter !== "all", modelFilter !== "all", rankFilter !== "all", bosFilter !== "all", powertrainFilter !== "all", searchQuery.trim() !== ""].filter(Boolean).length;
                 return <span>Filters{activeCount > 0 ? ` (${activeCount})` : ""}</span>;
               })()}
               <svg className={`h-4 w-4 transition-transform ${mobileFiltersOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
@@ -1958,9 +2085,10 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                 <option value="arrival">Sort: Build Date</option>
                 <option value="units">Sort: Units</option>
                 <option value="model">Sort: Model</option>
+                <option value="powertrain">Sort: Powertrain</option>
               </select>
             </div>
-            {(categoryFilter !== "all" || modelFilter !== "all" || rankFilter !== "all" || bosFilter !== "all" || searchQuery) && (
+            {(categoryFilter !== "all" || modelFilter !== "all" || rankFilter !== "all" || bosFilter !== "all" || powertrainFilter !== "all" || searchQuery) && (
               <button
                 onClick={() => {
                   setSearchQuery("");
@@ -1968,6 +2096,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                   setModelFilter("all");
                   setRankFilter("all");
                   setBosFilter("all");
+                  setPowertrainFilter("all");
                 }}
                 className="mt-2 text-xs font-semibold text-stone-600 transition-colors hover:text-stone-950 lg:mt-0 lg:ml-auto"
               >
@@ -2012,7 +2141,19 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
             <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-sm text-stone-500 mt-5">
               <span><span className="text-lg font-semibold text-stone-900">{filteredVehicles.length}</span> units</span>
               <span className="text-stone-300">&middot;</span>
-              <span><span className="text-lg font-semibold text-stone-900">{latestSnapshot?.summary.hybridMix ?? 0}%</span> hybrid</span>
+              {(() => {
+                const counts: Record<Powertrain, number> = { "Plug-in Hybrid": 0, Hybrid: 0, EV: 0, Gas: 0 };
+                for (const vehicle of filteredVehicles) counts[derivePowertrainBucket(vehicle)] += 1;
+                const electrified = counts.Hybrid + counts["Plug-in Hybrid"] + counts.EV;
+                const breakdown = POWERTRAINS.filter((p) => p !== "Gas" && counts[p] > 0)
+                  .map((p) => `${counts[p]} ${p === "Plug-in Hybrid" ? "plug-in" : p === "EV" ? "EV" : "hybrid"}`)
+                  .join(", ");
+                return (
+                  <span title={breakdown || "no electrified units"}>
+                    <span className="text-lg font-semibold text-stone-900">{electrified}</span> electrified
+                  </span>
+                );
+              })()}
               <span className="text-stone-300">&middot;</span>
               <span>
                 <span className="sr-only">Order Matches</span>

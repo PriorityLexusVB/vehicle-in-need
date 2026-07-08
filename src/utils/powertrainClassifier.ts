@@ -70,10 +70,13 @@ function plugInSignal(hay: string): boolean {
   return /\bphev\b/.test(hay) || /plug/.test(hay) || /h\+/.test(hay);
 }
 
-/** EV signal: EV / BEV / RZ series. */
+/** EV signal: EV / BEV / RZ series / "…NNNe" EV codes (RZ450E, ES500E). */
 function evSignal(vehicle: PowertrainInput, hay: string): boolean {
   if (norm(vehicle.engine) === "ev") return true;
-  return /\bb?ev\b/.test(hay) || /\brz\w*/.test(hay);
+  // \d{3}e\b matches the E-suffixed EV codes (450e, 500e, 350e); gas/hybrid
+  // codes end in a digit, "h", or "h+", so they never match. Plug-in ("…h+")
+  // is resolved before EV in derivePowertrainBucket, so PHEVs never reach here.
+  return /\bb?ev\b/.test(hay) || /\brz\w*/.test(hay) || /\d{3}e\b/.test(hay);
 }
 
 /** Hybrid signal: "hybrid" or a "…<digit>h" naming without a trailing "+". */

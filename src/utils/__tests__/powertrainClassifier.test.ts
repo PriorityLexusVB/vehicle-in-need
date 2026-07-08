@@ -36,15 +36,27 @@ describe("derivePowertrainBucket — Lexus examples from the redesign plan", () 
     expect(derivePowertrainBucket(v)).toBe("Hybrid");
   });
 
-  // EV: EV, BEV, RZ
+  // EV: EV, BEV, RZ, and E-suffix codes even when engine/type is absent
+  // (orders carry model/code but no engine — see result-verifier / Codex finding).
   it.each([
     { code: "RZ450E", engine: "EV", type: "EV SUV" },
     { model: "RZ 550e" },
     { type: "EV Sedan AWD", code: "ES500E" },
     { engine: "EV" },
     { grade: "BEV Premium" },
+    { code: "ES500E" }, // bare code, no engine
+    { code: "ES350E" }, // bare code, no engine
+    { code: "RZ450E" }, // bare code, no engine
+    { model: "ES 350e" }, // bare model, no engine
   ])("classifies %o as EV", (v) => {
     expect(derivePowertrainBucket(v)).toBe("EV");
+  });
+
+  it("does not misread hybrid/gas codes as EV via the E-suffix rule", () => {
+    expect(derivePowertrainBucket({ code: "ES350H" })).toBe("Hybrid");
+    expect(derivePowertrainBucket({ code: "RX350" })).toBe("Gas");
+    expect(derivePowertrainBucket({ code: "LC500" })).toBe("Gas");
+    expect(derivePowertrainBucket({ code: "TX550H+" })).toBe("Plug-in Hybrid");
   });
 
   // Gas / Other: everything else

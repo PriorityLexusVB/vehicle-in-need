@@ -6,19 +6,28 @@ import {
 
 describe("getVehicleModelKey", () => {
   it("prefers the model name", () => {
-    expect(getVehicleModelKey({ id: "a", model: "RX 350h", code: "RX350H" })).toBe(
+    expect(getVehicleModelKey({ model: "RX 350h", code: "RX350H" })).toBe(
       "RX 350h",
     );
   });
 
   it("falls back to a descriptive code", () => {
-    expect(getVehicleModelKey({ id: "a", code: "RX350" })).toBe("RX350");
+    expect(getVehicleModelKey({ code: "RX350" })).toBe("RX350");
   });
 
   it("ignores a bare 4-digit(+letter) code and returns 'Not listed'", () => {
-    expect(getVehicleModelKey({ id: "a", code: "9504" })).toBe("Not listed");
-    expect(getVehicleModelKey({ id: "b", code: "9508A" })).toBe("Not listed");
-    expect(getVehicleModelKey({ id: "c" })).toBe("Not listed");
+    expect(getVehicleModelKey({ code: "9504" })).toBe("Not listed");
+    expect(getVehicleModelKey({ code: "9508A" })).toBe("Not listed");
+    expect(getVehicleModelKey({})).toBe("Not listed");
+  });
+
+  it("treats placeholder words as empty so the key matches getDisplayModel", () => {
+    // getDisplayModel/getDisplayValue reject these — getVehicleModelKey must too,
+    // or the pill would group under a bucket the card is not displayed as.
+    expect(getVehicleModelKey({ model: "unknown", code: "RX350" })).toBe("RX350");
+    expect(getVehicleModelKey({ model: "N/A", code: "RX350" })).toBe("RX350");
+    expect(getVehicleModelKey({ model: "TBD", code: "9504" })).toBe("Not listed");
+    expect(getVehicleModelKey({ model: "na" })).toBe("Not listed");
   });
 });
 

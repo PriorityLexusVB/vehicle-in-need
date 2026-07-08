@@ -21,11 +21,15 @@
  * count of `max(1, quantity)` per record stays correct across both shapes.
  */
 
-/** Minimal shape needed to aggregate a vehicle into model slot totals. */
-export interface ModelTotalVehicle {
-  id: string;
+/** Fields needed to derive a model display key (no id required). */
+export interface ModelKeyInput {
   model?: string | null;
   code?: string | null;
+}
+
+/** Minimal shape needed to aggregate a vehicle into model slot totals. */
+export interface ModelTotalVehicle extends ModelKeyInput {
+  id: string;
   quantity?: number | null;
 }
 
@@ -46,15 +50,21 @@ function slotCount(quantity: number | null | undefined): number {
 }
 
 function displayValue(value: string | null | undefined): string {
-  return (value ?? "").trim();
+  const trimmed = (value ?? "").trim();
+  if (!trimmed) return "";
+  // Mirror AllocationBoard.getDisplayValue: treat placeholder words as empty so
+  // the pill key matches the model the card actually displays.
+  if (/^(unknown|n\/a|na|tbd)$/i.test(trimmed)) return "";
+  return trimmed;
 }
 
 /**
  * Model key for a vehicle, mirroring AllocationBoard.getDisplayModel so slot
  * totals bucket identically to the visible model options: prefer `model`, fall
  * back to `code` unless it's a bare 4-digit(+letter) code, else "Not listed".
+ * Takes only the key fields (no id) so aggregation objects can reuse it.
  */
-export function getVehicleModelKey(vehicle: ModelTotalVehicle): string {
+export function getVehicleModelKey(vehicle: ModelKeyInput): string {
   const model = displayValue(vehicle.model);
   if (model) return model;
 
