@@ -3,7 +3,7 @@
 > Per-repo memory file. The repo's single source of truth for "where is this project."
 > Rewrite to current truth each working session — do NOT append session logs.
 
-**Last updated:** 2026-07-08 - **By:** Web/teleport session - **HEAD:** linking simplification L4 (secured deal keeps its car as read-only history)
+**Last updated:** 2026-07-09 - **By:** Web/teleport session - **HEAD:** luxury redesign Slice 5 (header + login graphite/platinum; settings + drawers conform)
 
 ---
 
@@ -17,6 +17,7 @@ React 19 + Vite 7 + Tailwind 4 frontend · Firebase backend (Firestore, Cloud Fu
 
 ## Current state — is it live?
 
+- **SLICE 5 — shell graphite/platinum rollout — ON BRANCH, NOT DEPLOYED (2026-07-09).** Header (`d9a6ae5`): warm `bg-graphite` + platinum active-nav pill + amber→platinum ("Priority Lexus" label, Active Orders badge); harness [5c] shows header + board as one cohesive command center. Login (`0cb06ae`): graphite card on platinum canvas + amber→platinum; build+code-verified against the proven graphite pattern (can't harness — imports firebase/auth directly → **needs Rob's live login-screen glance**). Settings + VehicleLinkSelector + OrderForm: AUDITED, already conform (white/platinum data panels, no cream/amber/gold — the plan says data pages stay light, so correctly NOT given the graphite focal treatment; the one amber in OrderPreviewDrawer is the app-wide DX *status* color, not decoration → left as-is). Cream/tan/sand: zero across the app. Full whole-branch verify green. **The whole redesign is deploy-gated on Rob's screenshot approval; Login is the one surface still needing his live eyes.**
 - **SLICE 3b — board card graphite HIERARCHY — ON BRANCH, NOT DEPLOYED (2026-07-08).** Rob steered the direction (2026-07-08): graphite is reserved for HIGH-SIGNAL cards. `renderVariantCards(row, highSignal)` now renders Linked-to-Customer + Customer-Matches + matches-view cards with the warm-graphite (`bg-graphite` #0e1418) focal header band (code·model white/platinum), while plain Available Inventory cards stay light/white with a slim `border-l-graphite/40` accent — a scan hierarchy, not 16 identical dark bands. Verified via harness (1440 + 375): build 0, board test 25/25, lint 0-err, tsc-clean, no overflow, zero console errors; lead [5c] reviewed — the 3 Linked cards now pop and the 13 Available cards recede. **Rob approved the DIRECTION; the full screenshot set (after Slice 5 rollout) is still pending his sign-off before deploy.**
 - **TIE-BREAK "First in line" badge — ON BRANCH, NOT DEPLOYED (2026-07-09).** Rob's decided rule (auto-suggest by order date): when 2+ orders match one car, the OLDEST valid-dated order gets a graphite "First in line" badge in the board match rows (all 3 tiers). Only orders with a valid parseable date are eligible — Codex caught that a blank/undated order would otherwise sort oldest and wrongly win; fixed (filter to valid dates, ≥2 required). Verified: build 0, board test 25/25, full 381/381, lint 0-err, tsc-clean; Codex 2 rounds (bug→SHIP); harness [5c] shows the badge on the older of two matching RX 350 orders. Harness mock (`preview/mocks/data.ts`, untracked) gained 2 matching orders to render the Customer Matches section for the screenshot.
 - Remaining in the rollout: Slice 5 (header/login/settings/drawers) → then one screenshot set for approval.
