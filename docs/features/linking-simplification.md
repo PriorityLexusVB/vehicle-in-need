@@ -25,30 +25,40 @@ A **manager's core job** is to **LINK** an incoming allocation car to the custom
 ## The 5 things that make it confusing (candidates to simplify)
 
 ### 1. Securing the deal makes the car "disappear" from the link  ⚑ biggest surprise
+
 When you mark an order Received/Delivered/Secured, the app **deletes the link and frees the car** — on the theory that the allocation slot is now "used up." But a GM reasonably expects the opposite: *"I won this deal, the car is now firmly this customer's."* Today, a secured order shows **no** car association at all.
+
 - **Options:** (a) keep as-is (secure = recycle slot); (b) secure **keeps** the car association as a permanent record (car is "delivered to X"); (c) secure keeps a read-only historical stamp but still frees the live allocation slot.
 - **My recommendation: (b/c hybrid)** — keep the car↔customer association as history on the order (so "who got which car" is never lost), while the *live allocation board* stops showing that car as available. Matches how a GM thinks about a closed deal.
 
 ### 2. Two different "Link" buttons with different rules
+
 You can link from the **order card** (only when status = Factory Order) OR from the **allocation board** (Factory Order **and** Locate). Same action, two UIs, inconsistent availability — "why can I link this one here but not there?"
+
 - **My recommendation:** one linking affordance, one rule. Pick the board as the primary place (it's where you compare a car against all interested customers), keep the order card's as a shortcut with identical rules.
 
 ### 3. Two sources of truth that can drift
+
 Every link lives on both the order and the `vehicle_links` record. They're kept in sync by transactions, but direct edits / CSV imports / legacy data have already produced an **orphan** (a Delivered order still "holding" a car with no matching link). Worse, the order-card screen computes "is this car taken?" as *order-field OR vehicle_links*, while the board uses *vehicle_links only* — so the two screens can disagree.
+
 - **My recommendation:** make `vehicle_links` the **single** authority for "is this car taken?" everywhere; treat the order's `allocatedVehicleId` as a convenience mirror only. Add a tiny reconcile so an orphan can't mark a car falsely taken.
 
 ### 4. Too many words for "not available"
+
 Today: "Vehicle Taken," "Linked elsewhere," "All claimed," "Linked to Another Customer" — four phrasings for overlapping states, plus match tiers "Color Match / Similar Color / model-only."
+
 - **My recommendation:** two plain states — **Available** vs **Taken by {Customer}** — and rename match tiers to **Exact color / Close color / Model only**.
 
 ### 5. When several customers want the same car, no recommendation
+
 The board lists all interested orders under a car (ranked by color-match) but gives **no tie-break** when it matters — deposit and order date are shown but not used to recommend who gets it.
+
 - **My recommendation (optional):** a soft "suggested: {Customer}" using a simple, GM-approved rule (e.g., earliest order date, then largest deposit) — manager still decides.
 
 ## Scenario reference (what happens today)
 
 | Scenario | Today | Friction |
-|---|---|---|
+| --- | --- | --- |
 | Factory Order, unlinked, has matches | Link from card OR board | 2 entry points |
 | Factory Order linked | Green "Linked ✓" (also the unlink button) | Confirm chip = destroy button |
 | Locate order | Linkable from board only | Asymmetry, unexplained |
@@ -90,7 +100,7 @@ Building these on-branch, verified, NOT deployed. Each is reversible.
 All five slices built, verified, and pushed to `claude/vin-luxury-redesign-slice-1-4pxzyc`. Deploy is gated on Rob's screenshot approval.
 
 | Slice | Commit | What landed | Lineup |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | L1 + L5 | `54d058b` | Plain Taken/Available wording + match tiers; two-step unlink confirm on the reachable OrderCard button (Codex caught my first attempt was dead code in `VehicleLinkSelector`). | result-verifier + Codex ×3 |
 | L2 | `528f76c` | One source of truth for "car taken" = pure `vehicle_links` (dropped the stale-`allocatedVehicleId` union). | result-verifier + Codex |
 | L3 | `0c59254` | One link-entry rule — `isAllocationLinkable` shared by the order card AND the board. | Codex |
