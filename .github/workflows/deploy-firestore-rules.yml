@@ -1,0 +1,49 @@
+name: Deploy Firestore Rules
+
+# Deploys firestore.rules to the live project whenever it changes on main
+# (gated upstream by the Firestore Rules Tests emulator check on the PR), or
+# on manual dispatch. Uses the same GCP auth as the container build; the deploy
+# itself runs scripts/deploy-firestore-rules.py against the Firebase Rules REST
+# API with the CI service account's token.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "firestore.rules"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  id-token: write # Required for Workload Identity Federation
+
+jobs:
+  deploy-rules:
+    name: Deploy Firestore Security Rules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        id: auth_wif
+        continue-on-error: true
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Authenticate to Google Cloud (Service Account Key fallback)
+        if: steps.auth_wif.outcome != 'success'
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY || secrets.GCP_CREDENTIALS }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Deploy Firestore rules
+        run: python scripts/deploy-firestore-rules.py

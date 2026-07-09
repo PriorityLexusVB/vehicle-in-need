@@ -24,20 +24,25 @@ BASE = f"https://firebaserules.googleapis.com/v1/projects/{PROJECT}"
 
 
 def gcloud_token():
-    # shell=True so `gcloud` resolves to gcloud.cmd on Windows the same way the
-    # interactive shell finds it.
-    try:
-        out = subprocess.run(
-            "gcloud auth print-access-token",
-            capture_output=True, text=True, shell=True,
-        )
-    except OSError as exc:
-        sys.exit("ERROR: could not run gcloud: " + str(exc))
-    tok = out.stdout.strip()
-    if out.returncode != 0 or not tok:
-        sys.exit("ERROR: could not get a gcloud access token. Run "
-                 "`gcloud auth login` first.\n" + (out.stderr or ""))
-    return tok
+    # Try the user credential first (local `gcloud auth login`), then the
+    # Application Default Credential (CI: google-github-actions/auth). shell=True
+    # so `gcloud` resolves to gcloud.cmd on Windows like the interactive shell.
+    errors = []
+    for cmd in (
+        "gcloud auth print-access-token",
+        "gcloud auth application-default print-access-token",
+    ):
+        try:
+            out = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+        except OSError as exc:
+            errors.append(str(exc))
+            continue
+        tok = out.stdout.strip()
+        if out.returncode == 0 and tok:
+            return tok
+        errors.append(out.stderr or "")
+    sys.exit("ERROR: could not get a gcloud access token (tried user + ADC). "
+             "Run `gcloud auth login` first.\n" + "\n".join(errors))
 
 
 def api(method, url, tok, body=None):
