@@ -1536,6 +1536,20 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
       const partialMatches = uniqueMatches.filter((m) => (m.colorMatch === "partial" || m.interiorMatch === "partial") && m.colorMatch !== "exact" && m.interiorMatch !== "exact");
       const modelOnlyMatches = uniqueMatches.filter((m) => !m.colorMatch && !m.interiorMatch);
 
+      // Tie-break (Rob's rule 2026-07-08): when 2+ orders want this car, the
+      // oldest order (earliest order date) is the suggested "first in line".
+      // Only orders with a VALID date are eligible — a blank/undated order must
+      // never win the tie-break (an empty string would otherwise sort oldest).
+      const datedMatches = uniqueMatches.filter(
+        (m) => m.orderDate?.trim() && !Number.isNaN(new Date(m.orderDate.trim()).getTime()),
+      );
+      const firstInLineOrderId =
+        datedMatches.length > 1
+          ? datedMatches.reduce((oldest, m) =>
+              m.orderDate.trim().localeCompare(oldest.orderDate.trim()) < 0 ? m : oldest,
+            ).orderId
+          : null;
+
       // Focal graphite band for high-signal cards; light card + slim graphite
       // left accent for plain available inventory (the scan hierarchy).
       const cardClass = highSignal
@@ -1616,6 +1630,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                         <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-stone-200 text-xs font-bold text-stone-600">{index + 1}</span>
                         <span className="text-sm font-semibold text-stone-900">{m.customerName}</span>
                         {m.orderDate?.trim() && <span className="font-medium text-xs text-stone-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
+                        {m.orderId === firstInLineOrderId && <span className="rounded-full bg-graphite px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white" title="Oldest matching order — suggested first in line">First in line</span>}
                         <span className="text-sm text-stone-500">{m.salesperson || "TBD"}</span>
                         <span className="text-xs text-stone-500">{m.model} / {m.modelNumber}</span>
                         <button type="button" onClick={() => setPreviewOrderId(m.orderId)} aria-label={`Preview ${m.customerName}'s order`} className="rounded bg-stone-100 px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors" title="Preview order details">View</button>
@@ -1658,6 +1673,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                         <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-stone-200 text-xs font-bold text-stone-600">{index + 1}</span>
                         <span className="text-sm font-semibold text-stone-900">{m.customerName}</span>
                         {m.orderDate?.trim() && <span className="font-medium text-xs text-stone-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
+                        {m.orderId === firstInLineOrderId && <span className="rounded-full bg-graphite px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white" title="Oldest matching order — suggested first in line">First in line</span>}
                         <span className="text-sm text-stone-500">{m.salesperson || "TBD"}</span>
                         <span className="text-xs text-stone-500">{m.model} / {m.modelNumber}</span>
                         <button type="button" onClick={() => setPreviewOrderId(m.orderId)} aria-label={`Preview ${m.customerName}'s order`} className="rounded bg-stone-100 px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors" title="Preview order details">View</button>
@@ -1700,6 +1716,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                         <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-stone-200 text-xs font-bold text-stone-600">{index + 1}</span>
                         <span className="text-sm font-semibold text-stone-900">{m.customerName}</span>
                         {m.orderDate?.trim() && <span className="font-medium text-xs text-stone-500">({new Date(m.orderDate.trim()).toLocaleDateString("en-US", { month: "short", day: "numeric" })})</span>}
+                        {m.orderId === firstInLineOrderId && <span className="rounded-full bg-graphite px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white" title="Oldest matching order — suggested first in line">First in line</span>}
                         <span className="text-sm text-stone-500">{m.salesperson || "TBD"}</span>
                         <span className="text-xs text-stone-500">{m.model} / {m.modelNumber}</span>
                         <button type="button" onClick={() => setPreviewOrderId(m.orderId)} aria-label={`Preview ${m.customerName}'s order`} className="rounded bg-stone-100 px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors" title="Preview order details">View</button>
