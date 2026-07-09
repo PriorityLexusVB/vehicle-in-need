@@ -1554,7 +1554,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                     : "border-stone-300 bg-stone-50 text-stone-800"
               }`}>
                 {allSlotsTaken
-                  ? `Qty: ${variant.units} · All claimed`
+                  ? `Qty: ${variant.units} · All taken`
                   : linkedSlotCount > 0
                     ? `Qty: ${variant.units} · ${availableVehicleIds.length} available`
                     : `Qty: ${variant.units}`}
@@ -1591,7 +1591,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
             <div className="mt-4 space-y-2 border-t border-stone-100 pt-3">
               {exactMatches.length > 0 && (
                 <div className="border-l-2 border-emerald-500 bg-emerald-50/50 rounded-r-md pl-3 py-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Color Match ({exactMatches.length})</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Exact color ({exactMatches.length})</p>
                   <div className="mt-2 space-y-1">
                     {exactMatches.map((m, index) => (
                       <div key={m.orderId} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-1.5">
@@ -1611,9 +1611,9 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                             {linkingOrderId === m.orderId ? "..." : "Linked ✓"}
                           </button>
                         ) : m.allocatedVehicleId ? (
-                          <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-500">Linked elsewhere</span>
+                          <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-500">On another car</span>
                         ) : allSlotsTaken ? (
-                          <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-400">Vehicle Taken</span>
+                          <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-400">Taken</span>
                         ) : (
                           <button
                             onClick={() => void handleLinkOrder(m.orderId, variantVehicleId, variantVehicleInfo)}
@@ -1633,7 +1633,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
               )}
               {partialMatches.length > 0 && (
                 <details className="border-l-2 border-indigo-400 bg-indigo-50/50 rounded-r-md">
-                  <summary className="cursor-pointer pl-3 py-2 text-xs font-semibold uppercase tracking-wide text-indigo-700">Similar Color ({partialMatches.length})</summary>
+                  <summary className="cursor-pointer pl-3 py-2 text-xs font-semibold uppercase tracking-wide text-indigo-700">Close color ({partialMatches.length})</summary>
                   <div className="pl-3 pb-2 mt-1.5 space-y-1">
                     {partialMatches.map((m, index) => (
                       <div key={m.orderId} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-indigo-800">
@@ -1653,9 +1653,9 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                             {linkingOrderId === m.orderId ? "..." : "Linked ✓"}
                           </button>
                         ) : m.allocatedVehicleId ? (
-                          <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-500">Linked elsewhere</span>
+                          <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-500">On another car</span>
                         ) : allSlotsTaken ? (
-                          <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-400">Vehicle Taken</span>
+                          <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-400">Taken</span>
                         ) : (
                           <button
                             onClick={() => void handleLinkOrder(m.orderId, variantVehicleId, variantVehicleInfo)}
@@ -1695,9 +1695,9 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                             {linkingOrderId === m.orderId ? "..." : "Linked ✓"}
                           </button>
                         ) : m.allocatedVehicleId ? (
-                          <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-500">Linked elsewhere</span>
+                          <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-500">On another car</span>
                         ) : allSlotsTaken ? (
-                          <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-400">Vehicle Taken</span>
+                          <span className="rounded bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-400">Taken</span>
                         ) : (
                           <button
                             onClick={() => void handleLinkOrder(m.orderId, variantVehicleId, variantVehicleInfo)}

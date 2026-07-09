@@ -78,6 +78,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
   }, [highlighted]);
   const [isSaving, setIsSaving] = useState(false);
   const [isUnlinking, setIsUnlinking] = useState(false);
+  const [showUnlinkConfirm, setShowUnlinkConfirm] = useState(false);
   const [showMatchPreview, setShowMatchPreview] = useState(false);
 
   const handleUnlinkVehicle = async () => {
@@ -376,7 +377,12 @@ const OrderCard: React.FC<OrderCardProps> = ({
       <button
         type="button"
         className="w-full cursor-pointer rounded-lg p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 focus-visible:ring-offset-2"
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={() => {
+          setIsExpanded(!isExpanded);
+          // Disarm a pending unlink confirmation when the card collapses so it
+          // never reopens showing a primed "Confirm".
+          setShowUnlinkConfirm(false);
+        }}
         aria-label="Toggle order details"
         aria-expanded={isExpanded}
       >
@@ -620,13 +626,34 @@ const OrderCard: React.FC<OrderCardProps> = ({
                     </div>
                   </div>
                   {currentUser?.isManager && (
-                    <button
-                      onClick={() => void handleUnlinkVehicle()}
-                      disabled={isUnlinking}
-                      className="shrink-0 rounded-lg bg-white px-4 py-2.5 text-xs font-semibold text-red-600 shadow-sm hover:bg-red-50 transition-colors disabled:opacity-50"
-                    >
-                      {isUnlinking ? "Unlinking..." : "Unlink"}
-                    </button>
+                    !showUnlinkConfirm ? (
+                      <button
+                        onClick={() => setShowUnlinkConfirm(true)}
+                        disabled={isUnlinking}
+                        className="shrink-0 rounded-lg bg-white px-4 py-2.5 text-xs font-semibold text-red-600 shadow-sm hover:bg-red-50 transition-colors disabled:opacity-50"
+                      >
+                        {isUnlinking ? "Unlinking..." : "Unlink"}
+                      </button>
+                    ) : (
+                      <div className="flex shrink-0 items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setShowUnlinkConfirm(false);
+                            void handleUnlinkVehicle();
+                          }}
+                          disabled={isUnlinking}
+                          className="rounded-lg bg-red-600 px-3 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-red-700 transition-colors disabled:opacity-50"
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          onClick={() => setShowUnlinkConfirm(false)}
+                          className="rounded-lg bg-white px-3 py-2.5 text-xs font-semibold text-stone-600 shadow-sm hover:bg-stone-50 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )
                   )}
                 </div>
               </div>

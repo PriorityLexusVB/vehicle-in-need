@@ -777,8 +777,8 @@ describe('AllocationBoard', () => {
       renderBoard({ currentUser: managerUser });
 
       await waitFor(() => {
-        // Partial matches should appear in the "Similar Color" section
-        expect(screen.getAllByText(/Similar Color/).length).toBeGreaterThan(0);
+        // Partial matches should appear in the "Close color" section
+        expect(screen.getAllByText(/Close color/).length).toBeGreaterThan(0);
       });
     });
 
@@ -878,7 +878,7 @@ describe('AllocationBoard', () => {
 
       await waitFor(() => {
         expect(screen.getByText('John Smith')).toBeInTheDocument();
-        expect(screen.getByText('Vehicle Taken')).toBeInTheDocument();
+        expect(screen.getByText('Taken')).toBeInTheDocument();
       });
       expect(screen.queryByRole('button', { name: 'Link John Smith to this vehicle' })).toBeNull();
       expect(linkVehicleToOrder).not.toHaveBeenCalled();
