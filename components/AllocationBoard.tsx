@@ -1460,7 +1460,11 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
     }
   };
 
-  const renderVariantCards = (row: GroupedAllocationRow) => {
+  // highSignal = cards a manager should act on (linked to a customer, or matched
+  // to an open order) get the focal warm-graphite header band; plain available
+  // inventory stays light/platinum with a slim graphite left accent so the board
+  // reads as a scan hierarchy instead of 16 identical dark bands.
+  const renderVariantCards = (row: GroupedAllocationRow, highSignal = false) => {
     const variants = Array.from(
       row.vehicles.reduce((accumulator, vehicle) => {
         const fa = getFactoryAccessories(vehicle);
@@ -1532,29 +1536,41 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
       const partialMatches = uniqueMatches.filter((m) => (m.colorMatch === "partial" || m.interiorMatch === "partial") && m.colorMatch !== "exact" && m.interiorMatch !== "exact");
       const modelOnlyMatches = uniqueMatches.filter((m) => !m.colorMatch && !m.interiorMatch);
 
+      // Focal graphite band for high-signal cards; light card + slim graphite
+      // left accent for plain available inventory (the scan hierarchy).
+      const cardClass = highSignal
+        ? "group rounded-xl border border-stone-200 bg-white p-4 shadow-sm hover:border-stone-300 transition-colors lg:p-5"
+        : "group rounded-xl border border-stone-200 border-l-[3px] border-l-graphite/40 bg-white p-4 shadow-sm hover:border-l-graphite/70 transition-colors lg:p-5";
+      const headerClass = highSignal
+        ? "flex flex-col gap-3 rounded-lg bg-graphite px-3.5 py-3 md:flex-row md:items-start md:justify-between"
+        : "flex flex-col gap-3 md:flex-row md:items-start md:justify-between";
+      const codeClass = highSignal ? "text-white" : "text-stone-900";
+      const dotClass = highSignal ? "text-white/30" : "text-stone-300";
+      const modelClass = highSignal ? "text-platinum" : "text-stone-500";
+      const trimClass = highSignal ? "text-stone-400" : "text-stone-500";
+      const qtyPillClass = allSlotsTaken
+        ? highSignal ? "border-white/10 bg-white/5 text-stone-400" : "border-stone-200 bg-stone-100 text-stone-400"
+        : linkedSlotCount > 0
+          ? highSignal ? "border-amber-400/30 bg-amber-400/10 text-amber-200" : "border-amber-200 bg-amber-50 text-amber-700"
+          : highSignal ? "border-white/15 bg-white/10 text-stone-100" : "border-stone-300 bg-stone-50 text-stone-800";
+
       return (
         <div
           key={`${row.key}-${variant.sourceCode ?? ""}-${variant.code}-${variant.grade}-${variant.arrival}-${variant.color}-${variant.bos}`}
-          className="group rounded-xl border border-stone-200 bg-white p-4 shadow-sm hover:border-stone-300 transition-colors lg:p-5"
+          className={cardClass}
           data-testid="allocation-strategy-vehicle-card"
         >
-          <div className="flex flex-col gap-3 rounded-lg bg-graphite px-3.5 py-3 md:flex-row md:items-start md:justify-between">
+          <div className={headerClass}>
             <div>
-              <p className="text-lg font-bold tracking-tight text-white">
+              <p className={`text-lg font-bold tracking-tight ${codeClass}`}>
                 {getDisplayCode(variant.sourceCode, variant.code)}{" "}
-                <span className="px-1 text-white/30">·</span>
-                <span className="text-platinum">{getDisplayModel(variant.model, variant.code)}</span>
+                <span className={`px-1 ${dotClass}`}>·</span>
+                <span className={modelClass}>{getDisplayModel(variant.model, variant.code)}</span>
               </p>
-              <p className="mt-1 text-sm text-stone-400">Trim: {getDisplayTrim(variant.sourceCode, variant.code, variant.grade)}</p>
+              <p className={`mt-1 text-sm ${trimClass}`}>Trim: {getDisplayTrim(variant.sourceCode, variant.code, variant.grade)}</p>
             </div>
             {variant.units > 1 && (
-              <span className={`self-start rounded-full border px-2.5 py-1 text-xs font-semibold ${
-                allSlotsTaken
-                  ? "border-white/10 bg-white/5 text-stone-400"
-                  : linkedSlotCount > 0
-                    ? "border-amber-400/30 bg-amber-400/10 text-amber-200"
-                    : "border-white/15 bg-white/10 text-stone-100"
-              }`}>
+              <span className={`self-start rounded-full border px-2.5 py-1 text-xs font-semibold ${qtyPillClass}`}>
                 {allSlotsTaken
                   ? `Qty: ${variant.units} · All taken`
                   : linkedSlotCount > 0
@@ -2177,7 +2193,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                   <div className="space-y-3">
                     {matchedGroupedRows.map((row) => (
                       <div key={row.key}>
-                        {renderVariantCards(row)}
+                        {renderVariantCards(row, true)}
                       </div>
                     ))}
                   </div>
@@ -2199,7 +2215,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                       {linkedGroupedRows.map((row) => (
                         <article key={`linked-${row.key}`} className="grid gap-3">
                           <div className="grid gap-3">
-                            {renderVariantCards(row)}
+                            {renderVariantCards(row, true)}
                           </div>
                         </article>
                       ))}
@@ -2219,7 +2235,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
                       {matchedGroupedRows.map((row) => (
                         <article key={`matched-${row.key}`} className="grid gap-3">
                           <div className="grid gap-3">
-                            {renderVariantCards(row)}
+                            {renderVariantCards(row, true)}
                           </div>
                         </article>
                       ))}
