@@ -3,18 +3,21 @@
 > Per-repo memory file. The repo's single source of truth for "where is this project."
 > Rewrite to current truth each working session — do NOT append session logs.
 
-**Last updated:** 2026-07-09 - **By:** Web/teleport session - **HEAD:** LIVE on main (PR #263, `feed70b`) — redesign + linking simplification deployed to Cloud Run
+**Last updated:** 2026-07-09 - **By:** Web/teleport session - **HEAD:** LIVE — redesign + linking on Cloud Run (PR #263) + Firestore rules deployed via new CI (PR #264)
 
-## ✅ LIVE (2026-07-09)
+## ✅ FULLY LIVE (2026-07-09)
 
-PR **#263** (whole luxury redesign + linking simplification) merged to `main` (`feed70b`), all CI green, and **DEPLOYED to Cloud Run** by Rob (revision `pre-order-dealer-exchange-tracker-00323-b9w`, 100% traffic). Live URL: `https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app` — verified HTTP 200 in 0.28s; the served CSS carries the graphite/platinum tokens (`#0e1418`/`#eef2f6`/`#cbd0d8`, `--color-graphite/canvas/platinum`) and the JS carries the linking work ("First in line", "Delivered vehicle", "Exact color", "On another car"). CI note: fixed the pre-existing-broken `rules-tests` workflow (added JDK 21) so the L4 owner-guard is emulator-verified.
+**App:** PR **#263** (whole luxury redesign + linking simplification) merged to `main` (`feed70b`), all CI green, **DEPLOYED to Cloud Run** (revision `pre-order-dealer-exchange-tracker-00323-b9w`, 100% traffic). Live URL: `https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app` — verified HTTP 200 in 0.28s; served CSS carries the graphite/platinum tokens (`#0e1418`/`#eef2f6`/`#cbd0d8`) and the JS carries the linking work ("First in line", "Delivered vehicle", "Exact color", "On another car").
+
+**Firestore rules:** ALSO DEPLOYED. Added a `Deploy Firestore Rules` CI workflow (`.github/workflows/deploy-firestore-rules.yml` + `scripts/deploy-firestore-rules.py`, REST via the CI service-account token) — PR #264. Dispatched it → live `cloud.firestore` release now points at ruleset `723c8b08-024d-4008-b385-ae6c7cb19076`, so the L4 `securedVehicleInfo` owner-immutability guard is live. Deploys automatically on any future `firestore.rules` change to main (gated by the `rules-tests` emulator check). Two CI-infra fixes shipped en route: `rules-tests` was pre-existing-broken (added JDK 21); the GCP **WIF** auth path is misconfigured (invalid pool/provider) but the SA-key fallback covers both container build + rules deploy — WIF is a pre-existing infra item worth fixing eventually, non-blocking.
 
 **Remaining (optional / Rob):**
 
-1. **Firestore rules deploy** — `firebase deploy --only firestore:rules` (the L4 `securedVehicleInfo` owner-immutability guard; CI-verified; app works without it — managers write the field via the unrestricted manager path, so it's a defensive hardening, not a blocker).
-2. **Login live glance** — graphite login card (build+code-verified; Firebase-gated from the mock harness).
+1. **Login live glance** — graphite login card (build+code-verified; couldn't harness it because it imports firebase/auth).
 
 Deferred Rob decisions still open: full "secured = reserved (never recycle)" vs the shipped keep-history; a secondary tie-break rule beyond order-date.
+
+*(The per-slice "ON BRANCH / NOT DEPLOYED" bullets below are the historical build record — superseded by this LIVE summary.)*
 
 ---
 
