@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { AppUser, Order, OrderStatus } from "../types";
+import { AppUser, Order } from "../types";
+import { isAllocationLinkable } from "../constants";
 import {
   parseAllocationSource,
   groupArrivalBucket,
@@ -607,7 +608,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
       return;
     }
     return subscribeActiveOrders((orders) =>
-      setActiveOrders(orders.filter((o) => o.status !== OrderStatus.DealerExchange))
+      // Same allocation-linkable rule the order card uses (active, non-DX).
+      setActiveOrders(orders.filter((o) => isAllocationLinkable(o.status)))
     );
   }, [currentUser.isManager]);
 

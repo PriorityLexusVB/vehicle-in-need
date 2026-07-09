@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Order, OrderStatus, AppUser } from "../types";
 import MatchPreviewModal from "./MatchPreviewModal";
-import { ACTIVE_STATUS_OPTIONS, isSecuredStatus } from "../constants";
+import { ACTIVE_STATUS_OPTIONS, isSecuredStatus, isAllocationLinkable } from "../constants";
 import { ChevronDownIcon } from "./icons/ChevronDownIcon";
 import StatusBadge from "./StatusBadge";
 import { TrashIcon } from "./icons/TrashIcon";
@@ -659,9 +659,8 @@ const OrderCard: React.FC<OrderCardProps> = ({
               </div>
             )}
 
-            {order.status === OrderStatus.FactoryOrder &&
+            {isAllocationLinkable(order.status) &&
               currentUser?.isManager &&
-              !isSecured &&
               !order.allocatedVehicleId &&
               allocationVehicles &&
               allocationVehicles.length > 0 && (
