@@ -1538,22 +1538,22 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
           className="group rounded-xl border border-stone-200 bg-white p-4 shadow-sm hover:border-stone-300 transition-colors lg:p-5"
           data-testid="allocation-strategy-vehicle-card"
         >
-          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div className="flex flex-col gap-3 rounded-lg bg-graphite px-3.5 py-3 md:flex-row md:items-start md:justify-between">
             <div>
-              <p className="text-lg font-bold tracking-tight text-stone-900">
+              <p className="text-lg font-bold tracking-tight text-white">
                 {getDisplayCode(variant.sourceCode, variant.code)}{" "}
-                <span className="px-1 text-stone-300">·</span>
-                <span className="text-stone-500">{getDisplayModel(variant.model, variant.code)}</span>
+                <span className="px-1 text-white/30">·</span>
+                <span className="text-platinum">{getDisplayModel(variant.model, variant.code)}</span>
               </p>
-              <p className="mt-1 text-sm text-stone-500">Trim: {getDisplayTrim(variant.sourceCode, variant.code, variant.grade)}</p>
+              <p className="mt-1 text-sm text-stone-400">Trim: {getDisplayTrim(variant.sourceCode, variant.code, variant.grade)}</p>
             </div>
             {variant.units > 1 && (
-              <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
+              <span className={`self-start rounded-full border px-2.5 py-1 text-xs font-semibold ${
                 allSlotsTaken
-                  ? "border-stone-200 bg-stone-100 text-stone-400"
+                  ? "border-white/10 bg-white/5 text-stone-400"
                   : linkedSlotCount > 0
-                    ? "border-amber-200 bg-amber-50 text-amber-700"
-                    : "border-stone-300 bg-stone-50 text-stone-800"
+                    ? "border-amber-400/30 bg-amber-400/10 text-amber-200"
+                    : "border-white/15 bg-white/10 text-stone-100"
               }`}>
                 {allSlotsTaken
                   ? `Qty: ${variant.units} · All taken`
