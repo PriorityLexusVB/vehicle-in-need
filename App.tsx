@@ -934,28 +934,24 @@ const App: React.FC = () => {
     return computeOrderMatchSummaries(orders, vehicles, dxTrades);
   }, [orders, allocationSnapshot, dxTrades]);
 
-  const linkedVehicleIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (const order of orders) {
-      if (order.allocatedVehicleId) ids.add(order.allocatedVehicleId);
-    }
-    for (const vehicleId of linksByVehicleId.keys()) {
-      ids.add(vehicleId);
-    }
-    return ids;
-  }, [orders, linksByVehicleId]);
+  // Single source of truth for "is this car claimed?" — the vehicle_links
+  // collection ONLY. (Previously this also unioned order.allocatedVehicleId,
+  // which let a stale order field with no matching vehicle_links doc falsely
+  // mark a car taken and disagree with the allocation board, which always used
+  // pure vehicle_links. The "car taken" set now matches the board everywhere.
+  // NB: an orphan order's OWN card still shows its stale allocatedVehicleId as
+  // "Linked Vehicle" — pre-existing, and clearable via its Unlink button.)
+  const linkedVehicleIds = useMemo(
+    () => new Set(linksByVehicleId.keys()),
+    [linksByVehicleId],
+  );
 
-  // Per-model slot totals for the dashboard strip. Uses the PURE vehicle_links
-  // claim set (not the linkedVehicleIds superset above, which also unions
-  // order.allocatedVehicleId) so these counts match the Allocation board's
-  // model-total pills exactly.
+  // Per-model slot totals for the dashboard strip — same pure claim set as the
+  // Allocation board's model-total pills.
   const modelSlotTotals = useMemo<ModelSlotTotals[]>(
     () =>
-      buildModelSlotTotals(
-        allocationSnapshot?.vehicles ?? [],
-        new Set(linksByVehicleId.keys()),
-      ),
-    [allocationSnapshot, linksByVehicleId],
+      buildModelSlotTotals(allocationSnapshot?.vehicles ?? [], linkedVehicleIds),
+    [allocationSnapshot, linkedVehicleIds],
   );
 
   // Keyed by model for order-card lookup (order → matchedAllocModels → totals).
