@@ -82,3 +82,25 @@ Building these on-branch, verified, NOT deployed. Each is reversible.
 1. **Secured (#1):** is L4 (keep history, still free the slot) right, or do you want delivered cars to stay RESERVED (never recycle)?
 2. **Tie-break (#5):** want an auto-suggested winner? By order date, deposit, or both?
 3. Anything about the real workflow I've mis-stated?
+
+---
+
+## STATUS — SHIPPED TO BRANCH (2026-07-08, NOT DEPLOYED)
+
+All five slices built, verified, and pushed to `claude/vin-luxury-redesign-slice-1-4pxzyc`. Deploy is gated on Rob's screenshot approval.
+
+| Slice | Commit | What landed | Lineup |
+|---|---|---|---|
+| L1 + L5 | `54d058b` | Plain Taken/Available wording + match tiers; two-step unlink confirm on the reachable OrderCard button (Codex caught my first attempt was dead code in `VehicleLinkSelector`). | result-verifier + Codex ×3 |
+| L2 | `528f76c` | One source of truth for "car taken" = pure `vehicle_links` (dropped the stale-`allocatedVehicleId` union). | result-verifier + Codex |
+| L3 | `0c59254` | One link-entry rule — `isAllocationLinkable` shared by the order card AND the board. | Codex |
+| L4 | `43c9e17` | Secured deal keeps its car as read-only `securedVehicleInfo` history (slot still freed); owner-immutable rule guard. | result-verifier + Codex ×2 + release-auditor |
+
+Whole-branch verification: build 0, test 381/381, lint 0-err, tsc-clean.
+
+**Pre-deploy gate (L4):** `npm run test:rules` (Firestore-rules emulator) could not run on the build machine (no Java) — the new owner-immutability guard was verified by Codex + release-auditor static read + structural mirror of the tested `allocatedVehicleInfo` guard. Run `test:rules` before deploying `firestore.rules`.
+
+## STILL OPEN — genuine Rob decisions (deliberately not built blind)
+
+1. **Secured = history vs reserved.** Shipped L4 = keep history + still free the slot (car recycles). If delivered cars should stay RESERVED (never recycle back onto the board), that's a follow-up rules + board-filter change.
+2. **Tie-break rule** for multiple customers wanting one allocation car — needs the business rule (order date? deposit? both?) before an auto-suggested winner can be built.
