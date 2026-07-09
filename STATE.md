@@ -10,6 +10,7 @@
 PR **#263** (whole luxury redesign + linking simplification) merged to `main` (`feed70b`), all CI green, and **DEPLOYED to Cloud Run** by Rob (revision `pre-order-dealer-exchange-tracker-00323-b9w`, 100% traffic). Live URL: `https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app` — verified HTTP 200 in 0.28s; the served CSS carries the graphite/platinum tokens (`#0e1418`/`#eef2f6`/`#cbd0d8`, `--color-graphite/canvas/platinum`) and the JS carries the linking work ("First in line", "Delivered vehicle", "Exact color", "On another car"). CI note: fixed the pre-existing-broken `rules-tests` workflow (added JDK 21) so the L4 owner-guard is emulator-verified.
 
 **Remaining (optional / Rob):**
+
 1. **Firestore rules deploy** — `firebase deploy --only firestore:rules` (the L4 `securedVehicleInfo` owner-immutability guard; CI-verified; app works without it — managers write the field via the unrestricted manager path, so it's a defensive hardening, not a blocker).
 2. **Login live glance** — graphite login card (build+code-verified; Firebase-gated from the mock harness).
 
