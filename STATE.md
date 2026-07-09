@@ -3,7 +3,18 @@
 > Per-repo memory file. The repo's single source of truth for "where is this project."
 > Rewrite to current truth each working session — do NOT append session logs.
 
-**Last updated:** 2026-07-09 - **By:** Web/teleport session - **HEAD:** luxury redesign Slice 5 (header + login graphite/platinum; settings + drawers conform)
+**Last updated:** 2026-07-09 - **By:** Web/teleport session - **HEAD:** MERGED TO MAIN (PR #263, merge `feed70b`) — image built; Cloud Run deploy pending gcloud reauth
+
+## ⏳ MERGED TO MAIN — deploy pending (2026-07-09)
+
+PR **#263** (whole redesign + linking simplification) **merged to `main`** (`feed70b`). ALL CI green: **Firestore rules emulator test PASS** (fixed the workflow's missing JDK-21 — `rules-tests` was pre-existing-broken on the runner's old Java; my L4 owner-guard is now emulator-verified), unit (Vitest) PASS, E2E (Playwright) PASS, build PASS, lint PASS, CodeQL/UI-audit/GitGuardian PASS. Container image **built + pushed to Artifact Registry**: `us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:feed70b`.
+
+**NOT live yet — two manual, auth-gated production steps remain (the pipeline intentionally makes deploy manual):**
+1. **Cloud Run deploy** — gcloud token is EXPIRED (`rob.brasco@priorityautomotive.com` needs interactive `gcloud auth login`; can't run non-interactively). Then: `gcloud run deploy pre-order-dealer-exchange-tracker --image=us-west1-docker.pkg.dev/gen-lang-client-0615287333/vehicle-in-need/pre-order-dealer-exchange-tracker:feed70b --region=us-west1` (+ existing service flags).
+2. **Firestore rules deploy** — `firebase deploy --only firestore:rules` (the L4 `securedVehicleInfo` owner-guard; now CI-verified, but the app works without it — managers write the field via the unrestricted manager path).
+3. **Login live glance** — the graphite login card is build+code-verified (firebase-gated from the harness).
+
+Deferred Rob decisions still open: full "secured = reserved (never recycle)" vs the shipped keep-history; tie-break secondary rule (currently order-date only).
 
 ---
 
