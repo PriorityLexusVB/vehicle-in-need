@@ -57,6 +57,11 @@ export interface Order {
   linkedAt?: Timestamp;              // When the link was created
   linkedByUid?: string;              // Manager who created the link
 
+  // Historical record of which allocation vehicle fulfilled a SECURED order.
+  // Set when the order is secured (the live vehicle_links slot is still freed);
+  // preserves "who got which car" after the deal closes. Read-only in the UI.
+  securedVehicleInfo?: string;
+
   // Dealer Exchange additional fields (optional, for DX pipeline tracking)
   dxDealerName?: string;             // Trading dealer name
   dxExpectedArrival?: string;        // Expected arrival date

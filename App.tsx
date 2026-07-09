@@ -45,6 +45,7 @@ import { UploadIcon } from "./components/icons/UploadIcon";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { subscribeLatestAllocationSnapshot } from "./services/allocationService";
 import { AllocationSnapshot } from "./src/utils/allocationTypes";
+import { buildModelSlotTotals, type ModelSlotTotals } from "./src/utils/allocationModelTotals";
 import { computeOrderMatchSummaries, OrderMatchSummary } from "./src/utils/orderMatchSummary";
 import { fetchDxSheet, DxTrade } from "./src/utils/dxSheetParser";
 import {
@@ -329,6 +330,10 @@ const App: React.FC = () => {
         setOrders([]);
         setAllUsers([]);
         setPermissionError(null);
+        // Clear manager-only allocation/DX state so it can't leak into a
+        // rep's surfaces after a same-session account switch.
+        setAllocationSnapshot(null);
+        setDxTrades([]);
         setStats({
           totalActive: 0,
           awaitingAction: 0,
@@ -541,6 +546,13 @@ const App: React.FC = () => {
       void fetchDxSheet()
         .then((trades) => { if (!dxCancelled) setDxTrades(trades); })
         .catch(() => { /* DX fetch failure is non-critical */ });
+    } else {
+      // Non-manager (incl. a manager→rep same-session switch): clear any
+      // allocation/DX state left over from a prior manager session so the
+      // order-card availability chip / match badges never render manager-only
+      // allocation data on a rep's cards.
+      setAllocationSnapshot(null);
+      setDxTrades([]);
     }
 
     return () => {
@@ -922,16 +934,32 @@ const App: React.FC = () => {
     return computeOrderMatchSummaries(orders, vehicles, dxTrades);
   }, [orders, allocationSnapshot, dxTrades]);
 
-  const linkedVehicleIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (const order of orders) {
-      if (order.allocatedVehicleId) ids.add(order.allocatedVehicleId);
-    }
-    for (const vehicleId of linksByVehicleId.keys()) {
-      ids.add(vehicleId);
-    }
-    return ids;
-  }, [orders, linksByVehicleId]);
+  // Single source of truth for "is this car claimed?" — the vehicle_links
+  // collection ONLY. (Previously this also unioned order.allocatedVehicleId,
+  // which let a stale order field with no matching vehicle_links doc falsely
+  // mark a car taken and disagree with the allocation board, which always used
+  // pure vehicle_links. The "car taken" set now matches the board everywhere.
+  // NB: an orphan order's OWN card still shows its stale allocatedVehicleId as
+  // "Linked Vehicle" — pre-existing, and clearable via its Unlink button.)
+  const linkedVehicleIds = useMemo(
+    () => new Set(linksByVehicleId.keys()),
+    [linksByVehicleId],
+  );
+
+  // Per-model slot totals for the dashboard strip — same pure claim set as the
+  // Allocation board's model-total pills.
+  const modelSlotTotals = useMemo<ModelSlotTotals[]>(
+    () =>
+      buildModelSlotTotals(allocationSnapshot?.vehicles ?? [], linkedVehicleIds),
+    [allocationSnapshot, linkedVehicleIds],
+  );
+
+  // Keyed by model for order-card lookup (order → matchedAllocModels → totals).
+  // Same pure-claim totals as the dashboard strip and board pills.
+  const modelSlotTotalsByModel = useMemo(
+    () => new Map(modelSlotTotals.map((total) => [total.model, total] as const)),
+    [modelSlotTotals],
+  );
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -942,7 +970,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f6f1ea] font-sans text-stone-900">
+    <div className="min-h-screen bg-canvas font-sans text-stone-900">
       {needRefresh && (
         <div className="bg-stone-950 text-white py-3 px-4 flex items-center justify-between shadow-lg">
           <span className="text-sm font-medium">
@@ -1014,7 +1042,7 @@ const App: React.FC = () => {
             element={
               user.isManager ? (
                 <div>
-                  <DashboardStats {...stats} />
+                  <DashboardStats {...stats} modelTotals={modelSlotTotals} />
                   <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div>
                       <p className="text-xs font-bold uppercase text-amber-700">
@@ -1107,6 +1135,7 @@ const App: React.FC = () => {
                     orderMatchSummaries={orderMatchSummaries}
                     allocationVehicles={allocationSnapshot?.vehicles ?? []}
                     linkedVehicleIds={linkedVehicleIds}
+                    modelSlotTotalsByModel={modelSlotTotalsByModel}
                   />
                 </div>
               ) : (
@@ -1156,6 +1185,7 @@ const App: React.FC = () => {
                       orderMatchSummaries={orderMatchSummaries}
                       allocationVehicles={allocationSnapshot?.vehicles ?? []}
                       linkedVehicleIds={linkedVehicleIds}
+                      modelSlotTotalsByModel={modelSlotTotalsByModel}
                     />
                   </div>
                 </div>

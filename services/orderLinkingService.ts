@@ -49,10 +49,11 @@ async function readOrderLinkState(
 
   const currentData = orderSnap.data();
   const vehicleId: string | undefined = currentData.allocatedVehicleId;
+  const allocatedVehicleInfo: string | undefined = currentData.allocatedVehicleInfo;
   const vehicleLinkRef = vehicleId ? doc(db, VEHICLE_LINKS_COLLECTION, vehicleId) : null;
   const vehicleLinkSnap = vehicleLinkRef ? await transaction.get(vehicleLinkRef) : null;
 
-  return { vehicleId, vehicleLinkRef, vehicleLinkSnap };
+  return { vehicleId, allocatedVehicleInfo, vehicleLinkRef, vehicleLinkSnap };
 }
 
 function deleteMatchingVehicleLink(
@@ -212,12 +213,16 @@ export async function releaseVehicleAndUpdateOrderStatus(
   const orderRef = doc(db, ORDERS_COLLECTION, orderId);
 
   await runTransaction(db, async (transaction) => {
-    const { vehicleId, vehicleLinkRef, vehicleLinkSnap } =
+    const { vehicleId, allocatedVehicleInfo, vehicleLinkRef, vehicleLinkSnap } =
       await readOrderLinkState(transaction, orderRef);
 
     transaction.update(orderRef, {
       status,
       ...clearedVehicleLinkFields(),
+      // Preserve which car fulfilled the deal (history) even though the live
+      // allocation slot is freed. Always set-or-clear so re-securing an order
+      // reflects its CURRENT linked car (or none) — never stale history.
+      securedVehicleInfo: allocatedVehicleInfo ?? deleteField(),
     });
     deleteMatchingVehicleLink(transaction, vehicleId, vehicleLinkRef, vehicleLinkSnap, orderId);
   });

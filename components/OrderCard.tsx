@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Order, OrderStatus, AppUser } from "../types";
 import MatchPreviewModal from "./MatchPreviewModal";
-import { ACTIVE_STATUS_OPTIONS, isSecuredStatus } from "../constants";
+import { ACTIVE_STATUS_OPTIONS, isSecuredStatus, isAllocationLinkable } from "../constants";
 import { ChevronDownIcon } from "./icons/ChevronDownIcon";
 import StatusBadge from "./StatusBadge";
 import { TrashIcon } from "./icons/TrashIcon";
@@ -17,6 +17,7 @@ import { linkVehicleToOrder, unlinkVehicleFromOrder } from "../services/orderLin
 import { OrderMatchSummary } from "../src/utils/orderMatchSummary";
 import VehicleLinkSelector from "./VehicleLinkSelector";
 import { AllocationVehicle } from "../src/utils/allocationTypes";
+import type { ModelSlotTotals } from "../src/utils/allocationModelTotals";
 
 interface OrderCardProps {
   order: Order;
@@ -31,6 +32,7 @@ interface OrderCardProps {
   matchSummary?: OrderMatchSummary;
   allocationVehicles?: AllocationVehicle[];
   linkedVehicleIds?: Set<string>;
+  modelSlotTotalsByModel?: Map<string, ModelSlotTotals>;
 }
 
 const DetailItem: React.FC<{ label: string; children: React.ReactNode }> = ({
@@ -55,6 +57,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
   matchSummary,
   allocationVehicles,
   linkedVehicleIds,
+  modelSlotTotalsByModel,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showUnsecureConfirm, setShowUnsecureConfirm] = useState(false);
@@ -75,6 +78,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
   }, [highlighted]);
   const [isSaving, setIsSaving] = useState(false);
   const [isUnlinking, setIsUnlinking] = useState(false);
+  const [showUnlinkConfirm, setShowUnlinkConfirm] = useState(false);
   const [showMatchPreview, setShowMatchPreview] = useState(false);
 
   const handleUnlinkVehicle = async () => {
@@ -373,7 +377,12 @@ const OrderCard: React.FC<OrderCardProps> = ({
       <button
         type="button"
         className="w-full cursor-pointer rounded-lg p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 focus-visible:ring-offset-2"
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={() => {
+          setIsExpanded(!isExpanded);
+          // Disarm a pending unlink confirmation when the card collapses so it
+          // never reopens showing a primed "Confirm".
+          setShowUnlinkConfirm(false);
+        }}
         aria-label="Toggle order details"
         aria-expanded={isExpanded}
       >
@@ -445,6 +454,27 @@ const OrderCard: React.FC<OrderCardProps> = ({
                     <span>→</span>
                   </button>
                 );
+              })()}
+              {modelSlotTotalsByModel && matchSummary && !order.allocatedVehicleId && matchSummary.matchedAllocModels.size > 0 && (() => {
+                // Availability for the customer's matched allocation model(s) —
+                // complements the color-match badge above. Uses the same pure
+                // vehicle_links totals as the board pills / dashboard strip.
+                const rows = Array.from(matchSummary.matchedAllocModels)
+                  .map((model) => modelSlotTotalsByModel.get(model))
+                  .filter((total): total is ModelSlotTotals => Boolean(total));
+                if (rows.length === 0) return null;
+                return rows.map((total) => (
+                  <span
+                    key={total.model}
+                    data-testid="order-card-availability"
+                    className="inline-flex items-center gap-1 rounded-full border border-stone-200 bg-stone-50 px-2.5 py-0.5 text-xs font-semibold text-stone-600"
+                    title={`${total.model} allocation — ${total.totalSlots} total, ${total.availableSlots} open, ${total.linkedSlots} linked`}
+                  >
+                    {total.model}: <span className="text-stone-900">{total.availableSlots} open</span>
+                    <span className="text-stone-300">/</span>
+                    {total.totalSlots} total
+                  </span>
+                ));
               })()}
             </div>
           </div>
@@ -596,21 +626,52 @@ const OrderCard: React.FC<OrderCardProps> = ({
                     </div>
                   </div>
                   {currentUser?.isManager && (
-                    <button
-                      onClick={() => void handleUnlinkVehicle()}
-                      disabled={isUnlinking}
-                      className="shrink-0 rounded-lg bg-white px-4 py-2.5 text-xs font-semibold text-red-600 shadow-sm hover:bg-red-50 transition-colors disabled:opacity-50"
-                    >
-                      {isUnlinking ? "Unlinking..." : "Unlink"}
-                    </button>
+                    !showUnlinkConfirm ? (
+                      <button
+                        onClick={() => setShowUnlinkConfirm(true)}
+                        disabled={isUnlinking}
+                        className="shrink-0 rounded-lg bg-white px-4 py-2.5 text-xs font-semibold text-red-600 shadow-sm hover:bg-red-50 transition-colors disabled:opacity-50"
+                      >
+                        {isUnlinking ? "Unlinking..." : "Unlink"}
+                      </button>
+                    ) : (
+                      <div className="flex shrink-0 items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setShowUnlinkConfirm(false);
+                            void handleUnlinkVehicle();
+                          }}
+                          disabled={isUnlinking}
+                          className="rounded-lg bg-red-600 px-3 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-red-700 transition-colors disabled:opacity-50"
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          onClick={() => setShowUnlinkConfirm(false)}
+                          className="rounded-lg bg-white px-3 py-2.5 text-xs font-semibold text-stone-600 shadow-sm hover:bg-stone-50 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )
                   )}
                 </div>
               </div>
             )}
 
-            {order.status === OrderStatus.FactoryOrder &&
+            {isSecured && order.securedVehicleInfo && (
+              <div className="mb-4 rounded-lg border border-stone-200 bg-stone-50 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">
+                  Delivered vehicle
+                </p>
+                <p className="text-sm font-medium text-stone-700">
+                  {order.securedVehicleInfo}
+                </p>
+              </div>
+            )}
+
+            {isAllocationLinkable(order.status) &&
               currentUser?.isManager &&
-              !isSecured &&
               !order.allocatedVehicleId &&
               allocationVehicles &&
               allocationVehicles.length > 0 && (

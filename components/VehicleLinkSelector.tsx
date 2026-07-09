@@ -82,17 +82,17 @@ export default function VehicleLinkSelector({
         // Model match
         if (vCode === orderModel || vModel.includes(orderModel) || orderModel.includes(vCode)) {
           score += 100;
-          matchReason = "Model match";
+          matchReason = "Model only";
         }
 
-        // Color match using the existing color reference system
+        // Color match using the existing color reference system — the color
+        // tier (Exact color / Close color) supersedes the plain "Model only".
         if (orderColors.length > 0 && v.color) {
           for (let i = 0; i < orderColors.length; i++) {
             const colorMatch = matchExteriorColors(orderColors[i], v.color);
             if (colorMatch) {
               score += (3 - i) * 20; // First choice = 60, second = 40, third = 20
-              matchReason += (matchReason ? " + " : "") +
-                `Color ${i + 1}${colorMatch === "partial" ? " (close)" : ""}`;
+              matchReason = colorMatch === "partial" ? "Close color" : "Exact color";
               break;
             }
           }
@@ -241,7 +241,7 @@ export default function VehicleLinkSelector({
             {alreadyLinked.length > 0 && (
               <div>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-300">
-                  Linked to Another Customer
+                  Taken
                 </p>
                 {alreadyLinked.map((s) => (
                   <VehicleRow key={s.vehicleId} scored={s} disabled />

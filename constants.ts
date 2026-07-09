@@ -61,6 +61,16 @@ export function isActiveStatus(status: OrderStatus): boolean {
   return !isSecuredStatus(status);
 }
 
+/**
+ * Whether an order is eligible to be linked to a factory-allocation vehicle:
+ * active (not secured) AND not a Dealer Exchange (DX cars come from a dealer
+ * trade, not factory allocation). The order-card link sheet and the allocation
+ * board both use this so the two surfaces agree on what's linkable.
+ */
+export function isAllocationLinkable(status: OrderStatus): boolean {
+  return isActiveStatus(status) && status !== OrderStatus.DealerExchange;
+}
+
 // A list of known manager emails for INFORMATIONAL LOGGING ONLY.
 // All emails should be lowercase and use the @priorityautomotive.com domain.
 // 

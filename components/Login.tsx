@@ -350,17 +350,17 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f6f1ea] px-4 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-canvas px-4 py-8">
       <div className="w-full max-w-md">
-        <div className="rounded-lg border border-stone-200 bg-white/95 p-6 text-center shadow-xl shadow-stone-300/30 sm:p-8">
+        <div className="rounded-lg border border-white/10 bg-graphite p-6 text-center shadow-xl shadow-black/30 sm:p-8">
           <div className="mb-7">
-            <p className="text-xs font-semibold text-amber-700">
+            <p className="text-xs font-semibold uppercase tracking-wide text-platinum">
               Priority Lexus Virginia Beach
             </p>
-            <h1 className="mt-2 text-2xl font-bold text-stone-950 sm:text-3xl">
+            <h1 className="mt-2 text-2xl font-bold text-white sm:text-3xl">
               Vehicle Order Tracker
             </h1>
-            <p className="mt-3 text-sm text-stone-600 sm:text-base">
+            <p className="mt-3 text-sm text-stone-300 sm:text-base">
               Please sign in with your company Google account.
             </p>
           </div>
@@ -371,12 +371,12 @@ const Login: React.FC = () => {
             onClick={handleLogin}
             disabled={isSigningIn}
             aria-busy={isSigningIn}
-            className="flex w-full items-center justify-center gap-3 rounded-lg border border-stone-300 bg-white px-4 py-3 font-semibold text-stone-800 shadow-sm transition-colors duration-200 hover:border-amber-300 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-3 rounded-lg border border-transparent bg-white px-4 py-3 font-semibold text-stone-800 shadow-sm transition-colors duration-200 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <GoogleIcon />
             {isSigningIn ? "Processing sign-in..." : "Sign in with Google"}
           </button>
-          <p className="mt-5 rounded-md bg-stone-950 px-3 py-2 text-xs font-medium text-stone-100">
+          <p className="mt-5 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-stone-300">
             Access is restricted to @priorityautomotive.com accounts.
           </p>
         </div>

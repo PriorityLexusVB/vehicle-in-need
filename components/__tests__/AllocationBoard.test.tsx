@@ -160,6 +160,59 @@ describe('AllocationBoard', () => {
     expect(screen.getByText('Full Log View')).toBeInTheDocument();
   });
 
+  it('renders the powertrain control (EV hidden when no EV), model-total pills, and Sort: Powertrain', async () => {
+    renderBoard({ currentUser: consultantUser });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('allocation-strategy-view')).toBeInTheDocument();
+    });
+
+    // Segmented control: All / Electrified / Hybrid / Plug-in — EV gated off
+    // because the sample snapshot (TX500H hybrid + RX350 gas) has no EV.
+    expect(screen.getByRole('button', { name: 'Electrified' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Hybrid' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Plug-in' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'EV' })).toBeNull();
+
+    // Sort dropdown gained the powertrain option.
+    expect(screen.getByRole('option', { name: 'Sort: Powertrain' })).toBeInTheDocument();
+
+    // Two models → two model-total pill groups, each showing "1 total".
+    const pillGroups = screen.getAllByTestId('model-total-pills');
+    expect(pillGroups).toHaveLength(2);
+    pillGroups.forEach((group) => {
+      expect(within(group).getByText('1 total')).toBeInTheDocument();
+    });
+  });
+
+  it('powertrain filter narrows the visible cards (Hybrid keeps only the hybrid model)', async () => {
+    const user = userEvent.setup();
+    renderBoard({ currentUser: consultantUser });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('allocation-strategy-view')).toBeInTheDocument();
+    });
+    expect(screen.getAllByTestId('model-total-pills')).toHaveLength(2);
+
+    // Hybrid → only TX500H (Hybrid) survives; RX350 (Gas) is filtered out.
+    await user.click(screen.getByRole('button', { name: 'Hybrid' }));
+    await waitFor(() => {
+      expect(screen.getAllByTestId('model-total-pills')).toHaveLength(1);
+    });
+
+    // Plug-in → neither model qualifies → no strategy cards.
+    await user.click(screen.getByRole('button', { name: 'Plug-in' }));
+    await waitFor(() => {
+      expect(screen.queryAllByTestId('model-total-pills')).toHaveLength(0);
+    });
+
+    // Electrified umbrella → the hybrid returns.
+    await user.click(screen.getByRole('button', { name: 'Electrified' }));
+    await waitFor(() => {
+      expect(screen.getAllByTestId('model-total-pills')).toHaveLength(1);
+    });
+  });
+
   it('shows collapsible manager panel for managers', async () => {
     renderBoard({ currentUser: managerUser });
     const user = userEvent.setup();
@@ -724,8 +777,8 @@ describe('AllocationBoard', () => {
       renderBoard({ currentUser: managerUser });
 
       await waitFor(() => {
-        // Partial matches should appear in the "Similar Color" section
-        expect(screen.getAllByText(/Similar Color/).length).toBeGreaterThan(0);
+        // Partial matches should appear in the "Close color" section
+        expect(screen.getAllByText(/Close color/).length).toBeGreaterThan(0);
       });
     });
 
@@ -825,7 +878,7 @@ describe('AllocationBoard', () => {
 
       await waitFor(() => {
         expect(screen.getByText('John Smith')).toBeInTheDocument();
-        expect(screen.getByText('Vehicle Taken')).toBeInTheDocument();
+        expect(screen.getByText('Taken')).toBeInTheDocument();
       });
       expect(screen.queryByRole('button', { name: 'Link John Smith to this vehicle' })).toBeNull();
       expect(linkVehicleToOrder).not.toHaveBeenCalled();

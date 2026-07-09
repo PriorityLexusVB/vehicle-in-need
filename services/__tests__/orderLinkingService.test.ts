@@ -115,6 +115,41 @@ describe("orderLinkingService", () => {
       allocatedVehicleInfo: "__deleteField__",
       linkedAt: "__deleteField__",
       linkedByUid: "__deleteField__",
+      // No vehicle was linked → securedVehicleInfo is cleared, not stale.
+      securedVehicleInfo: "__deleteField__",
+    });
+  });
+
+  it("preserves the linked vehicle as securedVehicleInfo history when securing", async () => {
+    const updatePayloads: Record<string, unknown>[] = [];
+
+    firestoreMocks.runTransaction.mockImplementation(async (_db: unknown, callback: (transaction: unknown) => Promise<void>) => {
+      const transaction = {
+        get: vi.fn(async (ref: { path: string }) => {
+          if (ref.path === "orders/order-1") {
+            return snapshot({
+              allocatedVehicleId: "vehicle-1",
+              allocatedVehicleInfo: "RX 350 - Eminent White",
+            });
+          }
+          return snapshot({ orderId: "order-1" });
+        }),
+        update: vi.fn((_ref: { path: string }, payload: Record<string, unknown>) => {
+          updatePayloads.push(payload);
+        }),
+        delete: vi.fn(),
+      };
+
+      await callback(transaction);
+    });
+
+    await releaseVehicleAndUpdateOrderStatus("order-1", OrderStatus.Delivered);
+
+    // Live link fields cleared, but the car is preserved as history.
+    expect(updatePayloads[0]).toMatchObject({
+      status: OrderStatus.Delivered,
+      allocatedVehicleInfo: "__deleteField__",
+      securedVehicleInfo: "RX 350 - Eminent White",
     });
   });
 

@@ -3,6 +3,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import OrderList from "../OrderList";
 import { Order, OrderStatus, AppUser } from "../../types";
+import type { OrderMatchSummary } from "../../src/utils/orderMatchSummary";
+import type { ModelSlotTotals } from "../../src/utils/allocationModelTotals";
 
 describe("OrderList", () => {
   const mockManagerUser: AppUser = {
@@ -57,6 +59,41 @@ describe("OrderList", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("shows allocation availability for a matched active order", () => {
+    const matchSummaries = new Map<string, OrderMatchSummary>([
+      [
+        "1",
+        {
+          exactCount: 1,
+          partialCount: 0,
+          modelOnlyCount: 0,
+          dxExactCount: 0,
+          dxPartialCount: 0,
+          dxModelOnlyCount: 0,
+          matchedAllocModels: new Set(["RX350"]),
+        },
+      ],
+    ]);
+    const modelSlotTotalsByModel = new Map<string, ModelSlotTotals>([
+      ["RX350", { model: "RX350", totalSlots: 8, linkedSlots: 2, availableSlots: 6 }],
+    ]);
+    render(
+      <OrderList
+        orders={mockOrders}
+        onUpdateStatus={mockOnUpdateStatus}
+        onUpdateOrderDetails={mockOnUpdateOrderDetails}
+        onDeleteOrder={mockOnDeleteOrder}
+        currentUser={mockManagerUser}
+        orderMatchSummaries={matchSummaries}
+        modelSlotTotalsByModel={modelSlotTotalsByModel}
+      />,
+    );
+    const availability = screen.getByTestId("order-card-availability");
+    expect(availability).toHaveTextContent("RX350");
+    expect(availability).toHaveTextContent("6 open");
+    expect(availability).toHaveTextContent("8 total");
   });
 
   it("renders list of orders", () => {

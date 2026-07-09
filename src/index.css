@@ -1,6 +1,42 @@
 /* Tailwind CSS v4 - Uses @import instead of @tailwind directives */
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+   Luxury redesign — theme primitives (Slice 1)
+
+   Semantic palette tokens so the redesign has a single source of truth instead
+   of scattered warm literals. Tailwind v4 emits matching utilities from these
+   (`bg-canvas`, `text-graphite`, `bg-platinum`, `border-platinum`, ...).
+
+   Direction (locked by product):
+     - Light, COOL operational canvas (no cream / tan / sand).
+     - Dark GRAPHITE focal surfaces for vehicle / order cards.
+     - PLATINUM is the normal premium accent. Gold is NOT a default accent.
+
+   Slice 1 wires `--color-canvas` into the app/login/loading shell. The graphite
+   and platinum tokens are defined here as the vocabulary later slices migrate
+   the card/accent surfaces onto; they are intentionally not yet mass-applied.
+--------------------------------------------------------------------------- */
+@theme {
+  /* Operational canvas — clean platinum/smoke neutral, replaces the warm
+     #f6f1ea cream shell. Value per redesign plan (closer to #EEF2F6 than beige). */
+  --color-canvas: #eef2f6;
+  --color-canvas-elevated: #f8fafc;
+
+  /* Focal graphite surfaces (header + high-signal vehicle/order cards) — warm
+     showroom near-black, NOT cool navy. Base is the plan's #0e1418. Elevated is
+     WARM #1a1815 (not the plan's #162033) — that value reads as navy and the
+     sister Sales Tracker app already killed it for the same reason
+     (afa66a51: #162033 → #1A1815). Plan line 45 explicitly says warm-not-navy. */
+  --color-graphite: #0e1418;
+  --color-graphite-elevated: #1a1815;
+
+  /* Platinum — the default prestige accent (active nav, selected filters,
+     model-total pills, dividers). Gold is NOT a default accent. */
+  --color-platinum: #cbd0d8;
+  --color-platinum-strong: #aab2bd;
+}
+
 /* @source directives tell Tailwind where to find classes to generate
    Paths are relative to this CSS file (src/index.css)
    Using specific paths to avoid scanning node_modules and build artifacts */

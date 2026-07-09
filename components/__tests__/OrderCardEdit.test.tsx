@@ -8,6 +8,12 @@ vi.mock("../OrderNotes", () => ({
   default: () => null,
 }));
 
+const linkMocks = vi.hoisted(() => ({
+  linkVehicleToOrder: vi.fn(),
+  unlinkVehicleFromOrder: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("../../services/orderLinkingService", () => linkMocks);
+
 describe("OrderCard manager edit", () => {
   const mockManagerUser: AppUser = {
     uid: "manager-123",
@@ -43,6 +49,56 @@ describe("OrderCard manager edit", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("requires a two-step confirm to unlink a vehicle", async () => {
+    const user = userEvent.setup();
+    const linkedOrder: Order = {
+      ...baseOrder,
+      allocatedVehicleId: "RX350-001",
+      allocatedVehicleInfo: "RX 350 - Eminent White",
+    };
+
+    render(
+      <OrderCard
+        order={linkedOrder}
+        onUpdateStatus={mockOnUpdateStatus}
+        onUpdateOrderDetails={mockOnUpdateOrderDetails}
+        onDeleteOrder={mockOnDeleteOrder}
+        currentUser={mockManagerUser}
+      />,
+    );
+
+    // Expand the card so the linked-vehicle block (with Unlink) is visible.
+    await user.click(
+      screen.getByRole("button", { name: /toggle order details/i }),
+    );
+
+    // First click reveals a confirm step; it does NOT unlink immediately.
+    await user.click(screen.getByRole("button", { name: "Unlink" }));
+    expect(linkMocks.unlinkVehicleFromOrder).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Confirm" })).toBeInTheDocument();
+
+    // Collapsing the card disarms the confirm (no stale "Confirm" on reopen).
+    const toggle = () =>
+      user.click(screen.getByRole("button", { name: /toggle order details/i }));
+    await toggle(); // collapse
+    await toggle(); // reopen
+    expect(screen.queryByRole("button", { name: "Confirm" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Unlink" })).toBeInTheDocument();
+
+    // Cancel aborts without unlinking.
+    await user.click(screen.getByRole("button", { name: "Unlink" }));
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.getByRole("button", { name: "Unlink" })).toBeInTheDocument();
+    expect(linkMocks.unlinkVehicleFromOrder).not.toHaveBeenCalled();
+
+    // Confirm actually unlinks.
+    await user.click(screen.getByRole("button", { name: "Unlink" }));
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
+    await waitFor(() => {
+      expect(linkMocks.unlinkVehicleFromOrder).toHaveBeenCalled();
+    });
   });
 
   it("shows Edit for managers on active orders and saves updates", async () => {

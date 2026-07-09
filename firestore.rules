@@ -265,6 +265,8 @@ service cloud.firestore {
         && (!('linkedAt' in request.resource.data) || ('linkedAt' in resource.data))
         && (!('linkedByUid' in resource.data) || request.resource.data.linkedByUid == resource.data.linkedByUid)
         && (!('linkedByUid' in request.resource.data) || ('linkedByUid' in resource.data))
+        && (!('securedVehicleInfo' in resource.data) || request.resource.data.securedVehicleInfo == resource.data.securedVehicleInfo)
+        && (!('securedVehicleInfo' in request.resource.data) || ('securedVehicleInfo' in resource.data))
         && (!('latestNoteText' in resource.data) || request.resource.data.latestNoteText == resource.data.latestNoteText)
         && (!('latestNoteText' in request.resource.data) || ('latestNoteText' in resource.data))
         && (!('latestNoteByName' in resource.data) || request.resource.data.latestNoteByName == resource.data.latestNoteByName)

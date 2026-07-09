@@ -20,7 +20,14 @@ jobs:
         with:
           node-version: "22"
           cache: "npm"
-      
+
+      # firebase-tools requires a JDK >= 21 to run the Firestore emulator; the
+      # ubuntu-latest default JDK is older, so the emulator failed to start.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
       - name: Cache Firebase Emulators
         uses: actions/cache@v4
         with:
