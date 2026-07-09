@@ -659,6 +659,17 @@ const OrderCard: React.FC<OrderCardProps> = ({
               </div>
             )}
 
+            {isSecured && order.securedVehicleInfo && (
+              <div className="mb-4 rounded-lg border border-stone-200 bg-stone-50 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">
+                  Delivered vehicle
+                </p>
+                <p className="text-sm font-medium text-stone-700">
+                  {order.securedVehicleInfo}
+                </p>
+              </div>
+            )}
+
             {isAllocationLinkable(order.status) &&
               currentUser?.isManager &&
               !order.allocatedVehicleId &&

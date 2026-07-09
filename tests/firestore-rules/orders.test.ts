@@ -308,6 +308,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
           unsecuredReminderLastEmail: 'user@example.com',
           newOrderNotificationSentAt: new Date('2026-07-07T12:05:00Z'),
           newOrderNotificationRecipientEmails: ['manager@priorityautomotive.com'],
+          securedVehicleInfo: 'RX 350 - Eminent White',
         });
       });
     });
@@ -380,6 +381,20 @@ describe('Firestore Security Rules - Orders Collection', () => {
           newOrderNotificationRecipientEmails: ['owner@priorityautomotive.com'],
           lastUnsecuredReminderAt: new Date('2030-01-01T12:00:00Z'),
           unsecuredReminderCount: 99,
+        })
+      );
+    });
+
+    it('should deny owner changing securedVehicleInfo (manager-only delivered-car history)', async () => {
+      const userId = 'user123';
+      const userDb = testEnv
+        .authenticatedContext(userId, { email: 'user@example.com' })
+        .firestore();
+      const orderRef = doc(userDb, 'orders', 'order123');
+
+      await assertFails(
+        updateDoc(orderRef, {
+          securedVehicleInfo: 'Tampered - Different Car',
         })
       );
     });
