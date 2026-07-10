@@ -434,7 +434,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                   Vehicle Linked
                 </span>
               )}
-              {matchSummary && !order.allocatedVehicleId && (matchSummary.exactCount > 0 || matchSummary.partialCount > 0 || matchSummary.dxExactCount > 0 || matchSummary.dxPartialCount > 0) && (() => {
+              {matchSummary && isAllocationLinkable(order.status) && !order.allocatedVehicleId && (matchSummary.exactCount > 0 || matchSummary.partialCount > 0 || matchSummary.dxExactCount > 0 || matchSummary.dxPartialCount > 0) && (() => {
                 const allocParts: string[] = [];
                 if (matchSummary.exactCount > 0) allocParts.push(`${matchSummary.exactCount} exact`);
                 if (matchSummary.partialCount > 0) allocParts.push(`${matchSummary.partialCount} close`);
@@ -455,7 +455,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                   </button>
                 );
               })()}
-              {modelSlotTotalsByModel && matchSummary && !order.allocatedVehicleId && matchSummary.matchedAllocModels.size > 0 && (() => {
+              {modelSlotTotalsByModel && matchSummary && isAllocationLinkable(order.status) && !order.allocatedVehicleId && matchSummary.matchedAllocModels.size > 0 && (() => {
                 // Availability for the customer's matched allocation model(s) —
                 // complements the color-match badge above. Uses the same pure
                 // vehicle_links totals as the board pills / dashboard strip.

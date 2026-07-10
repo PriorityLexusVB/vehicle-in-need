@@ -115,7 +115,8 @@ describe("orderLinkingService", () => {
       allocatedVehicleInfo: "__deleteField__",
       linkedAt: "__deleteField__",
       linkedByUid: "__deleteField__",
-      // No vehicle was linked → securedVehicleInfo is cleared, not stale.
+      // No readable vehicle info → securedVehicleInfo is cleared (we do not fall
+      // back to the raw, possibly-stale allocatedVehicleId).
       securedVehicleInfo: "__deleteField__",
     });
   });

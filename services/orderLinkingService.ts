@@ -221,7 +221,10 @@ export async function releaseVehicleAndUpdateOrderStatus(
       ...clearedVehicleLinkFields(),
       // Preserve which car fulfilled the deal (history) even though the live
       // allocation slot is freed. Always set-or-clear so re-securing an order
-      // reflects its CURRENT linked car (or none) — never stale history.
+      // reflects its CURRENT linked car (or none) — never stale history. Only
+      // the human-readable info is recorded; we deliberately do NOT fall back to
+      // the raw allocatedVehicleId, which could be a stale mirror pointing at a
+      // vehicle_links doc that no longer belongs to this order.
       securedVehicleInfo: allocatedVehicleInfo ?? deleteField(),
     });
     deleteMatchingVehicleLink(transaction, vehicleId, vehicleLinkRef, vehicleLinkSnap, orderId);
