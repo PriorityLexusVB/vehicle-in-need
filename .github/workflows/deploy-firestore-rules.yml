@@ -6,11 +6,13 @@ name: Deploy Firestore Rules
 # itself runs scripts/deploy-firestore-rules.py against the Firebase Rules REST
 # API with the CI service account's token.
 
+# NOTE: rules deploy to the `vehicles-in-need` Firebase project (where app data
+# lives), but this workflow's WIF auth is on the `gen-lang-client-0615287333`
+# infra project. Until the CI service account is granted firebaserules.admin on
+# `vehicles-in-need` (cross-project) OR WIF is set up on `vehicles-in-need`, this
+# is manual-dispatch only — the auto-on-push trigger is intentionally disabled so
+# it can't silently deploy to the wrong project or fail on every rules change.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "firestore.rules"
   workflow_dispatch: {}
 
 permissions:
