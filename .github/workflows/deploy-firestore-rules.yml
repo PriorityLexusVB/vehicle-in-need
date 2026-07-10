@@ -1,16 +1,18 @@
 name: Deploy Firestore Rules
 
-# Deploys firestore.rules to the live project whenever it changes on main
-# (gated upstream by the Firestore Rules Tests emulator check on the PR), or
-# on manual dispatch. Uses the same GCP auth as the container build; the deploy
-# itself runs scripts/deploy-firestore-rules.py against the Firebase Rules REST
-# API with the CI service account's token.
+# Manual-dispatch deploy of firestore.rules via scripts/deploy-firestore-rules.py
+# (Firebase Rules REST API, CI service-account token). NOTE: the Firestore Rules
+# Tests (rules-tests.yml) run on the PR but are NOT a hard `needs`/`workflow_run`
+# gate on this deploy — dispatch is a manual, human-reviewed step, so run it only
+# after the PR's rules-tests are green.
 
+# NOTE: rules deploy to the `vehicles-in-need` Firebase project (where app data
+# lives), but this workflow's WIF auth is on the `gen-lang-client-0615287333`
+# infra project. Until the CI service account is granted firebaserules.admin on
+# `vehicles-in-need` (cross-project) OR WIF is set up on `vehicles-in-need`, this
+# is manual-dispatch only — the auto-on-push trigger is intentionally disabled so
+# it can't silently deploy to the wrong project or fail on every rules change.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "firestore.rules"
   workflow_dispatch: {}
 
 permissions:

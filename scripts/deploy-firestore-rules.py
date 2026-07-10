@@ -17,7 +17,10 @@ import sys
 import urllib.error
 import urllib.request
 
-PROJECT = "gen-lang-client-0615287333"
+# The app's Firestore DATA lives in `vehicles-in-need` (services/firebase.ts,
+# .firebaserc default) — NOT the Cloud Run infra project. Firestore rules are
+# enforced per-project, so rules MUST deploy here to protect live order data.
+PROJECT = "vehicles-in-need"
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RULES_PATH = os.path.join(REPO, "firestore.rules")
 BASE = f"https://firebaserules.googleapis.com/v1/projects/{PROJECT}"

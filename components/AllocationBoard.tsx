@@ -136,11 +136,18 @@ function matchScore(m: MatchedOrder): number {
 }
 
 /** Sort matched orders: best color match first, then oldest deposit (longest waiting). */
+function orderDateMs(value: string): number {
+  const t = new Date((value || "").trim()).getTime();
+  return Number.isNaN(t) ? Infinity : t; // undated/invalid sort last
+}
+
 function sortMatchedOrders(matches: MatchedOrder[]): MatchedOrder[] {
   return [...matches].sort((a, b) => {
     const scoreDiff = matchScore(b) - matchScore(a);
     if (scoreDiff !== 0) return scoreDiff;
-    return a.orderDate.localeCompare(b.orderDate);
+    // Oldest order first — compare parsed timestamps (not string localeCompare)
+    // so a valid non-ISO legacy date can't mis-order the row.
+    return orderDateMs(a.orderDate) - orderDateMs(b.orderDate);
   });
 }
 
@@ -1546,7 +1553,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
       const firstInLineOrderId =
         datedMatches.length > 1
           ? datedMatches.reduce((oldest, m) =>
-              m.orderDate.trim().localeCompare(oldest.orderDate.trim()) < 0 ? m : oldest,
+              // Parsed-timestamp compare (see orderDateMs) — never string sort.
+              orderDateMs(m.orderDate) < orderDateMs(oldest.orderDate) ? m : oldest,
             ).orderId
           : null;
 
