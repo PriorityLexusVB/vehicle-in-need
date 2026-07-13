@@ -53,7 +53,17 @@ def api(method, url, tok, body=None):
     req = urllib.request.Request(
         url, data=data, method=method,
         headers={"Authorization": f"Bearer {tok}",
-                 "Content-Type": "application/json"},
+                 "Content-Type": "application/json",
+                 # User OAuth tokens (local `gcloud auth login`) MUST name a
+                 # quota/billing project for firebaserules.googleapis.com, or
+                 # Google attributes the call to the shared CLI project
+                 # (32555940559, where the API is disabled) -> 403 SERVICE_DISABLED.
+                 # The caller needs serviceusage.services.use on PROJECT
+                 # (owner/editor has it). This local user-cred path is the
+                 # supported deploy route; the CI workflow is dispatch-only and
+                 # its SA lives on the infra project, so it's cross-project-blocked
+                 # from vehicles-in-need regardless of this header.
+                 "x-goog-user-project": PROJECT},
     )
     try:
         with urllib.request.urlopen(req) as resp:
