@@ -1609,10 +1609,9 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
               <div
                 className="mt-2 flex flex-wrap items-center gap-1.5 text-xs"
                 data-testid="model-total-pills"
-                title={`${getVehicleModelKey(variant)} across this allocation: ${totals.totalSlots} total, ${totals.availableSlots} open, ${totals.linkedSlots} linked`}
+                title={`${getVehicleModelKey(variant)} across this allocation: ${totals.totalSlots} received, ${totals.linkedSlots} linked`}
               >
-                <span className="rounded-full bg-stone-100 px-2.5 py-1 font-semibold text-stone-700">{totals.totalSlots} total</span>
-                <span className="rounded-full bg-stone-100 px-2.5 py-1 font-semibold text-stone-600">{totals.availableSlots} open</span>
+                <span className="rounded-full bg-stone-100 px-2.5 py-1 font-semibold text-stone-700">{totals.totalSlots} received</span>
                 <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-700">{totals.linkedSlots} linked</span>
               </div>
             );

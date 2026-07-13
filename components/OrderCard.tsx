@@ -468,11 +468,11 @@ const OrderCard: React.FC<OrderCardProps> = ({
                     key={total.model}
                     data-testid="order-card-availability"
                     className="inline-flex items-center gap-1 rounded-full border border-stone-200 bg-stone-50 px-2.5 py-0.5 text-xs font-semibold text-stone-600"
-                    title={`${total.model} allocation — ${total.totalSlots} total, ${total.availableSlots} open, ${total.linkedSlots} linked`}
+                    title={`${total.model} allocation — ${total.totalSlots} received, ${total.availableSlots} available, ${total.linkedSlots} linked`}
                   >
-                    {total.model}: <span className="text-stone-900">{total.availableSlots} open</span>
+                    {total.model}: <span className="text-stone-900">{total.availableSlots} available</span>
                     <span className="text-stone-300">/</span>
-                    {total.totalSlots} total
+                    {total.totalSlots} received
                   </span>
                 ));
               })()}
