@@ -177,11 +177,13 @@ describe('AllocationBoard', () => {
     // Sort dropdown gained the powertrain option.
     expect(screen.getByRole('option', { name: 'Sort: Powertrain' })).toBeInTheDocument();
 
-    // Two models → two model-total pill groups, each showing "1 total".
+    // Two models → two model-total pill groups, each showing "1 received"
+    // (the confusing "open" pill was dropped).
     const pillGroups = screen.getAllByTestId('model-total-pills');
     expect(pillGroups).toHaveLength(2);
     pillGroups.forEach((group) => {
-      expect(within(group).getByText('1 total')).toBeInTheDocument();
+      expect(within(group).getByText('1 received')).toBeInTheDocument();
+      expect(within(group).queryByText(/open/i)).toBeNull();
     });
   });
 

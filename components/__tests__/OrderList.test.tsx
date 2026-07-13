@@ -92,8 +92,10 @@ describe("OrderList", () => {
     );
     const availability = screen.getByTestId("order-card-availability");
     expect(availability).toHaveTextContent("RX350");
-    expect(availability).toHaveTextContent("6 open");
-    expect(availability).toHaveTextContent("8 total");
+    expect(availability).toHaveTextContent("6 available");
+    expect(availability).toHaveTextContent("8 received");
+    // "open" was reworded to "available" to kill the confusing term.
+    expect(availability).not.toHaveTextContent("open");
   });
 
   it("renders list of orders", () => {

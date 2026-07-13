@@ -22,7 +22,7 @@ describe('DashboardStats', () => {
     expect(screen.queryByTestId('dashboard-model-totals')).toBeNull();
   });
 
-  it('renders a Model Totals card per model with total/open/linked counts', () => {
+  it('renders a card per model with received/linked counts (no "open")', () => {
     const modelTotals: ModelSlotTotals[] = [
       { model: 'RX 350h', totalSlots: 8, linkedSlots: 2, availableSlots: 6 },
       { model: 'NX 350', totalSlots: 3, linkedSlots: 0, availableSlots: 3 },
@@ -35,12 +35,13 @@ describe('DashboardStats', () => {
 
     const rx = cards[0];
     expect(within(rx).getByText('RX 350h')).toBeInTheDocument();
-    expect(within(rx).getByText('8 total')).toBeInTheDocument();
-    expect(within(rx).getByText('6 open')).toBeInTheDocument();
+    expect(within(rx).getByText('8 received')).toBeInTheDocument();
     expect(within(rx).getByText('2 linked')).toBeInTheDocument();
+    // "open" is intentionally dropped from the strip — received/linked only.
+    expect(within(rx).queryByText(/open/i)).toBeNull();
 
     const nx = cards[1];
     expect(within(nx).getByText('NX 350')).toBeInTheDocument();
-    expect(within(nx).getByText('3 total')).toBeInTheDocument();
+    expect(within(nx).getByText('3 received')).toBeInTheDocument();
   });
 });

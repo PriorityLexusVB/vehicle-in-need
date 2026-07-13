@@ -66,7 +66,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
             {modelTotals.length > 0 && (
                 <div className="mb-8" data-testid="dashboard-model-totals">
                     <p className="mb-2 text-xs font-bold uppercase tracking-wide text-stone-500">
-                        Model Totals
+                        Received by Model
                     </p>
                     <div className="flex flex-wrap gap-2">
                         {modelTotals.map((total) => (
@@ -77,9 +77,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
                             >
                                 <p className="text-sm font-bold text-stone-900">{total.model}</p>
                                 <p className="mt-0.5 flex items-center gap-1.5 text-xs">
-                                    <span className="font-semibold text-stone-700">{total.totalSlots} total</span>
-                                    <span className="text-stone-300">&middot;</span>
-                                    <span className="font-semibold text-stone-600">{total.availableSlots} open</span>
+                                    <span className="font-semibold text-stone-700">{total.totalSlots} received</span>
                                     <span className="text-stone-300">&middot;</span>
                                     <span className="font-semibold text-emerald-700">{total.linkedSlots} linked</span>
                                 </p>
