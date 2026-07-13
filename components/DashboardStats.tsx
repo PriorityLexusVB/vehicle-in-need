@@ -45,7 +45,9 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
                     title="Total Active Orders"
                     value={totalActive}
                     icon={<BriefcaseIcon className="w-6 h-6 text-stone-950" />}
-                    color="bg-amber-100"
+                    // Neutral count -> neutral tint. Amber is reserved for the
+                    // "Awaiting Action" status card (attention), not decoration.
+                    color="bg-stone-100"
                 />
                 <StatCard
                     title="Awaiting Action"
