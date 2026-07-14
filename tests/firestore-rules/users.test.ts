@@ -32,7 +32,7 @@ describe('Firestore Security Rules - Users Collection', () => {
       
       await assertFails(
         setDoc(userRef, {
-          email: 'test@example.com',
+          email: 'test@priorityautomotive.com',
           displayName: 'Test User',
           isManager: false,
         })
@@ -69,13 +69,13 @@ describe('Firestore Security Rules - Users Collection', () => {
     it('should allow user to create their own document with isManager omitted', async () => {
       const userId = 'user123';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const userRef = doc(userDb, 'users', userId);
       
       await assertSucceeds(
         setDoc(userRef, {
-          email: 'user@example.com',
+          email: 'user@priorityautomotive.com',
           displayName: 'Test User',
         })
       );
@@ -86,14 +86,14 @@ describe('Firestore Security Rules - Users Collection', () => {
       // which stores uid, email, displayName, and isManager in the user document
       const userId = 'user123';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const userRef = doc(userDb, 'users', userId);
       
       await assertSucceeds(
         setDoc(userRef, {
           uid: userId,  // This is the pattern App.tsx uses
-          email: 'user@example.com',
+          email: 'user@priorityautomotive.com',
           displayName: 'Test User',
           isManager: false,
         })
@@ -104,14 +104,14 @@ describe('Firestore Security Rules - Users Collection', () => {
       // uid field must match the document path userId
       const userId = 'user123';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const userRef = doc(userDb, 'users', userId);
       
       await assertFails(
         setDoc(userRef, {
           uid: 'differentUid',  // Mismatch!
-          email: 'user@example.com',
+          email: 'user@priorityautomotive.com',
           displayName: 'Test User',
           isManager: false,
         })
@@ -121,13 +121,13 @@ describe('Firestore Security Rules - Users Collection', () => {
     it('should allow user to create their own document with isManager: false', async () => {
       const userId = 'user123';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const userRef = doc(userDb, 'users', userId);
       
       await assertSucceeds(
         setDoc(userRef, {
-          email: 'user@example.com',
+          email: 'user@priorityautomotive.com',
           displayName: 'Test User',
           isManager: false,
         })
@@ -137,13 +137,13 @@ describe('Firestore Security Rules - Users Collection', () => {
     it('should deny user creating their own document with isManager: true', async () => {
       const userId = 'user123';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const userRef = doc(userDb, 'users', userId);
       
       await assertFails(
         setDoc(userRef, {
-          email: 'user@example.com',
+          email: 'user@priorityautomotive.com',
           displayName: 'Test User',
           isManager: true,
         })
@@ -153,13 +153,13 @@ describe('Firestore Security Rules - Users Collection', () => {
     it('should deny user creating document with email mismatch', async () => {
       const userId = 'user123';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const userRef = doc(userDb, 'users', userId);
       
       await assertFails(
         setDoc(userRef, {
-          email: 'different@example.com',
+          email: 'different@priorityautomotive.com',
           displayName: 'Test User',
           isManager: false,
         })
@@ -169,13 +169,13 @@ describe('Firestore Security Rules - Users Collection', () => {
     it('should deny user creating another user\'s document', async () => {
       const userId = 'user123';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const otherUserRef = doc(userDb, 'users', 'otherUser');
       
       await assertFails(
         setDoc(otherUserRef, {
-          email: 'user@example.com',
+          email: 'user@priorityautomotive.com',
           displayName: 'Other User',
           isManager: false,
         })
@@ -186,14 +186,14 @@ describe('Firestore Security Rules - Users Collection', () => {
       // This tests the exact scenario from App.tsx where authUser.displayName may be null
       const userId = 'userWithNullName';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'nullname@example.com' })
+        .authenticatedContext(userId, { email: 'nullname@priorityautomotive.com' })
         .firestore();
       const userRef = doc(userDb, 'users', userId);
       
       await assertSucceeds(
         setDoc(userRef, {
           uid: userId,
-          email: 'nullname@example.com',
+          email: 'nullname@priorityautomotive.com',
           displayName: null,  // Firebase Auth can return null for displayName
           isManager: false,
         })
@@ -204,7 +204,7 @@ describe('Firestore Security Rules - Users Collection', () => {
       // This tests the updated App.tsx flow that includes timestamps
       const userId = 'userWithTimestamps';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'timestamps@example.com' })
+        .authenticatedContext(userId, { email: 'timestamps@priorityautomotive.com' })
         .firestore();
       const userRef = doc(userDb, 'users', userId);
       
@@ -213,7 +213,7 @@ describe('Firestore Security Rules - Users Collection', () => {
       await assertSucceeds(
         setDoc(userRef, {
           uid: userId,
-          email: 'timestamps@example.com',
+          email: 'timestamps@priorityautomotive.com',
           displayName: 'Test User',
           isManager: false,
           createdAt: now,
@@ -231,7 +231,7 @@ describe('Firestore Security Rules - Users Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', userId), {
-          email: 'user@example.com',
+          email: 'user@priorityautomotive.com',
           displayName: 'Test User',
           isManager: false,
         });
@@ -239,7 +239,7 @@ describe('Firestore Security Rules - Users Collection', () => {
 
       // Test: User can read their own document
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const userRef = doc(userDb, 'users', userId);
       
@@ -254,7 +254,7 @@ describe('Firestore Security Rules - Users Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', otherUserId), {
-          email: 'other@example.com',
+          email: 'other@priorityautomotive.com',
           displayName: 'Other User',
           isManager: false,
         });
@@ -262,7 +262,7 @@ describe('Firestore Security Rules - Users Collection', () => {
 
       // Test: User cannot read another user's document
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const otherUserRef = doc(userDb, 'users', otherUserId);
       
@@ -277,12 +277,12 @@ describe('Firestore Security Rules - Users Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', managerId), {
-          email: 'manager@example.com',
+          email: 'manager@priorityautomotive.com',
           displayName: 'Manager',
           isManager: true,
         });
         await setDoc(doc(adminDb, 'users', userId), {
-          email: 'user@example.com',
+          email: 'user@priorityautomotive.com',
           displayName: 'User',
           isManager: false,
         });
@@ -291,7 +291,7 @@ describe('Firestore Security Rules - Users Collection', () => {
       // Test: Manager can read user's document (using custom claim)
       const managerDb = testEnv
         .authenticatedContext(managerId, { 
-          email: 'manager@example.com',
+          email: 'manager@priorityautomotive.com',
           isManager: true  // Custom claim
         })
         .firestore();
@@ -309,7 +309,7 @@ describe('Firestore Security Rules - Users Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', userId), {
-          email: 'user@example.com',
+          email: 'user@priorityautomotive.com',
           displayName: 'Test User',
           isManager: false,
         });
@@ -317,13 +317,13 @@ describe('Firestore Security Rules - Users Collection', () => {
 
       // Test: User can update displayName
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const userRef = doc(userDb, 'users', userId);
       
       await assertSucceeds(
         updateDoc(userRef, {
-          email: 'user@example.com',
+          email: 'user@priorityautomotive.com',
           displayName: 'Updated Name',
           isManager: false,
         })
@@ -338,7 +338,7 @@ describe('Firestore Security Rules - Users Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', userId), {
-          email: 'user@example.com',
+          email: 'user@priorityautomotive.com',
           displayName: 'Test User',
           isManager: false,
         });
@@ -346,14 +346,14 @@ describe('Firestore Security Rules - Users Collection', () => {
 
       // Test: User can add updatedAt field on update
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const userRef = doc(userDb, 'users', userId);
       
       const now = new Date();
       await assertSucceeds(
         updateDoc(userRef, {
-          email: 'user@example.com',
+          email: 'user@priorityautomotive.com',
           displayName: 'Test User',
           isManager: false,
           updatedAt: now,  // Can add updatedAt even if it doesn't exist
@@ -368,7 +368,7 @@ describe('Firestore Security Rules - Users Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', userId), {
-          email: 'user@example.com',
+          email: 'user@priorityautomotive.com',
           displayName: 'Test User',
           isManager: false,
         });
@@ -376,13 +376,13 @@ describe('Firestore Security Rules - Users Collection', () => {
 
       // Test: User cannot change their own isManager
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const userRef = doc(userDb, 'users', userId);
       
       await assertFails(
         updateDoc(userRef, {
-          email: 'user@example.com',
+          email: 'user@priorityautomotive.com',
           displayName: 'Test User',
           isManager: true,
         })
@@ -396,7 +396,7 @@ describe('Firestore Security Rules - Users Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', userId), {
-          email: 'user@example.com',
+          email: 'user@priorityautomotive.com',
           displayName: 'Test User',
           isManager: false,
         });
@@ -404,13 +404,13 @@ describe('Firestore Security Rules - Users Collection', () => {
 
       // Test: User cannot change their email
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const userRef = doc(userDb, 'users', userId);
       
       await assertFails(
         updateDoc(userRef, {
-          email: 'newemail@example.com',
+          email: 'newemail@priorityautomotive.com',
           displayName: 'Test User',
           isManager: false,
         })
@@ -425,12 +425,12 @@ describe('Firestore Security Rules - Users Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', managerId), {
-          email: 'manager@example.com',
+          email: 'manager@priorityautomotive.com',
           displayName: 'Manager',
           isManager: true,
         });
         await setDoc(doc(adminDb, 'users', userId), {
-          email: 'user@example.com',
+          email: 'user@priorityautomotive.com',
           displayName: 'User',
           isManager: false,
         });
@@ -439,7 +439,7 @@ describe('Firestore Security Rules - Users Collection', () => {
       // Test: Manager can update user's isManager (using custom claim)
       const managerDb = testEnv
         .authenticatedContext(managerId, { 
-          email: 'manager@example.com',
+          email: 'manager@priorityautomotive.com',
           isManager: true  // Custom claim
         })
         .firestore();
@@ -447,7 +447,7 @@ describe('Firestore Security Rules - Users Collection', () => {
       
       await assertSucceeds(
         updateDoc(userRef, {
-          email: 'user@example.com',
+          email: 'user@priorityautomotive.com',
           displayName: 'User',
           isManager: true,
         })
@@ -461,7 +461,7 @@ describe('Firestore Security Rules - Users Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', managerId), {
-          email: 'manager@example.com',
+          email: 'manager@priorityautomotive.com',
           displayName: 'Manager',
           isManager: true,
         });
@@ -470,7 +470,7 @@ describe('Firestore Security Rules - Users Collection', () => {
       // Test: Manager cannot demote themselves
       const managerDb = testEnv
         .authenticatedContext(managerId, { 
-          email: 'manager@example.com',
+          email: 'manager@priorityautomotive.com',
           isManager: true  // Custom claim
         })
         .firestore();
@@ -478,7 +478,7 @@ describe('Firestore Security Rules - Users Collection', () => {
       
       await assertFails(
         updateDoc(managerRef, {
-          email: 'manager@example.com',
+          email: 'manager@priorityautomotive.com',
           displayName: 'Manager',
           isManager: false,
         })
@@ -494,7 +494,7 @@ describe('Firestore Security Rules - Users Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', userId), {
-          email: 'user@example.com',
+          email: 'user@priorityautomotive.com',
           displayName: 'Test User',
           isManager: false,
         });
@@ -502,7 +502,7 @@ describe('Firestore Security Rules - Users Collection', () => {
 
       // Test: User cannot delete their own document
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const userRef = doc(userDb, 'users', userId);
       
@@ -517,12 +517,12 @@ describe('Firestore Security Rules - Users Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', managerId), {
-          email: 'manager@example.com',
+          email: 'manager@priorityautomotive.com',
           displayName: 'Manager',
           isManager: true,
         });
         await setDoc(doc(adminDb, 'users', userId), {
-          email: 'user@example.com',
+          email: 'user@priorityautomotive.com',
           displayName: 'User',
           isManager: false,
         });
@@ -531,7 +531,7 @@ describe('Firestore Security Rules - Users Collection', () => {
       // Test: Manager cannot delete user document
       const managerDb = testEnv
         .authenticatedContext(managerId, { 
-          email: 'manager@example.com',
+          email: 'manager@priorityautomotive.com',
           isManager: true  // Custom claim
         })
         .firestore();
@@ -558,14 +558,14 @@ describe('Firestore Security Rules - Users Collection', () => {
         
         // Create a manager WITHOUT custom claim (only Firestore document)
         await setDoc(doc(adminDb, 'users', 'firestoreManager'), {
-          email: 'firestoremanager@example.com',
+          email: 'firestoremanager@priorityautomotive.com',
           displayName: 'Firestore Manager',
           isManager: true,  // Manager in Firestore only, no custom claim
         });
         
         // Create a regular user
         await setDoc(doc(adminDb, 'users', 'regularUser'), {
-          email: 'regular@example.com',
+          email: 'regular@priorityautomotive.com',
           displayName: 'Regular User',
           isManager: false,
         });
@@ -576,7 +576,7 @@ describe('Firestore Security Rules - Users Collection', () => {
       // Manager WITHOUT custom claim (only Firestore document has isManager: true)
       const managerDb = testEnv
         .authenticatedContext('firestoreManager', { 
-          email: 'firestoremanager@example.com'
+          email: 'firestoremanager@priorityautomotive.com'
           // NOTE: No isManager custom claim!
         })
         .firestore();
@@ -593,7 +593,7 @@ describe('Firestore Security Rules - Users Collection', () => {
     it('should allow manager via Firestore document to update another user\'s role', async () => {
       const managerDb = testEnv
         .authenticatedContext('firestoreManager', { 
-          email: 'firestoremanager@example.com'
+          email: 'firestoremanager@priorityautomotive.com'
           // NOTE: No isManager custom claim!
         })
         .firestore();
@@ -602,7 +602,7 @@ describe('Firestore Security Rules - Users Collection', () => {
       
       await assertSucceeds(
         updateDoc(userRef, {
-          email: 'regular@example.com',
+          email: 'regular@priorityautomotive.com',
           displayName: 'Regular User',
           isManager: true,  // Promote to manager
         })
@@ -623,26 +623,26 @@ describe('Firestore Security Rules - Users Collection', () => {
         
         // Create a manager with custom claims
         await setDoc(doc(adminDb, 'users', 'claimManager'), {
-          email: 'claimmanager@example.com',
+          email: 'claimmanager@priorityautomotive.com',
           displayName: 'Claims Manager',
           isManager: true,
         });
         
         // Create a manager WITHOUT custom claims (only Firestore document)
         await setDoc(doc(adminDb, 'users', 'firestoreManager'), {
-          email: 'firestoremanager@example.com',
+          email: 'firestoremanager@priorityautomotive.com',
           displayName: 'Firestore Manager',
           isManager: true,
         });
         
         // Create regular users
         await setDoc(doc(adminDb, 'users', 'regularUser1'), {
-          email: 'regular1@example.com',
+          email: 'regular1@priorityautomotive.com',
           displayName: 'Regular User 1',
           isManager: false,
         });
         await setDoc(doc(adminDb, 'users', 'regularUser2'), {
-          email: 'regular2@example.com',
+          email: 'regular2@priorityautomotive.com',
           displayName: 'Regular User 2',
           isManager: false,
         });
@@ -652,7 +652,7 @@ describe('Firestore Security Rules - Users Collection', () => {
     it('should allow manager with custom claims to list all users', async () => {
       const managerDb = testEnv
         .authenticatedContext('claimManager', { 
-          email: 'claimmanager@example.com',
+          email: 'claimmanager@priorityautomotive.com',
           isManager: true  // Custom claim
         })
         .firestore();
@@ -670,7 +670,7 @@ describe('Firestore Security Rules - Users Collection', () => {
       // Manager WITHOUT custom claim (only Firestore document has isManager: true)
       const managerDb = testEnv
         .authenticatedContext('firestoreManager', { 
-          email: 'firestoremanager@example.com'
+          email: 'firestoremanager@priorityautomotive.com'
           // NOTE: No isManager custom claim!
         })
         .firestore();
@@ -687,7 +687,7 @@ describe('Firestore Security Rules - Users Collection', () => {
     it('should deny regular user listing all users', async () => {
       const userDb = testEnv
         .authenticatedContext('regularUser1', { 
-          email: 'regular1@example.com'
+          email: 'regular1@priorityautomotive.com'
         })
         .firestore();
       

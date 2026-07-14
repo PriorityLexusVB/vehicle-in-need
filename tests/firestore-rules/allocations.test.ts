@@ -64,6 +64,16 @@ describe('Firestore Security Rules - allocationSnapshots', () => {
     await assertSucceeds(getDoc(doc(consultantDb, 'allocationSnapshots', 'latest')));
   });
 
+  it('denies a NON-priority-domain authenticated user reading the latest snapshot', async () => {
+    // Domain gate: a valid Google token from outside @priorityautomotive.com must
+    // NOT read allocation data directly via the SDK (UI hd-hint is not enforcement).
+    const outsiderDb = testEnv
+      .authenticatedContext('outsider-1', { email: 'outsider@gmail.com' })
+      .firestore();
+
+    await assertFails(getDoc(doc(outsiderDb, 'allocationSnapshots', 'latest')));
+  });
+
   it('denies authenticated consultant reading historical snapshot', async () => {
     const consultantDb = testEnv
       .authenticatedContext('consultant-1', { email: 'consultant@priorityautomotive.com' })

@@ -22,26 +22,26 @@ describe("Firestore Security Rules - Order Notes Subcollection", () => {
       const adminDb = context.firestore();
 
       await setDoc(doc(adminDb, "users", "owner123"), {
-        email: "owner@example.com",
+        email: "owner@priorityautomotive.com",
         displayName: "Owner User",
         isManager: false,
       });
 
       await setDoc(doc(adminDb, "users", "other456"), {
-        email: "other@example.com",
+        email: "other@priorityautomotive.com",
         displayName: "Other User",
         isManager: false,
       });
 
       await setDoc(doc(adminDb, "users", "manager999"), {
-        email: "manager@example.com",
+        email: "manager@priorityautomotive.com",
         displayName: "Manager",
         isManager: true,
       });
 
       await setDoc(doc(adminDb, "orders", "orderA"), {
         createdByUid: "owner123",
-        createdByEmail: "owner@example.com",
+        createdByEmail: "owner@priorityautomotive.com",
         createdAt: new Date(),
         status: "Factory Order",
       });
@@ -52,7 +52,7 @@ describe("Firestore Security Rules - Order Notes Subcollection", () => {
         createdAt: new Date(),
         createdByUid: "manager999",
         createdByName: "Manager",
-        createdByEmail: "manager@example.com",
+        createdByEmail: "manager@priorityautomotive.com",
         createdByRole: "manager",
       });
     });
@@ -66,7 +66,7 @@ describe("Firestore Security Rules - Order Notes Subcollection", () => {
 
   it("allows order owner to read notes on their order", async () => {
     const ownerDb = testEnv
-      .authenticatedContext("owner123", { email: "owner@example.com" })
+      .authenticatedContext("owner123", { email: "owner@priorityautomotive.com" })
       .firestore();
 
     const notesCol = collection(ownerDb, "orders", "orderA", "notes");
@@ -75,7 +75,7 @@ describe("Firestore Security Rules - Order Notes Subcollection", () => {
 
   it("denies non-owner non-manager reading notes on someone else's order", async () => {
     const otherDb = testEnv
-      .authenticatedContext("other456", { email: "other@example.com" })
+      .authenticatedContext("other456", { email: "other@priorityautomotive.com" })
       .firestore();
 
     const notesCol = collection(otherDb, "orders", "orderA", "notes");
@@ -84,7 +84,7 @@ describe("Firestore Security Rules - Order Notes Subcollection", () => {
 
   it("allows manager to read notes on any order (via Firestore user doc fallback)", async () => {
     const managerDb = testEnv
-      .authenticatedContext("manager999", { email: "manager@example.com" })
+      .authenticatedContext("manager999", { email: "manager@priorityautomotive.com" })
       .firestore();
 
     const notesCol = collection(managerDb, "orders", "orderA", "notes");
@@ -93,7 +93,7 @@ describe("Firestore Security Rules - Order Notes Subcollection", () => {
 
   it("denies non-manager creating a note", async () => {
     const ownerDb = testEnv
-      .authenticatedContext("owner123", { email: "owner@example.com" })
+      .authenticatedContext("owner123", { email: "owner@priorityautomotive.com" })
       .firestore();
 
     const newNoteRef = doc(ownerDb, "orders", "orderA", "notes", "note2");
@@ -103,7 +103,7 @@ describe("Firestore Security Rules - Order Notes Subcollection", () => {
         createdAt: new Date(),
         createdByUid: "owner123",
         createdByName: "Owner User",
-        createdByEmail: "owner@example.com",
+        createdByEmail: "owner@priorityautomotive.com",
         createdByRole: "manager",
       })
     );
@@ -111,7 +111,7 @@ describe("Firestore Security Rules - Order Notes Subcollection", () => {
 
   it("allows manager creating a note with required schema", async () => {
     const managerDb = testEnv
-      .authenticatedContext("manager999", { email: "manager@example.com" })
+      .authenticatedContext("manager999", { email: "manager@priorityautomotive.com" })
       .firestore();
 
     const newNoteRef = doc(managerDb, "orders", "orderA", "notes", "note2");
@@ -121,7 +121,7 @@ describe("Firestore Security Rules - Order Notes Subcollection", () => {
         createdAt: new Date(),
         createdByUid: "manager999",
         createdByName: "Manager",
-        createdByEmail: "manager@example.com",
+        createdByEmail: "manager@priorityautomotive.com",
         createdByRole: "manager",
       })
     );
@@ -129,7 +129,7 @@ describe("Firestore Security Rules - Order Notes Subcollection", () => {
 
   it("denies manager creating a note with wrong role value", async () => {
     const managerDb = testEnv
-      .authenticatedContext("manager999", { email: "manager@example.com" })
+      .authenticatedContext("manager999", { email: "manager@priorityautomotive.com" })
       .firestore();
 
     const newNoteRef = doc(managerDb, "orders", "orderA", "notes", "note3");
@@ -139,7 +139,7 @@ describe("Firestore Security Rules - Order Notes Subcollection", () => {
         createdAt: new Date(),
         createdByUid: "manager999",
         createdByName: "Manager",
-        createdByEmail: "manager@example.com",
+        createdByEmail: "manager@priorityautomotive.com",
         createdByRole: "admin",
       })
     );
