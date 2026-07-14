@@ -43,11 +43,13 @@ customer-facing.** So the ST/rocket/marketing agents do **not** apply.
 Two modes: **per-PR gate** (the must-have 3) vs **full certification** (all 8).
 
 ### Per-PR must-have 3
+
 1. **Build/test gate** — `npm run build` (exit 0) + `npx tsc --noEmit` (no NEW app-code errors) + `npm test` + `npm run test:rules` (CI) + `npm --prefix functions run build` + functions test.
 2. **Security/data-invariant probe** — token probes (anon / non-priority Google / priority user / manager) against rules; `securedVehicleInfo` owner-guard; `isLatest` singleton; qty>1; `auto-25` orphan.
 3. **Real manager+user browser smoke** — login → board → link/unlink → order create/edit/status → dashboard → DX, at 375 + 1366/1920, service-worker cache-bust.
 
 ### Full certification (8 lanes)
+
 1. **Build / type / bundle / deps** — release-auditor + gitleaks.
 2. **Security & auth (server-enforced)** — emulator token probes prove domain + role + owner-guard hold at the DATA layer, not just React. Extend `tests/firestore-rules/`. hostile-break-tester + release-auditor + Codex. *(Domain enforcement added 2026-07-13 — see below.)*
 3. **Data integrity & invariants** — orphan `vehicle_links`, dup orders, stale `auto-25`, `isLatest` singleton under concurrent ingestion, qty>1 legacy rows, **cross-surface received/linked count parity** (board = dashboard = order card). site-researcher + live DB read.
@@ -67,6 +69,7 @@ Then **lead synthesis** (BLOCKER/REQUIRED/RECOMMENDED/REJECTED) → **Codex fina
 - **Playwright E2E is stale/unauthenticated** (`TODO: implement auth flow` in `e2e/manager-flow.spec.ts`) — repair against the emulator before treating it as a gate.
 
 ## Cross-references
+
 - `notes/codex-runs/codex-20260713-183559.md` — Codex adversarial review that shaped these lanes.
 - `STATE.md` — current live state + the allocation model-totals framing + parser guardrail.
 - `docs/features/linking-simplification.md` — the linking design.
