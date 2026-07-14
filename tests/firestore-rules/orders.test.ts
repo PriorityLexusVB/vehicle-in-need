@@ -33,7 +33,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
       await assertFails(
         setDoc(orderRef, {
           createdByUid: 'user123',
-          createdByEmail: 'user@example.com',
+          createdByEmail: 'user@priorityautomotive.com',
           createdAt: new Date(),
           status: 'Factory Order',
         })
@@ -72,7 +72,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', 'user123'), {
-          email: 'user@example.com',
+          email: 'user@priorityautomotive.com',
           displayName: 'Test User',
           isManager: false,
         });
@@ -82,14 +82,37 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should allow authenticated user to create order with correct ownership fields', async () => {
       const userId = 'user123';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const orderRef = doc(userDb, 'orders', 'order123');
       
       await assertSucceeds(
         setDoc(orderRef, {
           createdByUid: userId,
-          createdByEmail: 'user@example.com',
+          createdByEmail: 'user@priorityautomotive.com',
+          createdAt: new Date(),
+          status: 'Factory Order',
+          salesperson: 'John Doe',
+          manager: 'Jane Smith',
+          customerName: 'Customer',
+          model: 'Model X',
+        })
+      );
+    });
+
+    it('should DENY a NON-priority-domain user creating an order (domain gate)', async () => {
+      // A valid Google token from outside @priorityautomotive.com must NOT be able
+      // to create orders directly via the SDK, even with correct ownership fields.
+      const userId = 'outsider123';
+      const outsiderDb = testEnv
+        .authenticatedContext(userId, { email: 'outsider@gmail.com' })
+        .firestore();
+      const orderRef = doc(outsiderDb, 'orders', 'order-outsider');
+
+      await assertFails(
+        setDoc(orderRef, {
+          createdByUid: userId,
+          createdByEmail: 'outsider@gmail.com',
           createdAt: new Date(),
           status: 'Factory Order',
           salesperson: 'John Doe',
@@ -103,13 +126,13 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should deny order creation with missing createdByUid', async () => {
       const userId = 'user123';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const orderRef = doc(userDb, 'orders', 'order123');
       
       await assertFails(
         setDoc(orderRef, {
-          createdByEmail: 'user@example.com',
+          createdByEmail: 'user@priorityautomotive.com',
           createdAt: new Date(),
           status: 'Factory Order',
         })
@@ -119,7 +142,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should deny order creation with missing createdByEmail', async () => {
       const userId = 'user123';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const orderRef = doc(userDb, 'orders', 'order123');
       
@@ -135,14 +158,14 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should deny order creation with missing createdAt', async () => {
       const userId = 'user123';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const orderRef = doc(userDb, 'orders', 'order123');
       
       await assertFails(
         setDoc(orderRef, {
           createdByUid: userId,
-          createdByEmail: 'user@example.com',
+          createdByEmail: 'user@priorityautomotive.com',
           status: 'Factory Order',
         })
       );
@@ -151,14 +174,14 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should deny order creation with mismatched createdByUid', async () => {
       const userId = 'user123';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const orderRef = doc(userDb, 'orders', 'order123');
       
       await assertFails(
         setDoc(orderRef, {
           createdByUid: 'differentUser',
-          createdByEmail: 'user@example.com',
+          createdByEmail: 'user@priorityautomotive.com',
           createdAt: new Date(),
           status: 'Factory Order',
         })
@@ -168,14 +191,14 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should deny order creation with mismatched createdByEmail', async () => {
       const userId = 'user123';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const orderRef = doc(userDb, 'orders', 'order123');
       
       await assertFails(
         setDoc(orderRef, {
           createdByUid: userId,
-          createdByEmail: 'different@example.com',
+          createdByEmail: 'different@priorityautomotive.com',
           createdAt: new Date(),
           status: 'Factory Order',
         })
@@ -185,14 +208,14 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should deny order creation with invalid status', async () => {
       const userId = 'user123';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const orderRef = doc(userDb, 'orders', 'order123');
       
       await assertFails(
         setDoc(orderRef, {
           createdByUid: userId,
-          createdByEmail: 'user@example.com',
+          createdByEmail: 'user@priorityautomotive.com',
           createdAt: new Date(),
           status: 'InvalidStatus',
         })
@@ -208,17 +231,17 @@ describe('Firestore Security Rules - Orders Collection', () => {
         
         // Create users
         await setDoc(doc(adminDb, 'users', 'user123'), {
-          email: 'user@example.com',
+          email: 'user@priorityautomotive.com',
           displayName: 'Test User',
           isManager: false,
         });
         await setDoc(doc(adminDb, 'users', 'otherUser'), {
-          email: 'other@example.com',
+          email: 'other@priorityautomotive.com',
           displayName: 'Other User',
           isManager: false,
         });
         await setDoc(doc(adminDb, 'users', 'manager123'), {
-          email: 'manager@example.com',
+          email: 'manager@priorityautomotive.com',
           displayName: 'Manager',
           isManager: true,
         });
@@ -226,13 +249,13 @@ describe('Firestore Security Rules - Orders Collection', () => {
         // Create orders
         await setDoc(doc(adminDb, 'orders', 'order123'), {
           createdByUid: 'user123',
-          createdByEmail: 'user@example.com',
+          createdByEmail: 'user@priorityautomotive.com',
           createdAt: new Date(),
           status: 'Factory Order',
         });
         await setDoc(doc(adminDb, 'orders', 'orderOther'), {
           createdByUid: 'otherUser',
-          createdByEmail: 'other@example.com',
+          createdByEmail: 'other@priorityautomotive.com',
           createdAt: new Date(),
           status: 'Delivered',
         });
@@ -242,7 +265,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should allow owner to read their own order', async () => {
       const userId = 'user123';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const orderRef = doc(userDb, 'orders', 'order123');
       
@@ -252,7 +275,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should deny owner reading another user\'s order', async () => {
       const userId = 'user123';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const orderRef = doc(userDb, 'orders', 'orderOther');
       
@@ -263,7 +286,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
       const managerId = 'manager123';
       const managerDb = testEnv
         .authenticatedContext(managerId, { 
-          email: 'manager@example.com',
+          email: 'manager@priorityautomotive.com',
           isManager: true  // Custom claim
         })
         .firestore();
@@ -286,12 +309,12 @@ describe('Firestore Security Rules - Orders Collection', () => {
         
         // Create users
         await setDoc(doc(adminDb, 'users', 'user123'), {
-          email: 'user@example.com',
+          email: 'user@priorityautomotive.com',
           displayName: 'Test User',
           isManager: false,
         });
         await setDoc(doc(adminDb, 'users', 'manager123'), {
-          email: 'manager@example.com',
+          email: 'manager@priorityautomotive.com',
           displayName: 'Manager',
           isManager: true,
         });
@@ -299,13 +322,13 @@ describe('Firestore Security Rules - Orders Collection', () => {
         // Create order
         await setDoc(doc(adminDb, 'orders', 'order123'), {
           createdByUid: 'user123',
-          createdByEmail: 'user@example.com',
+          createdByEmail: 'user@priorityautomotive.com',
           createdAt: new Date('2026-07-07T12:00:00Z'),
           status: 'Factory Order',
           notes: 'Original notes',
           lastUnsecuredReminderAt: new Date('2026-07-06T12:00:00Z'),
           unsecuredReminderCount: 1,
-          unsecuredReminderLastEmail: 'user@example.com',
+          unsecuredReminderLastEmail: 'user@priorityautomotive.com',
           newOrderNotificationSentAt: new Date('2026-07-07T12:05:00Z'),
           newOrderNotificationRecipientEmails: ['manager@priorityautomotive.com'],
           securedVehicleInfo: 'RX 350 - Eminent White',
@@ -317,7 +340,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
       const managerId = 'manager123';
       const managerDb = testEnv
         .authenticatedContext(managerId, { 
-          email: 'manager@example.com',
+          email: 'manager@priorityautomotive.com',
           isManager: true  // Custom claim
         })
         .firestore();
@@ -326,7 +349,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
       await assertSucceeds(
         updateDoc(orderRef, {
           createdByUid: 'user123',
-          createdByEmail: 'user@example.com',
+          createdByEmail: 'user@priorityautomotive.com',
           createdAt: new Date(),
           status: 'Delivered',
           notes: 'Updated by manager',
@@ -337,7 +360,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should allow owner to update allowed fields (notes) but NOT status', async () => {
       const userId = 'user123';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const orderRef = doc(userDb, 'orders', 'order123');
       
@@ -347,7 +370,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
       await assertSucceeds(
         updateDoc(orderRef, {
           createdByUid: 'user123',
-          createdByEmail: 'user@example.com',
+          createdByEmail: 'user@priorityautomotive.com',
           status: 'Factory Order', // Same status - not a change
           notes: 'Updated by owner',
         })
@@ -357,7 +380,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should deny owner changing createdAt', async () => {
       const userId = 'user123';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const orderRef = doc(userDb, 'orders', 'order123');
 
@@ -371,7 +394,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should deny owner changing server automation fields', async () => {
       const userId = 'user123';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const orderRef = doc(userDb, 'orders', 'order123');
 
@@ -388,7 +411,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should deny owner changing securedVehicleInfo (manager-only delivered-car history)', async () => {
       const userId = 'user123';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const orderRef = doc(userDb, 'orders', 'order123');
 
@@ -402,7 +425,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should deny owner changing status (status changes are manager-only)', async () => {
       const userId = 'user123';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const orderRef = doc(userDb, 'orders', 'order123');
       
@@ -410,7 +433,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
       await assertFails(
         updateDoc(orderRef, {
           createdByUid: 'user123',
-          createdByEmail: 'user@example.com',
+          createdByEmail: 'user@priorityautomotive.com',
           createdAt: new Date(),
           status: 'Locate', // Different status - not allowed for non-managers
           notes: 'Original notes',
@@ -421,14 +444,14 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should deny owner changing createdByUid', async () => {
       const userId = 'user123';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const orderRef = doc(userDb, 'orders', 'order123');
       
       await assertFails(
         updateDoc(orderRef, {
           createdByUid: 'differentUser',
-          createdByEmail: 'user@example.com',
+          createdByEmail: 'user@priorityautomotive.com',
           createdAt: new Date(),
           status: 'Factory Order',
           notes: 'Original notes',
@@ -439,14 +462,14 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should deny owner changing createdByEmail', async () => {
       const userId = 'user123';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const orderRef = doc(userDb, 'orders', 'order123');
       
       await assertFails(
         updateDoc(orderRef, {
           createdByUid: 'user123',
-          createdByEmail: 'different@example.com',
+          createdByEmail: 'different@priorityautomotive.com',
           createdAt: new Date(),
           status: 'Factory Order',
           notes: 'Original notes',
@@ -457,14 +480,14 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should deny owner updating with invalid status', async () => {
       const userId = 'user123';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const orderRef = doc(userDb, 'orders', 'order123');
       
       await assertFails(
         updateDoc(orderRef, {
           createdByUid: 'user123',
-          createdByEmail: 'user@example.com',
+          createdByEmail: 'user@priorityautomotive.com',
           createdAt: new Date(),
           status: 'InvalidStatus',
           notes: 'Original notes',
@@ -477,7 +500,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', 'otherUser'), {
-          email: 'other@example.com',
+          email: 'other@priorityautomotive.com',
           displayName: 'Other User',
           isManager: false,
         });
@@ -485,7 +508,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
 
       const otherUserId = 'otherUser';
       const otherUserDb = testEnv
-        .authenticatedContext(otherUserId, { email: 'other@example.com' })
+        .authenticatedContext(otherUserId, { email: 'other@priorityautomotive.com' })
         .firestore();
       const orderRef = doc(otherUserDb, 'orders', 'order123');
       
@@ -504,18 +527,18 @@ describe('Firestore Security Rules - Orders Collection', () => {
         const adminDb = context.firestore();
         
         await setDoc(doc(adminDb, 'users', 'user123'), {
-          email: 'user@example.com',
+          email: 'user@priorityautomotive.com',
           displayName: 'Test User',
           isManager: false,
         });
         await setDoc(doc(adminDb, 'users', 'manager123'), {
-          email: 'manager@example.com',
+          email: 'manager@priorityautomotive.com',
           displayName: 'Manager',
           isManager: true,
         });
         await setDoc(doc(adminDb, 'orders', 'order123'), {
           createdByUid: 'user123',
-          createdByEmail: 'user@example.com',
+          createdByEmail: 'user@priorityautomotive.com',
           createdAt: new Date(),
           status: 'Factory Order',
         });
@@ -526,7 +549,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
       const managerId = 'manager123';
       const managerDb = testEnv
         .authenticatedContext(managerId, { 
-          email: 'manager@example.com',
+          email: 'manager@priorityautomotive.com',
           isManager: true  // Custom claim
         })
         .firestore();
@@ -538,7 +561,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should deny owner deleting their own order', async () => {
       const userId = 'user123';
       const userDb = testEnv
-        .authenticatedContext(userId, { email: 'user@example.com' })
+        .authenticatedContext(userId, { email: 'user@priorityautomotive.com' })
         .firestore();
       const orderRef = doc(userDb, 'orders', 'order123');
       
@@ -550,7 +573,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const adminDb = context.firestore();
         await setDoc(doc(adminDb, 'users', 'otherUser'), {
-          email: 'other@example.com',
+          email: 'other@priorityautomotive.com',
           displayName: 'Other User',
           isManager: false,
         });
@@ -558,7 +581,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
 
       const otherUserId = 'otherUser';
       const otherUserDb = testEnv
-        .authenticatedContext(otherUserId, { email: 'other@example.com' })
+        .authenticatedContext(otherUserId, { email: 'other@priorityautomotive.com' })
         .firestore();
       const orderRef = doc(otherUserDb, 'orders', 'order123');
       
@@ -583,14 +606,14 @@ describe('Firestore Security Rules - Orders Collection', () => {
         
         // Create a manager WITHOUT custom claim (only Firestore document)
         await setDoc(doc(adminDb, 'users', 'firestoreManager'), {
-          email: 'firestoremanager@example.com',
+          email: 'firestoremanager@priorityautomotive.com',
           displayName: 'Firestore Manager',
           isManager: true,  // Manager in Firestore only, no custom claim
         });
         
         // Create a regular user
         await setDoc(doc(adminDb, 'users', 'regularUser'), {
-          email: 'regular@example.com',
+          email: 'regular@priorityautomotive.com',
           displayName: 'Regular User',
           isManager: false,
         });
@@ -598,13 +621,13 @@ describe('Firestore Security Rules - Orders Collection', () => {
         // Create orders by both users
         await setDoc(doc(adminDb, 'orders', 'managerOrder'), {
           createdByUid: 'firestoreManager',
-          createdByEmail: 'firestoremanager@example.com',
+          createdByEmail: 'firestoremanager@priorityautomotive.com',
           createdAt: new Date(),
           status: 'Factory Order',
         });
         await setDoc(doc(adminDb, 'orders', 'userOrder'), {
           createdByUid: 'regularUser',
-          createdByEmail: 'regular@example.com',
+          createdByEmail: 'regular@priorityautomotive.com',
           createdAt: new Date(),
           status: 'Locate',
         });
@@ -615,7 +638,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
       // Manager WITHOUT custom claim (only Firestore document has isManager: true)
       const managerDb = testEnv
         .authenticatedContext('firestoreManager', { 
-          email: 'firestoremanager@example.com'
+          email: 'firestoremanager@priorityautomotive.com'
           // NOTE: No isManager custom claim!
         })
         .firestore();
@@ -632,7 +655,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should allow manager via Firestore document to update any order', async () => {
       const managerDb = testEnv
         .authenticatedContext('firestoreManager', { 
-          email: 'firestoremanager@example.com'
+          email: 'firestoremanager@priorityautomotive.com'
           // NOTE: No isManager custom claim!
         })
         .firestore();
@@ -642,7 +665,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
       await assertSucceeds(
         updateDoc(orderRef, {
           createdByUid: 'regularUser',
-          createdByEmail: 'regular@example.com',
+          createdByEmail: 'regular@priorityautomotive.com',
           createdAt: new Date(),
           status: 'Delivered',
         })
@@ -652,7 +675,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should allow manager via Firestore document to delete any order', async () => {
       const managerDb = testEnv
         .authenticatedContext('firestoreManager', { 
-          email: 'firestoremanager@example.com'
+          email: 'firestoremanager@priorityautomotive.com'
           // NOTE: No isManager custom claim!
         })
         .firestore();
@@ -676,21 +699,21 @@ describe('Firestore Security Rules - Orders Collection', () => {
         
         // Create a manager with custom claims
         await setDoc(doc(adminDb, 'users', 'claimManager'), {
-          email: 'claimmanager@example.com',
+          email: 'claimmanager@priorityautomotive.com',
           displayName: 'Claims Manager',
           isManager: true,
         });
         
         // Create a manager WITHOUT custom claims (only Firestore document)
         await setDoc(doc(adminDb, 'users', 'firestoreManager'), {
-          email: 'firestoremanager@example.com',
+          email: 'firestoremanager@priorityautomotive.com',
           displayName: 'Firestore Manager',
           isManager: true,
         });
         
         // Create a regular user
         await setDoc(doc(adminDb, 'users', 'regularUser'), {
-          email: 'regular@example.com',
+          email: 'regular@priorityautomotive.com',
           displayName: 'Regular User',
           isManager: false,
         });
@@ -698,19 +721,19 @@ describe('Firestore Security Rules - Orders Collection', () => {
         // Create multiple orders from different users
         await setDoc(doc(adminDb, 'orders', 'order1'), {
           createdByUid: 'regularUser',
-          createdByEmail: 'regular@example.com',
+          createdByEmail: 'regular@priorityautomotive.com',
           createdAt: new Date('2024-01-01'),
           status: 'Factory Order',
         });
         await setDoc(doc(adminDb, 'orders', 'order2'), {
           createdByUid: 'claimManager',
-          createdByEmail: 'claimmanager@example.com',
+          createdByEmail: 'claimmanager@priorityautomotive.com',
           createdAt: new Date('2024-01-02'),
           status: 'Locate',
         });
         await setDoc(doc(adminDb, 'orders', 'order3'), {
           createdByUid: 'firestoreManager',
-          createdByEmail: 'firestoremanager@example.com',
+          createdByEmail: 'firestoremanager@priorityautomotive.com',
           createdAt: new Date('2024-01-03'),
           status: 'Delivered',
         });
@@ -720,7 +743,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should allow manager with custom claims to list all orders', async () => {
       const managerDb = testEnv
         .authenticatedContext('claimManager', { 
-          email: 'claimmanager@example.com',
+          email: 'claimmanager@priorityautomotive.com',
           isManager: true  // Custom claim
         })
         .firestore();
@@ -738,7 +761,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
       // Manager WITHOUT custom claim (only Firestore document has isManager: true)
       const managerDb = testEnv
         .authenticatedContext('firestoreManager', { 
-          email: 'firestoremanager@example.com'
+          email: 'firestoremanager@priorityautomotive.com'
           // NOTE: No isManager custom claim!
         })
         .firestore();
@@ -755,7 +778,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should allow regular user to list only their own orders', async () => {
       const userDb = testEnv
         .authenticatedContext('regularUser', { 
-          email: 'regular@example.com'
+          email: 'regular@priorityautomotive.com'
         })
         .firestore();
       
@@ -772,7 +795,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should deny regular user listing all orders without filter', async () => {
       const userDb = testEnv
         .authenticatedContext('regularUser', { 
-          email: 'regular@example.com'
+          email: 'regular@priorityautomotive.com'
         })
         .firestore();
       
@@ -796,14 +819,14 @@ describe('Firestore Security Rules - Orders Collection', () => {
         
         // Create a manager with custom claims
         await setDoc(doc(adminDb, 'users', 'manager123'), {
-          email: 'manager@example.com',
+          email: 'manager@priorityautomotive.com',
           displayName: 'Manager',
           isManager: true,
         });
         
         // Create a regular user (order owner)
         await setDoc(doc(adminDb, 'users', 'user123'), {
-          email: 'user@example.com',
+          email: 'user@priorityautomotive.com',
           displayName: 'Regular User',
           isManager: false,
         });
@@ -811,7 +834,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
         // Create an active order
         await setDoc(doc(adminDb, 'orders', 'activeOrder'), {
           createdByUid: 'user123',
-          createdByEmail: 'user@example.com',
+          createdByEmail: 'user@priorityautomotive.com',
           createdAt: new Date(),
           status: 'Factory Order',
           notes: 'Test order',
@@ -820,7 +843,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
         // Create a secured order
         await setDoc(doc(adminDb, 'orders', 'securedOrder'), {
           createdByUid: 'user123',
-          createdByEmail: 'user@example.com',
+          createdByEmail: 'user@priorityautomotive.com',
           createdAt: new Date(),
           status: 'Delivered',
           notes: 'Secured order',
@@ -831,7 +854,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should allow manager to mark order as secured (status -> Delivered)', async () => {
       const managerDb = testEnv
         .authenticatedContext('manager123', { 
-          email: 'manager@example.com',
+          email: 'manager@priorityautomotive.com',
           isManager: true
         })
         .firestore();
@@ -842,7 +865,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
       await assertSucceeds(
         updateDoc(orderRef, {
           createdByUid: 'user123',
-          createdByEmail: 'user@example.com',
+          createdByEmail: 'user@priorityautomotive.com',
           createdAt: new Date(),
           status: 'Delivered',
           notes: 'Test order',
@@ -853,7 +876,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should allow manager to unsecure order (status Delivered -> Factory Order)', async () => {
       const managerDb = testEnv
         .authenticatedContext('manager123', { 
-          email: 'manager@example.com',
+          email: 'manager@priorityautomotive.com',
           isManager: true
         })
         .firestore();
@@ -864,7 +887,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
       await assertSucceeds(
         updateDoc(orderRef, {
           createdByUid: 'user123',
-          createdByEmail: 'user@example.com',
+          createdByEmail: 'user@priorityautomotive.com',
           createdAt: new Date(),
           status: 'Factory Order',
           notes: 'Secured order',
@@ -875,7 +898,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should deny non-manager owner from marking order as secured', async () => {
       const userDb = testEnv
         .authenticatedContext('user123', { 
-          email: 'user@example.com'
+          email: 'user@priorityautomotive.com'
         })
         .firestore();
       
@@ -885,7 +908,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
       await assertFails(
         updateDoc(orderRef, {
           createdByUid: 'user123',
-          createdByEmail: 'user@example.com',
+          createdByEmail: 'user@priorityautomotive.com',
           createdAt: new Date(),
           status: 'Delivered',
           notes: 'Test order',
@@ -896,7 +919,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should deny non-manager owner from unsecuring order', async () => {
       const userDb = testEnv
         .authenticatedContext('user123', { 
-          email: 'user@example.com'
+          email: 'user@priorityautomotive.com'
         })
         .firestore();
       
@@ -906,7 +929,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
       await assertFails(
         updateDoc(orderRef, {
           createdByUid: 'user123',
-          createdByEmail: 'user@example.com',
+          createdByEmail: 'user@priorityautomotive.com',
           createdAt: new Date(),
           status: 'Factory Order',
           notes: 'Secured order',
@@ -917,7 +940,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
     it('should allow owner to update notes without changing status', async () => {
       const userDb = testEnv
         .authenticatedContext('user123', { 
-          email: 'user@example.com'
+          email: 'user@priorityautomotive.com'
         })
         .firestore();
       
@@ -927,7 +950,7 @@ describe('Firestore Security Rules - Orders Collection', () => {
       await assertSucceeds(
         updateDoc(orderRef, {
           createdByUid: 'user123',
-          createdByEmail: 'user@example.com',
+          createdByEmail: 'user@priorityautomotive.com',
           status: 'Factory Order', // Same as original
           notes: 'Updated notes by owner',
         })

@@ -33,10 +33,28 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isManager == true;
     }
 
-    // Combined manager check: custom claims OR Firestore document
-    // Custom claims are checked first as they're more performant
+    // Combined manager check: custom claims OR Firestore document.
+    // Custom claims are checked first as they're more performant.
+    // Domain-gated: a manager MUST also be a priority-domain account, so a
+    // non-domain account with a stray isManager claim/doc cannot inherit manager
+    // access to allocation/orders/links/audit (Codex 2026-07-13 — the manager path
+    // otherwise bypassed the domain gate; setManagerRole does not enforce domain).
     function isManager() {
-      return hasManagerClaim() || hasManagerInFirestore();
+      return isPriorityUser() && (hasManagerClaim() || hasManagerInFirestore());
+    }
+
+    // Domain gate — only Priority Automotive Google Workspace accounts may
+    // touch app data. The React app checks `email.endsWith("@priorityautomotive.com")`
+    // and Google sign-in passes the `hd` hint, but NEITHER is enforced server-side:
+    // without this, ANY authenticated Google account could read allocation data /
+    // vehicle_links or create orders directly via the Firestore SDK, bypassing the UI.
+    // Applied to the data paths that previously required only isSignedIn().
+    // (Managers are a strict subset — they always carry a priority-domain email —
+    // so isManager() branches remain correct without re-checking here.)
+    function isPriorityUser() {
+      return isSignedIn()
+        && request.auth.token.email is string
+        && request.auth.token.email.matches('(?i)^[^@]+@priorityautomotive[.]com$');
     }
 
     function isBool(v) {
@@ -147,7 +165,7 @@ service cloud.firestore {
       // READ:
       // - Managers can read all snapshots (including historical).
       // - Authenticated non-managers can read only the latest published snapshot.
-      allow read: if isManager() || (isSignedIn() && resource.data.isLatest == true);
+      allow read: if isManager() || (isPriorityUser() && resource.data.isLatest == true);
 
       // WRITE:
       // - Only managers can create/update/delete snapshots.
@@ -165,8 +183,8 @@ service cloud.firestore {
      * Shape: { orderId: string, linkedAt: Timestamp, linkedByUid: string }
      ****************************************/
     match /vehicle_links/{vehicleId} {
-      // Any authenticated user may read (needed for AllocationBoard display)
-      allow read: if isSignedIn();
+      // Any authenticated PRIORITY-domain user may read (needed for AllocationBoard display)
+      allow read: if isPriorityUser();
 
       // Only managers may write (create, update, delete)
       // Field-level consistency is enforced by the service transaction,
@@ -179,11 +197,13 @@ service cloud.firestore {
      ****************************************/
     match /orders/{orderId} {
 
-      // Helper: current order owner
+      // Helper: current order owner (domain-gated — a non-domain account cannot
+      // read/update even an order that happens to carry its uid, e.g. an
+      // Admin-SDK-created historical order).
       function isOrderOwner() {
-        return isSignedIn() 
-          && resource != null 
-          && ('createdByUid' in resource.data) 
+        return isPriorityUser()
+          && resource != null
+          && ('createdByUid' in resource.data)
           && resource.data.createdByUid == request.auth.uid;
       }
 
@@ -224,7 +244,7 @@ service cloud.firestore {
       // CREATE:
       // Authenticated user can create an order but must set ownership fields correctly.
       // Enforce required fields and simple schema constraints.
-      allow create: if isSignedIn()
+      allow create: if isPriorityUser()
         && request.resource.data.keys().hasAll(['createdByUid', 'createdByEmail', 'createdAt'])
         // Ownership integrity
         && request.resource.data.createdByUid == request.auth.uid
@@ -287,10 +307,14 @@ service cloud.firestore {
       match /notes/{noteId} {
 
         function canReadOrder() {
-          return isSignedIn()
-            && (
-              isManager()
-              || get(/databases/$(database)/documents/orders/$(orderId)).data.createdByUid == request.auth.uid
+          // Domain-gated on both branches: manager is already domain-gated via
+          // isManager(); the owner branch must also require a priority-domain
+          // account so a non-domain uid matching an (e.g. Admin-created) order
+          // cannot read its notes (Codex 2026-07-13).
+          return isManager()
+            || (
+              isPriorityUser()
+              && get(/databases/$(database)/documents/orders/$(orderId)).data.createdByUid == request.auth.uid
             );
         }
 

@@ -30,14 +30,14 @@ describe('Firestore Security Rules - Admin Audit Logs Collection', () => {
         
         // Create a manager
         await setDoc(doc(adminDb, 'users', 'manager123'), {
-          email: 'manager@example.com',
+          email: 'manager@priorityautomotive.com',
           displayName: 'Manager',
           isManager: true,
         });
         
         // Create a regular user
         await setDoc(doc(adminDb, 'users', 'regularUser'), {
-          email: 'regular@example.com',
+          email: 'regular@priorityautomotive.com',
           displayName: 'Regular User',
           isManager: false,
         });
@@ -46,9 +46,9 @@ describe('Firestore Security Rules - Admin Audit Logs Collection', () => {
         await addDoc(collection(adminDb, 'adminAuditLogs'), {
           action: 'setManagerRole',
           performedByUid: 'admin1',
-          performedByEmail: 'admin1@example.com',
+          performedByEmail: 'admin1@priorityautomotive.com',
           targetUid: 'user1',
-          targetEmail: 'user1@example.com',
+          targetEmail: 'user1@priorityautomotive.com',
           previousValue: { isManager: false },
           newValue: { isManager: true },
           timestamp: new Date(),
@@ -58,9 +58,9 @@ describe('Firestore Security Rules - Admin Audit Logs Collection', () => {
         await addDoc(collection(adminDb, 'adminAuditLogs'), {
           action: 'disableUser',
           performedByUid: 'admin2',
-          performedByEmail: 'admin2@example.com',
+          performedByEmail: 'admin2@priorityautomotive.com',
           targetUid: 'user2',
-          targetEmail: 'user2@example.com',
+          targetEmail: 'user2@priorityautomotive.com',
           previousValue: { disabled: false },
           newValue: { disabled: true },
           timestamp: new Date(),
@@ -72,7 +72,7 @@ describe('Firestore Security Rules - Admin Audit Logs Collection', () => {
     it('should allow manager with custom claims to read audit logs', async () => {
       const managerDb = testEnv
         .authenticatedContext('manager123', { 
-          email: 'manager@example.com',
+          email: 'manager@priorityautomotive.com',
           isManager: true  // Custom claim
         })
         .firestore();
@@ -85,7 +85,7 @@ describe('Firestore Security Rules - Admin Audit Logs Collection', () => {
       // Manager WITHOUT custom claim (only Firestore document has isManager: true)
       const managerDb = testEnv
         .authenticatedContext('manager123', { 
-          email: 'manager@example.com'
+          email: 'manager@priorityautomotive.com'
           // NOTE: No isManager custom claim!
         })
         .firestore();
@@ -97,7 +97,7 @@ describe('Firestore Security Rules - Admin Audit Logs Collection', () => {
     it('should deny non-manager from reading audit logs', async () => {
       const userDb = testEnv
         .authenticatedContext('regularUser', { 
-          email: 'regular@example.com'
+          email: 'regular@priorityautomotive.com'
         })
         .firestore();
       
@@ -120,7 +120,7 @@ describe('Firestore Security Rules - Admin Audit Logs Collection', () => {
         const adminDb = context.firestore();
         
         await setDoc(doc(adminDb, 'users', 'manager123'), {
-          email: 'manager@example.com',
+          email: 'manager@priorityautomotive.com',
           displayName: 'Manager',
           isManager: true,
         });
@@ -129,9 +129,9 @@ describe('Firestore Security Rules - Admin Audit Logs Collection', () => {
         await setDoc(doc(adminDb, 'adminAuditLogs', 'existingLog'), {
           action: 'setManagerRole',
           performedByUid: 'admin1',
-          performedByEmail: 'admin1@example.com',
+          performedByEmail: 'admin1@priorityautomotive.com',
           targetUid: 'user1',
-          targetEmail: 'user1@example.com',
+          targetEmail: 'user1@priorityautomotive.com',
           previousValue: { isManager: false },
           newValue: { isManager: true },
           timestamp: new Date(),
@@ -143,7 +143,7 @@ describe('Firestore Security Rules - Admin Audit Logs Collection', () => {
     it('should deny manager from creating audit log entries', async () => {
       const managerDb = testEnv
         .authenticatedContext('manager123', { 
-          email: 'manager@example.com',
+          email: 'manager@priorityautomotive.com',
           isManager: true
         })
         .firestore();
@@ -152,9 +152,9 @@ describe('Firestore Security Rules - Admin Audit Logs Collection', () => {
         addDoc(collection(managerDb, 'adminAuditLogs'), {
           action: 'setManagerRole',
           performedByUid: 'manager123',
-          performedByEmail: 'manager@example.com',
+          performedByEmail: 'manager@priorityautomotive.com',
           targetUid: 'someUser',
-          targetEmail: 'some@example.com',
+          targetEmail: 'some@priorityautomotive.com',
           previousValue: { isManager: false },
           newValue: { isManager: true },
           timestamp: new Date(),
@@ -166,7 +166,7 @@ describe('Firestore Security Rules - Admin Audit Logs Collection', () => {
     it('should deny manager from updating audit log entries', async () => {
       const managerDb = testEnv
         .authenticatedContext('manager123', { 
-          email: 'manager@example.com',
+          email: 'manager@priorityautomotive.com',
           isManager: true
         })
         .firestore();
@@ -180,7 +180,7 @@ describe('Firestore Security Rules - Admin Audit Logs Collection', () => {
     it('should deny manager from deleting audit log entries', async () => {
       const managerDb = testEnv
         .authenticatedContext('manager123', { 
-          email: 'manager@example.com',
+          email: 'manager@priorityautomotive.com',
           isManager: true
         })
         .firestore();
