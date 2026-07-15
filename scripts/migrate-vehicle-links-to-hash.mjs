@@ -24,8 +24,15 @@
  *
  * CUTOVER ORDER: pause Apps Script allocation trigger → deploy functions
  * (npm run deploy:functions) → this --dry-run → --apply → --verify → resume trigger.
+ *
+ * QUIESCE ALL WRITERS during --apply, not just the email trigger. A manager
+ * using the LIVE APP mid-run (unlink/relink a vehicle) would race this script and
+ * could silently lose a claim. Run --apply off-hours with no one in the app. As a
+ * backstop the --apply loop re-reads live link+order state immediately before each
+ * write and ABORTS (no clobber) if it detects a concurrent change; --verify also
+ * checks the reverse direction (every order.allocatedVehicleId has a link back).
  */
-import { writeFileSync } from "node:fs";
+import { writeFileSync, existsSync } from "node:fs";
 
 const TOKEN = process.argv[2];
 const MODE = process.argv.includes("--apply") ? "apply" : process.argv.includes("--verify") ? "verify" : "dry-run";
@@ -49,6 +56,7 @@ async function patchDoc(path,fields,mask){const u=`${BASE}/${path}?`+mask.map(f=
 async function createDoc(coll,id,fields){const r=await fetch(`${BASE}/${coll}?documentId=${encodeURIComponent(id)}`,{method:"POST",headers:H,body:JSON.stringify({fields})});if(r.status===409)return "exists";if(!r.ok)throw new Error(`create ${coll}/${id} ${r.status}: ${await r.text()}`);return r.json();}
 // Idempotent delete: a 404 (already deleted) is fine on a re-run.
 async function deleteDoc(path){const r=await fetch(`${BASE}/${path}`,{method:"DELETE",headers:H});if(r.status===404)return;if(!r.ok)throw new Error(`delete ${path} ${r.status}: ${await r.text()}`);}
+async function getDoc(path){const r=await fetch(`${BASE}/${path}`,{headers:H});if(r.status===404)return null;if(!r.ok)throw new Error(`get ${path} ${r.status}: ${await r.text()}`);return r.json();}
 
 (async()=>{
   const q=await runQuery({structuredQuery:{from:[{collectionId:"allocationSnapshots"}],where:{fieldFilter:{field:{fieldPath:"isLatest"},op:"EQUAL",value:{booleanValue:true}}},orderBy:[{field:{fieldPath:"publishedAt"},direction:"DESCENDING"}],limit:1}});
@@ -59,31 +67,140 @@ async function deleteDoc(path){const r=await fetch(`${BASE}/${path}`,{method:"DE
   const counts=new Map(),posToHash=new Map(),hashSet=new Set();
   for(const v of vehicles){const b=buildBase(v);const n=(counts.get(b)||0)+1;counts.set(b,n);const hid=`${b}-U${String(n).padStart(2,"0")}`;hashSet.add(hid);posToHash.set(v.id,hid);}
   const links=await listAll("vehicle_links");
-  const clean=[],orphan=[];
-  for(const l of links){const pos=l.name.split("/").pop();const hid=posToHash.get(pos);if(hid)clean.push({pos,hid,data:Object.fromEntries(Object.entries(l.fields||{}).map(([k,x])=>[k,fv(x)]))});else orphan.push(pos);}
-  console.log(`Snapshot ${snapId}: ${vehicles.length} vehicles. Links: ${links.length} (${clean.length} map to hash, ${orphan.length} already-orphan).`);
-  if(orphan.length)console.log("Already-orphan links (not in current snapshot — left as-is):",orphan.join(", "));
+  // Three buckets: clean = positional link that maps to a current snapshot vehicle
+  // (needs migrating); alreadyHash = link whose id is ALREADY a current-snapshot
+  // hash id (migrated by a prior partial run — leave it, do NOT treat as orphan);
+  // orphan = neither (positional id absent from the snapshot — genuinely unmapped).
+  const clean=[],orphan=[],alreadyHash=[];
+  for(const l of links){const pos=l.name.split("/").pop();const hid=posToHash.get(pos);if(hid)clean.push({pos,hid,raw:l.fields||{},data:Object.fromEntries(Object.entries(l.fields||{}).map(([k,x])=>[k,fv(x)]))});else if(hashSet.has(pos))alreadyHash.push(pos);else orphan.push(pos);}
+  console.log(`Snapshot ${snapId}: ${vehicles.length} vehicles. Links: ${links.length} (${clean.length} map to hash, ${alreadyHash.length} already hash-keyed from a prior run, ${orphan.length} orphan).`);
+  if(orphan.length)console.log("Orphan links (not in current snapshot — resolve before cutover):",orphan.join(", "));
 
   if(MODE==="verify"){
+    // (a0) the SNAPSHOT itself must have been rewritten to hash ids. A late apply
+    //      crash (links migrated, snapshot patch failed) leaves hash links + a
+    //      positional snapshot — the app keys claimed state off BOTH, so this must
+    //      hard-fail, not silently pass.
+    if(vehicles.length>0 && !vehicles.every(v=>hashSet.has(v.id))){
+      const stale=vehicles.filter(v=>!hashSet.has(v.id)).map(v=>v.id);
+      console.log(`VERIFY FAIL: snapshot ${snapId} still has ${stale.length} positional vehicle id(s): ${stale.slice(0,10).join(", ")}`);process.exit(1);
+    }
+    // (a) every link is a current-snapshot hash id
     const missing=links.filter(l=>!hashSet.has(l.name.split("/").pop()));
-    console.log(missing.length===0?"VERIFY OK: every vehicle_links id is a hash id in the current snapshot.":`VERIFY FAIL: ${missing.length} links not in snapshot hash set: ${missing.map(l=>l.name.split("/").pop()).join(", ")}`);
+    if(missing.length){console.log(`VERIFY FAIL: ${missing.length} link(s) not a snapshot hash id: ${missing.map(l=>l.name.split("/").pop()).join(", ")}`);process.exit(1);}
+    // (b) every link has an orderId, an EXISTING order doc, and that order points
+    //     BACK at the link's hash id. Missing orderId / missing order doc / blank
+    //     or mismatched allocatedVehicleId are ALL hard failures (no silent pass).
+    let bad=0;
+    for(const l of links){
+      const id=l.name.split("/").pop();const oid=fv(l.fields?.orderId);
+      if(!oid){bad++;console.log(`  link ${id} has no orderId`);continue;}
+      const o=await getDoc(`orders/${oid}`);
+      if(!o){bad++;console.log(`  link ${id} -> order ${oid} MISSING`);continue;}
+      const av=fv(o.fields?.allocatedVehicleId);
+      if(av!==id){bad++;console.log(`  order ${oid}.allocatedVehicleId=${av||"(blank)"} != link ${id}`);}
+    }
+    // (c) REVERSE direction: every ACTIVE order with a non-null allocatedVehicleId
+    //     must have a vehicle_links doc at that id pointing BACK at the order.
+    //     Catches a link deleted out from under a still-pointing order (a claim
+    //     silently lost to a concurrent write) — invisible to the forward checks.
+    //     SKIP secured orders (Received/Delivered/Secured): securing DELETES the
+    //     live link by design and keeps history in securedVehicleInfo, so a secured
+    //     order legitimately carries a stale allocatedVehicleId mirror with no link
+    //     (e.g. the known legacy Delivered order in STATE.md). Flagging those = false
+    //     positive. Mirrors the backfill's "skip inactive/secured orders" rule.
+    const SECURED=new Set(["Received","Delivered","Secured"]);
+    const allOrders=await listAll("orders");
+    for(const o of allOrders){
+      const oid=o.name.split("/").pop();const av=fv(o.fields?.allocatedVehicleId);
+      if(!av)continue;
+      if(SECURED.has(fv(o.fields?.status)))continue; // no live link expected for secured orders
+      const lk=await getDoc(`vehicle_links/${av}`);
+      if(!lk){bad++;console.log(`  active order ${oid}.allocatedVehicleId=${av} but no vehicle_links/${av} exists (claim lost)`);continue;}
+      const lkOrder=fv(lk.fields?.orderId);
+      if(lkOrder!==oid){bad++;console.log(`  active order ${oid} -> link ${av}, but that link belongs to order ${lkOrder}`);}
+    }
+    if(bad>0){console.log(`VERIFY FAIL: ${bad} link/order mismatch(es).`);process.exit(1);}
+    console.log("VERIFY OK: links⇄orders consistent both directions, every link is a snapshot hash id.");
     return;
   }
-  if(MODE==="dry-run"){console.log("\nDRY-RUN sample:");clean.slice(0,10).forEach(m=>console.log(`  ${m.pos} -> ${m.hid} (order ${m.data.orderId})`));console.log("\nNo writes. Re-run with --apply to execute.");return;}
 
-  // --apply
+  // Guard: if the snapshot already uses hash ids, the migration already ran — do
+  // NOT re-map (that would key positional->hash off hash ids). Run --verify instead.
+  if(vehicles.length>0 && vehicles.every(v=>hashSet.has(v.id))){console.log("Snapshot already uses hash ids — migration appears complete. Run --verify.");return;}
+
+  // Refuse to cut over while any link doesn't map to the current snapshot. These
+  // "orphan" links (positional ids absent from the latest snapshot) can't be
+  // migrated by this script AND would make --verify fail (it requires every link
+  // to be a snapshot hash id). A freshly-launched system should have zero; if any
+  // exist, investigate/clean them before the cutover rather than silently skip.
+  if(orphan.length){console.log(`\nABORT — ${orphan.length} link(s) don't map to the current snapshot (can't migrate; --verify would flag them):`);console.log("  "+orphan.join(", "));console.log("Resolve these (delete stale links or investigate), then re-run --dry-run.");process.exit(1);}
+
+  // Only links whose positional id != hash id need migrating (pos===hid is already correct).
+  const toMigrate=clean.filter(m=>m.pos!==m.hid);
+  const already=clean.length-toMigrate.length;
+  if(already)console.log(`${already} link(s) already hash-keyed — leaving untouched.`);
+
+  // PRE-FLIGHT VALIDATION (read-only) — runs in BOTH dry-run and apply. Every
+  // problem is a HARD failure and the whole cutover is ALL-OR-NOTHING: we refuse
+  // to migrate ANY link (and refuse to rewrite the snapshot) unless EVERY mapped
+  // positional link can migrate safely. A half-migrated set + a hash-rewritten
+  // snapshot would orphan the un-migrated link — exactly the double-booking
+  // failure this migration exists to prevent.
+  const problems=[];
+  for(const m of toMigrate){
+    if(!m.data.orderId){problems.push(`link ${m.pos} has no orderId (dangling — clean up manually)`);continue;}
+    const o=await getDoc(`orders/${m.data.orderId}`);
+    if(!o){problems.push(`link ${m.pos} -> order ${m.data.orderId} MISSING (dangling — clean up manually)`);continue;}
+    const ex=await getDoc(`vehicle_links/${m.hid}`);
+    if(ex){const exOrder=fv(ex.fields?.orderId);if(exOrder!==m.data.orderId)problems.push(`hash link ${m.hid} already exists for a DIFFERENT order (${exOrder}), not ${m.pos}'s order (${m.data.orderId})`);}
+  }
+  if(problems.length){console.log(`\nABORT — ${problems.length} problem(s) block a safe cutover (NO writes made):`);problems.forEach(p=>console.log(`  - ${p}`));console.log("Resolve each, then re-run --dry-run and --apply.");process.exit(1);}
+
+  if(MODE==="dry-run"){console.log("\nDRY-RUN — all mapped links validated safe to migrate. Sample:");toMigrate.slice(0,10).forEach(m=>console.log(`  ${m.pos} -> ${m.hid} (order ${m.data.orderId})`));console.log(`\n${toMigrate.length} link(s) would migrate. No writes. Re-run with --apply to execute.`);return;}
+
+  // --apply  (validated above → every write below is known-safe; links FIRST, snapshot LAST)
   const backup={when:new Date().toISOString(),snapId,vehicles,links:links.map(l=>({id:l.name.split("/").pop(),data:l.fields}))};
-  const bpath=`vehicle-links-migration-backup-${snapId}.json`;writeFileSync(bpath,JSON.stringify(backup,null,2));console.log(`Backup written: ${bpath}`);
-  // 1) rewrite snapshot vehicle ids -> hash
+  // Preserve the ORIGINAL (clean, pre-migration) backup across re-runs — never
+  // overwrite it with already-mutated state, or the rollback artifact is lost.
+  const bpath=`vehicle-links-migration-backup-${snapId}.json`;
+  if(existsSync(bpath)){console.log(`Backup already exists from a prior run — preserving the original (clean) rollback artifact: ${bpath}`);}
+  else{writeFileSync(bpath,JSON.stringify(backup,null,2));console.log(`Backup written: ${bpath}`);}
+  // 1) migrate LINKS FIRST — the snapshot stays positional so a mid-run failure is re-runnable.
+  for(const m of toMigrate){
+    // TOCTOU GUARD: the link list was read once at start. Re-read LIVE state right
+    // before writing. If a manager used the app mid-run (unlink/relink this vehicle),
+    // the captured plan is stale — clobbering it would resurrect a stale claim and
+    // delete a legitimate one. Detect any drift and ABORT (no write), rather than
+    // corrupt silently. (Belt to the runbook's "quiesce all writers" braces.)
+    const liveLink=await getDoc(`vehicle_links/${m.pos}`);
+    if(!liveLink){console.error(`  CONCURRENT CHANGE: positional link ${m.pos} vanished mid-run (a live writer touched it). ABORTING with no further writes. Ensure NO app writers during --apply, then re-run.`);process.exit(1);}
+    const liveLinkOrder=fv(liveLink.fields?.orderId);
+    if(liveLinkOrder!==m.data.orderId){console.error(`  CONCURRENT CHANGE: link ${m.pos} now belongs to order ${liveLinkOrder}, not ${m.data.orderId}. ABORTING. Ensure NO app writers during --apply, then re-run.`);process.exit(1);}
+    const liveOrder=await getDoc(`orders/${m.data.orderId}`);
+    if(!liveOrder){console.error(`  CONCURRENT CHANGE: order ${m.data.orderId} vanished mid-run. ABORTING. Ensure NO app writers during --apply, then re-run.`);process.exit(1);}
+    const liveAv=fv(liveOrder.fields?.allocatedVehicleId);
+    // liveAv === m.pos  → not yet migrated (normal path).
+    // liveAv === m.hid  → OUR OWN prior partial progress (a previous run patched the
+    //                     order but died before deleting the positional link). This is
+    //                     resumable, NOT external drift — fall through to finish it.
+    // anything else      → a live writer moved this order → real drift → ABORT.
+    if(liveAv!==m.pos && liveAv!==m.hid){console.error(`  CONCURRENT CHANGE: order ${m.data.orderId}.allocatedVehicleId is now ${liveAv||"(blank)"}, not ${m.pos} (nor our target ${m.hid}). ABORTING. Ensure NO app writers during --apply, then re-run.`);process.exit(1);}
+    // Live state matches the plan. Recreate from the FRESH live fields (faithful
+    // copy — preserves linkedAt as a Timestamp; never round-trips through
+    // fv()/toFsValue() which would coerce the Timestamp to a string).
+    await createDoc("vehicle_links",m.hid,liveLink.fields||{});
+    // Point the order at the hash id BEFORE deleting the positional link. patchDoc
+    // THROWS on failure → aborts before the delete, never leaving the order pointed
+    // at a deleted vehicle id.
+    await patchDoc(`orders/${m.data.orderId}`,{allocatedVehicleId:toFsValue(m.hid)},["allocatedVehicleId"]);
+    await deleteDoc(`vehicle_links/${m.pos}`);
+    console.log(`  migrated link ${m.pos} -> ${m.hid} (order ${m.data.orderId})`);
+  }
+  // 2) rewrite snapshot vehicle ids -> hash LAST (after every link is migrated).
   const newVehicles=vehicles.map(v=>({...v,id:posToHash.get(v.id)}));
   await patchDoc(`allocationSnapshots/${snapId}`,{vehicles:toFsValue(newVehicles)},["vehicles"]);
   console.log(`Snapshot ${snapId} vehicle ids rewritten to hash.`);
-  // 2) recreate links under hash id + delete positional; update order.allocatedVehicleId
-  for(const m of clean){
-    await createDoc("vehicle_links",m.hid,{orderId:toFsValue(m.data.orderId),linkedAt:toFsValue(m.data.linkedAt),linkedByUid:toFsValue(m.data.linkedByUid)});
-    await deleteDoc(`vehicle_links/${m.pos}`);
-    if(m.data.orderId)await patchDoc(`orders/${m.data.orderId}`,{allocatedVehicleId:toFsValue(m.hid)},["allocatedVehicleId"]).catch(e=>console.warn(`  order ${m.data.orderId} patch skipped: ${e.message}`));
-    console.log(`  migrated link ${m.pos} -> ${m.hid} (order ${m.data.orderId})`);
-  }
   console.log(`\nAPPLIED. Run with --verify to confirm zero orphans. Backup: ${bpath}`);
+  console.log("NOTE: the Apps Script allocation trigger AND all live app writers (managers) MUST have been quiesced for this run. If an email ingested OR a manager relinked mid-cutover, restore from the backup JSON and re-run the full cutover.");
 })().catch(e=>{console.error("ERROR:",e.message);process.exit(1);});
