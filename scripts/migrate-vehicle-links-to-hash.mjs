@@ -44,8 +44,11 @@ function toFsValue(x){if(x===null||x===undefined)return{nullValue:null};if(typeo
 async function runQuery(body){const r=await fetch(`${BASE}:runQuery`,{method:"POST",headers:H,body:JSON.stringify(body)});if(!r.ok)throw new Error(`runQuery ${r.status}: ${await r.text()}`);return r.json();}
 async function listAll(coll){const out=[];let pt="";do{const r=await fetch(`${BASE}/${coll}?pageSize=300${pt?`&pageToken=${pt}`:""}`,{headers:H});if(!r.ok)throw new Error(`list ${coll} ${r.status}: ${await r.text()}`);const j=await r.json();(j.documents||[]).forEach(d=>out.push(d));pt=j.nextPageToken||"";}while(pt);return out;}
 async function patchDoc(path,fields,mask){const u=`${BASE}/${path}?`+mask.map(f=>`updateMask.fieldPaths=${encodeURIComponent(f)}`).join("&");const r=await fetch(u,{method:"PATCH",headers:H,body:JSON.stringify({fields})});if(!r.ok)throw new Error(`patch ${path} ${r.status}: ${await r.text()}`);return r.json();}
-async function createDoc(coll,id,fields){const r=await fetch(`${BASE}/${coll}?documentId=${encodeURIComponent(id)}`,{method:"POST",headers:H,body:JSON.stringify({fields})});if(!r.ok)throw new Error(`create ${coll}/${id} ${r.status}: ${await r.text()}`);return r.json();}
-async function deleteDoc(path){const r=await fetch(`${BASE}/${path}`,{method:"DELETE",headers:H});if(!r.ok)throw new Error(`delete ${path} ${r.status}: ${await r.text()}`);}
+// Idempotent create: a 409 (already exists) is treated as "already migrated" so
+// a re-run after a partial failure is safe (does NOT overwrite/duplicate).
+async function createDoc(coll,id,fields){const r=await fetch(`${BASE}/${coll}?documentId=${encodeURIComponent(id)}`,{method:"POST",headers:H,body:JSON.stringify({fields})});if(r.status===409)return "exists";if(!r.ok)throw new Error(`create ${coll}/${id} ${r.status}: ${await r.text()}`);return r.json();}
+// Idempotent delete: a 404 (already deleted) is fine on a re-run.
+async function deleteDoc(path){const r=await fetch(`${BASE}/${path}`,{method:"DELETE",headers:H});if(r.status===404)return;if(!r.ok)throw new Error(`delete ${path} ${r.status}: ${await r.text()}`);}
 
 (async()=>{
   const q=await runQuery({structuredQuery:{from:[{collectionId:"allocationSnapshots"}],where:{fieldFilter:{field:{fieldPath:"isLatest"},op:"EQUAL",value:{booleanValue:true}}},orderBy:[{field:{fieldPath:"publishedAt"},direction:"DESCENDING"}],limit:1}});
