@@ -36,3 +36,6 @@ playwright-report/
 *.njsproj
 *.sln
 *.sw?
+
+# One-time vehicle-links hash-cutover backups (contain snapshot data — never commit)
+vehicle-links-migration-backup-*.json
