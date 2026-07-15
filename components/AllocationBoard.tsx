@@ -44,6 +44,11 @@ interface AllocationBoardProps {
   sharedSnapshot?: AllocationSnapshot | null;
   /** Shared DX trades from App.tsx to avoid duplicate Google Sheet fetches */
   sharedDxTrades?: DxTrade[];
+  /** Shared DX fetch error message from App.tsx — makes a failed manager DX
+   *  fetch visible (the DX Pipeline section renders on error, not just success) */
+  sharedDxError?: string | null;
+  /** Shared DX loading state from App.tsx */
+  sharedDxLoading?: boolean;
 }
 
 type BoardView = "strategy" | "log" | "matches";
@@ -527,7 +532,7 @@ interface GroupedAllocationRow {
   vehicles: AllocationVehicle[];
 }
 
-const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSnapshot, sharedDxTrades }) => {
+const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSnapshot, sharedDxTrades, sharedDxError, sharedDxLoading }) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [latestSnapshot, setLatestSnapshot] = useState<AllocationSnapshot | null>(
@@ -624,6 +629,10 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
   useEffect(() => {
     if (sharedDxTrades !== undefined) {
       setDxTrades(sharedDxTrades);
+      // Mirror App's fetch error/loading so the DX Pipeline section (and its
+      // Refresh button) render on failure instead of staying hidden.
+      setDxError(sharedDxError ?? null);
+      setDxLoading(sharedDxLoading ?? false);
       if (sharedDxTrades.length > 0) setDxLastFetched(new Date());
       return;
     }
@@ -650,7 +659,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({ currentUser, sharedSn
 
     void loadDx();
     return () => { cancelled = true; };
-  }, [currentUser.isManager, sharedDxTrades]);
+  }, [currentUser.isManager, sharedDxTrades, sharedDxError, sharedDxLoading]);
 
   // Pre-compute order fields once so the O(V*O) loop doesn't repeat work
   const precomputedOrders = useMemo<PrecomputedOrder[]>(() => {

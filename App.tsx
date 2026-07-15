@@ -94,6 +94,12 @@ const App: React.FC = () => {
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const [allocationSnapshot, setAllocationSnapshot] = useState<AllocationSnapshot | null>(null);
   const [dxTrades, setDxTrades] = useState<DxTrade[]>([]);
+  // DX sheet fetch state — surfaced to AllocationBoard so a failed/loading DX
+  // fetch renders the DX Pipeline section (with its error UI + Refresh button)
+  // instead of silently hiding it. Holds the display message, matching the
+  // board's string-based dxError contract.
+  const [dxError, setDxError] = useState<string | null>(null);
+  const [dxLoading, setDxLoading] = useState(false);
   const [stats, setStats] = useState({
     totalActive: 0,
     awaitingAction: 0,
@@ -334,6 +340,8 @@ const App: React.FC = () => {
         // rep's surfaces after a same-session account switch.
         setAllocationSnapshot(null);
         setDxTrades([]);
+        setDxError(null);
+        setDxLoading(false);
         setStats({
           totalActive: 0,
           awaitingAction: 0,
@@ -542,10 +550,20 @@ const App: React.FC = () => {
         (snapshot) => setAllocationSnapshot(snapshot),
         () => setAllocationSnapshot(null),
       );
-      // Fetch DX sheet for matching
+      // Fetch DX sheet for matching. Surface loading + failure so the
+      // AllocationBoard can render the DX Pipeline section (and its Refresh
+      // button) even when the fetch fails — a swallowed error left the whole
+      // section invisible with no way to recover.
+      setDxLoading(true);
+      setDxError(null);
       void fetchDxSheet()
-        .then((trades) => { if (!dxCancelled) setDxTrades(trades); })
-        .catch(() => { /* DX fetch failure is non-critical */ });
+        .then((trades) => { if (!dxCancelled) { setDxTrades(trades); setDxError(null); } })
+        .catch((err) => {
+          if (!dxCancelled) {
+            setDxError(err instanceof Error ? err.message : "Unable to load Dealer Exchange sheet.");
+          }
+        })
+        .finally(() => { if (!dxCancelled) setDxLoading(false); });
     } else {
       // Non-manager (incl. a manager→rep same-session switch): clear any
       // allocation/DX state left over from a prior manager session so the
@@ -553,6 +571,8 @@ const App: React.FC = () => {
       // allocation data on a rep's cards.
       setAllocationSnapshot(null);
       setDxTrades([]);
+      setDxError(null);
+      setDxLoading(false);
     }
 
     return () => {
@@ -1145,7 +1165,7 @@ const App: React.FC = () => {
           />
           <Route
             path="/allocation"
-            element={<AllocationBoard currentUser={user} sharedSnapshot={allocationSnapshot} sharedDxTrades={dxTrades} />}
+            element={<AllocationBoard currentUser={user} sharedSnapshot={allocationSnapshot} sharedDxTrades={dxTrades} sharedDxError={dxError} sharedDxLoading={dxLoading} />}
           />
           <Route
             path="/requests"

@@ -231,7 +231,7 @@ describe("setManagerRole", () => {
         })
         .mockResolvedValueOnce({
           // Target user lookup
-          email: "target@test.com",
+          email: "target@priorityautomotive.com",
           customClaims: { isManager: true },
         });
 
@@ -278,7 +278,7 @@ describe("setManagerRole", () => {
         })
         .mockResolvedValueOnce({
           // Target user lookup
-          email: "target@test.com",
+          email: "target@priorityautomotive.com",
           displayName: "Target User",
           customClaims: {},
         });
@@ -325,7 +325,7 @@ describe("setManagerRole", () => {
         })
         .mockResolvedValueOnce({
           // Target user lookup
-          email: "target@test.com",
+          email: "target@priorityautomotive.com",
           displayName: "Target User",
           customClaims: {},
         });
@@ -358,7 +358,7 @@ describe("setManagerRole", () => {
       expect(mockSet).toHaveBeenCalledWith(
         expect.objectContaining({
           uid: "target-uid",
-          email: "target@test.com",
+          email: "target@priorityautomotive.com",
           displayName: "Target User",
           isManager: true,
         }),
