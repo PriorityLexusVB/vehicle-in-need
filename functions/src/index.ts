@@ -102,6 +102,16 @@ interface AuditLogEntry {
 }
 
 /**
+ * Domain gate: a Priority Automotive Google Workspace account. Manager role may
+ * only be granted to such accounts (defense-in-depth — the Firestore rules
+ * already deny a non-domain manager app-data access via isPriorityUser(), but
+ * this stops the bad state being created at the callable source).
+ */
+function isPriorityEmail(email: string | null | undefined): boolean {
+  return typeof email === "string" && /@priorityautomotive\.com$/i.test(email.trim());
+}
+
+/**
  * Validates that the caller has manager privileges via custom claims
  */
 async function validateManagerAccess(callerUid: string): Promise<{
@@ -304,6 +314,16 @@ export const setManagerRole = onCall<SetManagerRoleData>(
       timestamp: FieldValue.serverTimestamp(),
       success: false,
     };
+
+    // Domain gate (defense-in-depth): manager role can only be GRANTED to a
+    // Priority Automotive Workspace account, so a non-domain account can never
+    // be created as a manager. Demotion (newIsManager === false) is always allowed.
+    if (newIsManager === true && !isPriorityEmail(targetEmail)) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Manager role can only be granted to @priorityautomotive.com accounts.",
+      );
+    }
 
     try {
       // Update custom claims first

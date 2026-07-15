@@ -18,6 +18,10 @@ const SECURED_STATUSES = new Set(["Delivered", "Received", "Secured"]);
 const PRIORITY_EMAIL_RE = /^[^\s@]+@priorityautomotive\.com$/i;
 const DEFAULT_MAX_PER_RUN = 25;
 const DEFAULT_START_AT = "2026-07-07T15:55:15Z";
+// A new-order reservation that is queued but never acked (Apps Script failed
+// mid-ack after retries) is reclaimed after this window so the manager email is
+// re-queued instead of silently lost forever.
+const RESERVATION_RECLAIM_MS = 15 * 60 * 1000;
 
 function normalizeEmail(value) {
   const email = String(value || "").trim().toLowerCase();
@@ -110,10 +114,22 @@ function getOrderCreatedMillis(order) {
   return timestampToMillis(order.createdAt);
 }
 
-function isNewOrderNotificationDue(order, startAtMs) {
+function isNewOrderNotificationDue(order, startAtMs, nowMs = Date.now()) {
   if (order.newOrderNotificationMuted === true) return false;
   if (order.newOrderNotificationSentAt) return false;
-  if (order.newOrderNotificationQueuedAt) return false;
+
+  // A prior reservation normally blocks re-queue. But if Apps Script failed
+  // mid-ack (after retries), the order is left queued-but-never-sent and would
+  // block the manager email forever. Reclaim the reservation once it is older
+  // than RESERVATION_RECLAIM_MS (sentAt already ruled out above); a fresh or
+  // unparseable-age reservation still blocks, preserving idempotency.
+  if (order.newOrderNotificationQueuedAt) {
+    const queuedMs = timestampToMillis(order.newOrderNotificationQueuedAt);
+    const reservationIsStale =
+      queuedMs != null && nowMs - queuedMs >= RESERVATION_RECLAIM_MS;
+    if (!reservationIsStale) return false;
+  }
+
   if (!ACTIVE_STATUSES.has(order.status)) return false;
 
   const createdMs = getOrderCreatedMillis(order);

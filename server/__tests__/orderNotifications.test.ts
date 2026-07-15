@@ -103,16 +103,34 @@ describe("orderNotifications", () => {
       ),
     ).toBe(false);
 
+    // A FRESH reservation (within the 15-min reclaim window) still blocks re-queue.
+    const nowMs = Date.parse("2026-07-15T12:00:00Z");
     expect(
       notifications.isNewOrderNotificationDue(
         {
           status: "Dealer Exchange",
           createdAt: { seconds: Math.floor(Date.parse("2026-07-07T16:00:00Z") / 1000) },
-          newOrderNotificationQueuedAt: { seconds: Math.floor(Date.parse("2026-07-07T16:01:00Z") / 1000) },
+          newOrderNotificationQueuedAt: { seconds: Math.floor((nowMs - 60_000) / 1000) },
         },
         startAtMs,
+        nowMs,
       ),
     ).toBe(false);
+
+    // A STALE reservation (older than the reclaim window) with no sentAt is
+    // reclaimed → due again, so a failed Apps Script ack can't silently drop
+    // the manager email forever.
+    expect(
+      notifications.isNewOrderNotificationDue(
+        {
+          status: "Dealer Exchange",
+          createdAt: { seconds: Math.floor(Date.parse("2026-07-07T16:00:00Z") / 1000) },
+          newOrderNotificationQueuedAt: { seconds: Math.floor((nowMs - 20 * 60_000) / 1000) },
+        },
+        startAtMs,
+        nowMs,
+      ),
+    ).toBe(true);
   });
 
   it("renders a polished new-order email with the tracker link", () => {

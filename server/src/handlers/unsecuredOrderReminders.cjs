@@ -253,17 +253,33 @@ async function ackSentReminders({ db, sent }) {
     return { acknowledged: 0 };
   }
 
-  const batch = db.batch();
-  for (const item of uniqueSent) {
-    batch.update(db.collection("orders").doc(item.orderId), {
-      lastUnsecuredReminderAt: admin.firestore.FieldValue.serverTimestamp(),
-      unsecuredReminderCount: admin.firestore.FieldValue.increment(1),
-      unsecuredReminderLastEmail: item.email,
-    });
-  }
-  await batch.commit();
+  // Per-order transactions (not a single batch): a batch.commit() throws
+  // NOT_FOUND if ANY acked order was deleted between the due-run and this
+  // callback, which would drop lastUnsecuredReminderAt for EVERY order and
+  // re-send them all next run. Guarding each write with an existence check
+  // (mirrors ackNewOrderNotifications in orderNotifications.cjs) means one
+  // deleted order can no longer poison the rest.
+  let acknowledged = 0;
+  let skippedMissing = 0;
 
-  return { acknowledged: uniqueSent.length };
+  for (const item of uniqueSent) {
+    const ref = db.collection("orders").doc(item.orderId);
+    const didAck = await db.runTransaction(async (transaction) => {
+      const snap = await transaction.get(ref);
+      if (!snap.exists) return false;
+
+      transaction.update(ref, {
+        lastUnsecuredReminderAt: admin.firestore.FieldValue.serverTimestamp(),
+        unsecuredReminderCount: admin.firestore.FieldValue.increment(1),
+        unsecuredReminderLastEmail: item.email,
+      });
+      return true;
+    });
+    if (didAck) acknowledged++;
+    else skippedMissing++;
+  }
+
+  return { acknowledged, skippedMissing };
 }
 
 router.post("/", async (req, res) => {
