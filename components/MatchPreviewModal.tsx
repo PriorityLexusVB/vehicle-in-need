@@ -1,5 +1,5 @@
 /**
- * MatchPreviewModal — Quick preview of matching allocation vehicles and DX trades
+ * MatchPreviewModal — Quick preview of allocation matches and completed DX history
  * for a given order. Opens from the dashboard badge click without navigating away.
  */
 
@@ -21,7 +21,10 @@ const MatchPreviewModal: React.FC<MatchPreviewModalProps> = ({
 }) => {
   const allocModel = matchSummary.matchedAllocModels.values().next().value ?? order.model;
   const hasAllocMatches = matchSummary.exactCount > 0 || matchSummary.partialCount > 0;
-  const hasDxMatches = matchSummary.dxExactCount > 0 || matchSummary.dxPartialCount > 0;
+  const dxHistoryCount = matchSummary.dxExactCount
+    + matchSummary.dxPartialCount
+    + matchSummary.dxModelOnlyCount;
+  const hasDxHistory = dxHistoryCount > 0;
 
   return (
     <div
@@ -118,25 +121,34 @@ const MatchPreviewModal: React.FC<MatchPreviewModalProps> = ({
             </div>
           )}
 
-          {hasDxMatches && (
+          {hasDxHistory && (
             <div className={hasAllocMatches ? "border-t border-stone-100 pt-4" : ""}>
               <div className="flex items-center gap-2 mb-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Dealer Exchange Matches</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Completed DX history</p>
                 <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">
-                  {matchSummary.dxExactCount + matchSummary.dxPartialCount}
+                  {dxHistoryCount}
                 </span>
               </div>
+              <p className="mb-2 text-xs text-stone-500">
+                Prior completed OURS rows for this vehicle family — dealers helped us source these cars.
+              </p>
               <div className="space-y-1 text-sm text-stone-600">
                 {matchSummary.dxExactCount > 0 && (
                   <p className="flex items-center gap-2">
                     <span className="inline-block h-2 w-2 rounded-full bg-amber-500" />
-                    {matchSummary.dxExactCount} exact
+                    {matchSummary.dxExactCount} same color
                   </p>
                 )}
                 {matchSummary.dxPartialCount > 0 && (
                   <p className="flex items-center gap-2">
                     <span className="inline-block h-2 w-2 rounded-full bg-amber-300" />
-                    {matchSummary.dxPartialCount} close
+                    {matchSummary.dxPartialCount} related color
+                  </p>
+                )}
+                {matchSummary.dxModelOnlyCount > 0 && (
+                  <p className="flex items-center gap-2">
+                    <span className="inline-block h-2 w-2 rounded-full bg-stone-300" />
+                    {matchSummary.dxModelOnlyCount} model history
                   </p>
                 )}
               </div>
@@ -145,13 +157,13 @@ const MatchPreviewModal: React.FC<MatchPreviewModalProps> = ({
                 onClick={onClose}
                 className="mt-2 inline-flex items-center gap-1 rounded-lg bg-amber-600 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-700 transition-colors"
               >
-                View DX Pipeline
+                Review completed DX history
               </Link>
             </div>
           )}
 
-          {!hasAllocMatches && !hasDxMatches && (
-            <p className="py-4 text-center text-sm text-stone-400">No color matches found for this order.</p>
+          {!hasAllocMatches && !hasDxHistory && (
+            <p className="py-4 text-center text-sm text-stone-400">No allocation matches or completed DX history found for this order.</p>
           )}
         </div>
       </div>

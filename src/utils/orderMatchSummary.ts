@@ -133,6 +133,13 @@ export function computeOrderMatchSummaries(
   // DX trade matching
   if (dxTrades && dxTrades.length > 0) {
     for (const trade of dxTrades) {
+      // Rob-confirmed DX semantics: OURS is a completed exchange where we
+      // needed the other dealer's vehicle. Only those rows are relevant when
+      // showing factual supply history for a customer vehicle request.
+      // THEIRS (we supplied their vehicle) and unclassified rows must not be
+      // presented as cars/dealers that helped us source this model.
+      if (trade.direction !== "OURS") continue;
+
       // DX model matching: description is the model name ("TX350"), modelNumber is the code ("9353")
       const dxModel = normalizeModel(trade.description);
       const dxCode = extractFourDigitCode(trade.modelNumber);
