@@ -47,12 +47,22 @@ import { subscribeLatestAllocationSnapshot } from "./services/allocationService"
 import { AllocationSnapshot } from "./src/utils/allocationTypes";
 import { buildModelSlotTotals, type ModelSlotTotals } from "./src/utils/allocationModelTotals";
 import { computeOrderMatchSummaries, OrderMatchSummary } from "./src/utils/orderMatchSummary";
-import { fetchDxSheet, DxTrade } from "./src/utils/dxSheetParser";
+import { CURRENT_DX_SOURCE, fetchDxSheetWithMetadata } from "./src/utils/dxSheetParser";
+import { buildHistoricalDxTrades } from "./src/utils/dxRelationships";
+import {
+  beginDxRefresh,
+  completeDxRefresh,
+  createDxFeedState,
+  failDxRefresh,
+  resetDxFeed,
+} from "./src/utils/dxFeedState";
 import {
   deleteOrderAndReleaseVehicle,
   releaseVehicleAndUpdateOrderStatus,
 } from "./services/orderLinkingService";
 import { useVehicleLinks } from "./services/useVehicleLinks";
+
+const HISTORICAL_DX_TRADES = buildHistoricalDxTrades();
 
 // Type guard to verify if an error is a FirestoreError.
 // Checks for FirestoreError-specific properties to distinguish from generic errors.
@@ -93,19 +103,55 @@ const App: React.FC = () => {
   const [isCSVUploadVisible, setIsCSVUploadVisible] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const [allocationSnapshot, setAllocationSnapshot] = useState<AllocationSnapshot | null>(null);
-  const [dxTrades, setDxTrades] = useState<DxTrade[]>([]);
-  // DX sheet fetch state — surfaced to AllocationBoard so a failed/loading DX
-  // fetch renders the DX Pipeline section (with its error UI + Refresh button)
-  // instead of silently hiding it. Holds the display message, matching the
-  // board's string-based dxError contract.
-  const [dxError, setDxError] = useState<string | null>(null);
-  const [dxLoading, setDxLoading] = useState(false);
+  const [dxFeed, setDxFeed] = useState(() =>
+    createDxFeedState([...HISTORICAL_DX_TRADES]),
+  );
+  const dxRefreshRequestId = useRef(0);
   const [stats, setStats] = useState({
     totalActive: 0,
     awaitingAction: 0,
     securedLast30Days: 0,
   });
   const { linksByVehicleId } = useVehicleLinks(Boolean(user));
+
+  const refreshDx = useCallback(async () => {
+    const requestId = ++dxRefreshRequestId.current;
+    const attemptedAt = new Date();
+    setDxFeed((previous) => {
+      const hydrated = previous.historicalTrades.length > 0
+        ? previous
+        : createDxFeedState([...HISTORICAL_DX_TRADES]);
+      return beginDxRefresh(hydrated, attemptedAt);
+    });
+
+    const controller = new AbortController();
+    let didTimeout = false;
+    const timeoutId = setTimeout(() => {
+      didTimeout = true;
+      controller.abort();
+    }, 10_000);
+    try {
+      const result = await fetchDxSheetWithMetadata(CURRENT_DX_SOURCE, { signal: controller.signal });
+      if (requestId !== dxRefreshRequestId.current) return;
+      const completedAt = new Date();
+      setDxFeed((previous) => completeDxRefresh(
+        previous,
+        result.trades,
+        completedAt,
+        result.rejectedRows,
+      ));
+    } catch (error) {
+      if (requestId !== dxRefreshRequestId.current) return;
+      const message = didTimeout
+        ? "Dealer Exchange source timed out after 10 seconds."
+        : error instanceof Error
+        ? error.message
+        : "Unable to load the Dealer Exchange source.";
+      setDxFeed((previous) => failDxRefresh(previous, message, new Date()));
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }, []);
 
   // Track if we've already shown the fallback warning
   const fallbackWarningShown = useRef(false);
@@ -339,9 +385,8 @@ const App: React.FC = () => {
         // Clear manager-only allocation/DX state so it can't leak into a
         // rep's surfaces after a same-session account switch.
         setAllocationSnapshot(null);
-        setDxTrades([]);
-        setDxError(null);
-        setDxLoading(false);
+        dxRefreshRequestId.current += 1;
+        setDxFeed(resetDxFeed());
         setStats({
           totalActive: 0,
           awaitingAction: 0,
@@ -544,35 +589,20 @@ const App: React.FC = () => {
 
     // Subscribe to allocation snapshot for match badges on dashboard cards (managers only)
     let unsubscribeAllocation: (() => void) | undefined;
-    let dxCancelled = false;
     if (user.isManager) {
       unsubscribeAllocation = subscribeLatestAllocationSnapshot(
         (snapshot) => setAllocationSnapshot(snapshot),
         () => setAllocationSnapshot(null),
       );
-      // Fetch DX sheet for matching. Surface loading + failure so the
-      // AllocationBoard can render the DX Pipeline section (and its Refresh
-      // button) even when the fetch fails — a swallowed error left the whole
-      // section invisible with no way to recover.
-      setDxLoading(true);
-      setDxError(null);
-      void fetchDxSheet()
-        .then((trades) => { if (!dxCancelled) { setDxTrades(trades); setDxError(null); } })
-        .catch((err) => {
-          if (!dxCancelled) {
-            setDxError(err instanceof Error ? err.message : "Unable to load Dealer Exchange sheet.");
-          }
-        })
-        .finally(() => { if (!dxCancelled) setDxLoading(false); });
+      void refreshDx();
     } else {
       // Non-manager (incl. a manager→rep same-session switch): clear any
       // allocation/DX state left over from a prior manager session so the
       // order-card availability chip / match badges never render manager-only
       // allocation data on a rep's cards.
       setAllocationSnapshot(null);
-      setDxTrades([]);
-      setDxError(null);
-      setDxLoading(false);
+      dxRefreshRequestId.current += 1;
+      setDxFeed(resetDxFeed());
     }
 
     return () => {
@@ -580,10 +610,10 @@ const App: React.FC = () => {
       unsubscribeOrdersFallback?.();
       unsubscribeUsers?.();
       unsubscribeAllocation?.();
-      dxCancelled = true;
+      dxRefreshRequestId.current += 1;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- processOrdersData is stable (useCallback with []), mapDocsToOrders/isFirestoreError are module-level functions
-  }, [user]);
+  }, [user, refreshDx]);
 
   const handleAddOrder = useCallback(
     async (newOrder: Omit<Order, "id">): Promise<boolean> => {
@@ -948,11 +978,11 @@ const App: React.FC = () => {
   const orderMatchSummaries = useMemo(() => {
     if (orders.length === 0) return new Map<string, OrderMatchSummary>();
     const vehicles = allocationSnapshot?.vehicles ?? [];
-    if (vehicles.length === 0 && dxTrades.length === 0) {
+    if (vehicles.length === 0 && dxFeed.trades.length === 0) {
       return new Map<string, OrderMatchSummary>();
     }
-    return computeOrderMatchSummaries(orders, vehicles, dxTrades);
-  }, [orders, allocationSnapshot, dxTrades]);
+    return computeOrderMatchSummaries(orders, vehicles, dxFeed.trades);
+  }, [orders, allocationSnapshot, dxFeed.trades]);
 
   // Single source of truth for "is this car claimed?" — the vehicle_links
   // collection ONLY. (Previously this also unioned order.allocatedVehicleId,
@@ -1165,7 +1195,14 @@ const App: React.FC = () => {
           />
           <Route
             path="/allocation"
-            element={<AllocationBoard currentUser={user} sharedSnapshot={allocationSnapshot} sharedDxTrades={dxTrades} sharedDxError={dxError} sharedDxLoading={dxLoading} />}
+            element={(
+              <AllocationBoard
+                currentUser={user}
+                sharedSnapshot={allocationSnapshot}
+                dxFeed={dxFeed}
+                onRefreshDx={refreshDx}
+              />
+            )}
           />
           <Route
             path="/requests"

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Order, OrderStatus, AppUser } from "../types";
 import MatchPreviewModal from "./MatchPreviewModal";
-import { ACTIVE_STATUS_OPTIONS, isSecuredStatus, isAllocationLinkable } from "../constants";
+import { ACTIVE_STATUS_OPTIONS, isActiveStatus, isSecuredStatus, isAllocationLinkable } from "../constants";
 import { ChevronDownIcon } from "./icons/ChevronDownIcon";
 import StatusBadge from "./StatusBadge";
 import { TrashIcon } from "./icons/TrashIcon";
@@ -363,6 +363,13 @@ const OrderCard: React.FC<OrderCardProps> = ({
     setShowUnsecureConfirm(false);
   };
 
+  const toggleExpanded = () => {
+    setIsExpanded((previous) => !previous);
+    // Disarm a pending unlink confirmation when the card changes state so it
+    // never reopens showing a primed "Confirm".
+    setShowUnlinkConfirm(false);
+  };
+
   return (
     <>
     <div
@@ -374,19 +381,17 @@ const OrderCard: React.FC<OrderCardProps> = ({
           : "bg-white/95 border-stone-200 hover:shadow-md hover:border-stone-300"
       } border`}
     >
-      <button
-        type="button"
-        className="w-full cursor-pointer rounded-lg p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 focus-visible:ring-offset-2"
-        onClick={() => {
-          setIsExpanded(!isExpanded);
-          // Disarm a pending unlink confirmation when the card collapses so it
-          // never reopens showing a primed "Confirm".
-          setShowUnlinkConfirm(false);
-        }}
-        aria-label="Toggle order details"
-        aria-expanded={isExpanded}
+      <div
+        className="relative w-full cursor-pointer rounded-lg text-left"
       >
-        <div className="flex justify-between items-start">
+        <button
+          type="button"
+          className="absolute inset-0 z-0 w-full rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 focus-visible:ring-offset-2"
+          onClick={toggleExpanded}
+          aria-label="Toggle order details"
+          aria-expanded={isExpanded}
+        />
+        <div className="pointer-events-none relative z-10 flex items-start justify-between p-4">
           <div className="min-w-0">
             <h3
               className={`text-lg font-bold ${
@@ -434,23 +439,28 @@ const OrderCard: React.FC<OrderCardProps> = ({
                   Vehicle Linked
                 </span>
               )}
-              {matchSummary && isAllocationLinkable(order.status) && !order.allocatedVehicleId && (matchSummary.exactCount > 0 || matchSummary.partialCount > 0 || matchSummary.dxExactCount > 0 || matchSummary.dxPartialCount > 0) && (() => {
+              {matchSummary && !order.allocatedVehicleId && (() => {
+                const hasAllocationContext = isAllocationLinkable(order.status)
+                  && (matchSummary.exactCount > 0 || matchSummary.partialCount > 0);
+                const dxHistoryCount = matchSummary.dxExactCount
+                  + matchSummary.dxPartialCount
+                  + matchSummary.dxModelOnlyCount;
+                const hasDxContext = isActiveStatus(order.status) && dxHistoryCount > 0;
+                if (!hasAllocationContext && !hasDxContext) return null;
                 const allocParts: string[] = [];
                 if (matchSummary.exactCount > 0) allocParts.push(`${matchSummary.exactCount} exact`);
                 if (matchSummary.partialCount > 0) allocParts.push(`${matchSummary.partialCount} close`);
-                const dxParts: string[] = [];
-                if (matchSummary.dxExactCount > 0) dxParts.push(`${matchSummary.dxExactCount} exact`);
-                if (matchSummary.dxPartialCount > 0) dxParts.push(`${matchSummary.dxPartialCount} close`);
-                const hasExact = matchSummary.exactCount > 0 || matchSummary.dxExactCount > 0;
+                const hasExactAllocation = matchSummary.exactCount > 0;
                 return (
                   <button
                     onClick={(e) => { e.stopPropagation(); setShowMatchPreview(true); }}
-                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold hover:shadow-sm transition-shadow cursor-pointer ${hasExact ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-stone-50 border-stone-200 text-stone-700"}`}
-                    title="Preview matching vehicles"
+                    aria-label="Preview allocation matches and completed DX history"
+                    className={`pointer-events-auto inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold hover:shadow-sm transition-shadow cursor-pointer ${hasExactAllocation ? "bg-emerald-50 border-emerald-200 text-emerald-700" : hasDxContext && !hasAllocationContext ? "bg-amber-50 border-amber-200 text-amber-800" : "bg-stone-50 border-stone-200 text-stone-700"}`}
+                    title="Preview allocation matches and completed DX history"
                   >
-                    {allocParts.length > 0 && <span>{allocParts.join(", ")}</span>}
-                    {allocParts.length > 0 && dxParts.length > 0 && <span className="text-stone-300">|</span>}
-                    {dxParts.length > 0 && <span className="text-amber-700">DX: {dxParts.join(", ")}</span>}
+                    {hasAllocationContext && allocParts.length > 0 && <span>{allocParts.join(", ")}</span>}
+                    {hasAllocationContext && hasDxContext && <span className="text-stone-300">|</span>}
+                    {hasDxContext && <span className="text-amber-700">DX history: {dxHistoryCount}</span>}
                     <span>→</span>
                   </button>
                 );
@@ -478,7 +488,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
               })()}
             </div>
           </div>
-          <div className="flex items-center space-x-3 text-right flex-shrink-0 ml-4">
+          <div className="ml-4 flex flex-shrink-0 items-center space-x-3 p-1 text-right">
             <span className="text-sm font-medium text-stone-500">
               {order.date}
             </span>
@@ -491,7 +501,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
             </span>
           </div>
         </div>
-      </button>
+      </div>
       {isExpanded && (
         <div className="px-4 pb-4">
           <div className="mt-2 pt-4 border-t border-stone-200">
