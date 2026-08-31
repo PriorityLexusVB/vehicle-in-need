@@ -56,6 +56,7 @@ const HeaderLink: React.FC<HeaderLinkProps> = ({
     className={onClick ? mobileNavClass(active) : desktopNavClass(active, compact)}
     data-testid={testId}
     aria-label={ariaLabel}
+    aria-current={active ? 'page' : undefined}
   >
     {children}
   </Link>
@@ -88,7 +89,7 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
             </div>
 
             <nav
-              className="hidden items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1 md:flex"
+              className="hidden items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1 min-[1120px]:flex"
               data-testid="main-nav"
             >
               {user.isManager && (
@@ -112,6 +113,15 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
                   'Allocation Board'
                 )}
               </HeaderLink>
+              {user.isManager && (
+                <HeaderLink
+                  to="/dealer-exchange"
+                  active={currentPath === '/dealer-exchange'}
+                  testId="dx-nav-link"
+                >
+                  Dealer Exchange
+                </HeaderLink>
+              )}
               {isNonManager && (
                 <HeaderLink
                   to="/requests"
@@ -135,7 +145,7 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
           <div className="flex items-center gap-2 sm:gap-4">
             {user.isManager && (
               <>
-                <div className="hidden rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-right md:block">
+                <div className="hidden rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-right 2xl:block">
                   <span className="text-2xl font-bold leading-none text-white">{totalOrders}</span>
                   <p className="mt-1 text-[11px] font-semibold uppercase text-platinum">Active Orders</p>
                 </div>
@@ -150,7 +160,7 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
               <span className="hidden text-sm font-semibold sm:block">Sign Out</span>
             </button>
             <button
-              className="flex items-center justify-center rounded-lg border border-white/10 p-2 text-stone-200 transition-colors hover:bg-white/10 md:hidden"
+              className="flex items-center justify-center rounded-lg border border-white/10 p-2 text-stone-200 transition-colors hover:bg-white/10 min-[1120px]:hidden"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
               aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={mobileMenuOpen}
@@ -169,7 +179,7 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
       </div>
 
       <div
-        className={`overflow-hidden border-t border-white/10 bg-graphite transition-all duration-200 ease-in-out md:hidden ${mobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
+        className={`overflow-hidden border-t border-white/10 bg-graphite transition-all duration-200 ease-in-out min-[1120px]:hidden ${mobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
         data-testid="mobile-menu"
       >
         <nav className="space-y-1 px-4 py-3">
@@ -182,6 +192,16 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
             <BriefcaseIcon className="h-5 w-5" aria-hidden="true" />
             Allocation Board
           </HeaderLink>
+          {user.isManager && (
+            <HeaderLink
+              to="/dealer-exchange"
+              active={currentPath === '/dealer-exchange'}
+              testId="mobile-dx-nav-link"
+              onClick={closeMobileMenu}
+            >
+              Dealer Exchange
+            </HeaderLink>
+          )}
           {isNonManager && (
             <HeaderLink to="/requests" active={currentPath === '/requests'} onClick={closeMobileMenu}>
               <DocumentTextIcon className="h-5 w-5" aria-hidden="true" />

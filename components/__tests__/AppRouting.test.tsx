@@ -8,6 +8,9 @@ import { AppUser } from "../../types";
 function AdminPage() {
   return <div>Admin Panel</div>;
 }
+function DealerExchangePage() {
+  return <div>Dealer Exchange Page</div>;
+}
 function HomePage() {
   return <div>Home Page</div>;
 }
@@ -25,10 +28,10 @@ const nonManager: AppUser = {
   isManager: false,
 };
 
-function renderRoutes(user: AppUser | null) {
+function renderRoutes(user: AppUser | null, initialEntry = "/admin") {
   return render(
     <MemoryRouter 
-      initialEntries={["/admin"]}
+      initialEntries={[initialEntry]}
       future={{
         v7_startTransition: true,
         v7_relativeSplatPath: true,
@@ -40,6 +43,14 @@ function renderRoutes(user: AppUser | null) {
           element={
             <ProtectedRoute user={user}>
               <AdminPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dealer-exchange"
+          element={
+            <ProtectedRoute user={user}>
+              <DealerExchangePage />
             </ProtectedRoute>
           }
         />
@@ -62,6 +73,15 @@ describe("App routing protection", () => {
   it("redirects unauthenticated from /admin to /", () => {
     renderRoutes(null);
     expect(screen.queryByText("Admin Panel")).toBeNull();
+    expect(screen.getByText("Home Page")).toBeInTheDocument();
+  });
+  it("allows managers to enter the Dealer Exchange route", () => {
+    renderRoutes(manager, "/dealer-exchange");
+    expect(screen.getByText("Dealer Exchange Page")).toBeInTheDocument();
+  });
+  it("redirects representatives away from the Dealer Exchange route", () => {
+    renderRoutes(nonManager, "/dealer-exchange");
+    expect(screen.queryByText("Dealer Exchange Page")).toBeNull();
     expect(screen.getByText("Home Page")).toBeInTheDocument();
   });
 });
