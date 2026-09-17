@@ -52,11 +52,12 @@ What gets top weight, in order:
    `DashboardStats.tsx:40-63`, large `text-3xl font-bold` numeral over a small
    uppercase label, the classic stat-card inversion (big number wins, label
    is secondary).
-3. **The allocation match/confidence signal** — on `/allocation`, the
-   Published/Publisher/Report-Date card plus the parse-Confidence badge
-   (`AllocationBoard.tsx:1834-1846`, `1963-1966`) sits top-right of the board
-   header — it is the evidence a manager needs before trusting anything below
-   it.
+3. **The allocation provenance signal** — on `/allocation`, the
+   Published/Publisher/Report-Date card (`AllocationBoard.tsx:1836-1849`) is
+   the evidence a manager needs before trusting anything below it. The
+   parse-Confidence badge is NOT beside it: it lives in the Parse Preview inside
+   the manager panel, which starts closed (`AllocationBoard.tsx:577`,
+   `1950-1966`). Corrected 2026-09-17.
 4. **The order/vehicle identity line** (year + model + customer name) —
    secondary heading weight, always paired with the status pill.
 5. **Everything else** (colors, options, deposit, notes) is detail-density
@@ -71,7 +72,7 @@ steps" rule, that is a new decision, not an extraction.`
 
 **Two coexisting layers — document both, do not pretend only one exists.**
 
-### Layer 1 — the locked "luxury redesign" tokens (`src/index.css:20-38`)
+### Layer 1 — the locked "luxury redesign" tokens (`src/index.css:20-37`)
 
 > Direction locked by product (comment block, `src/index.css:11-14`): light
 > COOL operational canvas (no cream/tan/sand), dark GRAPHITE focal surfaces
@@ -85,7 +86,6 @@ steps" rule, that is a new decision, not an extraction.`
 | `--color-graphite` | `#0e1418` | Focal dark surface — the header (`Header.tsx:71`), the login card (`Login.tsx:355`), and HIGH-SIGNAL cards on the Allocation Board (linked/matched vehicle rows get the dark band; plain available inventory stays light) (`AllocationBoard.tsx:1522-1618`). Warm near-black, deliberately **not navy** — the code comment cites the sister Sales Tracker app killing the same navy value for the same reason. |
 | `--color-graphite-elevated` | `#1a1815` | One step lighter than graphite, for elevated content inside a dark island. |
 | `--color-platinum` | `#cbd0d8` | Default prestige accent — active-nav fill (`Header.tsx:32,40`: `bg-platinum text-graphite`, i.e. platinum as a BACKGROUND fill with dark text, never as light-on-dark foreground text), model-total pills, "First in line" badge context. |
-| `--color-platinum-strong` | `#aab2bd` | Stronger platinum variant (defined; no confirmed live usage found this pass — `OPEN` if it's dead). |
 
 ### Layer 2 — the chip/tone system used everywhere else (`components/ui/chipStyles.ts`)
 
@@ -113,9 +113,13 @@ for the 'Awaiting Action' status card (attention), not decoration."*
 The chip-tone system (Layer 2) is **not** universally applied to status
 color. Two other, divergent status-color maps exist in the same codebase:
 
-1. `components/OrderPreviewDrawer.tsx:18-25` — a local `STATUS_STYLES` map
-   using raw `indigo-100`/`amber-100`/`emerald-100`/`stone-100` literals
-   (Factory Order = indigo here, vs. `brand`/stone-950 in `StatusBadge`).
+1. ~~`components/OrderPreviewDrawer.tsx` local `STATUS_STYLES` map~~
+   **RESOLVED 2026-09-17:** the drawer now renders `StatusBadge`. The old map
+   showed Factory Order as a filled indigo pill (`StatusBadge` renders the
+   `brand` idle tone, a white pill with a stone border) and Locate as neutral
+   gray (vs `warning` amber), so the same order read differently on the card
+   and in the drawer. The drawer only ever receives Factory Order or Locate
+   orders (`AllocationBoard.tsx:694-703`, `isAllocationLinkable`).
 2. `constants.ts:23-30` — `STATUS_COLORS`, an indigo/amber/emerald/stone map.
    **Confirmed dead code** — grepped with zero other references in the repo
    at doc time.
@@ -207,7 +211,7 @@ routes through `StatusBadge`/`chipClasses`, never a new literal map.
   hand-rolled slide-panel. `Drawer.Overlay` = `fixed inset-0 z-50 bg-black/
   40`; `Drawer.Content` = `fixed bottom-0 right-0 top-0 z-50 ... sm:max-w-md
   sm:rounded-l-2xl` — right-side panel at `sm:`+, full-width sheet on
-  mobile (`OrderPreviewDrawer.tsx:71-73`).
+  mobile (`OrderPreviewDrawer.tsx:63-65`).
 
 ### Destructive actions — inline two-step confirm, never `window.confirm`
 
@@ -259,11 +263,15 @@ toast (`AllocationBoard.tsx:1971-1976`).
 
 - **Touch target floor:** per the ROB Design DNA skill, 44px is the shared
   house preference (WCAG 2.2 AA floor is 24px — never cite 44 as the AA
-  minimum). **Measured gap:** the Header's mobile hamburger button is
-  `p-2` around a `h-6 w-6` icon (`Header.tsx:152-159`) ≈ 40px total —
-  clears WCAG AA but is under the house 44px preference. Flagged here, not
-  silently passed; fixing it is a `RECOMMENDED`, not a `BLOCKER`, since it
-  clears the real accessibility floor.
+  minimum). Icon-only buttons are `h-11 w-11` with the icon centered; a
+  button that gains a text label at `sm:` uses `min-h-11 min-w-11`. Close and
+  dismiss glyphs need >=3:1 against their surface (`stone-500` on white,
+  `yellow-700` on `yellow-50`), never `stone-400`/`yellow-500`. Raised to
+  44px on 2026-09-17: the Header hamburger (was ~42px) and Sign Out (~36px),
+  the order-preview drawer close (~32px, `-my-1.5` so it doesn't push the
+  header row down), the DX dealer-history close (~32px), the match-preview
+  close (~36px) and the zero-manager warning dismiss (~32px). The one
+  exception is in the Override Register (the search clear button).
 - **Destructive confirmation:** see Component Law above — inline two-step,
   always. Never introduce a native `confirm()` dialog or a full-screen modal
   for a delete/unlink/unsecure action; it would be inconsistent with every
@@ -331,32 +339,45 @@ reject:**
   (`max-h-0` → `max-h-96`, `transition-all duration-200`) directly under the
   header, not an overlay (`Header.tsx:172`).
 - **Allocation Board filters collapse to a toggle button below `lg:`**
-  (`AllocationBoard.tsx:2089` `lg:hidden`) that reports an active-filter
+  (`AllocationBoard.tsx:2093-2102` `lg:hidden`) that reports an active-filter
   count in its own label ("Filters (2)") rather than a bare "Filters" — the
   user knows before opening whether anything is currently narrowing the
   view.
 - **Order-preview drawer goes full-width on mobile, fixed right-panel at
-  `sm:`+** (`OrderPreviewDrawer.tsx:73` — no `sm:max-w-md` below `sm:`).
-- `OPEN: no explicit "minimum visible at 375px" contract exists in code for
-  any surface (e.g., what must stay above the fold on OrderCard at 375px).
-  This is a genuine gap — a first real mobile-focused pass on this app
-  should establish and record one here.`
+  `sm:`+** (`OrderPreviewDrawer.tsx:65` — no `sm:max-w-md` below `sm:`).
+- **Minimum visible at 375px (LAW, 2026-09-17).** Required by the min-viable
+  DESIGN.md spec and the Interaction Integrity contract. The real fold is
+  375×650 (iPhone Safari with its bar), not 375×812. Without scrolling:
+  - every route: the header row with the 44px menu button, and no horizontal
+    overflow at the page root;
+  - `/allocation`: the Published/Publisher/Report Date card (hierarchy item
+    3) and the filter toggle with its active-filter count;
+  - order-preview drawer: customer name, `StatusBadge` and the close button,
+    pinned in the drawer header.
+  Status: measured 2026-09-17 in the mock-data preview harness (real
+  components, mocked services; not live screens, which need a test sign-in).
+  At 375px: menu and Sign Out 44x44; no root horizontal overflow; the
+  Published card and Filters toggle above the fold; drawer close 44x44, with
+  badge and name aligned in the pinned drawer header.
+  `OPEN` (a known gap, not met today): the first OrderCard's `StatusBadge` +
+  identity line (hierarchy items 1 and 4) sits BELOW the 650px fold. On the
+  manager orders view the stacked KPI cards push it to y=1192px (measured in
+  the harness at 375px); on
+  `/requests` the order form comes first. Whether to reorder is a product
+  call.
 
 ## Override Register
 
-None yet — this is a stub, not a matured spec. Exceptions to the rules
+One entry so far (2026-09-17) — this is still a stub, not a matured spec. Exceptions to the rules
 above should be added here in this exact shape as they're decided:
 
 | Pattern | Exception | Reason | Owner | Date |
 | --- | --- | --- | --- | --- |
-| *(none recorded)* | — | — | — | — |
+| Icon-only button 44px | Search clear button inside the orders search field is 40px (`h-10 w-10`, input `pr-11`) | An inline adornment can't exceed the 46px field without covering the border; 40px clears WCAG 2.2 AA (24px) | Design law (HOME) | 2026-09-17 |
 
-The one KNOWN, already-shipped divergence from "always use `StatusBadge`"
-is `OrderPreviewDrawer`'s local `STATUS_STYLES` map (see "Documented palette
-drift" above). It is recorded there as a FACT, not entered here as an
-approved override, because no decision to keep it as intentional has been
-made — `OPEN: reconcile OrderPreviewDrawer to`chipClasses`, or explicitly
-approve the divergence and move this row into the table above.`
+The one former divergence from "always use `StatusBadge`"
+(`OrderPreviewDrawer`'s local `STATUS_STYLES` map) was reconciled on
+2026-09-17. No override is needed.
 
 ## Taste Ledger
 
@@ -376,14 +397,16 @@ _(none yet)*
 
 ### Open
 
-- Should the mobile hamburger tap target grow from ~40px to the house
-  44px floor? (see Interaction Law)
-- Should `OrderPreviewDrawer`'s divergent status colors be reconciled to
-  `chipClasses`, or formally approved as an intentional exception?
-- Is a 375px minimum-visible contract needed for OrderCard / the Allocation
-  Board? (see Mobile Rules)
-- Is `--color-platinum-strong` (`src/index.css:37`) actually used anywhere,
-  or is it dead like `constants.ts`'s `STATUS_COLORS`?
+*(none)*. The four questions listed here until 2026-09-17 were not taste
+calls. Existing rules settled them, so they are resolved in place rather
+than entered as Rob-approved taste:
+
+- Hamburger to 44px: house target rule (Interaction Law).
+- Drawer status colors: reconciled to `StatusBadge` (same entity must read
+  the same across surfaces).
+- 375px contract: required by the min-viable spec (Mobile Rules).
+- `--color-platinum-strong`: 0 uses outside its own definition, removed
+  from `src/index.css`.
 
 ## Cross-references
 

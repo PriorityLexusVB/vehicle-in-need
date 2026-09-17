@@ -56,7 +56,7 @@ const ZeroManagerWarning: React.FC<ZeroManagerWarningProps> = ({
           <button
             type="button"
             onClick={() => setDismissed(true)}
-            className="inline-flex rounded-md bg-yellow-50 p-1.5 text-yellow-500 hover:bg-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-600 focus:ring-offset-2 focus:ring-offset-yellow-50"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-md bg-yellow-50 text-yellow-700 hover:bg-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-600 focus:ring-offset-2 focus:ring-offset-yellow-50"
             aria-label="Dismiss warning"
           >
             <CloseIcon className="h-5 w-5" />

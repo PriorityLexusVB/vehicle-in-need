@@ -143,14 +143,14 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
             )}
             <button
               onClick={onLogout}
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 p-2 text-stone-300 transition-colors hover:bg-white/10 hover:text-white sm:px-3"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-white/10 p-2 text-stone-300 transition-colors hover:bg-white/10 hover:text-white sm:px-3"
               aria-label="Sign Out"
             >
               <LogoutIcon className="h-5 w-5" />
               <span className="hidden text-sm font-semibold sm:block">Sign Out</span>
             </button>
             <button
-              className="flex items-center justify-center rounded-lg border border-white/10 p-2 text-stone-200 transition-colors hover:bg-white/10 md:hidden"
+              className="flex h-11 w-11 items-center justify-center rounded-lg border border-white/10 text-stone-200 transition-colors hover:bg-white/10 md:hidden"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
               aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={mobileMenuOpen}

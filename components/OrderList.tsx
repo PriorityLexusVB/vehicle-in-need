@@ -264,12 +264,12 @@ const OrderList: React.FC<OrderListProps> = ({
             placeholder="Search by Customer, Salesperson, Model, Deal #, Stock #, or VIN..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="block w-full rounded-lg border border-stone-300 bg-stone-50 p-2.5 pr-9 text-stone-900 shadow-sm outline-none transition focus:border-stone-500 focus:ring-2 focus:ring-stone-200 sm:text-sm"
+            className="block w-full rounded-lg border border-stone-300 bg-stone-50 p-2.5 pr-11 text-stone-900 shadow-sm outline-none transition focus:border-stone-500 focus:ring-2 focus:ring-stone-200 sm:text-sm"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 transition-colors"
+              className="absolute right-0.5 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-md text-stone-500 hover:text-stone-700 transition-colors"
               aria-label="Clear search"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

@@ -34,7 +34,6 @@
   /* Platinum — the default prestige accent (active nav, selected filters,
      model-total pills, dividers). Gold is NOT a default accent. */
   --color-platinum: #cbd0d8;
-  --color-platinum-strong: #aab2bd;
 }
 
 /* @source directives tell Tailwind where to find classes to generate

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Drawer } from "vaul";
-import { Order, OrderStatus } from "../types";
+import { Order } from "../types";
+import StatusBadge from "./StatusBadge";
 
 /**
  * OrderPreviewDrawer — K3 side-panel order preview.
@@ -15,15 +16,6 @@ import { Order, OrderStatus } from "../types";
  * existing bottom-sheet usage in VehicleLinkSelector.tsx (same vaul dep, already
  * bundled).
  */
-
-const STATUS_STYLES: Record<string, string> = {
-  [OrderStatus.FactoryOrder]: "bg-indigo-100 text-indigo-700",
-  [OrderStatus.DealerExchange]: "bg-amber-100 text-amber-700",
-  [OrderStatus.Received]: "bg-emerald-100 text-emerald-700",
-  [OrderStatus.Delivered]: "bg-emerald-100 text-emerald-700",
-  [OrderStatus.Secured]: "bg-emerald-100 text-emerald-700",
-  [OrderStatus.Locate]: "bg-stone-100 text-stone-600",
-};
 
 function formatCurrency(n: number | undefined): string {
   if (n == null || Number.isNaN(n)) return "—";
@@ -87,18 +79,13 @@ export default function OrderPreviewDrawer({ order, onClose }: OrderPreviewDrawe
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <span
-                    className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                      STATUS_STYLES[order.status] ?? "bg-stone-100 text-stone-600"
-                    }`}
-                  >
-                    {order.status}
-                  </span>
+                  {/* Same StatusBadge as OrderCard, so the status label and color match across surfaces. */}
+                  <StatusBadge status={order.status} />
                   <button
                     type="button"
                     onClick={onClose}
                     aria-label="Close order preview"
-                    className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600"
+                    className="-my-1.5 flex h-11 w-11 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-700"
                   >
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

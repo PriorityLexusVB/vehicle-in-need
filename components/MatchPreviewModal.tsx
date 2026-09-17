@@ -50,7 +50,7 @@ const MatchPreviewModal: React.FC<MatchPreviewModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-2 text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-700"
             aria-label="Close preview"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
