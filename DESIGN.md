@@ -20,6 +20,7 @@ to delivery, and match incoming factory allocation against open customer
 orders before a competitor rep can claim the same unit.
 
 **What the user must decide in <5s, per role:**
+
 - **Salesperson (non-manager):** "Is MY order still open, and did a matching
   vehicle just arrive?" — `/requests` shows only their own orders
   (`README.md:44-47`).
@@ -33,7 +34,7 @@ orders before a competitor rep can claim the same unit.
 Extracted from `App.tsx:1089-1266` (route table):
 
 | Route | Audience | Purpose |
-|---|---|---|
+| --- | --- | --- |
 | `/` (Dashboard) | Manager only — non-managers `<Navigate>` to `/requests` (`App.tsx:1188`) | `DashboardStats` KPI strip + full order queue (`OrderList`) + Add Order / Import CSV toggles (`App.tsx:1092-1183`) |
 | `/allocation` (Allocation Board) | Both roles (manager sees more — DX partners, matches tab) | Live factory-allocation snapshot vs. open orders; Strategy / Full Log / Matches tabs (`AllocationBoard.tsx:2026-2050`) |
 | `/requests` | Non-manager only — managers `<Navigate>` to `/` (`App.tsx:1213`) | Order submission form + "Your Orders" list scoped to the creator (`App.tsx:1216-1249`) |
@@ -78,7 +79,7 @@ steps" rule, that is a new decision, not an extraction.`
 > NOT a default accent.**
 
 | Token | Value | Job |
-|---|---|---|
+| --- | --- | --- |
 | `--color-canvas` | `#eef2f6` | Page background for the app/login/loading shell (`App.tsx:1023`, `Login.tsx:353`, `LoadingSpinner.tsx:5`). Replaces a retired warm `#f6f1ea` cream shell — **do not reintroduce cream/tan/sand.** |
 | `--color-canvas-elevated` | `#f8fafc` | Elevated neutral surface within the canvas layer. |
 | `--color-graphite` | `#0e1418` | Focal dark surface — the header (`Header.tsx:71`), the login card (`Login.tsx:355`), and HIGH-SIGNAL cards on the Allocation Board (linked/matched vehicle rows get the dark band; plain available inventory stays light) (`AllocationBoard.tsx:1522-1618`). Warm near-black, deliberately **not navy** — the code comment cites the sister Sales Tracker app killing the same navy value for the same reason. |
@@ -91,7 +92,7 @@ steps" rule, that is a new decision, not an extraction.`
 This is the **canonical, reusable** semantic-color primitive — `chipClasses({tone, active, size})` renders a pill from a fixed `ChipTone` set. Prefer this over any ad-hoc Tailwind color literal for a new status/filter/action chip.
 
 | Tone | Idle | Active | Job |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `neutral` | `stone-200`/white/`stone-700` | `stone-900` fill, white text | Default/no-signal state (filter="all", inactive tab). |
 | `brand` | `stone-200`/white | `stone-950` fill, white text | Primary navigation/tab selection (Strategy/Log view, powertrain filters) — `AllocationBoard.tsx:2031,2039,2085`. |
 | `success` | `emerald-50`/`emerald-200` | `emerald-700` fill | Secured/Received/Delivered order status; "Matches" tab when matches exist — `StatusBadge.tsx:18-20`, `AllocationBoard.tsx:2048`. |
@@ -102,6 +103,7 @@ This is the **canonical, reusable** semantic-color primitive — `chipClasses({t
 
 Explicit code comment confirms INTENT, not just usage: *"Amber is reserved
 for the 'Awaiting Action' status card (attention), not decoration."*
+
 - Neutral count → `bg-stone-100` (Total Active).
 - Attention → `bg-amber-50` / `text-amber-700` (Awaiting Action).
 - Earned/positive → `bg-emerald-50` / `text-emerald-700` (Secured Last 30d).
@@ -154,6 +156,7 @@ routes through `StatusBadge`/`chipClasses`, never a new literal map.
 ## Component Law
 
 ### Cards
+
 - Default card radius: `rounded-lg` (93 occurrences — the dominant radius in
   the codebase). `rounded-xl` for section-level containers (the Allocation
   Board shell, `AllocationBoard.tsx:1825`). `rounded-full` exclusively for
@@ -167,6 +170,7 @@ routes through `StatusBadge`/`chipClasses`, never a new literal map.
   is the one place graphite is used as a CONTENT signal, not just chrome.
 
 ### Status
+
 - **Status color is ALWAYS rendered via `StatusBadge` → `chipClasses`.**
   Never introduce a third literal color map (see "Documented palette drift"
   above). If a surface needs the drawer's own compact status pill, import
@@ -174,6 +178,7 @@ routes through `StatusBadge`/`chipClasses`, never a new literal map.
   object.
 
 ### Forms (`OrderForm.tsx`)
+
 - `FormField` pattern: label → input slot → **hint OR error, never both**
   (error replaces hint) — `OrderForm.tsx:42-48`. Error text: `text-xs
   text-red-600`.
@@ -188,6 +193,7 @@ routes through `StatusBadge`/`chipClasses`, never a new literal map.
   `CheckCircleIcon`, `animate-fade-in-down` (`OrderForm.tsx:174-179`).
 
 ### Modals (`MatchPreviewModal.tsx`)
+
 - `fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4`
   backdrop; `role="dialog"`; backdrop click closes via `onClose` on the
   outer div, content `stopPropagation()`s so clicking inside never closes it
@@ -196,6 +202,7 @@ routes through `StatusBadge`/`chipClasses`, never a new literal map.
   Container radius: `rounded-2xl`, `bg-white`.
 
 ### Drawers (`OrderPreviewDrawer.tsx`, `VehicleLinkSelector.tsx`)
+
 - Built on `vaul` (already a dependency — `package.json:64`), not a
   hand-rolled slide-panel. `Drawer.Overlay` = `fixed inset-0 z-50 bg-black/
   40`; `Drawer.Content` = `fixed bottom-0 right-0 top-0 z-50 ... sm:max-w-md
@@ -203,6 +210,7 @@ routes through `StatusBadge`/`chipClasses`, never a new literal map.
   mobile (`OrderPreviewDrawer.tsx:71-73`).
 
 ### Destructive actions — inline two-step confirm, never `window.confirm`
+
 Every destructive/reversal action found (delete order, unlink vehicle,
 mark-unsecured) uses the SAME inline pattern: an idle button that, on click,
 swaps IN PLACE for a `Confirm` / `Cancel` (or "Yes, delete" / "Cancel") pair
@@ -213,6 +221,7 @@ State resets on the card re-rendering with different data so a stale
 load-bearing).
 
 ### Empty states
+
 Icon (muted `stone-400`, 48px `h-12 w-12`) + `text-sm font-semibold`
 heading + `text-sm text-stone-500` explanatory subtext, centered
 (`OrderList.tsx:330-358`). Copy is context-aware: distinguishes a genuinely
@@ -223,6 +232,7 @@ posture at a smaller weight: `text-sm text-stone-400`, "No vehicles match
 current filters." (`AllocationBoard.tsx:2343`).
 
 ### Loading states
+
 Full-page: centered `h-16 w-16 animate-spin` ring on `bg-canvas`, `role=
 "status"` + visually-hidden "Loading..." text for a11y (`LoadingSpinner.tsx`).
 Inline/button-level: `ButtonSpinner` (24x24 default, `animate-spin` SVG,
@@ -230,6 +240,7 @@ Inline/button-level: `ButtonSpinner` (24x24 default, `animate-spin` SVG,
 "Unlinking...") — never a bare disabled button with no in-progress signal.
 
 ### Error / alert banners
+
 `ZeroManagerWarning.tsx` uses `role="alert"`, `bg-yellow-50 border-l-4
 border-yellow-400`, dismissable via an `X`. **Note:** this predates and does
 not match the `chipStyles` `warning` tone (`amber-*`, not `yellow-*`) — a
@@ -300,6 +311,7 @@ Per the ROB Design DNA skill's project routing for Vehicle-in-Need: preserve
 platinum canvas, graphite focal surfaces, white data panels, tight
 operational density, restrained radius, restrained color. **Explicitly
 reject:**
+
 - Cream/tan/sand canvas (already retired once, `src/index.css:22`; do not
   reintroduce).
 - Decorative gold as a default accent (gold is not part of this app's
@@ -336,14 +348,14 @@ None yet — this is a stub, not a matured spec. Exceptions to the rules
 above should be added here in this exact shape as they're decided:
 
 | Pattern | Exception | Reason | Owner | Date |
-|---|---|---|---|---|
-| _(none recorded)_ | | | | |
+| --- | --- | --- | --- | --- |
+| *(none recorded)* | — | — | — | — |
 
 The one KNOWN, already-shipped divergence from "always use `StatusBadge`"
 is `OrderPreviewDrawer`'s local `STATUS_STYLES` map (see "Documented palette
 drift" above). It is recorded there as a FACT, not entered here as an
 approved override, because no decision to keep it as intentional has been
-made — `OPEN: reconcile OrderPreviewDrawer to `chipClasses`, or explicitly
+made — `OPEN: reconcile OrderPreviewDrawer to`chipClasses`, or explicitly
 approve the divergence and move this row into the table above.`
 
 ## Taste Ledger
@@ -355,12 +367,15 @@ cycle has run against this repo under that discipline yet — an empty ledger
 is valid for a stub.
 
 ### Approved
-_(none yet)_
+
+_(none yet)*
 
 ### Rejected
-_(none yet)_
+
+_(none yet)*
 
 ### Open
+
 - Should the mobile hamburger tap target grow from ~40px to the house
   44px floor? (see Interaction Law)
 - Should `OrderPreviewDrawer`'s divergent status colors be reconciled to
