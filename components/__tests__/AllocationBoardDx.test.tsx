@@ -1,7 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
-import type { AppUser } from "../../types";
 import {
   beginDxRefresh,
   completeDxRefresh,
@@ -9,32 +8,7 @@ import {
   failDxRefresh,
 } from "../../src/utils/dxFeedState";
 import { getDxDirectionMeaning, type DxDirection, type DxTrade } from "../../src/utils/dxSheetParser";
-import AllocationBoard from "../AllocationBoard";
-
-vi.mock("../../services/allocationService", () => ({
-  subscribeLatestAllocationSnapshot: vi.fn(() => () => undefined),
-  publishAllocationSnapshot: vi.fn(),
-}));
-vi.mock("../../services/orderService", () => ({
-  subscribeActiveOrders: vi.fn(() => () => undefined),
-}));
-vi.mock("../../services/orderLinkingService", () => ({
-  linkVehicleToOrder: vi.fn(),
-  unlinkVehicleFromOrder: vi.fn(),
-}));
-vi.mock("../../services/useVehicleLinks", () => ({
-  useVehicleLinks: vi.fn(() => ({ linksByVehicleId: new Map() })),
-}));
-vi.mock("../../src/utils/pdfTextExtractor", () => ({
-  extractAllocationTextFromPdf: vi.fn(),
-}));
-
-const manager: AppUser = {
-  uid: "manager-1",
-  email: "manager@priorityautomotive.com",
-  displayName: "Manager",
-  isManager: true,
-};
+import DealerExchange from "../DealerExchange";
 
 function trade(id: string, date: string, direction: DxDirection, sourceYear = 2026): DxTrade {
   return {
@@ -79,12 +53,7 @@ function renderFeed(
 ) {
   return render(
     <MemoryRouter initialEntries={[initialEntry]}>
-      <AllocationBoard
-        currentUser={manager}
-        sharedSnapshot={null}
-        dxFeed={dxFeed}
-        onRefreshDx={onRefreshDx}
-      />
+      <DealerExchange dxFeed={dxFeed} onRefreshDx={onRefreshDx} />
     </MemoryRouter>,
   );
 }
@@ -93,7 +62,7 @@ const historical = trade("history", "2025-05-01", "THEIRS", 2025);
 const live = trade("live", "2026-08-25", "OURS");
 const successAt = new Date("2026-08-29T17:15:00Z");
 
-describe("AllocationBoard DX feed states", () => {
+describe("Dealer Exchange surface", () => {
   it("shows CURRENT with separate business-record and browser-fetch timestamps", () => {
     const feed = completeDxRefresh(createDxFeedState([historical]), [live], successAt, [{
       sourceYear: 2026,
@@ -105,6 +74,7 @@ describe("AllocationBoard DX feed states", () => {
     const onRefresh = vi.fn();
     renderFeed(feed, onRefresh);
 
+    expect(screen.getByRole("heading", { name: "Dealer Exchange" })).toBeInTheDocument();
     expect(screen.getByTestId("dx-feed-status")).toHaveTextContent("CURRENT");
     expect(screen.getByText(/Latest DX record/)).toHaveTextContent("Aug 25, 2026");
     expect(screen.getByText(/Browser fetched/)).not.toHaveTextContent("Aug 25, 2026");

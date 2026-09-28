@@ -71,6 +71,10 @@ describe("OrderCard completed DX context", () => {
     expect(screen.getByText("1 same color")).toBeInTheDocument();
     expect(screen.getByText("1 related color")).toBeInTheDocument();
     expect(screen.getByText("2 model history")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Review completed DX history" })).toHaveAttribute(
+      "href",
+      "/dealer-exchange?scrollTo=dx-pipeline&dxModel=TX350",
+    );
   });
 
   it("does not present historical DX context on a secured order", () => {
