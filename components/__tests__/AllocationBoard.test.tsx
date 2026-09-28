@@ -148,6 +148,17 @@ beforeEach(() => {
 });
 
 describe('AllocationBoard', () => {
+  it('does not render the Dealer Exchange surface at the bottom of the board', async () => {
+    renderBoard({ currentUser: managerUser });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('allocation-strategy-view')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('Dealer Exchange Pipeline')).toBeNull();
+    expect(document.getElementById('dx-pipeline')).toBeNull();
+  });
+
   it('hides manager controls for consultants and defaults to strategy view', async () => {
     renderBoard({ currentUser: consultantUser });
 

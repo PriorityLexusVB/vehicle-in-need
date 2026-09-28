@@ -1,7 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
-import type { AppUser } from "../../types";
 import {
   beginDxRefresh,
   completeDxRefresh,
@@ -9,32 +8,7 @@ import {
   failDxRefresh,
 } from "../../src/utils/dxFeedState";
 import { getDxDirectionMeaning, type DxDirection, type DxTrade } from "../../src/utils/dxSheetParser";
-import AllocationBoard from "../AllocationBoard";
-
-vi.mock("../../services/allocationService", () => ({
-  subscribeLatestAllocationSnapshot: vi.fn(() => () => undefined),
-  publishAllocationSnapshot: vi.fn(),
-}));
-vi.mock("../../services/orderService", () => ({
-  subscribeActiveOrders: vi.fn(() => () => undefined),
-}));
-vi.mock("../../services/orderLinkingService", () => ({
-  linkVehicleToOrder: vi.fn(),
-  unlinkVehicleFromOrder: vi.fn(),
-}));
-vi.mock("../../services/useVehicleLinks", () => ({
-  useVehicleLinks: vi.fn(() => ({ linksByVehicleId: new Map() })),
-}));
-vi.mock("../../src/utils/pdfTextExtractor", () => ({
-  extractAllocationTextFromPdf: vi.fn(),
-}));
-
-const manager: AppUser = {
-  uid: "manager-1",
-  email: "manager@priorityautomotive.com",
-  displayName: "Manager",
-  isManager: true,
-};
+import DealerExchange from "../DealerExchange";
 
 function trade(id: string, date: string, direction: DxDirection, sourceYear = 2026): DxTrade {
   return {
@@ -79,12 +53,7 @@ function renderFeed(
 ) {
   return render(
     <MemoryRouter initialEntries={[initialEntry]}>
-      <AllocationBoard
-        currentUser={manager}
-        sharedSnapshot={null}
-        dxFeed={dxFeed}
-        onRefreshDx={onRefreshDx}
-      />
+      <DealerExchange dxFeed={dxFeed} onRefreshDx={onRefreshDx} />
     </MemoryRouter>,
   );
 }
@@ -93,7 +62,7 @@ const historical = trade("history", "2025-05-01", "THEIRS", 2025);
 const live = trade("live", "2026-08-25", "OURS");
 const successAt = new Date("2026-08-29T17:15:00Z");
 
-describe("AllocationBoard DX feed states", () => {
+describe("Dealer Exchange surface", () => {
   it("shows CURRENT with separate business-record and browser-fetch timestamps", () => {
     const feed = completeDxRefresh(createDxFeedState([historical]), [live], successAt, [{
       sourceYear: 2026,
@@ -105,10 +74,11 @@ describe("AllocationBoard DX feed states", () => {
     const onRefresh = vi.fn();
     renderFeed(feed, onRefresh);
 
+    expect(screen.getByRole("heading", { name: "Dealer Exchange" })).toBeInTheDocument();
     expect(screen.getByTestId("dx-feed-status")).toHaveTextContent("CURRENT");
-    expect(screen.getByText(/Latest DX record/)).toHaveTextContent("Aug 25, 2026");
-    expect(screen.getByText(/Browser fetched/)).not.toHaveTextContent("Aug 25, 2026");
-    expect(screen.getByText("2 completed")).toBeInTheDocument();
+    expect(screen.getByText("Latest completed DX").parentElement).toHaveTextContent("Aug 25, 2026");
+    expect(screen.getByText("Source checked").parentElement).not.toHaveTextContent("Aug 25, 2026");
+    expect(screen.getByText("2 completed exchanges")).toBeInTheDocument();
     expect(screen.getByTestId("dx-rejected-source-rows")).toHaveTextContent(
       "1 non-transaction source row was excluded from completed metrics",
     );
@@ -125,7 +95,7 @@ describe("AllocationBoard DX feed states", () => {
     renderFeed(beginDxRefresh(current, new Date("2026-08-29T17:16:00Z")));
 
     expect(screen.getByTestId("dx-feed-status")).toHaveTextContent("SYNCING");
-    expect(screen.getByText("2 completed")).toBeInTheDocument();
+    expect(screen.getByText("2 completed exchanges")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Syncing..." })).toBeDisabled();
   });
 
@@ -135,7 +105,7 @@ describe("AllocationBoard DX feed states", () => {
 
     expect(screen.getByTestId("dx-feed-status")).toHaveTextContent("STALE");
     expect(screen.getByText(/Showing last successful data/)).toBeInTheDocument();
-    expect(screen.getByText("2 completed")).toBeInTheDocument();
+    expect(screen.getByText("2 completed exchanges")).toBeInTheDocument();
   });
 
   it("distinguishes a cold SOURCE ERROR from a valid NO CURRENT DATA response", () => {
@@ -147,13 +117,13 @@ describe("AllocationBoard DX feed states", () => {
     const first = renderFeed(coldFailure);
     expect(screen.getByTestId("dx-feed-status")).toHaveTextContent("SOURCE ERROR");
     expect(screen.getByText(/Current 2026 source unavailable/)).toBeInTheDocument();
-    expect(screen.getByText("1 completed")).toBeInTheDocument();
+    expect(screen.getByText("1 completed exchange")).toBeInTheDocument();
     first.unmount();
 
     renderFeed(completeDxRefresh(createDxFeedState([historical]), [], successAt));
     expect(screen.getByTestId("dx-feed-status")).toHaveTextContent("NO CURRENT DATA");
     expect(screen.getByText(/No current 2026 DX rows were returned/)).toBeInTheDocument();
-    expect(screen.getByText("1 completed")).toBeInTheDocument();
+    expect(screen.getByText("1 completed exchange")).toBeInTheDocument();
   });
 
   it("opens completed history and keeps the URL DX model highlight for the review CTA", () => {
@@ -172,6 +142,8 @@ describe("AllocationBoard DX feed states", () => {
       "true",
     );
     expect(screen.getByTestId("dx-completed-history")).toBeInTheDocument();
+    expect(screen.getAllByTestId("dx-mobile-history-record")).toHaveLength(1);
+    expect(screen.getByText("View dealer relationship →")).toBeInTheDocument();
     expect(document.querySelector('#dx-pipeline tr[data-dx-highlight="true"]')).not.toBeNull();
 
     act(() => vi.advanceTimersByTime(800));

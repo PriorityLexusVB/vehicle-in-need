@@ -46,20 +46,20 @@ function vehicleLabel(trade: DxTrade): string {
 interface MetricProps {
   label: string;
   value: string | number;
-  tone?: "amber" | "emerald" | "stone";
+  tone?: "platinum" | "white" | "muted";
 }
 
-function Metric({ label, value, tone = "stone" }: MetricProps) {
+function Metric({ label, value, tone = "white" }: MetricProps) {
   const toneClasses = {
-    amber: "border-amber-200 bg-amber-50 text-amber-900",
-    emerald: "border-emerald-200 bg-emerald-50 text-emerald-900",
-    stone: "border-stone-200 bg-stone-50 text-stone-900",
+    platinum: "text-platinum",
+    white: "text-white",
+    muted: "text-stone-300",
   }[tone];
 
   return (
-    <div className={`rounded-xl border p-3 ${toneClasses}`}>
-      <p className="text-2xl font-bold tabular-nums">{value}</p>
-      <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wide opacity-70">{label}</p>
+    <div className="min-w-0 border-l border-white/15 p-3 first:border-l-0">
+      <p className={`text-xl font-bold tabular-nums ${toneClasses}`}>{value}</p>
+      <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-stone-400">{label}</p>
     </div>
   );
 }
@@ -87,12 +87,12 @@ function DealerHistoryDrawer({ relationship, onClose }: DealerHistoryDrawerProps
         >
           {relationship && (
             <>
-              <div className="flex items-start justify-between gap-3 border-b border-stone-100 p-4">
+              <div className="flex items-start justify-between gap-3 bg-graphite p-4 text-white sm:rounded-tl-2xl">
                 <div className="min-w-0">
-                  <Drawer.Title className="truncate text-lg font-semibold text-stone-900">
+                  <Drawer.Title className="truncate text-lg font-semibold text-white">
                     {relationship.displayName}
                   </Drawer.Title>
-                  <p className="mt-0.5 text-sm text-stone-500">
+                  <p className="mt-0.5 text-sm text-stone-300">
                     {relationship.dealerCode ? `Dealer ${relationship.dealerCode}` : "Dealer code not recorded"}
                   </p>
                   {relationship.aliases.length > 1 && (
@@ -105,7 +105,7 @@ function DealerHistoryDrawer({ relationship, onClose }: DealerHistoryDrawerProps
                   type="button"
                   onClick={onClose}
                   aria-label="Close dealer history"
-                  className="flex h-11 w-11 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-700"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-stone-300 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-platinum"
                 >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -115,11 +115,11 @@ function DealerHistoryDrawer({ relationship, onClose }: DealerHistoryDrawerProps
 
               <div className="flex-1 overflow-y-auto p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-stone-400">All completed exchanges</p>
-                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  <Metric label="They helped us" value={relationship.allTime.theyHelpedUs} tone="amber" />
-                  <Metric label="We helped them" value={relationship.allTime.weHelpedThem} tone="emerald" />
+                <div className="mt-2 grid grid-cols-2 overflow-hidden rounded-lg bg-graphite sm:grid-cols-4">
+                  <Metric label="They helped us" value={relationship.allTime.theyHelpedUs} tone="platinum" />
+                  <Metric label="We helped them" value={relationship.allTime.weHelpedThem} />
                   <Metric label="Total completed" value={relationship.allTime.totalCompleted} />
-                  <Metric label="Balance" value={balanceLabel(relationship.allTime.balance)} />
+                  <Metric label="Balance" value={balanceLabel(relationship.allTime.balance)} tone="muted" />
                 </div>
 
                 <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-3">
@@ -153,9 +153,9 @@ function DealerHistoryDrawer({ relationship, onClose }: DealerHistoryDrawerProps
                           <p className="text-sm font-medium text-stone-700">{formatDate(trade.date)}</p>
                           <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${
                             trade.direction === "OURS"
-                              ? "bg-amber-100 text-amber-800"
+                              ? "bg-platinum text-graphite"
                               : trade.direction === "THEIRS"
-                                ? "bg-emerald-100 text-emerald-800"
+                                ? "bg-stone-200 text-stone-800"
                                 : "bg-stone-100 text-stone-600"
                           }`}>
                             {directionLabel(trade)}
@@ -166,7 +166,7 @@ function DealerHistoryDrawer({ relationship, onClose }: DealerHistoryDrawerProps
                         href={trade.sourceRowUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="mt-2 inline-flex text-xs font-medium text-amber-700 hover:text-amber-800 hover:underline"
+                        className="mt-2 inline-flex min-h-11 items-center text-xs font-medium text-stone-700 underline decoration-stone-300 underline-offset-2 hover:text-stone-950"
                       >
                         Source: {trade.sourceYear} row {trade.sourceRowNumber} ↗
                       </a>
@@ -222,20 +222,20 @@ export default function DxPartners({
 
   return (
     <section data-testid="dx-partners">
-      <div className="flex flex-col gap-3 rounded-xl border border-stone-200 bg-white p-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-3 border-b border-stone-300 pb-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700">Completed relationship history</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-500">Completed relationship history</p>
           <h4 className="mt-1 text-xl font-bold text-stone-900">Dealer Exchange Partners</h4>
           <p className="mt-1 max-w-2xl text-sm text-stone-500">
             Factual completed exchanges only. No request, decline, response-rate, or black-box score is inferred.
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:items-end">
-          <div className="inline-flex self-start rounded-lg border border-stone-200 bg-stone-50 p-1" role="group" aria-label="Dealer relationship time range">
+          <div className="inline-flex self-start rounded-lg border border-stone-300 bg-white p-1" role="group" aria-label="Dealer relationship time range">
             <button
               type="button"
               onClick={() => setRange("all")}
-              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${range === "all" ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-700"}`}
+              className={`min-h-11 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${range === "all" ? "bg-graphite text-white" : "text-stone-500 hover:bg-stone-100 hover:text-stone-800"}`}
               aria-pressed={range === "all"}
             >
               All time
@@ -243,7 +243,7 @@ export default function DxPartners({
             <button
               type="button"
               onClick={() => setRange("recent")}
-              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${range === "recent" ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-700"}`}
+              className={`min-h-11 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${range === "recent" ? "bg-graphite text-white" : "text-stone-500 hover:bg-stone-100 hover:text-stone-800"}`}
               aria-pressed={range === "recent"}
             >
               Recent 12 months
@@ -255,7 +255,7 @@ export default function DxPartners({
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Find dealer or code"
-              className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-800 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100 sm:w-56"
+              className="min-h-11 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-800 outline-none transition focus:border-stone-600 focus:ring-2 focus:ring-stone-200 sm:w-56"
             />
           </label>
         </div>
@@ -267,7 +267,7 @@ export default function DxPartners({
         </div>
       ) : (
         <>
-          <div className="mt-3 hidden overflow-hidden rounded-xl border border-stone-200 bg-white md:block">
+          <div className="mt-3 hidden overflow-hidden rounded-lg border border-stone-300 bg-white md:block">
             <table className="min-w-full text-sm">
               <thead className="bg-stone-50 text-left text-xs font-semibold uppercase tracking-wide text-stone-500">
                 <tr>
@@ -283,12 +283,12 @@ export default function DxPartners({
                 {visible.map((relationship) => {
                   const metrics = metricsFor(relationship, range);
                   return (
-                    <tr key={relationship.id} className="hover:bg-amber-50/40">
+                    <tr key={relationship.id} className="hover:bg-stone-50">
                       <td className="px-4 py-3">
                         <button
                           type="button"
                           onClick={() => setSelectedId(relationship.id)}
-                          className="text-left font-semibold text-stone-900 hover:text-amber-700 hover:underline"
+                          className="text-left font-semibold text-stone-900 hover:underline"
                         >
                           {relationship.displayName}
                         </button>
@@ -297,8 +297,8 @@ export default function DxPartners({
                           {relationship.aliases.length > 1 ? ` · ${relationship.aliases.length} source names merged` : ""}
                         </p>
                       </td>
-                      <td className="px-3 py-3 text-right font-bold tabular-nums text-amber-800">{metrics.theyHelpedUs}</td>
-                      <td className="px-3 py-3 text-right font-bold tabular-nums text-emerald-700">{metrics.weHelpedThem}</td>
+                      <td className="px-3 py-3 text-right font-bold tabular-nums text-stone-950">{metrics.theyHelpedUs}</td>
+                      <td className="px-3 py-3 text-right font-bold tabular-nums text-stone-700">{metrics.weHelpedThem}</td>
                       <td className="px-3 py-3 text-right font-semibold tabular-nums text-stone-800">{metrics.totalCompleted}</td>
                       <td className="px-3 py-3 text-xs font-medium text-stone-600">{balanceLabel(metrics.balance)}</td>
                       <td className="px-4 py-3 text-right text-stone-600">{formatDate(metrics.lastActivity)}</td>
@@ -317,30 +317,30 @@ export default function DxPartners({
                   key={relationship.id}
                   type="button"
                   onClick={() => setSelectedId(relationship.id)}
-                  className="rounded-xl border border-stone-200 bg-white p-4 text-left shadow-sm transition hover:border-amber-300"
+                  className="overflow-hidden rounded-lg border border-stone-300 bg-white text-left transition hover:border-stone-500"
                 >
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start justify-between gap-3 bg-graphite p-4 text-white">
                     <div>
-                      <p className="font-semibold text-stone-900">{relationship.displayName}</p>
-                      <p className="mt-0.5 text-xs text-stone-400">{relationship.dealerCode || "Code not recorded"}</p>
+                      <p className="font-semibold text-white">{relationship.displayName}</p>
+                      <p className="mt-0.5 text-xs text-stone-300">{relationship.dealerCode || "Code not recorded"}</p>
                     </div>
-                    <p className="text-right text-xs text-stone-500">Last DX<br /><strong className="text-stone-800">{formatDate(metrics.lastActivity)}</strong></p>
+                    <p className="text-right text-xs text-stone-400">Last DX<br /><strong className="text-platinum">{formatDate(metrics.lastActivity)}</strong></p>
                   </div>
-                  <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-                    <div className="rounded-lg bg-amber-50 px-2 py-2">
-                      <p className="font-bold text-amber-800">{metrics.theyHelpedUs}</p>
-                      <p className="text-[10px] uppercase tracking-wide text-amber-700">Helped us</p>
+                  <div className="grid grid-cols-3 divide-x divide-stone-200 text-center">
+                    <div className="px-2 py-3">
+                      <p className="font-bold text-stone-950">{metrics.theyHelpedUs}</p>
+                      <p className="text-[10px] uppercase tracking-wide text-stone-500">Helped us</p>
                     </div>
-                    <div className="rounded-lg bg-emerald-50 px-2 py-2">
-                      <p className="font-bold text-emerald-700">{metrics.weHelpedThem}</p>
-                      <p className="text-[10px] uppercase tracking-wide text-emerald-700">We helped</p>
+                    <div className="px-2 py-3">
+                      <p className="font-bold text-stone-800">{metrics.weHelpedThem}</p>
+                      <p className="text-[10px] uppercase tracking-wide text-stone-500">We helped</p>
                     </div>
-                    <div className="rounded-lg bg-stone-100 px-2 py-2">
+                    <div className="px-2 py-3">
                       <p className="font-bold text-stone-800">{metrics.totalCompleted}</p>
                       <p className="text-[10px] uppercase tracking-wide text-stone-500">Completed</p>
                     </div>
                   </div>
-                  <p className="mt-3 text-xs font-medium text-stone-500">{balanceLabel(metrics.balance)} · View history →</p>
+                  <p className="border-t border-stone-200 px-4 py-3 text-xs font-semibold text-stone-600">{balanceLabel(metrics.balance)} · View history →</p>
                 </button>
               );
             })}

@@ -37,6 +37,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import ZeroManagerWarning from "./components/ZeroManagerWarning";
 import CSVUpload from "./components/CSVUpload";
 import AllocationBoard from "./components/AllocationBoard";
+import DealerExchange from "./components/DealerExchange";
 import { CSVOrderData } from "./src/utils/csvParser";
 // canvas-confetti is dynamically imported at the usage site to avoid bundling in the main chunk
 import { PlusIcon } from "./components/icons/PlusIcon";
@@ -49,6 +50,7 @@ import { buildModelSlotTotals, type ModelSlotTotals } from "./src/utils/allocati
 import { computeOrderMatchSummaries, OrderMatchSummary } from "./src/utils/orderMatchSummary";
 import { CURRENT_DX_SOURCE, fetchDxSheetWithMetadata } from "./src/utils/dxSheetParser";
 import { buildHistoricalDxTrades } from "./src/utils/dxRelationships";
+import { getLegacyDxDestination } from "./src/utils/dxNavigation";
 import {
   beginDxRefresh,
   completeDxRefresh,
@@ -1010,6 +1012,9 @@ const App: React.FC = () => {
     () => new Map(modelSlotTotals.map((total) => [total.model, total] as const)),
     [modelSlotTotals],
   );
+  const legacyDxDestination = location.pathname === "/allocation"
+    ? getLegacyDxDestination(searchParams)
+    : null;
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -1195,14 +1200,22 @@ const App: React.FC = () => {
           />
           <Route
             path="/allocation"
-            element={(
+            element={legacyDxDestination ? (
+              <Navigate to={legacyDxDestination} replace />
+            ) : (
               <AllocationBoard
                 currentUser={user}
                 sharedSnapshot={allocationSnapshot}
-                dxFeed={dxFeed}
-                onRefreshDx={refreshDx}
               />
             )}
+          />
+          <Route
+            path="/dealer-exchange"
+            element={
+              <ProtectedRoute user={user}>
+                <DealerExchange dxFeed={dxFeed} onRefreshDx={refreshDx} />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/requests"

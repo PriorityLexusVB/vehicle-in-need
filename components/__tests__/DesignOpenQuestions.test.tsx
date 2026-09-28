@@ -93,7 +93,10 @@ describe("V-i-N DESIGN.md resolved questions", () => {
   it("the other icon-only close/dismiss buttons carry the same 44px + readable-glyph classes", () => {
     const closeClass =
       'className="flex h-11 w-11 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-700"';
-    expect(dxPartnersSource).toContain(closeClass);
+    expect(dxPartnersSource).toContain(
+      'className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-stone-300 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-platinum"',
+    );
+    expect(dxPartnersSource).not.toContain("text-stone-500 transition-colors hover:bg-stone-100");
     expect(matchPreviewModalSource).toContain(closeClass);
     const warning = zeroManagerWarningSource;
     expect(warning).toContain("inline-flex h-11 w-11 items-center justify-center rounded-md bg-yellow-50 text-yellow-700");
