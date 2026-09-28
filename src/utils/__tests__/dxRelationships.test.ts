@@ -59,10 +59,12 @@ describe("dealer relationship aggregation", () => {
       dealerCode: "64507",
       allTime: {
         totalCompleted: 3,
-        theyHelpedUs: 1,
-        weHelpedThem: 1,
-        unknownDirection: 1,
-        balance: 0,
+        vehiclesReceived: 3,
+        vehiclesSent: 0,
+        vehicleBalance: 3,
+        oursRequested: 1,
+        theirsRequested: 1,
+        unknownInitiator: 1,
         lastActivity: "2026-03-01",
       },
     });
@@ -90,9 +92,11 @@ describe("dealer relationship aggregation", () => {
       startDate: "2025-08-29",
       endDate: "2026-08-29",
       totalCompleted: 2,
-      theyHelpedUs: 1,
-      weHelpedThem: 1,
-      balance: 0,
+      vehiclesReceived: 2,
+      vehiclesSent: 0,
+      vehicleBalance: 2,
+      oursRequested: 1,
+      theirsRequested: 1,
       lastActivity: "2026-08-29",
     });
     expect(relationship.history.map((item) => item.id)).toEqual([
@@ -119,10 +123,35 @@ describe("dealer relationship aggregation", () => {
       id: "code:61906",
       allTime: {
         totalCompleted: 13,
-        theyHelpedUs: 9,
-        weHelpedThem: 4,
-        balance: 5,
+        oursRequested: 9,
+        theirsRequested: 4,
       },
+    });
+  });
+
+  it("counts vehicle movement independently from who requested the exchange", () => {
+    const relationship = aggregateDxRelationships([
+      trade({ id: "swap", date: "2026-01-01", direction: "OURS", outgoingModelNumber: "9840", isSwap: true }),
+      trade({ id: "received-only", date: "2026-01-02", direction: "THEIRS" }),
+      trade({
+        id: "sent-only",
+        date: "2026-01-03",
+        direction: "OURS",
+        modelNumber: "",
+        description: "",
+        vinIncoming: "",
+        stockNumber: "",
+        outgoingModelNumber: "9353",
+      }),
+    ])[0];
+
+    expect(relationship.allTime).toMatchObject({
+      totalCompleted: 3,
+      vehiclesReceived: 2,
+      vehiclesSent: 2,
+      vehicleBalance: 0,
+      oursRequested: 2,
+      theirsRequested: 1,
     });
   });
 });

@@ -10,8 +10,8 @@
 export type DxDirection = "OURS" | "THEIRS" | "";
 
 export type DxDirectionMeaning =
-  | "HELPED_US"
-  | "WE_HELPED_THEM"
+  | "REQUESTED_BY_US"
+  | "REQUESTED_BY_THEM"
   | "UNKNOWN";
 
 export type DxSchemaVersion = "LEGACY_2024_2025" | "CURRENT_2026";
@@ -76,7 +76,7 @@ export interface DxTrade {
   stockNumber: string;
   dxFee: string;
   direction: DxDirection;
-  /** Confirmed relationship meaning of the source direction token. */
+  /** Confirmed initiator meaning of the source direction token. */
   directionMeaning: DxDirectionMeaning;
   /** Every row in the canonical DX logs is a completed exchange. */
   completed: true;
@@ -371,8 +371,8 @@ function normalizeModelYear(raw: string): { value: string; invalid: boolean } {
 }
 
 export function getDxDirectionMeaning(direction: DxDirection): DxDirectionMeaning {
-  if (direction === "OURS") return "HELPED_US";
-  if (direction === "THEIRS") return "WE_HELPED_THEM";
+  if (direction === "OURS") return "REQUESTED_BY_US";
+  if (direction === "THEIRS") return "REQUESTED_BY_THEM";
   return "UNKNOWN";
 }
 
