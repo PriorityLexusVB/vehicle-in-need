@@ -39,7 +39,7 @@ describe("DX schema-aware parsing", () => {
       vinOutgoing: "2T2ADCAZ1TC654321",
       outgoingModelNumber: "9411",
       direction: "OURS",
-      directionMeaning: "HELPED_US",
+      directionMeaning: "REQUESTED_BY_US",
       completed: true,
       sourceYear: 2026,
       sourceWorkbookId: DX_WORKBOOK_SOURCES[2026].workbookId,
@@ -63,7 +63,7 @@ describe("DX schema-aware parsing", () => {
       year: "2026",
       vinOutgoing: "2T2ADCAZ1SC654321",
       outgoingModelNumber: "9836",
-      directionMeaning: "WE_HELPED_THEM",
+      directionMeaning: "REQUESTED_BY_THEM",
       isSwap: true,
       sourceSchema: "LEGACY_2024_2025",
     });
@@ -111,7 +111,7 @@ describe("DX schema-aware parsing", () => {
     expect(result.trades[0]).toMatchObject({
       date: "",
       modelNumber: "9353",
-      directionMeaning: "WE_HELPED_THEM",
+      directionMeaning: "REQUESTED_BY_THEM",
     });
     expect(result.trades[0].issues).toContain("MISSING_DATE");
     expect(result.rejectedRows).toEqual([]);

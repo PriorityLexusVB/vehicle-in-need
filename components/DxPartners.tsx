@@ -26,21 +26,25 @@ function metricsFor(relationship: DealerRelationship, range: RelationshipRange):
 
 function balanceLabel(balance: number): string {
   if (balance === 0) return "Even";
-  if (balance > 0) return `Send ${balance} to even`;
-  return `Receive ${Math.abs(balance)} to even`;
+  if (balance > 0) return `We owe ${balance}`;
+  return `They owe us ${Math.abs(balance)}`;
 }
 
-function directionLabel(trade: DxTrade): string {
-  if (trade.direction === "OURS") return "Received";
-  if (trade.direction === "THEIRS") return "Sent";
-  return "Direction unknown";
+function initiatorLabel(trade: DxTrade): string {
+  if (trade.direction === "OURS") return "Requested by us";
+  if (trade.direction === "THEIRS") return "Requested by them";
+  return "Requester not recorded";
 }
 
-function vehicleLabel(trade: DxTrade): string {
+function incomingVehicleLabel(trade: DxTrade): string {
   return [trade.year, trade.description || trade.modelNumber]
     .map((part) => part.trim())
     .filter(Boolean)
     .join(" ") || "Vehicle not recorded";
+}
+
+function outgoingVehicleLabel(trade: DxTrade): string {
+  return trade.outgoingModelNumber || trade.vinOutgoing || trade.outgoingStock || "Not recorded";
 }
 
 interface MetricProps {
@@ -116,11 +120,16 @@ function DealerHistoryDrawer({ relationship, onClose }: DealerHistoryDrawerProps
               <div className="flex-1 overflow-y-auto p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-stone-400">All completed exchanges</p>
                 <div className="mt-2 grid grid-cols-2 overflow-hidden rounded-lg bg-graphite sm:grid-cols-4">
-                  <Metric label="Received" value={relationship.allTime.theyHelpedUs} tone="platinum" />
-                  <Metric label="Sent" value={relationship.allTime.weHelpedThem} />
+                  <Metric label="Vehicles received" value={relationship.allTime.vehiclesReceived} tone="platinum" />
+                  <Metric label="Vehicles sent" value={relationship.allTime.vehiclesSent} />
                   <Metric label="Total completed" value={relationship.allTime.totalCompleted} />
-                  <Metric label="Balance" value={balanceLabel(relationship.allTime.balance)} tone="muted" />
+                  <Metric label="Vehicle balance" value={balanceLabel(relationship.allTime.vehicleBalance)} tone="muted" />
                 </div>
+
+                <p className="mt-2 text-xs text-stone-500">
+                  Who requested it: us {relationship.allTime.oursRequested} · them {relationship.allTime.theirsRequested}
+                  {relationship.allTime.unknownInitiator > 0 ? ` · not recorded ${relationship.allTime.unknownInitiator}` : ""}
+                </p>
 
                 <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-3">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -130,7 +139,7 @@ function DealerHistoryDrawer({ relationship, onClose }: DealerHistoryDrawerProps
                     </p>
                   </div>
                   <p className="mt-2 text-sm text-stone-700">
-                    <strong>{relationship.recent12Months.totalCompleted}</strong> completed · {relationship.recent12Months.theyHelpedUs} received · {relationship.recent12Months.weHelpedThem} sent
+                    <strong>{relationship.recent12Months.totalCompleted}</strong> completed · {relationship.recent12Months.vehiclesReceived} vehicles received · {relationship.recent12Months.vehiclesSent} vehicles sent · {balanceLabel(relationship.recent12Months.vehicleBalance)}
                   </p>
                 </div>
 
@@ -143,11 +152,8 @@ function DealerHistoryDrawer({ relationship, onClose }: DealerHistoryDrawerProps
                     <article key={trade.id} className="p-3" data-testid="dx-history-event">
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div>
-                          <p className="font-semibold text-stone-900">{vehicleLabel(trade)}</p>
-                          <p className="mt-0.5 text-xs text-stone-500">
-                            {[trade.colorCode, trade.color].filter(Boolean).join(" · ") || "Color not recorded"}
-                            {trade.outgoingModelNumber ? ` · Other side ${trade.outgoingModelNumber}` : ""}
-                          </p>
+                          <p className="font-semibold text-stone-900">Received: {incomingVehicleLabel(trade)}</p>
+                          <p className="mt-0.5 text-xs text-stone-500">Sent: {outgoingVehicleLabel(trade)}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-medium text-stone-700">{formatDate(trade.date)}</p>
@@ -158,7 +164,7 @@ function DealerHistoryDrawer({ relationship, onClose }: DealerHistoryDrawerProps
                                 ? "bg-stone-200 text-stone-800"
                                 : "bg-stone-100 text-stone-600"
                           }`}>
-                            {directionLabel(trade)}
+                            {initiatorLabel(trade)}
                           </span>
                         </div>
                       </div>
@@ -227,7 +233,7 @@ export default function DxPartners({
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-500">Completed relationship history</p>
           <h4 className="mt-1 text-xl font-bold text-stone-900">Dealer Exchange Partners</h4>
           <p className="mt-1 max-w-2xl text-sm text-stone-500">
-            Completed exchanges only. Received means a vehicle came from that store; Sent means a vehicle went to that store. Balance shows whether the relationship is even.
+            Vehicle movement is counted separately from who requested the exchange. A completed swap normally records one received and one sent; an unmatched vehicle shows who owes the next one.
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:items-end">
@@ -272,10 +278,11 @@ export default function DxPartners({
               <thead className="bg-stone-50 text-left text-xs font-semibold uppercase tracking-wide text-stone-500">
                 <tr>
                   <th scope="col" className="px-4 py-3">Dealer</th>
-                  <th scope="col" className="px-3 py-3 text-right">Received</th>
-                  <th scope="col" className="px-3 py-3 text-right">Sent</th>
+                  <th scope="col" className="px-3 py-3 text-right">Vehicles received</th>
+                  <th scope="col" className="px-3 py-3 text-right">Vehicles sent</th>
                   <th scope="col" className="px-3 py-3 text-right">Completed</th>
-                  <th scope="col" className="px-3 py-3">Balance</th>
+                  <th scope="col" className="px-3 py-3">Vehicle balance</th>
+                  <th scope="col" className="px-3 py-3">Requested by</th>
                   <th scope="col" className="px-4 py-3 text-right">Last DX</th>
                 </tr>
               </thead>
@@ -297,10 +304,11 @@ export default function DxPartners({
                           {relationship.aliases.length > 1 ? ` · ${relationship.aliases.length} source names merged` : ""}
                         </p>
                       </td>
-                      <td className="px-3 py-3 text-right font-bold tabular-nums text-stone-950">{metrics.theyHelpedUs}</td>
-                      <td className="px-3 py-3 text-right font-bold tabular-nums text-stone-700">{metrics.weHelpedThem}</td>
+                      <td className="px-3 py-3 text-right font-bold tabular-nums text-stone-950">{metrics.vehiclesReceived}</td>
+                      <td className="px-3 py-3 text-right font-bold tabular-nums text-stone-700">{metrics.vehiclesSent}</td>
                       <td className="px-3 py-3 text-right font-semibold tabular-nums text-stone-800">{metrics.totalCompleted}</td>
-                      <td className="px-3 py-3 text-xs font-medium text-stone-600">{balanceLabel(metrics.balance)}</td>
+                      <td className="px-3 py-3 text-xs font-medium text-stone-600">{balanceLabel(metrics.vehicleBalance)}</td>
+                      <td className="px-3 py-3 text-xs text-stone-600">Us {metrics.oursRequested} · Them {metrics.theirsRequested}</td>
                       <td className="px-4 py-3 text-right text-stone-600">{formatDate(metrics.lastActivity)}</td>
                     </tr>
                   );
@@ -328,19 +336,21 @@ export default function DxPartners({
                   </div>
                   <div className="grid grid-cols-3 divide-x divide-stone-200 text-center">
                     <div className="px-2 py-3">
-                      <p className="font-bold text-stone-950">{metrics.theyHelpedUs}</p>
-                      <p className="text-[10px] uppercase tracking-wide text-stone-500">Received</p>
+                      <p className="font-bold text-stone-950">{metrics.vehiclesReceived}</p>
+                      <p className="text-[10px] uppercase tracking-wide text-stone-500">Vehicles received</p>
                     </div>
                     <div className="px-2 py-3">
-                      <p className="font-bold text-stone-800">{metrics.weHelpedThem}</p>
-                      <p className="text-[10px] uppercase tracking-wide text-stone-500">Sent</p>
+                      <p className="font-bold text-stone-800">{metrics.vehiclesSent}</p>
+                      <p className="text-[10px] uppercase tracking-wide text-stone-500">Vehicles sent</p>
                     </div>
                     <div className="px-2 py-3">
                       <p className="font-bold text-stone-800">{metrics.totalCompleted}</p>
                       <p className="text-[10px] uppercase tracking-wide text-stone-500">Completed</p>
                     </div>
                   </div>
-                  <p className="border-t border-stone-200 px-4 py-3 text-xs font-semibold text-stone-600">{balanceLabel(metrics.balance)} · View history →</p>
+                  <p className="border-t border-stone-200 px-4 py-3 text-xs font-semibold text-stone-600">
+                    {balanceLabel(metrics.vehicleBalance)} · Requested by us {metrics.oursRequested}, them {metrics.theirsRequested} · View history →
+                  </p>
                 </button>
               );
             })}

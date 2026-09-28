@@ -13,11 +13,13 @@ import {
 
 export interface DxRelationshipMetrics {
   totalCompleted: number;
-  theyHelpedUs: number;
-  weHelpedThem: number;
-  unknownDirection: number;
-  /** theyHelpedUs minus weHelpedThem; positive means they helped us more. */
-  balance: number;
+  vehiclesReceived: number;
+  vehiclesSent: number;
+  /** vehiclesReceived minus vehiclesSent; positive means we owe vehicles. */
+  vehicleBalance: number;
+  oursRequested: number;
+  theirsRequested: number;
+  unknownInitiator: number;
   lastActivity: string | null;
 }
 
@@ -194,26 +196,42 @@ function subtractTwelveMonths(time: number): number {
 }
 
 function buildMetrics(dated: readonly DatedTrade[]): DxRelationshipMetrics {
-  let theyHelpedUs = 0;
-  let weHelpedThem = 0;
-  let unknownDirection = 0;
+  let vehiclesReceived = 0;
+  let vehiclesSent = 0;
+  let oursRequested = 0;
+  let theirsRequested = 0;
+  let unknownInitiator = 0;
   let latest: number | null = null;
 
   for (const { trade, time } of dated) {
-    if (trade.direction === "OURS") theyHelpedUs++;
-    else if (trade.direction === "THEIRS") weHelpedThem++;
-    else unknownDirection++;
+    if (hasIncomingDxVehicle(trade)) vehiclesReceived++;
+    if (hasOutgoingDxVehicle(trade)) vehiclesSent++;
+    if (trade.direction === "OURS") oursRequested++;
+    else if (trade.direction === "THEIRS") theirsRequested++;
+    else unknownInitiator++;
     if (time !== null && (latest === null || time > latest)) latest = time;
   }
 
   return {
     totalCompleted: dated.length,
-    theyHelpedUs,
-    weHelpedThem,
-    unknownDirection,
-    balance: theyHelpedUs - weHelpedThem,
+    vehiclesReceived,
+    vehiclesSent,
+    vehicleBalance: vehiclesReceived - vehiclesSent,
+    oursRequested,
+    theirsRequested,
+    unknownInitiator,
     lastActivity: latest === null ? null : formatUtcDate(latest),
   };
+}
+
+export function hasIncomingDxVehicle(trade: DxTrade): boolean {
+  return [trade.modelNumber, trade.description, trade.vinIncoming, trade.stockNumber]
+    .some((value) => value.trim().length > 0);
+}
+
+export function hasOutgoingDxVehicle(trade: DxTrade): boolean {
+  return [trade.outgoingModelNumber, trade.vinOutgoing, trade.outgoingStock]
+    .some((value) => value.trim().length > 0);
 }
 
 function pickDisplayName(nameCounts: ReadonlyMap<string, number>): string {

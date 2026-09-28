@@ -47,8 +47,8 @@ function trade(
 }
 
 const trades = [
-  trade("trade-1", "2026-08-01", "OURS", { tradingDealer: "SHEEHY LEXUS OF RICHMOND" }),
-  trade("trade-2", "2025-09-01", "THEIRS", { dealerCode: "65407" }),
+  trade("trade-1", "2026-08-01", "OURS", { tradingDealer: "SHEEHY LEXUS OF RICHMOND", outgoingModelNumber: "9840" }),
+  trade("trade-2", "2025-09-01", "THEIRS", { dealerCode: "65407", outgoingModelNumber: "9353" }),
   trade("trade-3", "2024-01-01", "OURS"),
 ];
 
@@ -57,15 +57,17 @@ describe("DxPartners", () => {
     render(<DxPartners trades={trades} />);
 
     const desktopTable = screen.getByRole("table");
-    expect(within(desktopTable).getByRole("columnheader", { name: "Received" })).toBeInTheDocument();
-    expect(within(desktopTable).getByRole("columnheader", { name: "Sent" })).toBeInTheDocument();
+    expect(within(desktopTable).getByRole("columnheader", { name: "Vehicles received" })).toBeInTheDocument();
+    expect(within(desktopTable).getByRole("columnheader", { name: "Vehicles sent" })).toBeInTheDocument();
+    expect(within(desktopTable).getByRole("columnheader", { name: "Requested by" })).toBeInTheDocument();
     const dealerRow = within(desktopTable).getByRole("button", { name: "RICHMOND" }).closest("tr");
     expect(dealerRow).not.toBeNull();
     expect(within(dealerRow!).getByText(/2 source names merged/)).toBeInTheDocument();
     expect(dealerRow).toHaveTextContent("2");
     expect(dealerRow).toHaveTextContent("1");
     expect(dealerRow).toHaveTextContent("3");
-    expect(dealerRow).toHaveTextContent("Send 1 to even");
+    expect(dealerRow).toHaveTextContent("We owe 1");
+    expect(dealerRow).toHaveTextContent("Us 2 · Them 1");
   });
 
   it("switches the table to the inclusive recent 12-month view", () => {
@@ -91,7 +93,8 @@ describe("DxPartners", () => {
     expect(within(drawer).getByText("Completed vehicle history")).toBeInTheDocument();
     expect(within(drawer).getAllByTestId("dx-history-event")).toHaveLength(3);
     expect(within(drawer).getAllByRole("link", { name: /Source:/ })).toHaveLength(3);
-    expect(within(drawer).getAllByText(/^Received$/i).length).toBeGreaterThan(0);
-    expect(within(drawer).getAllByText(/^Sent$/i).length).toBeGreaterThan(0);
+    expect(within(drawer).getAllByText(/Requested by us/i).length).toBeGreaterThan(0);
+    expect(within(drawer).getAllByText(/Requested by them/i).length).toBeGreaterThan(0);
+    expect(within(drawer).getByText(/Who requested it: us 2 · them 1/i)).toBeInTheDocument();
   });
 });

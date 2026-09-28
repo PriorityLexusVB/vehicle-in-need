@@ -1,7 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { DxFeedState } from "../src/utils/dxFeedState";
-import { aggregateDxRelationships } from "../src/utils/dxRelationships";
+import {
+  aggregateDxRelationships,
+  hasIncomingDxVehicle,
+  hasOutgoingDxVehicle,
+} from "../src/utils/dxRelationships";
 import DxPartners from "./DxPartners";
 
 interface DealerExchangeProps {
@@ -77,17 +81,19 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
   );
   const dxTotals = useMemo(() => ({
     completed: dxTrades.length,
-    theyHelpedUs: dxTrades.filter((trade) => trade.direction === "OURS").length,
-    weHelpedThem: dxTrades.filter((trade) => trade.direction === "THEIRS").length,
-    unknown: dxTrades.filter((trade) => !trade.direction).length,
+    vehiclesReceived: dxTrades.filter(hasIncomingDxVehicle).length,
+    vehiclesSent: dxTrades.filter(hasOutgoingDxVehicle).length,
+    oursRequested: dxTrades.filter((trade) => trade.direction === "OURS").length,
+    theirsRequested: dxTrades.filter((trade) => trade.direction === "THEIRS").length,
+    unknownInitiator: dxTrades.filter((trade) => !trade.direction).length,
     fees: dxTrades.reduce((sum, trade) => sum + (Number(trade.dxFee) || 0), 0),
   }), [dxTrades]);
-  const relationshipBalance = dxTotals.theyHelpedUs - dxTotals.weHelpedThem;
-  const relationshipBalanceLabel = relationshipBalance === 0
+  const vehicleBalance = dxTotals.vehiclesReceived - dxTotals.vehiclesSent;
+  const vehicleBalanceLabel = vehicleBalance === 0
     ? "Even"
-    : relationshipBalance > 0
-      ? `+${relationshipBalance} in our favor`
-      : `+${Math.abs(relationshipBalance)} in their favor`;
+    : vehicleBalance > 0
+      ? `We owe ${vehicleBalance}`
+      : `They owe us ${Math.abs(vehicleBalance)}`;
   const dxStatusPresentation = {
     syncing: {
       label: "SYNCING",
@@ -169,7 +175,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
               Dealer Exchange
             </h2>
             <p className="mt-1 max-w-2xl text-sm text-stone-600">
-              See who helps us, who we help, and the evidence behind every completed trade.
+              Track vehicles received and sent, who requested each exchange, and the evidence behind every completed trade.
             </p>
           </div>
           <p className="hidden text-xs font-medium text-stone-500 sm:block">
@@ -195,20 +201,20 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                 {dxTotals.completed} completed {dxTotals.completed === 1 ? "exchange" : "exchanges"}
               </h3>
               <p className="mt-1 hidden text-sm text-stone-300 sm:block">
-                Verified history from 2024–2026. Direction shows who supplied the vehicle.
+                Vehicle movement and who requested the exchange are counted separately.
               </p>
               <dl className="mt-5 grid grid-cols-4 border-y border-white/15">
                 <div className="border-r border-white/15 py-3 pr-2 sm:pr-3">
-                  <dt className="text-[9px] font-semibold uppercase leading-tight tracking-wide text-stone-400 sm:text-[11px]">They helped us</dt>
-                  <dd className="mt-1 text-xl font-bold tabular-nums text-white sm:text-2xl">{dxTotals.theyHelpedUs}</dd>
+                  <dt className="text-[9px] font-semibold uppercase leading-tight tracking-wide text-stone-400 sm:text-[11px]">Vehicles received</dt>
+                  <dd className="mt-1 text-xl font-bold tabular-nums text-white sm:text-2xl">{dxTotals.vehiclesReceived}</dd>
                 </div>
                 <div className="border-r border-white/15 px-2 py-3 sm:px-3">
-                  <dt className="text-[9px] font-semibold uppercase leading-tight tracking-wide text-stone-400 sm:text-[11px]">We helped them</dt>
-                  <dd className="mt-1 text-xl font-bold tabular-nums text-white sm:text-2xl">{dxTotals.weHelpedThem}</dd>
+                  <dt className="text-[9px] font-semibold uppercase leading-tight tracking-wide text-stone-400 sm:text-[11px]">Vehicles sent</dt>
+                  <dd className="mt-1 text-xl font-bold tabular-nums text-white sm:text-2xl">{dxTotals.vehiclesSent}</dd>
                 </div>
                 <div className="border-r border-white/15 px-2 py-3 sm:px-3">
-                  <dt className="text-[9px] font-semibold uppercase leading-tight tracking-wide text-stone-400 sm:text-[11px]">Net position</dt>
-                  <dd className="mt-1 text-xs font-semibold text-platinum sm:text-sm">{relationshipBalanceLabel}</dd>
+                  <dt className="text-[9px] font-semibold uppercase leading-tight tracking-wide text-stone-400 sm:text-[11px]">Vehicle balance</dt>
+                  <dd className="mt-1 text-xs font-semibold text-platinum sm:text-sm">{vehicleBalanceLabel}</dd>
                 </div>
                 <div className="py-3 pl-2 sm:pl-3">
                   <dt className="text-[9px] font-semibold uppercase leading-tight tracking-wide text-stone-400 sm:text-[11px]">Current fees</dt>
@@ -236,8 +242,9 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
               >
                 {dxLoading ? "Syncing..." : "Refresh current source"}
               </button>
-              {dxTotals.unknown > 0 && (
-                <p className="col-span-2 text-xs text-stone-300">{dxTotals.unknown} completed exchange {dxTotals.unknown === 1 ? "has" : "have"} no direction recorded.</p>
+              <p className="col-span-2 text-xs text-stone-300">Requested by us {dxTotals.oursRequested} · by them {dxTotals.theirsRequested}</p>
+              {dxTotals.unknownInitiator > 0 && (
+                <p className="col-span-2 text-xs text-stone-300">{dxTotals.unknownInitiator} completed exchange {dxTotals.unknownInitiator === 1 ? "has" : "have"} no requester recorded.</p>
               )}
             </div>
           </div>
@@ -384,7 +391,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                         <th scope="col" className="px-3 py-3">Vehicle</th>
                         <th scope="col" className="px-3 py-3">Color</th>
                         <th scope="col" className="px-3 py-3">Trading dealer</th>
-                        <th scope="col" className="px-3 py-3">Completed relationship</th>
+                        <th scope="col" className="px-3 py-3">Requested by</th>
                         <th scope="col" className="px-3 py-3">Stock / VIN</th>
                         <th scope="col" className="px-3 py-3">Source</th>
                       </tr>
@@ -415,9 +422,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                             <td className="px-3 py-3">
                               <span className="font-semibold text-stone-900">{trade.description || trade.modelNumber || "Not recorded"}</span>
                               {trade.year && <span className="ml-1 text-xs text-stone-400">{trade.year}</span>}
-                              {trade.outgoingModelNumber && (
-                                <p className="mt-0.5 text-xs text-stone-400">Other side: {trade.outgoingModelNumber}</p>
-                              )}
+                              <p className="mt-0.5 text-xs text-stone-400">Sent: {trade.outgoingModelNumber || trade.vinOutgoing || trade.outgoingStock || "Not recorded"}</p>
                             </td>
                             <td className="px-3 py-3">
                               {[trade.colorCode, trade.color].filter(Boolean).join(" · ") || "—"}
@@ -448,10 +453,10 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                                 }`}
                               >
                                 {trade.direction === "OURS"
-                                  ? "They helped us"
+                                  ? "Us"
                                   : trade.direction === "THEIRS"
-                                    ? "We helped them"
-                                    : "Direction unknown"}
+                                    ? "Them"
+                                    : "Not recorded"}
                               </span>
                             </td>
                             <td className="px-3 py-3 font-mono text-xs text-stone-500">
@@ -506,9 +511,9 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                             {trade.dealerCode && <p className="mt-0.5 text-xs text-stone-500">Dealer {trade.dealerCode}</p>}
                           </div>
                           <div className="bg-white p-3">
-                            <dt className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">Relationship</dt>
+                            <dt className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">Requested by</dt>
                             <dd className="mt-1 text-sm font-semibold text-stone-900">
-                              {trade.direction === "OURS" ? "They helped us" : trade.direction === "THEIRS" ? "We helped them" : "Direction unknown"}
+                              {trade.direction === "OURS" ? "Us" : trade.direction === "THEIRS" ? "Them" : "Not recorded"}
                             </dd>
                           </div>
                           <div className="bg-white p-3">
