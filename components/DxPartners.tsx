@@ -26,13 +26,13 @@ function metricsFor(relationship: DealerRelationship, range: RelationshipRange):
 
 function balanceLabel(balance: number): string {
   if (balance === 0) return "Even";
-  if (balance > 0) return `They helped us +${balance}`;
-  return `We helped them +${Math.abs(balance)}`;
+  if (balance > 0) return `Send ${balance} to even`;
+  return `Receive ${Math.abs(balance)} to even`;
 }
 
 function directionLabel(trade: DxTrade): string {
-  if (trade.direction === "OURS") return "They helped us";
-  if (trade.direction === "THEIRS") return "We helped them";
+  if (trade.direction === "OURS") return "Received";
+  if (trade.direction === "THEIRS") return "Sent";
   return "Direction unknown";
 }
 
@@ -116,8 +116,8 @@ function DealerHistoryDrawer({ relationship, onClose }: DealerHistoryDrawerProps
               <div className="flex-1 overflow-y-auto p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-stone-400">All completed exchanges</p>
                 <div className="mt-2 grid grid-cols-2 overflow-hidden rounded-lg bg-graphite sm:grid-cols-4">
-                  <Metric label="They helped us" value={relationship.allTime.theyHelpedUs} tone="platinum" />
-                  <Metric label="We helped them" value={relationship.allTime.weHelpedThem} />
+                  <Metric label="Received" value={relationship.allTime.theyHelpedUs} tone="platinum" />
+                  <Metric label="Sent" value={relationship.allTime.weHelpedThem} />
                   <Metric label="Total completed" value={relationship.allTime.totalCompleted} />
                   <Metric label="Balance" value={balanceLabel(relationship.allTime.balance)} tone="muted" />
                 </div>
@@ -130,7 +130,7 @@ function DealerHistoryDrawer({ relationship, onClose }: DealerHistoryDrawerProps
                     </p>
                   </div>
                   <p className="mt-2 text-sm text-stone-700">
-                    <strong>{relationship.recent12Months.totalCompleted}</strong> completed · {relationship.recent12Months.theyHelpedUs} they helped us · {relationship.recent12Months.weHelpedThem} we helped them
+                    <strong>{relationship.recent12Months.totalCompleted}</strong> completed · {relationship.recent12Months.theyHelpedUs} received · {relationship.recent12Months.weHelpedThem} sent
                   </p>
                 </div>
 
@@ -227,7 +227,7 @@ export default function DxPartners({
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-500">Completed relationship history</p>
           <h4 className="mt-1 text-xl font-bold text-stone-900">Dealer Exchange Partners</h4>
           <p className="mt-1 max-w-2xl text-sm text-stone-500">
-            Factual completed exchanges only. No request, decline, response-rate, or black-box score is inferred.
+            Completed exchanges only. Received means a vehicle came from that store; Sent means a vehicle went to that store. Balance shows whether the relationship is even.
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:items-end">
@@ -272,8 +272,8 @@ export default function DxPartners({
               <thead className="bg-stone-50 text-left text-xs font-semibold uppercase tracking-wide text-stone-500">
                 <tr>
                   <th scope="col" className="px-4 py-3">Dealer</th>
-                  <th scope="col" className="px-3 py-3 text-right">They helped us</th>
-                  <th scope="col" className="px-3 py-3 text-right">We helped them</th>
+                  <th scope="col" className="px-3 py-3 text-right">Received</th>
+                  <th scope="col" className="px-3 py-3 text-right">Sent</th>
                   <th scope="col" className="px-3 py-3 text-right">Completed</th>
                   <th scope="col" className="px-3 py-3">Balance</th>
                   <th scope="col" className="px-4 py-3 text-right">Last DX</th>
@@ -329,11 +329,11 @@ export default function DxPartners({
                   <div className="grid grid-cols-3 divide-x divide-stone-200 text-center">
                     <div className="px-2 py-3">
                       <p className="font-bold text-stone-950">{metrics.theyHelpedUs}</p>
-                      <p className="text-[10px] uppercase tracking-wide text-stone-500">Helped us</p>
+                      <p className="text-[10px] uppercase tracking-wide text-stone-500">Received</p>
                     </div>
                     <div className="px-2 py-3">
                       <p className="font-bold text-stone-800">{metrics.weHelpedThem}</p>
-                      <p className="text-[10px] uppercase tracking-wide text-stone-500">We helped</p>
+                      <p className="text-[10px] uppercase tracking-wide text-stone-500">Sent</p>
                     </div>
                     <div className="px-2 py-3">
                       <p className="font-bold text-stone-800">{metrics.totalCompleted}</p>
