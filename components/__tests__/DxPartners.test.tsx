@@ -57,13 +57,15 @@ describe("DxPartners", () => {
     render(<DxPartners trades={trades} />);
 
     const desktopTable = screen.getByRole("table");
+    expect(within(desktopTable).getByRole("columnheader", { name: "Received" })).toBeInTheDocument();
+    expect(within(desktopTable).getByRole("columnheader", { name: "Sent" })).toBeInTheDocument();
     const dealerRow = within(desktopTable).getByRole("button", { name: "RICHMOND" }).closest("tr");
     expect(dealerRow).not.toBeNull();
     expect(within(dealerRow!).getByText(/2 source names merged/)).toBeInTheDocument();
     expect(dealerRow).toHaveTextContent("2");
     expect(dealerRow).toHaveTextContent("1");
     expect(dealerRow).toHaveTextContent("3");
-    expect(dealerRow).toHaveTextContent("They helped us +1");
+    expect(dealerRow).toHaveTextContent("Send 1 to even");
   });
 
   it("switches the table to the inclusive recent 12-month view", () => {
@@ -89,7 +91,7 @@ describe("DxPartners", () => {
     expect(within(drawer).getByText("Completed vehicle history")).toBeInTheDocument();
     expect(within(drawer).getAllByTestId("dx-history-event")).toHaveLength(3);
     expect(within(drawer).getAllByRole("link", { name: /Source:/ })).toHaveLength(3);
-    expect(within(drawer).getAllByText(/^They helped us$/i).length).toBeGreaterThan(0);
-    expect(within(drawer).getAllByText(/^We helped them$/i).length).toBeGreaterThan(0);
+    expect(within(drawer).getAllByText(/^Received$/i).length).toBeGreaterThan(0);
+    expect(within(drawer).getAllByText(/^Sent$/i).length).toBeGreaterThan(0);
   });
 });
