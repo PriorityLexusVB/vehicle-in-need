@@ -82,6 +82,12 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
     unknown: dxTrades.filter((trade) => !trade.direction).length,
     fees: dxTrades.reduce((sum, trade) => sum + (Number(trade.dxFee) || 0), 0),
   }), [dxTrades]);
+  const relationshipBalance = dxTotals.theyHelpedUs - dxTotals.weHelpedThem;
+  const relationshipBalanceLabel = relationshipBalance === 0
+    ? "Even"
+    : relationshipBalance > 0
+      ? `+${relationshipBalance} in our favor`
+      : `+${Math.abs(relationshipBalance)} in their favor`;
   const dxStatusPresentation = {
     syncing: {
       label: "SYNCING",
@@ -155,22 +161,29 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
 
   return (
     <section aria-labelledby="dealer-exchange-page-title">
-      <div className="mb-6">
-        <p className="text-xs font-bold uppercase text-amber-700">Manager Workspace</p>
-        <h2 id="dealer-exchange-page-title" className="mt-1 text-3xl font-bold text-stone-950">
-          Dealer Exchange
-        </h2>
-        <p className="mt-1 text-sm text-stone-600">
-          Completed exchange history, dealer relationships, and the current DX source in one place.
-        </p>
+      <div className="mb-4 border-b border-stone-300 pb-3 sm:mb-5 sm:pb-4">
+        <p className="hidden text-xs font-semibold uppercase tracking-[0.16em] text-stone-500 sm:block">Manager command desk</p>
+        <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 id="dealer-exchange-page-title" className="text-3xl font-bold tracking-tight text-stone-950">
+              Dealer Exchange
+            </h2>
+            <p className="mt-1 max-w-2xl text-sm text-stone-600">
+              See who helps us, who we help, and the evidence behind every completed trade.
+            </p>
+          </div>
+          <p className="hidden text-xs font-medium text-stone-500 sm:block">
+            {dxRelationships.length} {dxRelationships.length === 1 ? "partner" : "partners"} on record
+          </p>
+        </div>
       </div>
 
       <div id="dx-pipeline" className="pb-6">
-        <div className="rounded-2xl border border-amber-200 bg-amber-50/40 p-4">
-          <div className="flex flex-wrap items-start gap-3">
+        <div className="overflow-hidden rounded-xl bg-graphite text-white">
+          <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-lg font-bold text-amber-800">Dealer Exchange Pipeline</h3>
+              <div className="flex flex-wrap items-center gap-2.5">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-platinum">Relationship ledger</p>
                 <span
                   data-testid="dx-feed-status"
                   className={`rounded-full border px-2.5 py-0.5 text-[11px] font-bold tracking-wide ${dxStatusPresentation.className}`}
@@ -178,59 +191,63 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                   {dxStatusPresentation.label}
                 </span>
               </div>
-              <p className="mt-1 text-sm text-stone-600">
-                Completed exchanges from the 2024–2026 DX history.
+              <h3 className="mt-2 text-2xl font-bold tracking-tight text-white">
+                {dxTotals.completed} completed {dxTotals.completed === 1 ? "exchange" : "exchanges"}
+              </h3>
+              <p className="mt-1 hidden text-sm text-stone-300 sm:block">
+                Verified history from 2024–2026. Direction shows who supplied the vehicle.
               </p>
+              <dl className="mt-5 grid grid-cols-4 border-y border-white/15">
+                <div className="border-r border-white/15 py-3 pr-2 sm:pr-3">
+                  <dt className="text-[9px] font-semibold uppercase leading-tight tracking-wide text-stone-400 sm:text-[11px]">They helped us</dt>
+                  <dd className="mt-1 text-xl font-bold tabular-nums text-white sm:text-2xl">{dxTotals.theyHelpedUs}</dd>
+                </div>
+                <div className="border-r border-white/15 px-2 py-3 sm:px-3">
+                  <dt className="text-[9px] font-semibold uppercase leading-tight tracking-wide text-stone-400 sm:text-[11px]">We helped them</dt>
+                  <dd className="mt-1 text-xl font-bold tabular-nums text-white sm:text-2xl">{dxTotals.weHelpedThem}</dd>
+                </div>
+                <div className="border-r border-white/15 px-2 py-3 sm:px-3">
+                  <dt className="text-[9px] font-semibold uppercase leading-tight tracking-wide text-stone-400 sm:text-[11px]">Net position</dt>
+                  <dd className="mt-1 text-xs font-semibold text-platinum sm:text-sm">{relationshipBalanceLabel}</dd>
+                </div>
+                <div className="py-3 pl-2 sm:pl-3">
+                  <dt className="text-[9px] font-semibold uppercase leading-tight tracking-wide text-stone-400 sm:text-[11px]">Current fees</dt>
+                  <dd className="mt-1 text-xs font-semibold text-white sm:text-sm">
+                    {dxTotals.fees > 0 ? `$${dxTotals.fees.toLocaleString()}` : "None recorded"}
+                  </dd>
+                </div>
+              </dl>
             </div>
 
-            <div className="flex flex-wrap gap-2 text-xs">
-              <span className="rounded-full bg-white px-2.5 py-1 font-bold text-stone-800 shadow-sm">
-                {dxTotals.completed} completed
-              </span>
-              <span className="rounded-full bg-amber-100 px-2.5 py-1 font-semibold text-amber-800">
-                {dxTotals.theyHelpedUs} they helped us
-              </span>
-              <span className="rounded-full bg-emerald-100 px-2.5 py-1 font-semibold text-emerald-800">
-                {dxTotals.weHelpedThem} we helped them
-              </span>
-              {dxTotals.unknown > 0 && (
-                <span className="rounded-full bg-stone-100 px-2.5 py-1 font-semibold text-stone-600">
-                  {dxTotals.unknown} direction unknown
-                </span>
-              )}
-              {dxTotals.fees > 0 && (
-                <span className="rounded-full bg-white px-2.5 py-1 text-stone-600 shadow-sm">
-                  ${dxTotals.fees.toLocaleString()} current-sheet fees
-                </span>
-              )}
-            </div>
-
-            <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
-              <div className="text-right text-xs text-stone-500">
-                <p>
-                  Latest DX record <strong className="text-stone-700">{formatDxBusinessDate(dxFeed.latestBusinessDate)}</strong>
-                </p>
-                <p>
-                  Browser fetched <strong className="text-stone-700">{formatDxFetchTime(dxFeed.lastSuccessAt)}</strong>
-                </p>
+            <div className="grid min-w-56 grid-cols-2 gap-3 border-t border-white/15 pt-4 lg:flex lg:flex-col lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-400">Latest completed DX</p>
+                <p className="mt-1 font-semibold text-white">{formatDxBusinessDate(dxFeed.latestBusinessDate)}</p>
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-400">Source checked</p>
+                <p className="mt-1 font-semibold text-white">{formatDxFetchTime(dxFeed.lastSuccessAt)}</p>
               </div>
               <button
                 type="button"
                 onClick={onRefreshDx}
                 disabled={dxLoading}
-                className="rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                className="col-span-2 inline-flex min-h-11 items-center justify-center rounded-lg bg-platinum px-4 py-2 text-sm font-semibold text-graphite transition-colors hover:bg-canvas-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {dxLoading ? "Syncing..." : "Refresh current source"}
               </button>
+              {dxTotals.unknown > 0 && (
+                <p className="col-span-2 text-xs text-stone-300">{dxTotals.unknown} completed exchange {dxTotals.unknown === 1 ? "has" : "have"} no direction recorded.</p>
+              )}
             </div>
           </div>
 
           {dxError && (
             <div
-              className={`mt-3 rounded-lg border p-3 text-sm ${
+              className={`border-t p-3 text-sm sm:px-5 ${
                 dxFeed.status === "stale"
-                  ? "border-orange-200 bg-orange-50 text-orange-800"
-                  : "border-red-200 bg-red-50 text-red-700"
+                  ? "border-orange-300/40 bg-orange-950/40 text-orange-100"
+                  : "border-red-300/40 bg-red-950/40 text-red-100"
               }`}
             >
               <strong>{dxFeed.status === "stale" ? "Showing last successful data." : "Current 2026 source unavailable."}</strong>{" "}
@@ -239,7 +256,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
           )}
 
           {dxFeed.status === "no-data" && (
-            <div className="mt-3 rounded-lg border border-stone-200 bg-white p-3 text-sm text-stone-600">
+            <div className="border-t border-white/15 bg-white/5 p-3 text-sm text-stone-200 sm:px-5">
               No current 2026 DX rows were returned. Closed-year history remains available below.
             </div>
           )}
@@ -247,7 +264,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
           {dxFeed.rejectedRows.length > 0 && (
             <div
               data-testid="dx-rejected-source-rows"
-              className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
+              className="border-t border-amber-300/40 bg-amber-950/30 p-3 text-sm text-amber-100 sm:px-5"
             >
               <strong>
                 {dxFeed.rejectedRows.length} non-transaction source {dxFeed.rejectedRows.length === 1 ? "row was" : "rows were"} excluded from completed metrics.
@@ -260,7 +277,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                     href={rejected.sourceRowUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="font-semibold text-amber-800 underline decoration-amber-300 underline-offset-2 hover:text-amber-950"
+                    className="font-semibold text-amber-100 underline decoration-amber-300 underline-offset-2 hover:text-white"
                   >
                     Source row {rejected.sourceRowNumber} ↗
                   </a>
@@ -271,15 +288,15 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
 
           {dxLoading && dxTrades.length === 0 && (
             <div
-              className="mt-4 overflow-hidden rounded-xl border border-stone-200 bg-white"
+              className="border-t border-white/15 bg-white"
               aria-busy="true"
               aria-label="Loading dealer exchange source"
             >
-              <div className="flex flex-wrap gap-3 bg-amber-50 px-3 py-3">
-                <div className="h-3 w-16 animate-pulse rounded bg-amber-200/70" />
-                <div className="h-3 w-24 animate-pulse rounded bg-amber-200/70" />
-                <div className="h-3 w-20 animate-pulse rounded bg-amber-200/70" />
-                <div className="h-3 w-28 animate-pulse rounded bg-amber-200/70" />
+              <div className="flex flex-wrap gap-3 bg-stone-100 px-3 py-3">
+                <div className="h-3 w-16 animate-pulse rounded bg-stone-300" />
+                <div className="h-3 w-24 animate-pulse rounded bg-stone-300" />
+                <div className="h-3 w-20 animate-pulse rounded bg-stone-300" />
+                <div className="h-3 w-28 animate-pulse rounded bg-stone-300" />
               </div>
               <div className="divide-y divide-stone-100">
                 {[1, 2, 3].map((row) => (
@@ -294,17 +311,17 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
           )}
         </div>
 
-        <div className="mt-4 border-b border-stone-200">
-          <div className="flex gap-1" role="tablist" aria-label="Dealer Exchange views">
+        <div className="mt-4 rounded-lg border border-stone-300 bg-white p-1">
+          <div className="grid grid-cols-2 gap-1" role="tablist" aria-label="Dealer Exchange views">
             <button
               type="button"
               role="tab"
               aria-selected={dxPanelView === "partners"}
               onClick={() => setDxPanelView("partners")}
-              className={`rounded-t-lg px-4 py-2.5 text-sm font-semibold transition-colors ${
+              className={`min-h-11 rounded-md px-4 py-2.5 text-sm font-semibold transition-colors ${
                 dxPanelView === "partners"
-                  ? "border border-b-white border-stone-200 bg-white text-amber-800"
-                  : "text-stone-500 hover:bg-stone-50 hover:text-stone-700"
+                  ? "bg-graphite text-white"
+                  : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"
               }`}
             >
               DX Partners
@@ -314,10 +331,10 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
               role="tab"
               aria-selected={dxPanelView === "history"}
               onClick={() => setDxPanelView("history")}
-              className={`rounded-t-lg px-4 py-2.5 text-sm font-semibold transition-colors ${
+              className={`min-h-11 rounded-md px-4 py-2.5 text-sm font-semibold transition-colors ${
                 dxPanelView === "history"
-                  ? "border border-b-white border-stone-200 bg-white text-amber-800"
-                  : "text-stone-500 hover:bg-stone-50 hover:text-stone-700"
+                  ? "bg-graphite text-white"
+                  : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"
               }`}
             >
               Completed exchanges
@@ -335,15 +352,15 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
           ) : (
             <section data-testid="dx-completed-history">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                <p className="text-sm text-stone-500">
-                  Source-addressable completed exchange evidence. Newest records first.
+                <p className="max-w-2xl text-sm text-stone-600">
+                  Every completed exchange links back to its source row. Newest records first.
                 </p>
                 <label className="flex items-center gap-2 text-xs font-semibold text-stone-500">
                   Year
                   <select
                     value={dxHistoryYear}
                     onChange={(event) => setDxHistoryYear(event.target.value as DxHistoryYear)}
-                    className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm font-medium text-stone-700"
+                    className="min-h-11 rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-800 focus:border-stone-600 focus:outline-none focus:ring-2 focus:ring-stone-200"
                   >
                     <option value="2026">2026 current</option>
                     <option value="2025">2025 history</option>
@@ -354,13 +371,14 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
               </div>
 
               {visibleDxTrades.length === 0 ? (
-                <div className="rounded-xl border border-stone-200 bg-stone-50 p-6 text-center text-sm text-stone-500">
+                <div className="rounded-lg border border-stone-300 bg-white p-6 text-center text-sm text-stone-500">
                   No completed DX records are available for that year.
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-xl border border-stone-200 bg-white">
+                <>
+                <div className="hidden overflow-hidden rounded-lg border border-stone-300 bg-white md:block">
                   <table className="min-w-full text-sm">
-                    <thead className="bg-amber-50 text-left text-xs font-semibold uppercase tracking-wide text-amber-800">
+                    <thead className="bg-graphite text-left text-[11px] font-semibold uppercase tracking-wide text-stone-200">
                       <tr>
                         <th scope="col" className="px-3 py-3">Date</th>
                         <th scope="col" className="px-3 py-3">Vehicle</th>
@@ -389,7 +407,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                             data-dx-highlight={highlighted ? "true" : undefined}
                             className={`text-stone-700 transition-colors ${
                               highlighted
-                                ? "bg-amber-100 ring-2 ring-inset ring-amber-400"
+                                ? "bg-platinum/50 ring-2 ring-inset ring-stone-500"
                                 : "hover:bg-stone-50"
                             }`}
                           >
@@ -413,7 +431,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                                   setSelectedDxDealerId(relationshipId);
                                   setDxPanelView("partners");
                                 }}
-                                className="text-left font-medium text-stone-900 enabled:hover:text-amber-700 enabled:hover:underline disabled:cursor-default"
+                                className="text-left font-medium text-stone-900 enabled:hover:underline disabled:cursor-default"
                               >
                                 {trade.tradingDealer || "Unknown dealer"}
                               </button>
@@ -423,9 +441,9 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                               <span
                                 className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
                                   trade.direction === "OURS"
-                                    ? "bg-amber-100 text-amber-800"
+                                    ? "bg-platinum text-graphite"
                                     : trade.direction === "THEIRS"
-                                      ? "bg-emerald-100 text-emerald-800"
+                                      ? "bg-stone-200 text-stone-800"
                                       : "bg-stone-100 text-stone-600"
                                 }`}
                               >
@@ -444,7 +462,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                                 href={trade.sourceRowUrl}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="text-xs font-semibold text-amber-700 hover:underline"
+                                className="text-xs font-semibold text-stone-700 underline decoration-stone-300 underline-offset-2 hover:text-stone-950"
                               >
                                 {trade.sourceYear} row {trade.sourceRowNumber} ↗
                               </a>
@@ -455,6 +473,81 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                     </tbody>
                   </table>
                 </div>
+                <div className="grid gap-3 md:hidden">
+                  {visibleDxTrades.map((trade) => {
+                    const relationshipId = dxRelationshipByTradeId.get(trade.id);
+                    const normalizedTradeModel = normalizeDxModel(trade.description);
+                    const highlighted = Boolean(
+                      highlightDxModel
+                      && normalizedTradeModel
+                      && (
+                        normalizedTradeModel.includes(highlightDxModel)
+                        || highlightDxModel.includes(normalizedTradeModel)
+                      )
+                    );
+                    return (
+                      <article
+                        key={trade.id}
+                        data-testid="dx-mobile-history-record"
+                        data-dx-highlight={highlighted ? "true" : undefined}
+                        className={`overflow-hidden rounded-lg border bg-white ${highlighted ? "border-stone-600 ring-2 ring-stone-300" : "border-stone-300"}`}
+                      >
+                        <div className="flex items-start justify-between gap-3 bg-graphite px-4 py-3 text-white">
+                          <div>
+                            <p className="text-lg font-bold">{trade.description || trade.modelNumber || "Vehicle not recorded"}</p>
+                            <p className="mt-0.5 text-xs text-stone-300">{[trade.year, trade.colorCode, trade.color].filter(Boolean).join(" · ")}</p>
+                          </div>
+                          <p className="whitespace-nowrap text-xs font-semibold text-platinum">{formatDxBusinessDate(trade.date || null)}</p>
+                        </div>
+                        <dl className="grid grid-cols-2 gap-px bg-stone-200">
+                          <div className="bg-white p-3">
+                            <dt className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">Trading dealer</dt>
+                            <dd className="mt-1 text-sm font-semibold text-stone-900">{trade.tradingDealer || "Unknown dealer"}</dd>
+                            {trade.dealerCode && <p className="mt-0.5 text-xs text-stone-500">Dealer {trade.dealerCode}</p>}
+                          </div>
+                          <div className="bg-white p-3">
+                            <dt className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">Relationship</dt>
+                            <dd className="mt-1 text-sm font-semibold text-stone-900">
+                              {trade.direction === "OURS" ? "They helped us" : trade.direction === "THEIRS" ? "We helped them" : "Direction unknown"}
+                            </dd>
+                          </div>
+                          <div className="bg-white p-3">
+                            <dt className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">Stock / VIN</dt>
+                            <dd className="mt-1 break-all font-mono text-xs text-stone-700">
+                              {trade.stockNumber || trade.vinIncoming || (trade.sourceDataKind === "SANITIZED_HISTORY" ? "Private historical source" : "Not recorded")}
+                            </dd>
+                          </div>
+                          <div className="bg-white p-3">
+                            <dt className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">Evidence</dt>
+                            <dd className="mt-1">
+                              <a
+                                href={trade.sourceRowUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex min-h-11 items-center text-xs font-semibold text-stone-800 underline decoration-stone-300 underline-offset-2"
+                              >
+                                {trade.sourceYear} row {trade.sourceRowNumber} ↗
+                              </a>
+                            </dd>
+                          </div>
+                        </dl>
+                        {relationshipId && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedDxDealerId(relationshipId);
+                              setDxPanelView("partners");
+                            }}
+                            className="min-h-11 w-full border-t border-stone-200 px-4 text-left text-sm font-semibold text-stone-800 hover:bg-stone-50"
+                          >
+                            View dealer relationship →
+                          </button>
+                        )}
+                      </article>
+                    );
+                  })}
+                </div>
+                </>
               )}
             </section>
           )}

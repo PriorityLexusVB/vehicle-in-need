@@ -76,9 +76,9 @@ describe("Dealer Exchange surface", () => {
 
     expect(screen.getByRole("heading", { name: "Dealer Exchange" })).toBeInTheDocument();
     expect(screen.getByTestId("dx-feed-status")).toHaveTextContent("CURRENT");
-    expect(screen.getByText(/Latest DX record/)).toHaveTextContent("Aug 25, 2026");
-    expect(screen.getByText(/Browser fetched/)).not.toHaveTextContent("Aug 25, 2026");
-    expect(screen.getByText("2 completed")).toBeInTheDocument();
+    expect(screen.getByText("Latest completed DX").parentElement).toHaveTextContent("Aug 25, 2026");
+    expect(screen.getByText("Source checked").parentElement).not.toHaveTextContent("Aug 25, 2026");
+    expect(screen.getByText("2 completed exchanges")).toBeInTheDocument();
     expect(screen.getByTestId("dx-rejected-source-rows")).toHaveTextContent(
       "1 non-transaction source row was excluded from completed metrics",
     );
@@ -95,7 +95,7 @@ describe("Dealer Exchange surface", () => {
     renderFeed(beginDxRefresh(current, new Date("2026-08-29T17:16:00Z")));
 
     expect(screen.getByTestId("dx-feed-status")).toHaveTextContent("SYNCING");
-    expect(screen.getByText("2 completed")).toBeInTheDocument();
+    expect(screen.getByText("2 completed exchanges")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Syncing..." })).toBeDisabled();
   });
 
@@ -105,7 +105,7 @@ describe("Dealer Exchange surface", () => {
 
     expect(screen.getByTestId("dx-feed-status")).toHaveTextContent("STALE");
     expect(screen.getByText(/Showing last successful data/)).toBeInTheDocument();
-    expect(screen.getByText("2 completed")).toBeInTheDocument();
+    expect(screen.getByText("2 completed exchanges")).toBeInTheDocument();
   });
 
   it("distinguishes a cold SOURCE ERROR from a valid NO CURRENT DATA response", () => {
@@ -117,13 +117,13 @@ describe("Dealer Exchange surface", () => {
     const first = renderFeed(coldFailure);
     expect(screen.getByTestId("dx-feed-status")).toHaveTextContent("SOURCE ERROR");
     expect(screen.getByText(/Current 2026 source unavailable/)).toBeInTheDocument();
-    expect(screen.getByText("1 completed")).toBeInTheDocument();
+    expect(screen.getByText("1 completed exchange")).toBeInTheDocument();
     first.unmount();
 
     renderFeed(completeDxRefresh(createDxFeedState([historical]), [], successAt));
     expect(screen.getByTestId("dx-feed-status")).toHaveTextContent("NO CURRENT DATA");
     expect(screen.getByText(/No current 2026 DX rows were returned/)).toBeInTheDocument();
-    expect(screen.getByText("1 completed")).toBeInTheDocument();
+    expect(screen.getByText("1 completed exchange")).toBeInTheDocument();
   });
 
   it("opens completed history and keeps the URL DX model highlight for the review CTA", () => {
@@ -142,6 +142,8 @@ describe("Dealer Exchange surface", () => {
       "true",
     );
     expect(screen.getByTestId("dx-completed-history")).toBeInTheDocument();
+    expect(screen.getAllByTestId("dx-mobile-history-record")).toHaveLength(1);
+    expect(screen.getByText("View dealer relationship →")).toBeInTheDocument();
     expect(document.querySelector('#dx-pipeline tr[data-dx-highlight="true"]')).not.toBeNull();
 
     act(() => vi.advanceTimersByTime(800));

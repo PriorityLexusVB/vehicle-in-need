@@ -393,7 +393,7 @@ _(none yet)*
 
 ### Rejected
 
-_(none yet)*
+- PR #282 initial Dealer Exchange candidate (`outputs/vehicle-dx-primary-nav/full-flow/*-dealer-exchange.png`) — amber/cream pipeline card, pill cluster, generic table treatment, and horizontally incomplete mobile history made a working route feel flat, cheap, and unlike the Vehicle-in-Need system — `/dealer-exchange`, desktop and mobile — 2026-09-28.
 
 ### Open
 
