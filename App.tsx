@@ -49,7 +49,7 @@ import { AllocationSnapshot } from "./src/utils/allocationTypes";
 import { buildModelSlotTotals, type ModelSlotTotals } from "./src/utils/allocationModelTotals";
 import { computeOrderMatchSummaries, OrderMatchSummary } from "./src/utils/orderMatchSummary";
 import { CURRENT_DX_SOURCE, fetchDxSheetWithMetadata } from "./src/utils/dxSheetParser";
-import { buildHistoricalDxTrades } from "./src/utils/dxRelationships";
+import { currentFileDxTrades } from "./src/utils/dxCurrentFileScope";
 import { getLegacyDxDestination } from "./src/utils/dxNavigation";
 import {
   beginDxRefresh,
@@ -64,7 +64,6 @@ import {
 } from "./services/orderLinkingService";
 import { useVehicleLinks } from "./services/useVehicleLinks";
 
-const HISTORICAL_DX_TRADES = buildHistoricalDxTrades();
 
 // Type guard to verify if an error is a FirestoreError.
 // Checks for FirestoreError-specific properties to distinguish from generic errors.
@@ -106,7 +105,7 @@ const App: React.FC = () => {
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const [allocationSnapshot, setAllocationSnapshot] = useState<AllocationSnapshot | null>(null);
   const [dxFeed, setDxFeed] = useState(() =>
-    createDxFeedState([...HISTORICAL_DX_TRADES]),
+    createDxFeedState(),
   );
   const dxRefreshRequestId = useRef(0);
   const [stats, setStats] = useState({
@@ -120,10 +119,7 @@ const App: React.FC = () => {
     const requestId = ++dxRefreshRequestId.current;
     const attemptedAt = new Date();
     setDxFeed((previous) => {
-      const hydrated = previous.historicalTrades.length > 0
-        ? previous
-        : createDxFeedState([...HISTORICAL_DX_TRADES]);
-      return beginDxRefresh(hydrated, attemptedAt);
+      return beginDxRefresh(previous, attemptedAt);
     });
 
     const controller = new AbortController();
@@ -138,7 +134,7 @@ const App: React.FC = () => {
       const completedAt = new Date();
       setDxFeed((previous) => completeDxRefresh(
         previous,
-        result.trades,
+        currentFileDxTrades(result.trades),
         completedAt,
         result.rejectedRows,
       ));

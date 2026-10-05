@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { DxDirection, DxTrade } from "../../src/utils/dxSheetParser";
-import { getDxDirectionMeaning } from "../../src/utils/dxSheetParser";
+import { CURRENT_DX_SOURCE, getDxDirectionMeaning } from "../../src/utils/dxSheetParser";
 import DxPartners from "../DxPartners";
 
 function trade(
@@ -32,7 +32,7 @@ function trade(
     outgoingModelNumber: "",
     isSwap: false,
     sourceYear: Number(date.slice(0, 4)),
-    sourceWorkbookId: "workbook",
+    sourceWorkbookId: CURRENT_DX_SOURCE.workbookId,
     sourceWorkbookTitle: "DX workbook",
     sourceTabName: "DX",
     sourceGid: "0",
@@ -48,12 +48,12 @@ function trade(
 
 const trades = [
   trade("trade-1", "2026-08-01", "OURS", { tradingDealer: "SHEEHY LEXUS OF RICHMOND", outgoingModelNumber: "9840" }),
-  trade("trade-2", "2025-09-01", "THEIRS", { dealerCode: "65407", outgoingModelNumber: "9353" }),
-  trade("trade-3", "2024-01-01", "OURS"),
+  trade("trade-2", "2026-09-01", "THEIRS", { dealerCode: "65407", outgoingModelNumber: "9353" }),
+  trade("trade-3", "2026-01-02", "OURS"),
 ];
 
 describe("DxPartners", () => {
-  it("merges known aliases and shows factual all-time relationship math", () => {
+  it("merges known aliases and shows factual spreadsheet-only relationship math", () => {
     render(<DxPartners trades={trades} />);
 
     const desktopTable = screen.getByRole("table");
@@ -70,18 +70,14 @@ describe("DxPartners", () => {
     expect(dealerRow).toHaveTextContent("Us 2 · Them 1");
   });
 
-  it("switches the table to the inclusive recent 12-month view", () => {
-    render(<DxPartners trades={trades} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Recent 12 months" }));
-
-    const dealerRow = within(screen.getByRole("table"))
-      .getByRole("button", { name: "RICHMOND" })
-      .closest("tr");
-    expect(dealerRow).not.toBeNull();
-    expect(dealerRow).toHaveTextContent("1");
-    expect(dealerRow).toHaveTextContent("2");
-    expect(dealerRow).toHaveTextContent("Even");
+  it("excludes older records and removes historical range controls", () => {
+    render(<DxPartners trades={[...trades, trade("old", "2025-09-01", "OURS")]} />);
+    expect(screen.queryByRole("button", { name: "All time" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Recent 12 months" })).not.toBeInTheDocument();
+    expect(screen.getByText(/Jan 2–Oct 5, 2026/)).toBeInTheDocument();
+    const row = within(screen.getByRole("table")).getByRole("button", { name: "RICHMOND" }).closest("tr");
+    expect(row).toHaveTextContent("Us 2 · Them 1");
+    expect(within(screen.getByRole("table")).getByRole("columnheader", { name: "Ledger records" })).toBeInTheDocument();
   });
 
   it("opens source-addressable dealer history from the partner row", () => {
@@ -90,7 +86,7 @@ describe("DxPartners", () => {
     fireEvent.click(within(screen.getByRole("table")).getByRole("button", { name: "RICHMOND" }));
 
     const drawer = screen.getByTestId("dx-dealer-history-drawer");
-    expect(within(drawer).getByText("Completed vehicle history")).toBeInTheDocument();
+    expect(within(drawer).getByText("Vehicle movement records")).toBeInTheDocument();
     expect(within(drawer).getAllByTestId("dx-history-event")).toHaveLength(3);
     expect(within(drawer).getAllByRole("link", { name: /Source:/ })).toHaveLength(3);
     expect(within(drawer).getAllByText(/Requested by us/i).length).toBeGreaterThan(0);

@@ -7,6 +7,7 @@ import {
   hasOutgoingDxVehicle,
 } from "../src/utils/dxRelationships";
 import DxPartners from "./DxPartners";
+import { currentFileDxTrades, DX_CURRENT_FILE_DATE_LABEL } from "../src/utils/dxCurrentFileScope";
 
 interface DealerExchangeProps {
   /** Single App-owned DX source state. This surface never fetches independently. */
@@ -16,7 +17,6 @@ interface DealerExchangeProps {
 }
 
 type DxPanelView = "partners" | "history";
-type DxHistoryYear = "all" | "2024" | "2025" | "2026";
 
 function formatDxBusinessDate(value: string | null): string {
   if (!value) return "No dated record";
@@ -51,7 +51,6 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
   const [dxPanelView, setDxPanelView] = useState<DxPanelView>(
     initialDeepLink.current.model ? "history" : "partners",
   );
-  const [dxHistoryYear, setDxHistoryYear] = useState<DxHistoryYear>("2026");
   const [selectedDxDealerId, setSelectedDxDealerId] = useState<string | null>(null);
   const [highlightDxModel, setHighlightDxModel] = useState<string | null>(() => {
     const model = initialDeepLink.current.model;
@@ -59,7 +58,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
   });
   const deepLinkScrollCompleted = useRef(false);
 
-  const dxTrades = dxFeed.trades;
+  const dxTrades = useMemo(() => currentFileDxTrades(dxFeed.trades), [dxFeed.trades]);
   const dxLoading = dxFeed.status === "syncing";
   const dxError = dxFeed.error;
   const dxRelationships = useMemo(
@@ -73,12 +72,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
     }
     return byTradeId;
   }, [dxRelationships]);
-  const visibleDxTrades = useMemo(
-    () => dxHistoryYear === "all"
-      ? dxTrades
-      : dxTrades.filter((trade) => trade.sourceYear === Number(dxHistoryYear)),
-    [dxHistoryYear, dxTrades],
-  );
+  const visibleDxTrades = dxTrades;
   const dxTotals = useMemo(() => ({
     completed: dxTrades.length,
     vehiclesReceived: dxTrades.filter(hasIncomingDxVehicle).length,
@@ -175,7 +169,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
               Dealer Exchange
             </h2>
             <p className="mt-1 max-w-2xl text-sm text-stone-600">
-              Track vehicles received and sent, who requested each exchange, and the evidence behind every completed trade.
+              Track vehicles received and sent, who requested each exchange, and the evidence behind every spreadsheet record.
             </p>
           </div>
           <p className="hidden text-xs font-medium text-stone-500 sm:block">
@@ -198,7 +192,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                 </span>
               </div>
               <h3 className="mt-2 text-2xl font-bold tracking-tight text-white">
-                {dxTotals.completed} completed {dxTotals.completed === 1 ? "exchange" : "exchanges"}
+                {dxTotals.completed} ledger {dxTotals.completed === 1 ? "record" : "records"}
               </h3>
               <p className="mt-1 hidden text-sm text-stone-300 sm:block">
                 Vehicle movement and who requested the exchange are counted separately.
@@ -227,7 +221,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
 
             <div className="grid min-w-56 grid-cols-2 gap-3 border-t border-white/15 pt-4 lg:flex lg:flex-col lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-400">Latest completed DX</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-400">Latest spreadsheet DX</p>
                 <p className="mt-1 font-semibold text-white">{formatDxBusinessDate(dxFeed.latestBusinessDate)}</p>
               </div>
               <div>
@@ -244,7 +238,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
               </button>
               <p className="col-span-2 text-xs text-stone-300">Requested by us {dxTotals.oursRequested} · by them {dxTotals.theirsRequested}</p>
               {dxTotals.unknownInitiator > 0 && (
-                <p className="col-span-2 text-xs text-stone-300">{dxTotals.unknownInitiator} completed exchange {dxTotals.unknownInitiator === 1 ? "has" : "have"} no requester recorded.</p>
+                <p className="col-span-2 text-xs text-stone-300">{dxTotals.unknownInitiator} ledger {dxTotals.unknownInitiator === 1 ? "record has" : "records have"} no requester recorded.</p>
               )}
             </div>
           </div>
@@ -264,7 +258,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
 
           {dxFeed.status === "no-data" && (
             <div className="border-t border-white/15 bg-white/5 p-3 text-sm text-stone-200 sm:px-5">
-              No current 2026 DX rows were returned. Closed-year history remains available below.
+              No current 2026 DX rows were returned for the accepted spreadsheet dates.
             </div>
           )}
 
@@ -274,7 +268,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
               className="border-t border-amber-300/40 bg-amber-950/30 p-3 text-sm text-amber-100 sm:px-5"
             >
               <strong>
-                {dxFeed.rejectedRows.length} non-transaction source {dxFeed.rejectedRows.length === 1 ? "row was" : "rows were"} excluded from completed metrics.
+                {dxFeed.rejectedRows.length} non-transaction source {dxFeed.rejectedRows.length === 1 ? "row was" : "rows were"} excluded from ledger metrics.
               </strong>{" "}
               No vehicle-record evidence was present.
               <span className="ml-2 inline-flex flex-wrap gap-2">
@@ -344,7 +338,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                   : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"
               }`}
             >
-              Completed exchanges
+              Ledger records
             </button>
           </div>
         </div>
@@ -360,26 +354,14 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
             <section data-testid="dx-completed-history">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                 <p className="max-w-2xl text-sm text-stone-600">
-                  Every completed exchange links back to its source row. Newest records first.
+                  Every spreadsheet record links back to its source row. Newest records first.
                 </p>
-                <label className="flex items-center gap-2 text-xs font-semibold text-stone-500">
-                  Year
-                  <select
-                    value={dxHistoryYear}
-                    onChange={(event) => setDxHistoryYear(event.target.value as DxHistoryYear)}
-                    className="min-h-11 rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-800 focus:border-stone-600 focus:outline-none focus:ring-2 focus:ring-stone-200"
-                  >
-                    <option value="2026">2026 current</option>
-                    <option value="2025">2025 history</option>
-                    <option value="2024">2024 history</option>
-                    <option value="all">All years</option>
-                  </select>
-                </label>
+                <p className="text-xs font-semibold text-stone-500">{DX_CURRENT_FILE_DATE_LABEL} · spreadsheet only</p>
               </div>
 
               {visibleDxTrades.length === 0 ? (
                 <div className="rounded-lg border border-stone-300 bg-white p-6 text-center text-sm text-stone-500">
-                  No completed DX records are available for that year.
+                  No DX records are available for the accepted spreadsheet dates.
                 </div>
               ) : (
                 <>
@@ -460,7 +442,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                               </span>
                             </td>
                             <td className="px-3 py-3 font-mono text-xs text-stone-500">
-                              {trade.stockNumber || trade.vinIncoming || (trade.sourceDataKind === "SANITIZED_HISTORY" ? "Private historical source" : "—")}
+                              {trade.stockNumber || trade.vinIncoming || "—"}
                             </td>
                             <td className="whitespace-nowrap px-3 py-3">
                               <a
@@ -519,7 +501,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                           <div className="bg-white p-3">
                             <dt className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">Stock / VIN</dt>
                             <dd className="mt-1 break-all font-mono text-xs text-stone-700">
-                              {trade.stockNumber || trade.vinIncoming || (trade.sourceDataKind === "SANITIZED_HISTORY" ? "Private historical source" : "Not recorded")}
+                              {trade.stockNumber || trade.vinIncoming || "Not recorded"}
                             </dd>
                           </div>
                           <div className="bg-white p-3">

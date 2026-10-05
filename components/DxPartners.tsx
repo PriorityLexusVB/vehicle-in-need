@@ -4,10 +4,9 @@ import type { DxTrade } from "../src/utils/dxSheetParser";
 import {
   aggregateDxRelationships,
   type DealerRelationship,
-  type DxRelationshipMetrics,
 } from "../src/utils/dxRelationships";
 
-type RelationshipRange = "all" | "recent";
+import { currentFileDxTrades, DX_CURRENT_FILE_DATE_LABEL } from "../src/utils/dxCurrentFileScope";
 
 function formatDate(value: string | null): string {
   if (!value) return "—";
@@ -18,10 +17,6 @@ function formatDate(value: string | null): string {
     day: "numeric",
     year: parsed.getFullYear() === new Date().getFullYear() ? undefined : "numeric",
   });
-}
-
-function metricsFor(relationship: DealerRelationship, range: RelationshipRange): DxRelationshipMetrics {
-  return range === "recent" ? relationship.recent12Months : relationship.allTime;
 }
 
 function balanceLabel(balance: number): string {
@@ -118,11 +113,11 @@ function DealerHistoryDrawer({ relationship, onClose }: DealerHistoryDrawerProps
               </div>
 
               <div className="flex-1 overflow-y-auto p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-stone-400">All completed exchanges</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-400">Spreadsheet ledger records</p>
                 <div className="mt-2 grid grid-cols-2 overflow-hidden rounded-lg bg-graphite sm:grid-cols-4">
                   <Metric label="Vehicles received" value={relationship.allTime.vehiclesReceived} tone="platinum" />
                   <Metric label="Vehicles sent" value={relationship.allTime.vehiclesSent} />
-                  <Metric label="Total completed" value={relationship.allTime.totalCompleted} />
+                  <Metric label="Ledger records" value={relationship.allTime.totalCompleted} />
                   <Metric label="Vehicle balance" value={balanceLabel(relationship.allTime.vehicleBalance)} tone="muted" />
                 </div>
 
@@ -131,20 +126,8 @@ function DealerHistoryDrawer({ relationship, onClose }: DealerHistoryDrawerProps
                   {relationship.allTime.unknownInitiator > 0 ? ` · not recorded ${relationship.allTime.unknownInitiator}` : ""}
                 </p>
 
-                <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-3">
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Recent 12 months</p>
-                    <p className="text-xs text-stone-400">
-                      {formatDate(relationship.recent12Months.startDate)}–{formatDate(relationship.recent12Months.endDate)}
-                    </p>
-                  </div>
-                  <p className="mt-2 text-sm text-stone-700">
-                    <strong>{relationship.recent12Months.totalCompleted}</strong> completed · {relationship.recent12Months.vehiclesReceived} vehicles received · {relationship.recent12Months.vehiclesSent} vehicles sent · {balanceLabel(relationship.recent12Months.vehicleBalance)}
-                  </p>
-                </div>
-
                 <div className="mt-5 flex items-center justify-between gap-3">
-                  <h3 className="text-sm font-semibold text-stone-900">Completed vehicle history</h3>
+                  <h3 className="text-sm font-semibold text-stone-900">Vehicle movement records</h3>
                   <span className="text-xs text-stone-400">Newest first</span>
                 </div>
                 <div className="mt-2 divide-y divide-stone-100 rounded-xl border border-stone-200">
@@ -199,10 +182,9 @@ export default function DxPartners({
   selectedDealerId,
   onSelectedDealerChange,
 }: DxPartnersProps) {
-  const [range, setRange] = useState<RelationshipRange>("all");
   const [query, setQuery] = useState("");
   const [internalSelectedId, setInternalSelectedId] = useState<string | null>(null);
-  const relationships = useMemo(() => aggregateDxRelationships(trades), [trades]);
+  const relationships = useMemo(() => aggregateDxRelationships(currentFileDxTrades(trades)), [trades]);
   const activeSelectedId = selectedDealerId === undefined ? internalSelectedId : selectedDealerId;
   const setSelectedId = (next: string | null) => {
     if (onSelectedDealerChange) onSelectedDealerChange(next);
@@ -219,8 +201,8 @@ export default function DxPartners({
         .includes(normalizedQuery);
     })
     .sort((first, second) => {
-      const firstMetrics = metricsFor(first, range);
-      const secondMetrics = metricsFor(second, range);
+      const firstMetrics = first.allTime;
+      const secondMetrics = second.allTime;
       return secondMetrics.totalCompleted - firstMetrics.totalCompleted
         || (secondMetrics.lastActivity ?? "").localeCompare(firstMetrics.lastActivity ?? "")
         || first.displayName.localeCompare(second.displayName);
@@ -230,31 +212,13 @@ export default function DxPartners({
     <section data-testid="dx-partners">
       <div className="flex flex-col gap-3 border-b border-stone-300 pb-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-500">Completed relationship history</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-500">Spreadsheet movements</p>
           <h4 className="mt-1 text-xl font-bold text-stone-900">Dealer Exchange Partners</h4>
           <p className="mt-1 max-w-2xl text-sm text-stone-500">
-            Vehicle movement is counted separately from who requested the exchange. A completed swap normally records one received and one sent; an unmatched vehicle shows who owes the next one.
+            Only the accepted spreadsheet dates: {DX_CURRENT_FILE_DATE_LABEL}. Vehicles received and sent are counted separately from who requested the exchange.
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:items-end">
-          <div className="inline-flex self-start rounded-lg border border-stone-300 bg-white p-1" role="group" aria-label="Dealer relationship time range">
-            <button
-              type="button"
-              onClick={() => setRange("all")}
-              className={`min-h-11 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${range === "all" ? "bg-graphite text-white" : "text-stone-500 hover:bg-stone-100 hover:text-stone-800"}`}
-              aria-pressed={range === "all"}
-            >
-              All time
-            </button>
-            <button
-              type="button"
-              onClick={() => setRange("recent")}
-              className={`min-h-11 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${range === "recent" ? "bg-graphite text-white" : "text-stone-500 hover:bg-stone-100 hover:text-stone-800"}`}
-              aria-pressed={range === "recent"}
-            >
-              Recent 12 months
-            </button>
-          </div>
           <label className="relative block">
             <span className="sr-only">Search DX partners</span>
             <input
@@ -269,7 +233,7 @@ export default function DxPartners({
 
       {visible.length === 0 ? (
         <div className="mt-3 rounded-xl border border-stone-200 bg-stone-50 p-6 text-center text-sm text-stone-500">
-          {relationships.length === 0 ? "No completed dealer relationships are available." : "No dealer matches that search."}
+          {relationships.length === 0 ? "No spreadsheet dealer relationships are available." : "No dealer matches that search."}
         </div>
       ) : (
         <>
@@ -280,7 +244,7 @@ export default function DxPartners({
                   <th scope="col" className="px-4 py-3">Dealer</th>
                   <th scope="col" className="px-3 py-3 text-right">Vehicles received</th>
                   <th scope="col" className="px-3 py-3 text-right">Vehicles sent</th>
-                  <th scope="col" className="px-3 py-3 text-right">Completed</th>
+                  <th scope="col" className="px-3 py-3 text-right">Ledger records</th>
                   <th scope="col" className="px-3 py-3">Vehicle balance</th>
                   <th scope="col" className="px-3 py-3">Requested by</th>
                   <th scope="col" className="px-4 py-3 text-right">Last DX</th>
@@ -288,7 +252,7 @@ export default function DxPartners({
               </thead>
               <tbody className="divide-y divide-stone-100">
                 {visible.map((relationship) => {
-                  const metrics = metricsFor(relationship, range);
+                  const metrics = relationship.allTime;
                   return (
                     <tr key={relationship.id} className="hover:bg-stone-50">
                       <td className="px-4 py-3">
@@ -319,7 +283,7 @@ export default function DxPartners({
 
           <div className="mt-3 grid gap-3 md:hidden">
             {visible.map((relationship) => {
-              const metrics = metricsFor(relationship, range);
+              const metrics = relationship.allTime;
               return (
                 <button
                   key={relationship.id}
@@ -345,7 +309,7 @@ export default function DxPartners({
                     </div>
                     <div className="px-2 py-3">
                       <p className="font-bold text-stone-800">{metrics.totalCompleted}</p>
-                      <p className="text-[10px] uppercase tracking-wide text-stone-500">Completed</p>
+                      <p className="text-[10px] uppercase tracking-wide text-stone-500">Ledger records</p>
                     </div>
                   </div>
                   <p className="border-t border-stone-200 px-4 py-3 text-xs font-semibold text-stone-600">
