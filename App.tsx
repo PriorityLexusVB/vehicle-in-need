@@ -47,6 +47,7 @@ import { useRegisterSW } from "virtual:pwa-register/react";
 import { subscribeLatestAllocationSnapshot } from "./services/allocationService";
 import { AllocationSnapshot } from "./src/utils/allocationTypes";
 import { buildModelSlotTotals, type ModelSlotTotals } from "./src/utils/allocationModelTotals";
+import { buildLatestModelNumberTotals } from "./src/utils/allocationModelNumberTotals";
 import { computeOrderMatchSummaries, OrderMatchSummary } from "./src/utils/orderMatchSummary";
 import { CURRENT_DX_SOURCE, fetchDxSheetWithMetadata } from "./src/utils/dxSheetParser";
 import { currentFileDxTrades } from "./src/utils/dxCurrentFileScope";
@@ -104,6 +105,7 @@ const App: React.FC = () => {
   const [isCSVUploadVisible, setIsCSVUploadVisible] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const [allocationSnapshot, setAllocationSnapshot] = useState<AllocationSnapshot | null>(null);
+  const [allocationSnapshotStatus, setAllocationSnapshotStatus] = useState<"loading" | "ready" | "missing" | "error">("loading");
   const [dxFeed, setDxFeed] = useState(() =>
     createDxFeedState(),
   );
@@ -113,7 +115,7 @@ const App: React.FC = () => {
     awaitingAction: 0,
     securedLast30Days: 0,
   });
-  const { linksByVehicleId } = useVehicleLinks(Boolean(user));
+  const { linksByVehicleId, loading: linksLoading, error: linksError } = useVehicleLinks(Boolean(user));
 
   const refreshDx = useCallback(async () => {
     const requestId = ++dxRefreshRequestId.current;
@@ -588,9 +590,16 @@ const App: React.FC = () => {
     // Subscribe to allocation snapshot for match badges on dashboard cards (managers only)
     let unsubscribeAllocation: (() => void) | undefined;
     if (user.isManager) {
+      setAllocationSnapshotStatus("loading");
       unsubscribeAllocation = subscribeLatestAllocationSnapshot(
-        (snapshot) => setAllocationSnapshot(snapshot),
-        () => setAllocationSnapshot(null),
+        (snapshot) => {
+          setAllocationSnapshot(snapshot);
+          setAllocationSnapshotStatus(snapshot ? "ready" : "missing");
+        },
+        () => {
+          setAllocationSnapshot(null);
+          setAllocationSnapshotStatus("error");
+        },
       );
       void refreshDx();
     } else {
@@ -599,6 +608,7 @@ const App: React.FC = () => {
       // order-card availability chip / match badges never render manager-only
       // allocation data on a rep's cards.
       setAllocationSnapshot(null);
+      setAllocationSnapshotStatus("missing");
       dxRefreshRequestId.current += 1;
       setDxFeed(resetDxFeed());
     }
@@ -1002,11 +1012,11 @@ const App: React.FC = () => {
     [allocationSnapshot, linkedVehicleIds],
   );
 
-  // Keyed by model for order-card lookup (order → matchedAllocModels → totals).
-  // Same pure-claim totals as the dashboard strip and board pills.
-  const modelSlotTotalsByModel = useMemo(
-    () => new Map(modelSlotTotals.map((total) => [total.model, total] as const)),
-    [modelSlotTotals],
+  const latestModelNumberTotals = useMemo(
+    () => linksLoading || linksError
+      ? null
+      : buildLatestModelNumberTotals(allocationSnapshot, linkedVehicleIds),
+    [allocationSnapshot, linkedVehicleIds, linksLoading, linksError],
   );
   const legacyDxDestination = location.pathname === "/allocation"
     ? getLegacyDxDestination(searchParams)
@@ -1186,7 +1196,9 @@ const App: React.FC = () => {
                     orderMatchSummaries={orderMatchSummaries}
                     allocationVehicles={allocationSnapshot?.vehicles ?? []}
                     linkedVehicleIds={linkedVehicleIds}
-                    modelSlotTotalsByModel={modelSlotTotalsByModel}
+                    latestModelNumberTotals={latestModelNumberTotals}
+                    allocationSnapshotStatus={allocationSnapshotStatus}
+                    allocationClaimsStatus={linksLoading ? "loading" : linksError ? "error" : "ready"}
                   />
                 </div>
               ) : (
@@ -1251,7 +1263,6 @@ const App: React.FC = () => {
                       orderMatchSummaries={orderMatchSummaries}
                       allocationVehicles={allocationSnapshot?.vehicles ?? []}
                       linkedVehicleIds={linkedVehicleIds}
-                      modelSlotTotalsByModel={modelSlotTotalsByModel}
                     />
                   </div>
                 </div>

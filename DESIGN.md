@@ -45,6 +45,23 @@ Extracted from `App.tsx:1089-1266` (route table):
 
 What gets top weight, in order:
 
+For the **manager Dashboard order list**, Rob's 2026-10-06 direction supersedes
+the older collapsed-card hierarchy below. Each white row uses its width for
+four scan areas: customer and status; salesperson; model, exact model number,
+and exterior/interior color codes; and a readable note preview. The customer
+and vehicle identity are large, notes are body-sized, and the row expands for
+full notes and actions. A single plain-text latest-allocation fact may appear
+under the vehicle only when the exact four-digit source model number, dated
+latest snapshot, and vehicle-link readback support it. It means unassigned
+allocation units at that model number; it does not promise a color match or
+in-stock vehicle. Unknown source or claim state must not render a numerical
+availability claim. Match/DX review lives in expanded details, while the
+existing allocation link selector remains there. The salesperson view keeps
+its existing compact summary.
+
+The hierarchy below documents the other existing surfaces and the earlier
+card pattern; it does not override this explicit manager-list direction.
+
 1. **The status of a specific order/vehicle** — `StatusBadge` (a pill, not a
    color-only cue) is present on every order row/card; it is the single
    highest-frequency glance target in the app.

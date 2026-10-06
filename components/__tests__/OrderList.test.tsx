@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import OrderList from "../OrderList";
 import { Order, OrderStatus, AppUser } from "../../types";
 import type { OrderMatchSummary } from "../../src/utils/orderMatchSummary";
-import type { ModelSlotTotals } from "../../src/utils/allocationModelTotals";
+import type { LatestModelNumberTotals } from "../../src/utils/allocationModelNumberTotals";
 
 describe("OrderList", () => {
   const mockManagerUser: AppUser = {
@@ -76,26 +76,74 @@ describe("OrderList", () => {
         },
       ],
     ]);
-    const modelSlotTotalsByModel = new Map<string, ModelSlotTotals>([
-      ["RX350", { model: "RX350", totalSlots: 8, linkedSlots: 2, availableSlots: 6 }],
-    ]);
+    const latestModelNumberTotals: LatestModelNumberTotals = {
+      reportDate: "2026-10-06",
+      byModelNumber: new Map([
+        ["9704", { modelNumber: "9704", totalSlots: 8, unassignedSlots: 6 }],
+      ]),
+    };
     render(
       <OrderList
-        orders={mockOrders}
+        orders={[{ ...mockOrders[0], modelNumber: "9704" }]}
         onUpdateStatus={mockOnUpdateStatus}
         onUpdateOrderDetails={mockOnUpdateOrderDetails}
         onDeleteOrder={mockOnDeleteOrder}
         currentUser={mockManagerUser}
         orderMatchSummaries={matchSummaries}
-        modelSlotTotalsByModel={modelSlotTotalsByModel}
+        latestModelNumberTotals={latestModelNumberTotals}
+        allocationSnapshotStatus="ready"
       />,
     );
     const availability = screen.getByTestId("order-card-availability");
-    expect(availability).toHaveTextContent("RX350");
-    expect(availability).toHaveTextContent("6 available");
-    expect(availability).toHaveTextContent("8 received");
-    // "open" was reworded to "available" to kill the confusing term.
-    expect(availability).not.toHaveTextContent("open");
+    expect(availability).toHaveTextContent("model 9704");
+    expect(availability).toHaveTextContent("6 unassigned of 8");
+    expect(availability).toHaveTextContent("report 2026-10-06");
+    expect(availability).not.toHaveTextContent("received");
+  });
+
+  it("shows manager scan fields and an honest unavailable fact", () => {
+    render(
+      <OrderList
+        orders={[{
+          ...mockOrders[0], modelNumber: "9704", exteriorColor1: "Caviar",
+          interiorColor1: "Black", notes: "Call customer before assigning the unit.",
+        }]}
+        onUpdateStatus={mockOnUpdateStatus}
+        onUpdateOrderDetails={mockOnUpdateOrderDetails}
+        onDeleteOrder={mockOnDeleteOrder}
+        currentUser={mockManagerUser}
+        allocationSnapshotStatus="error"
+      />,
+    );
+    expect(screen.getByText("Alice")).toBeInTheDocument();
+    expect(screen.getByText(/Exterior: Caviar/)).toBeInTheDocument();
+    expect(screen.getByText(/Interior: Black/)).toBeInTheDocument();
+    expect(screen.getByText("Call customer before assigning the unit.")).toBeInTheDocument();
+    expect(screen.getByTestId("order-card-availability")).toHaveTextContent("load failed");
+    expect(screen.queryByRole("button", { name: /Preview allocation matches and completed DX history/i })).not.toBeInTheDocument();
+  });
+
+  it("does not present unassigned units while claim documents are still loading", () => {
+    render(
+      <OrderList
+        orders={[{ ...mockOrders[0], modelNumber: "9704" }]}
+        onUpdateStatus={mockOnUpdateStatus}
+        onUpdateOrderDetails={mockOnUpdateOrderDetails}
+        onDeleteOrder={mockOnDeleteOrder}
+        currentUser={mockManagerUser}
+        allocationSnapshotStatus="ready"
+        allocationClaimsStatus="loading"
+        latestModelNumberTotals={{
+          reportDate: "2026-10-06",
+          byModelNumber: new Map([["9704", {
+            modelNumber: "9704", totalSlots: 2, unassignedSlots: 2,
+          }]]),
+        }}
+      />,
+    );
+    const fact = screen.getByTestId("order-card-availability");
+    expect(fact).toHaveTextContent("checking assignments");
+    expect(fact).not.toHaveTextContent("2 unassigned");
   });
 
   it("renders list of orders", () => {

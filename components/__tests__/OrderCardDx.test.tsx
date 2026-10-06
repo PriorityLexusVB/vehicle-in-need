@@ -81,4 +81,24 @@ describe("OrderCard completed DX context", () => {
     renderCard({ ...baseOrder, status: OrderStatus.Secured });
     expect(screen.queryByText(/DX history:/)).not.toBeInTheDocument();
   });
+
+  it("keeps DX history in manager details without a collapsed arrow chip", async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <OrderCard
+          order={baseOrder}
+          matchSummary={dxHistory}
+          currentUser={{ uid: "manager", email: "manager@example.test", displayName: "Manager", isManager: true }}
+          onUpdateStatus={vi.fn()}
+          onUpdateOrderDetails={vi.fn().mockResolvedValue(true)}
+          onDeleteOrder={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByRole("button", { name: /Preview allocation matches and completed DX history/i })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Toggle order details" }));
+    await user.click(screen.getByRole("button", { name: "Review allocation matches and DX history" }));
+    expect(screen.getByText("Completed DX history")).toBeInTheDocument();
+  });
 });
