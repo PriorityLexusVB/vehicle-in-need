@@ -14,7 +14,7 @@
  *
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import {
   collection,
   onSnapshot,
@@ -35,50 +35,78 @@ export interface UseVehicleLinksResult {
   error: Error | null;
 }
 
+const emptyLinks = new Map<string, VehicleLinkDoc>();
+const pendingState: UseVehicleLinksResult = {
+  linksByVehicleId: emptyLinks, loading: true, error: null,
+};
+const disabledState: UseVehicleLinksResult = {
+  linksByVehicleId: emptyLinks, loading: false, error: null,
+};
+
+function createVehicleLinksStore(enabled: boolean) {
+  let state = enabled ? pendingState : disabledState;
+  const listeners = new Set<() => void>();
+  let stop: (() => void) | undefined;
+
+  const publish = (next: UseVehicleLinksResult) => {
+    state = next;
+    listeners.forEach((listener) => listener());
+  };
+
+  const subscribe = (listener: () => void) => {
+    listeners.add(listener);
+    if (enabled && listeners.size === 1) {
+      // A new listener must never reuse claims from a previous auth session.
+      publish(pendingState);
+      let active = true;
+      const unsubscribe = onSnapshot(
+        collection(db, VEHICLE_LINKS_COLLECTION),
+        { includeMetadataChanges: true },
+        (snap: QuerySnapshot<DocumentData>) => {
+          if (!active) return;
+          const map = new Map<string, VehicleLinkDoc>();
+          for (const docSnap of snap.docs) {
+            map.set(docSnap.id, docSnap.data() as VehicleLinkDoc);
+          }
+          // Cache-backed claims may be shown elsewhere, but cannot certify the
+          // manager's unassigned count until this listener hears the server.
+          publish({
+            linksByVehicleId: map,
+            loading: snap.metadata.fromCache,
+            error: null,
+          });
+        },
+        (err) => {
+          if (!active) return;
+          console.error("[useVehicleLinks] Subscription error:", err);
+          publish({ linksByVehicleId: state.linksByVehicleId, loading: false, error: err });
+        },
+      );
+      stop = () => {
+        active = false;
+        unsubscribe();
+      };
+    }
+
+    return () => {
+      listeners.delete(listener);
+      if (listeners.size === 0) {
+        stop?.();
+        stop = undefined;
+        state = enabled ? pendingState : disabledState;
+      }
+    };
+  };
+
+  return { subscribe, getSnapshot: () => state };
+}
+
 /**
  * Subscribe to all vehicle_links documents.
  * Returns a stable Map reference that updates reactively.
  * Unsubscribes automatically when the component unmounts.
  */
 export function useVehicleLinks(enabled = true): UseVehicleLinksResult {
-  const [linksByVehicleId, setLinksByVehicleId] = useState<Map<string, VehicleLinkDoc>>(
-    () => new Map(),
-  );
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const disabledLinksByVehicleId = useMemo(() => new Map<string, VehicleLinkDoc>(), []);
-
-  useEffect(() => {
-    if (!enabled) {
-      return undefined;
-    }
-
-    const ref = collection(db, VEHICLE_LINKS_COLLECTION);
-
-    const unsubscribe = onSnapshot(
-      ref,
-      (snap: QuerySnapshot<DocumentData>) => {
-        const map = new Map<string, VehicleLinkDoc>();
-        for (const docSnap of snap.docs) {
-          map.set(docSnap.id, docSnap.data() as VehicleLinkDoc);
-        }
-        setLinksByVehicleId(map);
-        setLoading(false);
-        setError(null);
-      },
-      (err) => {
-        console.error("[useVehicleLinks] Subscription error:", err);
-        setError(err);
-        setLoading(false);
-      },
-    );
-
-    return unsubscribe;
-  }, [enabled]); // collection path is static; enabled follows auth state
-
-  if (!enabled) {
-    return { linksByVehicleId: disabledLinksByVehicleId, loading: false, error: null };
-  }
-
-  return { linksByVehicleId, loading, error };
+  const store = useMemo(() => createVehicleLinksStore(enabled), [enabled]);
+  return useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
 }
