@@ -116,8 +116,9 @@ describe("OrderList", () => {
       />,
     );
     expect(screen.getByText("Alice")).toBeInTheDocument();
-    expect(screen.getByText(/Exterior: Caviar/)).toBeInTheDocument();
-    expect(screen.getByText(/Interior: Black/)).toBeInTheDocument();
+    const colors = screen.getByText("Exterior:").closest("p");
+    expect(colors).toHaveTextContent("Exterior: Caviar");
+    expect(colors).toHaveTextContent("Interior: Black");
     expect(screen.getByText("Call customer before assigning the unit.")).toBeInTheDocument();
     expect(screen.getByTestId("order-card-availability")).toHaveTextContent("load failed");
     expect(screen.queryByRole("button", { name: /Preview allocation matches and completed DX history/i })).not.toBeInTheDocument();
