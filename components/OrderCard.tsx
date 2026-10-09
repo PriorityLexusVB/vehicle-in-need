@@ -17,7 +17,10 @@ import { linkVehicleToOrder, unlinkVehicleFromOrder } from "../services/orderLin
 import { OrderMatchSummary } from "../src/utils/orderMatchSummary";
 import VehicleLinkSelector from "./VehicleLinkSelector";
 import { AllocationVehicle } from "../src/utils/allocationTypes";
-import type { ModelSlotTotals } from "../src/utils/allocationModelTotals";
+import {
+  fourDigitModelNumber,
+  type LatestModelNumberTotals,
+} from "../src/utils/allocationModelNumberTotals";
 
 interface OrderCardProps {
   order: Order;
@@ -32,7 +35,9 @@ interface OrderCardProps {
   matchSummary?: OrderMatchSummary;
   allocationVehicles?: AllocationVehicle[];
   linkedVehicleIds?: Set<string>;
-  modelSlotTotalsByModel?: Map<string, ModelSlotTotals>;
+  latestModelNumberTotals?: LatestModelNumberTotals | null;
+  allocationSnapshotStatus?: "loading" | "ready" | "missing" | "error";
+  allocationClaimsStatus?: "loading" | "ready" | "error";
 }
 
 const DetailItem: React.FC<{ label: string; children: React.ReactNode }> = ({
@@ -57,7 +62,9 @@ const OrderCard: React.FC<OrderCardProps> = ({
   matchSummary,
   allocationVehicles,
   linkedVehicleIds,
-  modelSlotTotalsByModel,
+  latestModelNumberTotals,
+  allocationSnapshotStatus,
+  allocationClaimsStatus,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showUnsecureConfirm, setShowUnsecureConfirm] = useState(false);
@@ -183,6 +190,27 @@ const OrderCard: React.FC<OrderCardProps> = ({
 
   // Format model number once for conditional rendering
   const modelNumberDisplay = formatModelNumber(order);
+  const exactModelNumber = fourDigitModelNumber(order.modelNumber);
+  const exactModelTotal = exactModelNumber
+    ? latestModelNumberTotals?.byModelNumber.get(exactModelNumber)
+    : undefined;
+  const previewNote = order.latestNoteText?.trim() || order.notes?.trim();
+  let allocationFact = "Latest allocation · count unavailable";
+  if (allocationSnapshotStatus === "loading") {
+    allocationFact = "Latest allocation · checking report";
+  } else if (allocationSnapshotStatus === "error") {
+    allocationFact = "Latest allocation · unavailable (load failed)";
+  } else if (allocationClaimsStatus === "loading") {
+    allocationFact = "Latest allocation · checking assignments";
+  } else if (allocationClaimsStatus === "error") {
+    allocationFact = "Latest allocation · assignment count unavailable";
+  } else if (latestModelNumberTotals && !exactModelNumber) {
+    allocationFact = "Latest allocation · model # unknown";
+  } else if (latestModelNumberTotals && exactModelNumber && exactModelTotal) {
+    allocationFact = `Latest allocation · model ${exactModelNumber} · ${exactModelTotal.unassignedSlots} unassigned of ${exactModelTotal.totalSlots} · report ${latestModelNumberTotals.reportDate}`;
+  } else if (latestModelNumberTotals && exactModelNumber) {
+    allocationFact = `Latest allocation · model ${exactModelNumber} not listed · report ${latestModelNumberTotals.reportDate}`;
+  }
 
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newStatus = e.target.value as OrderStatus;
@@ -391,6 +419,53 @@ const OrderCard: React.FC<OrderCardProps> = ({
           aria-label="Toggle order details"
           aria-expanded={isExpanded}
         />
+        {currentUser?.isManager ? (
+          <div className="pointer-events-none relative z-10 grid gap-x-6 gap-y-4 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,.8fr)_minmax(0,1.3fr)_minmax(0,1.5fr)]">
+            <div className="min-w-0">
+              <div className="flex items-start gap-2">
+                <h3 className={`min-w-0 break-words text-xl font-bold leading-tight ${isSecured ? "text-stone-600" : "text-graphite"}`}>
+                  {order.customerName}
+                </h3>
+                <ChevronDownIcon className={`ml-auto h-5 w-5 shrink-0 text-stone-500 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <StatusBadge status={order.status} />
+                {order.allocatedVehicleId && (
+                  <span className="text-xs font-semibold text-emerald-700">Vehicle linked</span>
+                )}
+              </div>
+              <p className="mt-2 text-xs font-medium text-stone-500">{order.date}</p>
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Salesperson</p>
+              <p className="mt-1 break-words text-lg font-semibold leading-snug text-graphite" data-testid="order-card-summary-salesperson">{formatSalesperson(order)}</p>
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Vehicle</p>
+              <p className="mt-1 break-words text-lg font-bold leading-snug text-graphite">{order.year} {order.model}</p>
+              <p className="mt-1 text-sm font-semibold text-stone-700" data-testid="order-card-summary-model">{modelNumberDisplay || "Model # not listed"}</p>
+              <p className="mt-2 break-words text-sm leading-relaxed text-stone-700">
+                <span className="font-semibold">Exterior:</span> {exteriorColors.join(" / ") || "Not listed"}
+                <span className="mx-2 text-stone-300" aria-hidden="true">·</span>
+                <span className="font-semibold">Interior:</span> {interiorColors.join(" / ") || "Not listed"}
+              </p>
+              {isAllocationLinkable(order.status) && !order.allocatedVehicleId && (
+                <p className="mt-2 border-t border-stone-200 pt-2 text-xs font-medium leading-relaxed text-stone-600" data-testid="order-card-availability">
+                  {allocationFact}
+                </p>
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Notes</p>
+              <p className="mt-1 line-clamp-4 whitespace-pre-wrap break-words text-base leading-relaxed text-stone-800" data-testid="order-card-latest-note">
+                {previewNote || <span className="text-stone-500">No notes yet</span>}
+              </p>
+              {previewNote && previewNote.length > 220 && (
+                <p className="mt-1 text-xs font-medium text-stone-500">Expand for the full note</p>
+              )}
+            </div>
+          </div>
+        ) : (
         <div className="pointer-events-none relative z-10 flex items-start justify-between p-4">
           <div className="min-w-0">
             <h3
@@ -465,27 +540,6 @@ const OrderCard: React.FC<OrderCardProps> = ({
                   </button>
                 );
               })()}
-              {modelSlotTotalsByModel && matchSummary && isAllocationLinkable(order.status) && !order.allocatedVehicleId && matchSummary.matchedAllocModels.size > 0 && (() => {
-                // Availability for the customer's matched allocation model(s) —
-                // complements the color-match badge above. Uses the same pure
-                // vehicle_links totals as the board pills / dashboard strip.
-                const rows = Array.from(matchSummary.matchedAllocModels)
-                  .map((model) => modelSlotTotalsByModel.get(model))
-                  .filter((total): total is ModelSlotTotals => Boolean(total));
-                if (rows.length === 0) return null;
-                return rows.map((total) => (
-                  <span
-                    key={total.model}
-                    data-testid="order-card-availability"
-                    className="inline-flex items-center gap-1 rounded-full border border-stone-200 bg-stone-50 px-2.5 py-0.5 text-xs font-semibold text-stone-600"
-                    title={`${total.model} allocation — ${total.totalSlots} received, ${total.availableSlots} available, ${total.linkedSlots} linked`}
-                  >
-                    {total.model}: <span className="text-stone-900">{total.availableSlots} available</span>
-                    <span className="text-stone-300">/</span>
-                    {total.totalSlots} received
-                  </span>
-                ));
-              })()}
             </div>
           </div>
           <div className="ml-4 flex flex-shrink-0 items-center space-x-3 p-1 text-right">
@@ -501,6 +555,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
             </span>
           </div>
         </div>
+        )}
       </div>
       {isExpanded && (
         <div className="px-4 pb-4">
@@ -623,6 +678,17 @@ const OrderCard: React.FC<OrderCardProps> = ({
               </div>
             </div>
 
+            {currentUser?.isManager && matchSummary &&
+              (matchSummary.exactCount + matchSummary.partialCount + matchSummary.modelOnlyCount +
+                matchSummary.dxExactCount + matchSummary.dxPartialCount + matchSummary.dxModelOnlyCount) > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowMatchPreview(true)}
+                  className="mb-4 text-sm font-semibold text-stone-700 underline underline-offset-2 hover:text-graphite"
+                >
+                  Review allocation matches and DX history
+                </button>
+              )}
             {order.allocatedVehicleId && (
               <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
                 <div className="flex items-center justify-between gap-3">
