@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import DealerExchange from "../DealerExchange";
 import { CURRENT_DX_SOURCE, type DxTrade } from "../../src/utils/dxSheetParser";
 import { completeDxRefresh, createDxFeedState, failDxRefresh } from "../../src/utils/dxFeedState";
@@ -27,9 +27,33 @@ describe("Dealer Exchange file-only display", () => {
     expect(screen.queryByText("OLD DEALER")).not.toBeInTheDocument();
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("tab", { name: "Ledger records" }));
-    expect(screen.getByText(/Jan 2–Oct 5, 2026 · spreadsheet only/)).toBeInTheDocument();
+    expect(screen.getByText("2026 · spreadsheet only")).toBeInTheDocument();
     expect(screen.queryByText(/2025 history/)).not.toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: /2026 row 2/i }).length).toBeGreaterThan(0);
+  });
+
+  it("shows later October and November rows, totals and latest date after refresh", () => {
+    const initial = completeDxRefresh(createDxFeedState(), [trade("first", "2026-10-05")], new Date());
+    const onRefresh = vi.fn();
+    const { rerender } = render(<MemoryRouter><DealerExchange dxFeed={initial} onRefreshDx={onRefresh} /></MemoryRouter>);
+    expect(screen.getByText("1 ledger records")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Refresh current source" }));
+    expect(onRefresh).toHaveBeenCalledOnce();
+
+    const refreshed = completeDxRefresh(initial, [
+      trade("first", "2026-10-05"),
+      trade("october", "2026-10-29", { sourceRowNumber: 150, tradingDealer: "OCTOBER DEALER" }),
+      trade("november", "2026-11-05", { sourceRowNumber: 151, tradingDealer: "NOVEMBER DEALER" }),
+    ], new Date());
+    rerender(<MemoryRouter><DealerExchange dxFeed={refreshed} onRefreshDx={onRefresh} /></MemoryRouter>);
+    expect(screen.getByText("3 ledger records")).toBeInTheDocument();
+    expect(screen.getAllByText("Nov 5, 2026").length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("tab", { name: "Ledger records" }));
+    expect(screen.getByText("OCTOBER DEALER")).toBeInTheDocument();
+    expect(screen.getByText("NOVEMBER DEALER")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /2026 row 150/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /2026 row 151/i })).toBeInTheDocument();
+    expect(screen.queryByText(/Jan 2–Oct 5/)).not.toBeInTheDocument();
   });
 
   it("shows no historical records after a failed initial fetch", () => {

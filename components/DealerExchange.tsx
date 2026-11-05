@@ -258,7 +258,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
 
           {dxFeed.status === "no-data" && (
             <div className="border-t border-white/15 bg-white/5 p-3 text-sm text-stone-200 sm:px-5">
-              No current 2026 DX rows were returned for the accepted spreadsheet dates.
+              No current 2026 DX rows were returned by the spreadsheet.
             </div>
           )}
 
@@ -361,7 +361,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
 
               {visibleDxTrades.length === 0 ? (
                 <div className="rounded-lg border border-stone-300 bg-white p-6 text-center text-sm text-stone-500">
-                  No DX records are available for the accepted spreadsheet dates.
+                  No DX records are available from the current spreadsheet.
                 </div>
               ) : (
                 <>

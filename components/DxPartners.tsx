@@ -215,7 +215,7 @@ export default function DxPartners({
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-500">Spreadsheet movements</p>
           <h4 className="mt-1 text-xl font-bold text-stone-900">Dealer Exchange Partners</h4>
           <p className="mt-1 max-w-2xl text-sm text-stone-500">
-            Only the accepted spreadsheet dates: {DX_CURRENT_FILE_DATE_LABEL}. Vehicles received and sent are counted separately from who requested the exchange.
+            Current {DX_CURRENT_FILE_DATE_LABEL} spreadsheet. Vehicles received and sent are counted separately from who requested the exchange.
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:items-end">
