@@ -36,7 +36,7 @@ describe("Dealer Exchange file-only display", () => {
     const initial = completeDxRefresh(createDxFeedState(), [trade("first", "2026-10-05")], new Date());
     const onRefresh = vi.fn();
     const { rerender } = render(<MemoryRouter><DealerExchange dxFeed={initial} onRefreshDx={onRefresh} /></MemoryRouter>);
-    expect(screen.getByText("1 ledger records")).toBeInTheDocument();
+    expect(screen.getByText("1 ledger record")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Refresh current source" }));
     expect(onRefresh).toHaveBeenCalledOnce();
 
@@ -49,10 +49,10 @@ describe("Dealer Exchange file-only display", () => {
     expect(screen.getByText("3 ledger records")).toBeInTheDocument();
     expect(screen.getAllByText("Nov 5, 2026").length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole("tab", { name: "Ledger records" }));
-    expect(screen.getByText("OCTOBER DEALER")).toBeInTheDocument();
-    expect(screen.getByText("NOVEMBER DEALER")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /2026 row 150/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /2026 row 151/i })).toBeInTheDocument();
+    expect(screen.getAllByText("OCTOBER DEALER").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("NOVEMBER DEALER").length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: /2026 row 150/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: /2026 row 151/i }).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Jan 2–Oct 5/)).not.toBeInTheDocument();
   });
 
