@@ -1,9 +1,9 @@
 import { CURRENT_DX_SOURCE, type DxTrade } from "./dxSheetParser";
 
-/** Rob's accepted Trade Summary export; older seed files remain recovery artifacts only. */
-export const DX_CURRENT_FILE_START_DATE = "2026-01-02";
-export const DX_CURRENT_FILE_END_DATE = "2026-10-05";
-export const DX_CURRENT_FILE_DATE_LABEL = "Jan 2–Oct 5, 2026";
+/** Live source-year rows only; an export's last date must never cap future refreshes. */
+export const DX_CURRENT_FILE_START_DATE = `${CURRENT_DX_SOURCE.sourceYear}-01-01`;
+export const DX_CURRENT_FILE_END_DATE = `${CURRENT_DX_SOURCE.sourceYear}-12-31`;
+export const DX_CURRENT_FILE_DATE_LABEL = String(CURRENT_DX_SOURCE.sourceYear);
 
 export function currentFileDxTrades(trades: readonly DxTrade[]): DxTrade[] {
   return trades.filter((trade) =>

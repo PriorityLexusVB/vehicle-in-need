@@ -22,12 +22,16 @@ export default defineConfig({
     },
   ],
 
-  webServer: {
+  webServer: [{
     command: "npm run server",
     url: e2eBaseUrl,
     env: {
       PORT: String(e2ePort),
     },
     reuseExistingServer: true,
-  },
+  }, {
+    command: "npm run dev -- --host 127.0.0.1 --port 8101 --strictPort",
+    url: "http://127.0.0.1:8101/e2e/fixtures/dx-preview.html",
+    reuseExistingServer: !process.env.CI,
+  }],
 });

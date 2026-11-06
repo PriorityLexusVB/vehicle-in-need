@@ -1,6 +1,6 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import DealerExchange from "../DealerExchange";
 import { CURRENT_DX_SOURCE, type DxTrade } from "../../src/utils/dxSheetParser";
 import { completeDxRefresh, createDxFeedState, failDxRefresh } from "../../src/utils/dxFeedState";
@@ -25,11 +25,35 @@ describe("Dealer Exchange file-only display", () => {
     ]), [trade("current", "2026-10-05")], new Date());
     render(<MemoryRouter><DealerExchange dxFeed={feed} onRefreshDx={() => {}} /></MemoryRouter>);
     expect(screen.queryByText("OLD DEALER")).not.toBeInTheDocument();
-    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Month" })).toHaveValue("");
     fireEvent.click(screen.getByRole("tab", { name: "Ledger records" }));
-    expect(screen.getByText(/Jan 2–Oct 5, 2026 · spreadsheet only/)).toBeInTheDocument();
+    expect(screen.getByText("All 2026 · spreadsheet only")).toBeInTheDocument();
     expect(screen.queryByText(/2025 history/)).not.toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: /2026 row 2/i }).length).toBeGreaterThan(0);
+  });
+
+  it("shows later October and November rows, totals and latest date after refresh", () => {
+    const initial = completeDxRefresh(createDxFeedState(), [trade("first", "2026-10-05")], new Date());
+    const onRefresh = vi.fn();
+    const { rerender } = render(<MemoryRouter><DealerExchange dxFeed={initial} onRefreshDx={onRefresh} /></MemoryRouter>);
+    expect(screen.getByText("1 ledger record")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Refresh current source" }));
+    expect(onRefresh).toHaveBeenCalledOnce();
+
+    const refreshed = completeDxRefresh(initial, [
+      trade("first", "2026-10-05"),
+      trade("october", "2026-10-29", { sourceRowNumber: 150, tradingDealer: "OCTOBER DEALER" }),
+      trade("november", "2026-11-05", { sourceRowNumber: 151, tradingDealer: "NOVEMBER DEALER" }),
+    ], new Date());
+    rerender(<MemoryRouter><DealerExchange dxFeed={refreshed} onRefreshDx={onRefresh} /></MemoryRouter>);
+    expect(screen.getByText("3 ledger records")).toBeInTheDocument();
+    expect(screen.getAllByText("Nov 5, 2026").length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("tab", { name: "Ledger records" }));
+    expect(screen.getAllByText("OCTOBER DEALER").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("NOVEMBER DEALER").length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: /2026 row 150/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: /2026 row 151/i }).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Jan 2–Oct 5/)).not.toBeInTheDocument();
   });
 
   it("shows no historical records after a failed initial fetch", () => {
@@ -38,5 +62,73 @@ describe("Dealer Exchange file-only display", () => {
     expect(screen.getByText("SOURCE ERROR")).toBeInTheDocument();
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
     expect(screen.queryByText("OLD DEALER")).not.toBeInTheDocument();
+  });
+
+  it("scopes totals, fees, partners and ledger to one month and resets to all", () => {
+    const feed = completeDxRefresh(createDxFeedState(), [
+      trade("october-1", "2026-10-05", { outgoingModelNumber: "", dxFee: "100", sourceRowNumber: 140 }),
+      trade("october-2", "2026-10-29", { direction: "", tradingDealer: "RALEIGH", dealerCode: "63203", sourceRowNumber: 150 }),
+      trade("november", "2026-11-05", { direction: "THEIRS", dxFee: "0", sourceRowNumber: 151 }),
+    ], new Date());
+    render(<MemoryRouter><DealerExchange dxFeed={feed} onRefreshDx={() => {}} /></MemoryRouter>);
+    expect(screen.getByText("3 ledger records")).toBeInTheDocument();
+    expect(screen.getByText("2 of 3 records have a fee")).toBeInTheDocument();
+    expect(screen.getAllByText("1 more received").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/We owe|They owe/)).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Month" }), { target: { value: "2026-10" } });
+    expect(screen.getByText("2 ledger records")).toBeInTheDocument();
+    expect(screen.getByText("1 of 2 records have a fee")).toBeInTheDocument();
+    expect(screen.getByText("1 without a fee entered")).toBeInTheDocument();
+    expect(screen.getByText("2 received − 1 sent")).toBeInTheDocument();
+    expect(screen.getByText("Latest source exchange (all 2026)").parentElement).toHaveTextContent("Nov 5, 2026");
+    const partnerTable = screen.getByRole("table");
+    const raleighRow = within(partnerTable).getByRole("button", { name: "RALEIGH" }).closest("tr")!;
+    expect(raleighRow).toHaveTextContent("Us 0 · Them 0 · Not recorded 1");
+    fireEvent.click(screen.getByRole("tab", { name: "Ledger records" }));
+    expect(screen.queryByRole("link", { name: /2026 row 151/i })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: /2026 row 150/i }).length).toBeGreaterThan(0);
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Month" }), { target: { value: "2026-11" } });
+    expect(screen.getByText("1 ledger record")).toBeInTheDocument();
+    expect(screen.getByText("$0")).toBeInTheDocument();
+    expect(screen.getByText("1 of 1 records have a fee")).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: /2026 row 151/i }).length).toBeGreaterThan(0);
+    fireEvent.change(screen.getByRole("combobox", { name: "Month" }), { target: { value: "2026-12" } });
+    expect(screen.getByText("0 ledger records")).toBeInTheDocument();
+    expect(screen.getByText(/No DX records for December 2026/)).toBeInTheDocument();
+    expect(screen.getByText("No fees entered")).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("combobox", { name: "Month" }), { target: { value: "" } });
+    expect(screen.getByText("3 ledger records")).toBeInTheDocument();
+  });
+
+  it("limits dealer history to the selected month", () => {
+    const feed = completeDxRefresh(createDxFeedState(), [
+      trade("october", "2026-10-29", { sourceRowNumber: 150 }),
+      trade("november", "2026-11-05", { sourceRowNumber: 151 }),
+    ], new Date());
+    render(<MemoryRouter><DealerExchange dxFeed={feed} onRefreshDx={() => {}} /></MemoryRouter>);
+    fireEvent.change(screen.getByRole("combobox", { name: "Month" }), { target: { value: "2026-10" } });
+    fireEvent.click(within(screen.getByRole("table")).getByRole("button", { name: "NEWPORT NEWS" }));
+    const drawer = screen.getByTestId("dx-dealer-history-drawer");
+    expect(within(drawer).getAllByTestId("dx-history-event")).toHaveLength(1);
+    expect(within(drawer).getByText(/October 2026 · Spreadsheet ledger records/)).toBeInTheDocument();
+    expect(within(drawer).getByRole("link", { name: /Source: 2026 row 150/ })).toBeInTheDocument();
+    expect(within(drawer).queryByRole("link", { name: /Source: 2026 row 151/ })).not.toBeInTheDocument();
+    // The browser spec covers animated drawer close; jsdom has no CSS animation lifecycle.
+  });
+
+  it("preserves the month through refresh and stale fallback, including newly added rows", () => {
+    const initial = completeDxRefresh(createDxFeedState(), [trade("first", "2026-10-05")], new Date());
+    const { rerender } = render(<MemoryRouter><DealerExchange dxFeed={initial} onRefreshDx={() => {}} /></MemoryRouter>);
+    fireEvent.change(screen.getByRole("combobox", { name: "Month" }), { target: { value: "2026-10" } });
+    const refreshed = completeDxRefresh(initial, [trade("first", "2026-10-05"), trade("added", "2026-10-29"), trade("other", "2026-11-05")], new Date());
+    rerender(<MemoryRouter><DealerExchange dxFeed={refreshed} onRefreshDx={() => {}} /></MemoryRouter>);
+    expect(screen.getByText("2 ledger records")).toBeInTheDocument();
+    const stale = failDxRefresh(refreshed, "Timeout", new Date());
+    rerender(<MemoryRouter><DealerExchange dxFeed={stale} onRefreshDx={() => {}} /></MemoryRouter>);
+    expect(screen.getByRole("combobox", { name: "Month" })).toHaveValue("2026-10");
+    expect(screen.getByText("2 ledger records")).toBeInTheDocument();
+    expect(screen.getByText("Showing last successful data.")).toBeInTheDocument();
   });
 });
