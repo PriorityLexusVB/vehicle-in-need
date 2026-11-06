@@ -76,7 +76,7 @@ describe("Dealer Exchange surface", () => {
 
     expect(screen.getByRole("heading", { name: "Dealer Exchange" })).toBeInTheDocument();
     expect(screen.getByTestId("dx-feed-status")).toHaveTextContent("CURRENT");
-    expect(screen.getByText("Latest spreadsheet DX").parentElement).toHaveTextContent("Aug 25, 2026");
+    expect(screen.getByText("Latest source exchange (all 2026)").parentElement).toHaveTextContent("Aug 25, 2026");
     expect(screen.getByText("Source checked").parentElement).not.toHaveTextContent("Aug 25, 2026");
     expect(screen.getByText("1 ledger record")).toBeInTheDocument();
     expect(screen.getByTestId("dx-rejected-source-rows")).toHaveTextContent(

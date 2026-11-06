@@ -7,6 +7,7 @@ import {
 } from "../src/utils/dxRelationships";
 
 import { currentFileDxTrades, DX_CURRENT_FILE_DATE_LABEL } from "../src/utils/dxCurrentFileScope";
+import { formatDxMovementDifference } from "../src/utils/dxDisplay";
 
 function formatDate(value: string | null): string {
   if (!value) return "—";
@@ -17,12 +18,6 @@ function formatDate(value: string | null): string {
     day: "numeric",
     year: parsed.getFullYear() === new Date().getFullYear() ? undefined : "numeric",
   });
-}
-
-function balanceLabel(balance: number): string {
-  if (balance === 0) return "Even";
-  if (balance > 0) return `We owe ${balance}`;
-  return `They owe us ${Math.abs(balance)}`;
 }
 
 function initiatorLabel(trade: DxTrade): string {
@@ -65,10 +60,11 @@ function Metric({ label, value, tone = "white" }: MetricProps) {
 
 interface DealerHistoryDrawerProps {
   relationship: DealerRelationship | null;
+  periodLabel: string;
   onClose: () => void;
 }
 
-function DealerHistoryDrawer({ relationship, onClose }: DealerHistoryDrawerProps) {
+function DealerHistoryDrawer({ relationship, periodLabel, onClose }: DealerHistoryDrawerProps) {
   return (
     <Drawer.Root
       direction="right"
@@ -113,12 +109,12 @@ function DealerHistoryDrawer({ relationship, onClose }: DealerHistoryDrawerProps
               </div>
 
               <div className="flex-1 overflow-y-auto p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-stone-400">Spreadsheet ledger records</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-400">{periodLabel} · Spreadsheet ledger records</p>
                 <div className="mt-2 grid grid-cols-2 overflow-hidden rounded-lg bg-graphite sm:grid-cols-4">
                   <Metric label="Vehicles received" value={relationship.allTime.vehiclesReceived} tone="platinum" />
                   <Metric label="Vehicles sent" value={relationship.allTime.vehiclesSent} />
                   <Metric label="Ledger records" value={relationship.allTime.totalCompleted} />
-                  <Metric label="Vehicle balance" value={balanceLabel(relationship.allTime.vehicleBalance)} tone="muted" />
+                  <Metric label="Received minus sent" value={formatDxMovementDifference(relationship.allTime.vehicleBalance)} tone="muted" />
                 </div>
 
                 <p className="mt-2 text-xs text-stone-500">
@@ -173,12 +169,14 @@ function DealerHistoryDrawer({ relationship, onClose }: DealerHistoryDrawerProps
 
 export interface DxPartnersProps {
   trades: readonly DxTrade[];
+  periodLabel?: string;
   selectedDealerId?: string | null;
   onSelectedDealerChange?: (dealerId: string | null) => void;
 }
 
 export default function DxPartners({
   trades,
+  periodLabel = `All ${DX_CURRENT_FILE_DATE_LABEL}`,
   selectedDealerId,
   onSelectedDealerChange,
 }: DxPartnersProps) {
@@ -215,7 +213,7 @@ export default function DxPartners({
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-500">Spreadsheet movements</p>
           <h4 className="mt-1 text-xl font-bold text-stone-900">Dealer Exchange Partners</h4>
           <p className="mt-1 max-w-2xl text-sm text-stone-500">
-            Current {DX_CURRENT_FILE_DATE_LABEL} spreadsheet. Vehicles received and sent are counted separately from who requested the exchange.
+            Showing {periodLabel}. Vehicles received and sent are counted separately from who requested the exchange.
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:items-end">
@@ -233,11 +231,11 @@ export default function DxPartners({
 
       {visible.length === 0 ? (
         <div className="mt-3 rounded-xl border border-stone-200 bg-stone-50 p-6 text-center text-sm text-stone-500">
-          {relationships.length === 0 ? "No spreadsheet dealer relationships are available." : "No dealer matches that search."}
+          {relationships.length === 0 ? `No dealer exchanges for ${periodLabel}. Choose another month or All ${DX_CURRENT_FILE_DATE_LABEL}.` : "No dealer matches that search."}
         </div>
       ) : (
         <>
-          <div className="mt-3 hidden overflow-hidden rounded-lg border border-stone-300 bg-white md:block">
+          <div className="mt-3 hidden overflow-x-auto rounded-lg border border-stone-300 bg-white md:block">
             <table className="min-w-full text-sm">
               <thead className="bg-stone-50 text-left text-xs font-semibold uppercase tracking-wide text-stone-500">
                 <tr>
@@ -245,7 +243,7 @@ export default function DxPartners({
                   <th scope="col" className="px-3 py-3 text-right">Vehicles received</th>
                   <th scope="col" className="px-3 py-3 text-right">Vehicles sent</th>
                   <th scope="col" className="px-3 py-3 text-right">Ledger records</th>
-                  <th scope="col" className="px-3 py-3">Vehicle balance</th>
+                  <th scope="col" className="px-3 py-3">Received minus sent</th>
                   <th scope="col" className="px-3 py-3">Requested by</th>
                   <th scope="col" className="px-4 py-3 text-right">Last DX</th>
                 </tr>
@@ -271,8 +269,8 @@ export default function DxPartners({
                       <td className="px-3 py-3 text-right font-bold tabular-nums text-stone-950">{metrics.vehiclesReceived}</td>
                       <td className="px-3 py-3 text-right font-bold tabular-nums text-stone-700">{metrics.vehiclesSent}</td>
                       <td className="px-3 py-3 text-right font-semibold tabular-nums text-stone-800">{metrics.totalCompleted}</td>
-                      <td className="px-3 py-3 text-xs font-medium text-stone-600">{balanceLabel(metrics.vehicleBalance)}</td>
-                      <td className="px-3 py-3 text-xs text-stone-600">Us {metrics.oursRequested} · Them {metrics.theirsRequested}</td>
+                      <td className="px-3 py-3 text-xs font-medium text-stone-600">{formatDxMovementDifference(metrics.vehicleBalance)}</td>
+                      <td className="px-3 py-3 text-xs text-stone-600">Us {metrics.oursRequested} · Them {metrics.theirsRequested} · Not recorded {metrics.unknownInitiator}</td>
                       <td className="px-4 py-3 text-right text-stone-600">{formatDate(metrics.lastActivity)}</td>
                     </tr>
                   );
@@ -313,7 +311,7 @@ export default function DxPartners({
                     </div>
                   </div>
                   <p className="border-t border-stone-200 px-4 py-3 text-xs font-semibold text-stone-600">
-                    {balanceLabel(metrics.vehicleBalance)} · Requested by us {metrics.oursRequested}, them {metrics.theirsRequested} · View history →
+                    {formatDxMovementDifference(metrics.vehicleBalance)} · Requested by us {metrics.oursRequested}, them {metrics.theirsRequested}, not recorded {metrics.unknownInitiator} · View history →
                   </p>
                 </button>
               );
@@ -322,7 +320,7 @@ export default function DxPartners({
         </>
       )}
 
-      <DealerHistoryDrawer relationship={selected} onClose={() => setSelectedId(null)} />
+      <DealerHistoryDrawer relationship={selected} periodLabel={periodLabel} onClose={() => setSelectedId(null)} />
     </section>
   );
 }

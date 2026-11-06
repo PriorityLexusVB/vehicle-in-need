@@ -45,7 +45,8 @@ jobs:
 
   e2e:
     name: E2E tests (Playwright)
-    runs-on: ubuntu-latest
+    # Keep the pinned Playwright version on a supported runner image.
+    runs-on: ubuntu-24.04
     needs: unit
     steps:
       - uses: actions/checkout@v4
@@ -82,8 +83,8 @@ jobs:
         env:
           CI: true
         run: npm run test:e2e
-      - name: Upload Playwright artifacts on failure
-        if: failure()
+      - name: Upload Playwright artifacts
+        if: always()
         uses: actions/upload-artifact@v5
         with:
           name: playwright-report

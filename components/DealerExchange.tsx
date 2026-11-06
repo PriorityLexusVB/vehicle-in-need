@@ -8,6 +8,7 @@ import {
 } from "../src/utils/dxRelationships";
 import DxPartners from "./DxPartners";
 import { currentFileDxTrades, DX_CURRENT_FILE_DATE_LABEL } from "../src/utils/dxCurrentFileScope";
+import { DX_MONTH_OPTIONS, filterDxMonth, formatDxMovementDifference, summarizeDxFees } from "../src/utils/dxDisplay";
 
 interface DealerExchangeProps {
   /** Single App-owned DX source state. This surface never fetches independently. */
@@ -57,8 +58,12 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
     return model ? normalizeDxModel(model) : null;
   });
   const deepLinkScrollCompleted = useRef(false);
+  const [selectedMonth, setSelectedMonth] = useState("");
 
-  const dxTrades = useMemo(() => currentFileDxTrades(dxFeed.trades), [dxFeed.trades]);
+  const currentSourceTrades = useMemo(() => currentFileDxTrades(dxFeed.trades), [dxFeed.trades]);
+  const dxTrades = useMemo(() => filterDxMonth(currentSourceTrades, selectedMonth), [currentSourceTrades, selectedMonth]);
+  const periodLabel = DX_MONTH_OPTIONS.find((month) => month.value === selectedMonth)?.label
+    ?? `All ${DX_CURRENT_FILE_DATE_LABEL}`;
   const dxLoading = dxFeed.status === "syncing";
   const dxError = dxFeed.error;
   const dxRelationships = useMemo(
@@ -80,14 +85,10 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
     oursRequested: dxTrades.filter((trade) => trade.direction === "OURS").length,
     theirsRequested: dxTrades.filter((trade) => trade.direction === "THEIRS").length,
     unknownInitiator: dxTrades.filter((trade) => !trade.direction).length,
-    fees: dxTrades.reduce((sum, trade) => sum + (Number(trade.dxFee) || 0), 0),
   }), [dxTrades]);
+  const dxFees = useMemo(() => summarizeDxFees(dxTrades), [dxTrades]);
   const vehicleBalance = dxTotals.vehiclesReceived - dxTotals.vehiclesSent;
-  const vehicleBalanceLabel = vehicleBalance === 0
-    ? "Even"
-    : vehicleBalance > 0
-      ? `We owe ${vehicleBalance}`
-      : `They owe us ${Math.abs(vehicleBalance)}`;
+  const vehicleBalanceLabel = formatDxMovementDifference(vehicleBalance);
   const dxStatusPresentation = {
     syncing: {
       label: "SYNCING",
@@ -178,6 +179,24 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
         </div>
       </div>
 
+      <div className="mb-4 flex flex-col gap-2 rounded-lg border border-stone-300 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+        <label className="flex items-center gap-3 text-sm font-semibold text-stone-800">
+          Month
+          <select
+            value={selectedMonth}
+            onChange={(event) => {
+              setSelectedMonth(event.target.value);
+              setSelectedDxDealerId(null);
+            }}
+            className="min-h-11 min-w-44 rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-500"
+          >
+            <option value="">All {DX_CURRENT_FILE_DATE_LABEL}</option>
+            {DX_MONTH_OPTIONS.map((month) => <option key={month.value} value={month.value}>{month.label}</option>)}
+          </select>
+        </label>
+        <p className="text-xs text-stone-600" aria-live="polite">{periodLabel} · Totals, partners and ledger use this period.</p>
+      </div>
+
       <div id="dx-pipeline" className="pb-6">
         <div className="overflow-hidden rounded-xl bg-graphite text-white">
           <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
@@ -194,10 +213,11 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
               <h3 className="mt-2 text-2xl font-bold tracking-tight text-white">
                 {dxTotals.completed} ledger {dxTotals.completed === 1 ? "record" : "records"}
               </h3>
+              <p className="mt-1 text-sm font-semibold text-platinum">{periodLabel}</p>
               <p className="mt-1 hidden text-sm text-stone-300 sm:block">
                 Vehicle movement and who requested the exchange are counted separately.
               </p>
-              <dl className="mt-5 grid grid-cols-4 border-y border-white/15">
+              <dl className="mt-5 grid grid-cols-2 gap-y-3 border-y border-white/15 py-3 sm:grid-cols-4 sm:gap-y-0 sm:py-0">
                 <div className="border-r border-white/15 py-3 pr-2 sm:pr-3">
                   <dt className="text-[9px] font-semibold uppercase leading-tight tracking-wide text-stone-400 sm:text-[11px]">Vehicles received</dt>
                   <dd className="mt-1 text-xl font-bold tabular-nums text-white sm:text-2xl">{dxTotals.vehiclesReceived}</dd>
@@ -207,21 +227,25 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                   <dd className="mt-1 text-xl font-bold tabular-nums text-white sm:text-2xl">{dxTotals.vehiclesSent}</dd>
                 </div>
                 <div className="border-r border-white/15 px-2 py-3 sm:px-3">
-                  <dt className="text-[9px] font-semibold uppercase leading-tight tracking-wide text-stone-400 sm:text-[11px]">Vehicle balance</dt>
+                  <dt className="text-[9px] font-semibold uppercase leading-tight tracking-wide text-stone-400 sm:text-[11px]">Received minus sent</dt>
                   <dd className="mt-1 text-xs font-semibold text-platinum sm:text-sm">{vehicleBalanceLabel}</dd>
+                  <dd className="mt-1 text-xs text-stone-300">{dxTotals.vehiclesReceived} received − {dxTotals.vehiclesSent} sent</dd>
                 </div>
                 <div className="py-3 pl-2 sm:pl-3">
-                  <dt className="text-[9px] font-semibold uppercase leading-tight tracking-wide text-stone-400 sm:text-[11px]">Current fees</dt>
+                  <dt className="text-[9px] font-semibold uppercase leading-tight tracking-wide text-stone-400 sm:text-[11px]">Recorded DX fees</dt>
                   <dd className="mt-1 text-xs font-semibold text-white sm:text-sm">
-                    {dxTotals.fees > 0 ? `$${dxTotals.fees.toLocaleString()}` : "None recorded"}
+                    {dxFees.entered > 0 ? `$${dxFees.total.toLocaleString("en-US", { maximumFractionDigits: 2 })}` : "No fees entered"}
                   </dd>
+                  <dd className="mt-1 text-xs text-stone-300">{dxFees.entered} of {dxTotals.completed} records have a fee</dd>
+                  {dxFees.missing > 0 && <dd className="mt-1 text-xs text-stone-300">{dxFees.missing} without a fee entered</dd>}
+                  {dxFees.invalid > 0 && <dd className="mt-1 text-xs text-amber-200">{dxFees.invalid} nonnumeric fee {dxFees.invalid === 1 ? "entry" : "entries"} excluded</dd>}
                 </div>
               </dl>
             </div>
 
             <div className="grid min-w-56 grid-cols-2 gap-3 border-t border-white/15 pt-4 lg:flex lg:flex-col lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-400">Latest spreadsheet DX</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-400">Latest source exchange (all {DX_CURRENT_FILE_DATE_LABEL})</p>
                 <p className="mt-1 font-semibold text-white">{formatDxBusinessDate(dxFeed.latestBusinessDate)}</p>
               </div>
               <div>
@@ -347,6 +371,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
           {dxPanelView === "partners" ? (
             <DxPartners
               trades={dxTrades}
+              periodLabel={periodLabel}
               selectedDealerId={selectedDxDealerId}
               onSelectedDealerChange={setSelectedDxDealerId}
             />
@@ -356,12 +381,12 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                 <p className="max-w-2xl text-sm text-stone-600">
                   Every spreadsheet record links back to its source row. Newest records first.
                 </p>
-                <p className="text-xs font-semibold text-stone-500">{DX_CURRENT_FILE_DATE_LABEL} · spreadsheet only</p>
+                <p className="text-xs font-semibold text-stone-500">{periodLabel} · spreadsheet only</p>
               </div>
 
               {visibleDxTrades.length === 0 ? (
                 <div className="rounded-lg border border-stone-300 bg-white p-6 text-center text-sm text-stone-500">
-                  No DX records are available from the current spreadsheet.
+                  No DX records for {periodLabel}. Choose another month or All {DX_CURRENT_FILE_DATE_LABEL}.
                 </div>
               ) : (
                 <>

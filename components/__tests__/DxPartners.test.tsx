@@ -66,7 +66,7 @@ describe("DxPartners", () => {
     expect(dealerRow).toHaveTextContent("2");
     expect(dealerRow).toHaveTextContent("1");
     expect(dealerRow).toHaveTextContent("3");
-    expect(dealerRow).toHaveTextContent("We owe 1");
+    expect(dealerRow).toHaveTextContent("1 more received");
     expect(dealerRow).toHaveTextContent("Us 2 · Them 1");
   });
 
@@ -74,7 +74,7 @@ describe("DxPartners", () => {
     render(<DxPartners trades={[...trades, trade("old", "2025-09-01", "OURS")]} />);
     expect(screen.queryByRole("button", { name: "All time" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Recent 12 months" })).not.toBeInTheDocument();
-    expect(screen.getByText(/Current 2026 spreadsheet/)).toBeInTheDocument();
+    expect(screen.getByText(/Showing All 2026/)).toBeInTheDocument();
     const row = within(screen.getByRole("table")).getByRole("button", { name: "RICHMOND" }).closest("tr");
     expect(row).toHaveTextContent("Us 2 · Them 1");
     expect(within(screen.getByRole("table")).getByRole("columnheader", { name: "Ledger records" })).toBeInTheDocument();
