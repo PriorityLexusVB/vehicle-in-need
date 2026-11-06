@@ -19,7 +19,10 @@ function Preview() {
       setFeed((previous) => failDxRefresh(previous, "Unable to refresh the source.", new Date()));
     }
   }, []);
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    const start = window.setTimeout(() => { void refresh(); }, 0);
+    return () => window.clearTimeout(start);
+  }, [refresh]);
   return <MemoryRouter><main className="mx-auto max-w-7xl p-4 sm:p-6"><DealerExchange dxFeed={feed} onRefreshDx={() => { void refresh(); }} /></main></MemoryRouter>;
 }
 
