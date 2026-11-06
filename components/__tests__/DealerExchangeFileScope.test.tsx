@@ -64,7 +64,7 @@ describe("Dealer Exchange file-only display", () => {
     expect(screen.queryByText("OLD DEALER")).not.toBeInTheDocument();
   });
 
-  it("scopes totals, fees, partners, dealer history and ledger to one month and resets to all", () => {
+  it("scopes totals, fees, partners, dealer history and ledger to one month and resets to all", async () => {
     const feed = completeDxRefresh(createDxFeedState(), [
       trade("october-1", "2026-10-05", { outgoingModelNumber: "", dxFee: "100", sourceRowNumber: 140 }),
       trade("october-2", "2026-10-29", { direction: "", tradingDealer: "RALEIGH", dealerCode: "63203", sourceRowNumber: 150 }),
@@ -88,7 +88,7 @@ describe("Dealer Exchange file-only display", () => {
     fireEvent.click(within(partnerTable).getByRole("button", { name: "NEWPORT NEWS" }));
     expect(within(screen.getByTestId("dx-dealer-history-drawer")).getAllByTestId("dx-history-event")).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: "Close dealer history" }));
-    fireEvent.click(screen.getByRole("tab", { name: "Ledger records" }));
+    fireEvent.click(await screen.findByRole("tab", { name: "Ledger records" }));
     expect(screen.queryByRole("link", { name: /2026 row 151/i })).not.toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: /2026 row 150/i }).length).toBeGreaterThan(0);
 
