@@ -64,7 +64,7 @@ describe("Dealer Exchange file-only display", () => {
     expect(screen.queryByText("OLD DEALER")).not.toBeInTheDocument();
   });
 
-  it("scopes totals, fees, partners, dealer history and ledger to one month and resets to all", async () => {
+  it("scopes totals, fees, partners and ledger to one month and resets to all", () => {
     const feed = completeDxRefresh(createDxFeedState(), [
       trade("october-1", "2026-10-05", { outgoingModelNumber: "", dxFee: "100", sourceRowNumber: 140 }),
       trade("october-2", "2026-10-29", { direction: "", tradingDealer: "RALEIGH", dealerCode: "63203", sourceRowNumber: 150 }),
@@ -85,10 +85,7 @@ describe("Dealer Exchange file-only display", () => {
     const partnerTable = screen.getByRole("table");
     const raleighRow = within(partnerTable).getByRole("button", { name: "RALEIGH" }).closest("tr")!;
     expect(raleighRow).toHaveTextContent("Us 0 · Them 0 · Not recorded 1");
-    fireEvent.click(within(partnerTable).getByRole("button", { name: "NEWPORT NEWS" }));
-    expect(within(screen.getByTestId("dx-dealer-history-drawer")).getAllByTestId("dx-history-event")).toHaveLength(1);
-    fireEvent.click(screen.getByRole("button", { name: "Close dealer history" }));
-    fireEvent.click(await screen.findByRole("tab", { name: "Ledger records" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Ledger records" }));
     expect(screen.queryByRole("link", { name: /2026 row 151/i })).not.toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: /2026 row 150/i }).length).toBeGreaterThan(0);
 
@@ -103,6 +100,22 @@ describe("Dealer Exchange file-only display", () => {
     expect(screen.getByText("No fees entered")).toBeInTheDocument();
     fireEvent.change(screen.getByRole("combobox", { name: "Month" }), { target: { value: "" } });
     expect(screen.getByText("3 ledger records")).toBeInTheDocument();
+  });
+
+  it("limits dealer history to the selected month", () => {
+    const feed = completeDxRefresh(createDxFeedState(), [
+      trade("october", "2026-10-29", { sourceRowNumber: 150 }),
+      trade("november", "2026-11-05", { sourceRowNumber: 151 }),
+    ], new Date());
+    render(<MemoryRouter><DealerExchange dxFeed={feed} onRefreshDx={() => {}} /></MemoryRouter>);
+    fireEvent.change(screen.getByRole("combobox", { name: "Month" }), { target: { value: "2026-10" } });
+    fireEvent.click(within(screen.getByRole("table")).getByRole("button", { name: "NEWPORT NEWS" }));
+    const drawer = screen.getByTestId("dx-dealer-history-drawer");
+    expect(within(drawer).getAllByTestId("dx-history-event")).toHaveLength(1);
+    expect(within(drawer).getByText(/October 2026 · Spreadsheet ledger records/)).toBeInTheDocument();
+    expect(within(drawer).getByRole("link", { name: /Source: 2026 row 150/ })).toBeInTheDocument();
+    expect(within(drawer).queryByRole("link", { name: /Source: 2026 row 151/ })).not.toBeInTheDocument();
+    // The browser spec covers animated drawer close; jsdom has no CSS animation lifecycle.
   });
 
   it("preserves the month through refresh and stale fallback, including newly added rows", () => {
