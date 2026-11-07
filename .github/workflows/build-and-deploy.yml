@@ -63,6 +63,26 @@ on:
   # input + separate `deploy` job were removed — that job duplicated
   # cloudbuild's deploy AND could never run (needed the push-only `build`).
   workflow_dispatch:
+    inputs:
+      release_action:
+        description: "One-time PR287 recovery requires separate approval; normal build remains default"
+        type: choice
+        required: true
+        default: build
+        options:
+          - build
+          - repair-pr287-6753792
+          - rollback-pr287-6753792
+      bookkeeping_proof:
+        description: "Main-verified V2 scalar capture; actual V1 preflight equality required"
+        type: string
+        required: false
+        default: ''
+      receiving_admission:
+        description: "Late rollback only: exact HOME receiving receipt and separate Rob approval; max8KiB"
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -111,10 +131,22 @@ jobs:
     needs: validate
     # main-only for BOTH triggers: a manual workflow_dispatch must also be on
     # main so it can never build+deploy a feature branch's code to prod.
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    # One exact preparation-only squash must not auto-rebuild the pinned service.
+    # Required squash subject: ci: prepare PR287 traffic repair only
+    # Parent must be6753792; script separately guards parent, files and live state.
+    if: >-
+      (format('{0}', github.run_attempt) == '1' ||
+        (inputs.release_action != 'repair-pr287-6753792' && inputs.release_action != 'rollback-pr287-6753792')) &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      !(github.event_name == 'push' &&
+        github.event.before == '6753792b1b51a65377b7e8a955fc27c68ecda799' &&
+        startsWith(github.event.head_commit.message, 'ci: prepare PR287 traffic repair only'))
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Validate GCP auth inputs
         id: validate-gcp-auth
@@ -243,8 +275,8 @@ jobs:
           echo "- Reason: GCP authentication failed in this workflow run." >> $GITHUB_STEP_SUMMARY
           echo "- Action: verify Workload Identity Federation/provider or set GCP_SA_KEY." >> $GITHUB_STEP_SUMMARY
 
-      - name: Fail on auth failure for push events
-        if: steps.auth-status.outputs.auth_ok != 'true' && github.event_name == 'push'
+      - name: Fail on auth failure for required deployment
+        if: steps.auth-status.outputs.auth_ok != 'true' && (github.event_name == 'push' || inputs.release_action == 'repair-pr287-6753792' || inputs.release_action == 'rollback-pr287-6753792')
         run: |
           echo "::error::GCP authentication failed on push to main. Container image was NOT built."
           exit 1
@@ -254,14 +286,23 @@ jobs:
         uses: google-github-actions/setup-gcloud@v3
 
       - name: Configure Docker for Artifact Registry
-        if: steps.auth-status.outputs.auth_ok == 'true'
+        if: steps.auth-status.outputs.auth_ok == 'true' && (inputs.release_action != 'repair-pr287-6753792' && inputs.release_action != 'rollback-pr287-6753792')
         run: |
           gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
 
       - name: Submit build to Cloud Build
         id: build
         if: steps.auth-status.outputs.auth_ok == 'true'
+        env:
+          RELEASE_ACTION: ${{ inputs.release_action || 'build' }}
+          PR287_BOOKKEEPING_PROOF: ${{ inputs.bookkeeping_proof }}
+          PR287_RECEIVING_ADMISSION: ${{ inputs.receiving_admission }}
         run: |
+          if [ "$RELEASE_ACTION" = "repair-pr287-6753792" ] || [ "$RELEASE_ACTION" = "rollback-pr287-6753792" ]; then
+            python3 scripts/pr287-traffic-repair.py submit || exit $?
+            exit 0
+          fi
+
           # Use the full GitHub SHA for the build, converted to short form
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           echo "Using SHORT_SHA: $SHORT_SHA (from commit: ${{ github.sha }})"
@@ -285,12 +326,20 @@ jobs:
 
       - name: Wait for build completion
         if: steps.auth-status.outputs.auth_ok == 'true'
+        env:
+          RELEASE_ACTION: ${{ inputs.release_action || 'build' }}
+          PR287_BUILD_ID: ${{ steps.build.outputs.build_id }}
         run: |
+          if [ "$RELEASE_ACTION" = "repair-pr287-6753792" ] || [ "$RELEASE_ACTION" = "rollback-pr287-6753792" ]; then
+            python3 scripts/pr287-traffic-repair.py watch || exit $?
+            exit 0
+          fi
+
           echo "Waiting for build ${{ steps.build.outputs.build_id }} to complete..."
           gcloud builds log ${{ steps.build.outputs.build_id }} --stream
 
       - name: Verify build status
-        if: steps.auth-status.outputs.auth_ok == 'true'
+        if: steps.auth-status.outputs.auth_ok == 'true' && (inputs.release_action != 'repair-pr287-6753792' && inputs.release_action != 'rollback-pr287-6753792')
         run: |
           STATUS=$(gcloud builds describe ${{ steps.build.outputs.build_id }} --format='value(status)')
           if [ "$STATUS" != "SUCCESS" ]; then
@@ -307,7 +356,7 @@ jobs:
       # hold, so a failure here does NOT mean the deploy failed. Kept for
       # signal, but must never red-mark a successful deploy. (2026-06-05)
       - name: Verify image in Artifact Registry
-        if: steps.auth-status.outputs.auth_ok == 'true'
+        if: steps.auth-status.outputs.auth_ok == 'true' && (inputs.release_action != 'repair-pr287-6753792' && inputs.release_action != 'rollback-pr287-6753792')
         continue-on-error: true
         run: |
           IMAGE_PATH="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.SERVICE_NAME }}"
@@ -321,7 +370,7 @@ jobs:
           fi
 
       - name: Inspect image structure (validation)
-        if: steps.auth-status.outputs.auth_ok == 'true'
+        if: steps.auth-status.outputs.auth_ok == 'true' && (inputs.release_action != 'repair-pr287-6753792' && inputs.release_action != 'rollback-pr287-6753792')
         continue-on-error: true
         run: |
           SHORT_SHA="${{ steps.build.outputs.short_sha }}"
@@ -344,7 +393,7 @@ jobs:
           fi
 
       - name: Generate deployment command
-        if: steps.auth-status.outputs.auth_ok == 'true'
+        if: steps.auth-status.outputs.auth_ok == 'true' && (inputs.release_action != 'repair-pr287-6753792' && inputs.release_action != 'rollback-pr287-6753792')
         run: |
           SHORT_SHA="${{ steps.build.outputs.short_sha }}"
 
