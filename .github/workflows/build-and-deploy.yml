@@ -79,7 +79,7 @@ on:
         required: false
         default: ''
       receiving_admission:
-        description: "Late rollback only: exact HOME receiving receipt and separate Rob approval; max8KiB"
+        description: "Main promotion admission, or late rollback receiving with separate approval; max8KiB"
         type: string
         required: false
         default: ''
@@ -140,8 +140,10 @@ jobs:
       github.ref == 'refs/heads/main' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
       !(github.event_name == 'push' &&
-        github.event.before == '6753792b1b51a65377b7e8a955fc27c68ecda799' &&
-        startsWith(github.event.head_commit.message, 'ci: prepare PR287 traffic repair only'))
+        ((github.event.before == '6753792b1b51a65377b7e8a955fc27c68ecda799' &&
+          startsWith(github.event.head_commit.message, 'ci: prepare PR287 traffic repair only')) ||
+         (github.event.before == '0edd4e59f094cb576cd6cb9fd7f3cd798cd495ea' &&
+          startsWith(github.event.head_commit.message, 'ci: prepare PR287 DNS repair only'))))
 
     steps:
       - uses: actions/checkout@v4
