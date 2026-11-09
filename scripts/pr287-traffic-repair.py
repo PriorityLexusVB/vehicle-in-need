@@ -29,9 +29,10 @@ PRIOR_VERSION = "86cb242"
 PRIOR_DIGEST = "sha256:7bed22c82c2a3249f838b8da5a26f428a5b735561af635c928da4a22410fd64a"
 DIGEST = "sha256:76cd7c8cf42f7d6d1b4a63a97022bb8baea43d27148a4a940881b413bf09316d"
 IMAGE = "us-west1-docker.pkg.dev/" + PROJECT + "/vehicle-in-need/" + SERVICE + "@" + DIGEST
-TAG = "pr287-6753792-probe"
+TAG = "p287-6753792"
+PREPARATION_PARENT = "0edd4e59f094cb576cd6cb9fd7f3cd798cd495ea"
 BASE_URL = "https://" + SERVICE + "-842946218691.us-west1.run.app"
-PROBE_URL = "https://" + TAG + "---" + SERVICE + "-rbnzfidp7q-uw.a.run.app"
+PROBE_URL = "https://" + TAG + "---" + SERVICE + "-842946218691." + REGION + ".run.app"
 MODE = "repair-pr287-6753792"
 FILES = [".github/workflows/build-and-deploy.yml", "scripts/pr287-traffic-repair.py"]
 DEADLINE = 0
@@ -282,13 +283,16 @@ def service_guard(document, baseline, revision_name, staged):
 # absolute native30second ceiling, not merely a per-socket timeout. Its output
 # is also collected by command's shared1MiB bounded stream reader.
 STATUS_FETCH = r'''
-import json, sys, urllib.request
+import json, sys, urllib.request, urllib.parse
 MAX = 1024 * 1024
 ALLOWED = (
 "https://pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app",
-"https://pr287-6753792-probe---pre-order-dealer-exchange-tracker-rbnzfidp7q-uw.a.run.app")
+"https://p287-6753792---pre-order-dealer-exchange-tracker-842946218691.us-west1.run.app")
 if len(sys.argv) != 2 or sys.argv[1] not in ALLOWED:
     raise RuntimeError("Unapproved status endpoint")
+host = urllib.parse.urlsplit(sys.argv[1]).hostname
+if not host or any(not label or len(label) > 63 for label in host.split(".")) or host.encode("idna").decode("ascii") != host:
+    raise RuntimeError("Invalid status DNS host")
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, *args, **kwargs):
         return None
@@ -340,6 +344,7 @@ def repair():
     global UNCERTAIN_MUTATION
     UNCERTAIN_MUTATION = False
     start_budget("repair")
+    validate_probe_endpoint()
     baseline = service()
     binding = json.loads(os.environ["PR287_PROMOTION_BINDING"])
     check_promotion_preimage(baseline, binding)
@@ -404,8 +409,46 @@ def repair():
                            + str(original)) from original
 
 
+CLOUD_LOADER = "import sys; _sealed_code=''.join(sys.argv[2:]); del sys.argv[2:]; exec(compile(_sealed_code,'<sealed-inline>','exec'))"
+
+
+def cloud_step_args(code, mode):
+    require(isinstance(code, str) and 0 < len(code.encode("utf-8")) <= MAX_REQUEST_BYTES, "Bounded sealed inline code required")
+    require(mode in ("cloud-run-repair", "cloud-run-late-rollback", "bdc-cloud"), "Fixed cloud mode required")
+    args = ["-c", CLOUD_LOADER, mode] + [code[i:i+8000] for i in range(0, len(code), 8000)]
+    require(len(args) <= 100 and all(len(arg) <= 10000 for arg in args), "Cloud Build argument limits")
+    return args
+
+
+def runtime_inline_code():
+    actual = sys.orig_argv
+    require(len(actual) >= 5 and actual[1:3] == ["-c", CLOUD_LOADER], "Exact sealed cloud loader required")
+    mode = actual[3]
+    code = "".join(actual[4:])
+    require(actual[1:] == cloud_step_args(code, mode), "Noncanonical cloud chunks or mode")
+    require(sys.argv == ["-c", mode], "Cloud application argv drift")
+    return code
+
+
+def validate_probe_endpoint():
+    import urllib.parse
+    expected_base = "https://" + SERVICE + "-842946218691." + REGION + ".run.app"
+    expected_probe = "https://p287-6753792---" + SERVICE + "-842946218691." + REGION + ".run.app"
+    require(TAG == "p287-6753792" and BASE_URL == expected_base and PROBE_URL == expected_probe,
+            "Fixed deterministic Vehicle probe drift")
+    for url in (BASE_URL, PROBE_URL):
+        parts = urllib.parse.urlsplit(url)
+        require(parts.scheme == "https" and not parts.username and not parts.password and parts.port is None and
+                not parts.path and not parts.query and not parts.fragment, "Fixed Vehicle URL shape required")
+        host = parts.hostname
+        require(host and host.isascii() and len(host) <= 253 and all(0 < len(label) <= 63 for label in host.split(".")),
+                "Vehicle DNS label exceeds63")
+        require(host.encode("idna").decode("ascii") == host, "Vehicle DNS IDNA invalid")
+
+
 def submit():
     start_budget("submit")
+    validate_probe_endpoint()
     require(os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch", "Manual dispatch required")
     require(os.environ.get("GITHUB_REF") == "refs/heads/main", "Main only")
     action = os.environ.get("RELEASE_ACTION")
@@ -417,8 +460,8 @@ def submit():
     sha = os.environ.get("GITHUB_SHA", "")
     require(sha and command(["git", "rev-parse", "HEAD"]) == sha, "Checkout SHA mismatch")
     parents = command(["git", "rev-list", "--parents", "-n", "1", "HEAD"]).split()
-    require(parents == [sha, COMMIT], "Requires one reviewed squash amendment directly on6753792")
-    changed = command(["git", "diff", "--name-only", COMMIT, sha]).splitlines()
+    require(parents == [sha, PREPARATION_PARENT], "Requires reviewed two-file DNS amendment directly on0edd")
+    changed = command(["git", "diff", "--name-only", PREPARATION_PARENT, sha]).splitlines()
     require(sorted(changed) == FILES, "Amendment includes unexpected files")
     require(command(["git", "ls-remote", "origin", "refs/heads/main"]).split()[0] == sha,
             "Main advanced since dispatch; stop")
@@ -435,7 +478,7 @@ def submit():
         env = ["PR287_LATE_ADMISSION=" + canonical(packet).decode(), "PR287_LATE_RUN=" + canonical(github).decode()]
     build = {"steps": [{"name": "gcr.io/google.com/cloudsdktool/cloud-sdk",
                         "id": "pr287-exact-traffic-recovery", "entrypoint": "python3",
-                        "args": ["-c", code, mode], "env": env}],
+                        "args": cloud_step_args(code, mode), "env": env}],
              "options": {"logging": "CLOUD_LOGGING_ONLY"}, "timeout": "360s" if action == LATE_MODE else "600s",
              "tags": [marker]}
     # No source upload, image build, tag push, service-account override, IAM,
@@ -478,7 +521,7 @@ def watch_impl():
                 "Unexpected build identity/tag")
         steps = document.get("steps", [])
         require(len(steps) == 1 and steps[0].get("id") == "pr287-exact-traffic-recovery" and
-                steps[0].get("args") == ["-c", expected_code, expected_mode], "Unexpected build execution")
+                steps[0].get("args") == cloud_step_args(expected_code, expected_mode), "Unexpected build execution")
         state = document.get("status")
         if state == "SUCCESS":
             print("PASS: fixed repair buildSUCCESS; signed-in receiving still separate")
@@ -557,15 +600,18 @@ def promotion_binding():
     binding = github_binding()
     require_bookkeeping_input()
     current = service()
-    proof = parse_bookkeeping(os.environ["PR287_BOOKKEEPING_PROOF"], current)
+    admission = json.loads(os.environ["PR287_RECEIVING_ADMISSION"])
+    proof = parse_bookkeeping(os.environ["PR287_BOOKKEEPING_PROOF"], current, admission)
+    promotion_admission(admission, proof, binding)
     service_guard(current, current, PRIOR, False)
     require(proof["body"]["source"] == binding["source"], "Bookkeeping proof source drift")
-    binding.update(schema=2, before=v1_fence(current), late_number=binding["number"] + 1, bookkeeping=proof)
+    binding.update(schema=2, before=v1_fence(current), late_number=binding["number"] + 1, bookkeeping=proof, main_admission=admission)
     return binding
 
 
 def check_promotion_preimage(current, binding):
-    parse_bookkeeping(canonical(binding.get("bookkeeping", {})).decode(), current)
+    parse_bookkeeping(canonical(binding.get("bookkeeping", {})).decode(), current, binding.get("main_admission"))
+    promotion_admission(binding["main_admission"], binding["bookkeeping"], binding)
     require(binding.get("schema") == 2 and binding.get("repo") == REPO and binding.get("workflow") == WORKFLOW_REF,
             "Promotion admission missing")
     require(v1_fence(current) == binding["before"], "Promotion admission preimage drift")
@@ -793,7 +839,37 @@ def scalar_capture_identity(document):
     return digest(document)
 
 
-def parse_bookkeeping(raw, document=None):
+def promotion_admission(packet, proof, github=None):
+    # Separate Main receipt, delivered in the EXISTING receiving_admission input.
+    # Main verifies native provenance; Source pins its exact bytes before dispatch.
+    require(isinstance(packet, dict) and set(packet) == {"body", "sha256"} and
+            digest(packet["body"]) == packet["sha256"], "Missing Main promotion admission")
+    a, p = packet["body"], proof["body"]
+    fields = {"kind", "verifier", "source_review_turn", "metadata_review_turn", "approval_message",
+              "source", "actor", "run_number", "proof_sha256", "captured_at", "reviewed_at",
+              "approved_at", "admitted_at", "expires_at", "attempts"}
+    require(set(a) == fields and a["kind"] == "MAIN_PR287_PROMOTION_ADMISSION" and
+            a["verifier"] == "01a0e3ba-97b8-7f62-94b7-e8da0ddf98c4", "Exact Main admission required")
+    origin = "01a1b7ac-4659-73d1-8752-26baa7029351"
+    require(a["source_review_turn"] == origin and fixed_uuid(a["metadata_review_turn"]) != origin and
+            a["metadata_review_turn"] == p["main_review_turn"], "Actual bound capture review required")
+    fixed_uuid(a["approval_message"])
+    require(a["source"] == p["source"] and a["proof_sha256"] == proof["sha256"] and
+            a["captured_at"] == p["captured_at"] and type(a["attempts"]) is int and a["attempts"] == 1,
+            "Admission capture/source/hash/attempt drift")
+    require(isinstance(a["actor"], str) and 0 < len(a["actor"]) <= 100 and
+            type(a["run_number"]) is int and a["run_number"] > 0, "Exact dispatch identity required")
+    approved, captured, reviewed, admitted, expires = map(stamp_ns,
+        (a["approved_at"], a["captured_at"], a["reviewed_at"], a["admitted_at"], a["expires_at"]))
+    require(approved <= captured <= reviewed <= admitted <= time.time_ns() <= expires and
+            expires - captured <= 900000000000, "Expired/replayed/out-of-order Main capture admission")
+    if github is not None:
+        require(all(a[k] == github[k] for k in ("source", "actor")) and a["run_number"] == github["number"],
+                "Main admission dispatch binding drift")
+    return packet
+
+
+def parse_bookkeeping(raw, document=None, admission=None):
     global PROVEN_IGNORED_KEYS
     PROVEN_IGNORED_KEYS = frozenset()
     require(isinstance(raw, str) and 0 < len(raw.encode()) <= 8192,
@@ -806,7 +882,7 @@ def parse_bookkeeping(raw, document=None):
     require(set(body) == fields and body["kind"] == "REAL_CAPTURED_V2_SCALARS_MAIN_REVIEWED", "Actual V2 scalar review required")
     require(body["main_verifier"] == "01a0e3ba-97b8-7f62-94b7-e8da0ddf98c4", "Existing Main verifier required")
     fixed_uuid(body["main_review_turn"]); hex64(body["fixture_sha256"]); hex64(body["strict_scalar_sha256"])
-    require(body["main_review_turn"] == "01a1b7ac-4659-73d1-8752-26baa7029351", "Exact native Main review turn required")
+    promotion_admission(admission, packet)
     require(isinstance(body["normalization_keys"], list) and len(body["normalization_keys"]) == 3 and
             set(body["normalization_keys"]) == OPERATIONAL_KEYS and isinstance(body["scalars"], dict) and
             set(body["scalars"]) == {"lastModifier", "client", "clientVersion"}, "No unproven annotation normalization")
@@ -882,12 +958,13 @@ def validate_promotion_build(build, build_id, code):
     allowed = {"id", "name", "entrypoint", "args", "env", "timing", "pullTiming", "status", "exitCode"}
     require(set(step) <= allowed and step.get("name") == SDK_IMAGE and step.get("entrypoint") == "python3",
             "Build image/entrypoint or authority drift")
-    require(step.get("id") == "pr287-exact-traffic-recovery" and step.get("args") == ["-c", code, "cloud-run-repair"], "Promotion code/mode drift")
+    require(step.get("id") == "pr287-exact-traffic-recovery" and step.get("args") == cloud_step_args(code, "cloud-run-repair"), "Promotion code/mode drift")
     inputs = step.get("env", [])
     require(len(inputs) == 1 and inputs[0].startswith("PR287_PROMOTION_BINDING="), "Immutable promotion input missing")
     binding = json.loads(inputs[0].split("=", 1)[1])
     require(binding.get("schema") == 2 and inputs == ["PR287_PROMOTION_BINDING=" + canonical(binding).decode()], "Build input binding mismatch")
-    proof = parse_bookkeeping(canonical(binding.get("bookkeeping", {})).decode())
+    proof = parse_bookkeeping(canonical(binding.get("bookkeeping", {})).decode(), admission=binding.get("main_admission"))
+    promotion_admission(binding["main_admission"], binding["bookkeeping"], binding)
     require(proof["body"]["source"] == binding["source"], "Bookkeeping proof source drift")
     return binding
 
@@ -964,13 +1041,15 @@ def watch():
 def require_bookkeeping_input():
     raw = os.environ.get("PR287_BOOKKEEPING_PROOF", "")
     require(raw, "UNSUPPORTED_NO_VERIFIED_V2_SCALAR_CAPTURE: refuse before first submission/mutation")
-    return parse_bookkeeping(raw)
+    admission = os.environ.get("PR287_RECEIVING_ADMISSION", "")
+    require(isinstance(admission, str) and 0 < len(admission.encode()) <= 8192, "Main promotion admission required before effects")
+    return parse_bookkeeping(raw, admission=json.loads(admission))
 
 
 def emit_postimage(completed, binding):
     # No extra provider, token or status call. Existing completed describe is
     # hashed; service config/env/secret values are never printed.
-    code = sys.orig_argv[sys.orig_argv.index("-c") + 1]
+    code = runtime_inline_code()
     body = {**v1_fence(completed), "source": binding["source"], "actor": binding["actor"],
             "code_sha256": hashlib.sha256(code.encode()).hexdigest()}
     print("PR287_POSTIMAGE_SNAPSHOT=" + canonical({"body": body, "sha256": digest(body)}).decode())
@@ -991,6 +1070,6 @@ if __name__ == "__main__":
         watch()
     elif sys.argv[1] == "cloud-run-late-rollback":
         require("-c" in sys.orig_argv, "Fixed Cloud Build invocation required")
-        late_rollback(sys.orig_argv[sys.orig_argv.index("-c") + 1])
+        late_rollback(runtime_inline_code())
     else:
         raise RuntimeError("Unsupported mode")
