@@ -1,9 +1,4 @@
-"""PREPARED ONLY. Fixed PR287 recovery through the existing Cloud Build identity.
-
-No general command, image, revision, project, or service inputs are accepted.
-Applying/merging the accompanying workflow amendment and executing this file
-require new explicit approval. Importing the module performs no IO.
-"""
+"""Fixed PR287 executor. Requires exact new approval; import performs no IO."""
 import copy
 import hashlib
 import json
@@ -30,7 +25,7 @@ PRIOR_DIGEST = "sha256:7bed22c82c2a3249f838b8da5a26f428a5b735561af635c928da4a224
 DIGEST = "sha256:76cd7c8cf42f7d6d1b4a63a97022bb8baea43d27148a4a940881b413bf09316d"
 IMAGE = "us-west1-docker.pkg.dev/" + PROJECT + "/vehicle-in-need/" + SERVICE + "@" + DIGEST
 TAG = "p287-6753792"
-PREPARATION_PARENT = "0edd4e59f094cb576cd6cb9fd7f3cd798cd495ea"
+PREPARATION_PARENT = "928c2db391e86c9a77c6e70e540fab0caa6774bf"
 BASE_URL = "https://" + SERVICE + "-842946218691.us-west1.run.app"
 PROBE_URL = "https://" + TAG + "---" + SERVICE + "-842946218691." + REGION + ".run.app"
 MODE = "repair-pr287-6753792"
@@ -460,7 +455,7 @@ def submit():
     sha = os.environ.get("GITHUB_SHA", "")
     require(sha and command(["git", "rev-parse", "HEAD"]) == sha, "Checkout SHA mismatch")
     parents = command(["git", "rev-list", "--parents", "-n", "1", "HEAD"]).split()
-    require(parents == [sha, PREPARATION_PARENT], "Requires reviewed two-file DNS amendment directly on0edd")
+    require(parents == [sha, PREPARATION_PARENT], "Requires reviewed two-file SDK amendment directly on928c2db")
     changed = command(["git", "diff", "--name-only", PREPARATION_PARENT, sha]).splitlines()
     require(sorted(changed) == FILES, "Amendment includes unexpected files")
     require(command(["git", "ls-remote", "origin", "refs/heads/main"]).split()[0] == sha,
@@ -476,13 +471,12 @@ def submit():
         bind_late(packet, promotion, binding, github)
         mode, marker = "cloud-run-late-rollback", LATE_TAG
         env = ["PR287_LATE_ADMISSION=" + canonical(packet).decode(), "PR287_LATE_RUN=" + canonical(github).decode()]
-    build = {"steps": [{"name": "gcr.io/google.com/cloudsdktool/cloud-sdk",
-                        "id": "pr287-exact-traffic-recovery", "entrypoint": "python3",
+    env.append("SSL_CERT_FILE=" + SDK_CA_FILE)
+    build = {"steps": [{"name": SDK_IMAGE,
+                        "id": "pr287-exact-traffic-recovery", "entrypoint": SDK_PYTHON,
                         "args": cloud_step_args(code, mode), "env": env}],
              "options": {"logging": "CLOUD_LOGGING_ONLY"}, "timeout": "360s" if action == LATE_MODE else "600s",
-             "tags": [marker]}
-    # No source upload, image build, tag push, service-account override, IAM,
-    # environment/secret update, login, token export, or credential file.
+             "queueTtl": "120s", "tags": [marker]}
     with tempfile.TemporaryDirectory(prefix="pr287-ci-") as directory:
         config = Path(directory) / "cloudbuild-pr287.json"
         encoded = request_bytes(build)
@@ -812,7 +806,9 @@ def late_rollback(code):
 
 
 # Reconciliation helpers. Pure evidence producers do not call providers.
-SDK_IMAGE = "gcr.io/google.com/cloudsdktool/cloud-sdk"
+SDK_IMAGE = "gcr.io/google.com/cloudsdktool/google-cloud-cli@sha256:7b209f64f9f4bfd340cc28dec288e36a0f911f21b8c7d5732fcf7fcba64c967b"
+SDK_PYTHON = "/usr/lib/google-cloud-sdk/platform/bundledpythonunix/bin/python3"
+SDK_CA_FILE = "/usr/lib/google-cloud-sdk/lib/third_party/certifi/cacert.pem"
 OPERATIONAL_KEYS = frozenset(("serving.knative.dev/lastModifier", "run.googleapis.com/client-name", "run.googleapis.com/client-version"))
 PROVEN_IGNORED_KEYS = frozenset()
 
@@ -951,18 +947,18 @@ def validate_promotion_build(build, build_id, code):
                 "dynamicSubstitutions": False, "automapSubstitutions": False}
     require(options.get("logging") == "CLOUD_LOGGING_ONLY" and set(options) <= set(defaults), "Unexpected build options")
     require(all(value == defaults[k] or (k == "diskSizeGb" and value == 0) for k, value in options.items()), "Unexpected authority-bearing build option")
-    require(build.get("timeout") == "600s", "Unexpected promotion deadline")
+    require(build.get("timeout") == "600s" and build.get("queueTtl") == "120s", "Unexpected promotion deadline/queue TTL")
     steps = build.get("steps", [])
     require(len(steps) == 1, "Unexpected build steps")
     step = steps[0]
     allowed = {"id", "name", "entrypoint", "args", "env", "timing", "pullTiming", "status", "exitCode"}
-    require(set(step) <= allowed and step.get("name") == SDK_IMAGE and step.get("entrypoint") == "python3",
+    require(set(step) <= allowed and step.get("name") == SDK_IMAGE and step.get("entrypoint") == SDK_PYTHON,
             "Build image/entrypoint or authority drift")
     require(step.get("id") == "pr287-exact-traffic-recovery" and step.get("args") == cloud_step_args(code, "cloud-run-repair"), "Promotion code/mode drift")
     inputs = step.get("env", [])
-    require(len(inputs) == 1 and inputs[0].startswith("PR287_PROMOTION_BINDING="), "Immutable promotion input missing")
+    require(len(inputs) == 2 and inputs[1] == "SSL_CERT_FILE=" + SDK_CA_FILE and inputs[0].startswith("PR287_PROMOTION_BINDING="), "Immutable promotion input missing")
     binding = json.loads(inputs[0].split("=", 1)[1])
-    require(binding.get("schema") == 2 and inputs == ["PR287_PROMOTION_BINDING=" + canonical(binding).decode()], "Build input binding mismatch")
+    require(binding.get("schema") == 2 and inputs == ["PR287_PROMOTION_BINDING=" + canonical(binding).decode(), "SSL_CERT_FILE=" + SDK_CA_FILE], "Build input binding mismatch")
     proof = parse_bookkeeping(canonical(binding.get("bookkeeping", {})).decode(), admission=binding.get("main_admission"))
     promotion_admission(binding["main_admission"], binding["bookkeeping"], binding)
     require(proof["body"]["source"] == binding["source"], "Bookkeeping proof source drift")
@@ -1047,8 +1043,6 @@ def require_bookkeeping_input():
 
 
 def emit_postimage(completed, binding):
-    # No extra provider, token or status call. Existing completed describe is
-    # hashed; service config/env/secret values are never printed.
     code = runtime_inline_code()
     body = {**v1_fence(completed), "source": binding["source"], "actor": binding["actor"],
             "code_sha256": hashlib.sha256(code.encode()).hexdigest()}

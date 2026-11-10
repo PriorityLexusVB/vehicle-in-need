@@ -101,6 +101,58 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Verify pinned SDK runtime before release
+        if: >-
+          github.event_name == 'pull_request' && github.event.action == 'opened' &&
+          github.head_ref == 'codex/pr287-sdk-v4-20261109' &&
+          format('{0}', github.run_attempt) == '1'
+        timeout-minutes: 3
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import importlib.util,json,os,shutil,tempfile,hashlib,time
+          from pathlib import Path
+          spec=importlib.util.spec_from_file_location('fixed','scripts/pr287-traffic-repair.py')
+          m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+          m.start_budget('submit');started=time.monotonic();timings={}
+          probe="""import sys,os,json,shutil,ssl,hashlib,subprocess,signal,tempfile,threading,time,urllib.request,urllib.parse,urllib.error,uuid,copy,re,calendar,datetime
+          from pathlib import Path
+          assert sys.version_info >= (3,10) and os.path.realpath(sys.executable) == os.path.realpath(ENTRYPOINT)
+          assert sys.argv == ['-c','cloud-run-repair'] and sys.orig_argv[1] == '-c'
+          assert ''.join(sys.orig_argv[4:]) == _sealed_code and 'x.run.app'.encode('idna') == b'x.run.app'
+          assert shutil.which('gcloud') == '/usr/lib/google-cloud-sdk/bin/gcloud'
+          assert hashlib.sha256(Path(os.environ['SSL_CERT_FILE']).read_bytes()).hexdigest() == '50f79f98dac192b20dbf73f35c56f0b0c557ab267ff5199d1117cc1180b70785'
+          c=ssl.create_default_context();assert c.verify_mode == ssl.CERT_REQUIRED and c.check_hostname and c.cert_store_stats()['x509_ca'] == 120
+          subprocess.run([sys.executable,'-c','import json,sys,urllib.request,urllib.parse,urllib.error,ssl; c=ssl.create_default_context(); assert c.check_hostname and c.cert_store_stats()["x509_ca"]==120'],stdin=subprocess.DEVNULL,check=True,timeout=10)
+          result=subprocess.run(['gcloud','version','--format=json'],stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=10,check=True)
+          assert len(result.stdout)+len(result.stderr) <= 65536
+          assert json.loads(result.stdout).get('Google Cloud SDK') == '592.0.0'
+          print(json.dumps({'result':'PINNED_SDK_RUNTIME_PASS','python':sys.version.split()[0],'entrypoint':ENTRYPOINT,'actualExecutable':sys.executable,'gcloud':'592.0.0','originalArgvPreserved':True,'trustedCAs':120,'network':'none','privateProviderCalls':0}))
+          """.replace('ENTRYPOINT',repr(m.SDK_PYTHON))
+          with tempfile.TemporaryDirectory(prefix='sdk-public-only-') as empty_config:
+              os.environ['DOCKER_CONFIG']=empty_config
+              assert not os.environ.get('DOCKER_HOST') and not os.environ.get('DOCKER_CONTEXT'), 'Local default Docker context required'
+              docker_root=m.command(['docker','info','--format','{{.DockerRootDir}}'])
+              assert Path(docker_root).is_absolute() and Path(docker_root).is_dir(), 'Actual Docker data root required'
+              free=shutil.disk_usage(docker_root).free;peak=3*1024**3
+              storage_mode='LITERAL_20GB_AFTER_PEAK'
+              if free-peak < 20000000000:
+                  # PROPOSED ONLY: exact pending V4R2 card must approve this ONE
+                  # disposable VehiclePR/attempt1 exception before source publication.
+                  # Main boundary4D684A02; no HOME/WORK/default/later-CI waiver.
+                  assert free >= 8*1024**3, 'One-proof hosted exception still requires 8GiB before 3GiB peak'
+                  storage_mode='EXACT_APPROVED_ONE_PROOF_EPHEMERAL_EXCEPTION'
+              print(json.dumps({'result':'ACTUAL_DOCKER_VOLUME_BUDGET_PASS','storageMode':storage_mode,'dockerRoot':docker_root,'freeBytes':free,'plannedPeakBytes':peak,'remainingAfterPeakBytes':free-peak,'defaultMinimumRemainingBytes':20000000000,'exceptionMinimumBeforePeakBytes':8*1024**3}))
+              tick=time.monotonic();m.command(['docker','pull','--quiet','--platform=linux/amd64',m.SDK_IMAGE]);timings['publicPullSeconds']=time.monotonic()-tick
+              fixed=['docker','run','--rm','--pull=never','--platform=linux/amd64','--read-only','--cap-drop=ALL','--security-opt=no-new-privileges','--pids-limit=64','--memory=256m','--cpus=1','--user=1000:1000','--tmpfs=/tmp:rw,noexec,nosuid,size=16m','--env=HOME=/tmp','--env=CLOUDSDK_CONFIG=/tmp/gcloud','--env=PYTHONDONTWRITEBYTECODE=1','--env=SSL_CERT_FILE='+m.SDK_CA_FILE,'--entrypoint='+m.SDK_PYTHON]
+              tick=time.monotonic();runtime=json.loads(m.command([*fixed,'--network=none',m.SDK_IMAGE,*m.cloud_step_args(probe,'cloud-run-repair')]));timings['networklessRuntimeSeconds']=time.monotonic()-tick
+              assert runtime['result']=='PINNED_SDK_RUNTIME_PASS' and runtime['entrypoint']==m.SDK_PYTHON and runtime['trustedCAs']==120 and runtime['network']=='none'
+              tick=time.monotonic();raw=m.command([*fixed,'--network=bridge',m.SDK_IMAGE,'-c',m.STATUS_FETCH,m.BASE_URL]);timings['verifiedPublicTLSSeconds']=time.monotonic()-tick
+              status=json.loads(raw);assert status.get('status')=='healthy' and status.get('version') in (m.PRIOR_VERSION,m.VERSION)
+              assert m.BUDGET.counts==[4,0,0,0]
+              print(json.dumps({'result':'PINNED_SDK_RUNTIME_AND_PUBLIC_TLS_PASS','image':m.SDK_IMAGE,'entrypoint':m.SDK_PYTHON,'caFile':m.SDK_CA_FILE,'networkless':runtime,'publicURL':m.BASE_URL+'/api/status','publicStatus':status['status'],'publicVersion':status['version'],'publicResponseSha256':hashlib.sha256(raw.encode()).hexdigest(),'publicGETs':1,'nativeCommands':4,'timings':timings,'totalSeconds':time.monotonic()-started,'privateProviderCalls':0}))
+          PY
+
       - name: Validate Dockerfile
         run: |
           if [ ! -f Dockerfile ]; then
@@ -143,7 +195,9 @@ jobs:
         ((github.event.before == '6753792b1b51a65377b7e8a955fc27c68ecda799' &&
           startsWith(github.event.head_commit.message, 'ci: prepare PR287 traffic repair only')) ||
          (github.event.before == '0edd4e59f094cb576cd6cb9fd7f3cd798cd495ea' &&
-          startsWith(github.event.head_commit.message, 'ci: prepare PR287 DNS repair only'))))
+          startsWith(github.event.head_commit.message, 'ci: prepare PR287 DNS repair only')) ||
+         (github.event.before == '928c2db391e86c9a77c6e70e540fab0caa6774bf' &&
+          startsWith(github.event.head_commit.message, 'ci: prepare PR287 SDK runtime only'))))
 
     steps:
       - uses: actions/checkout@v4
