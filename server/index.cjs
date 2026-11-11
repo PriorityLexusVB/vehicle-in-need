@@ -6,7 +6,6 @@
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
-const cors = require("cors");
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -70,7 +69,9 @@ function verifyCSSFilesExist() {
 verifyCSSFilesExist();
 
 // Middleware
-app.use(cors());
+// No CORS middleware: the UI is served from this same origin, and the callers
+// that are not browsers (Apps Script, CallDrip, Cloud Scheduler) are not subject
+// to CORS. An open cors() let any website read these endpoints from a browser.
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
