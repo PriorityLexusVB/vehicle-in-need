@@ -340,6 +340,7 @@ module.exports._testing = {
   buildUserDirectory,
   compactOrderLine,
   getOrderAnchorMillis,
+  isAuthorized,
   isOrderDue,
   normalizeEmail,
   normalizeName,

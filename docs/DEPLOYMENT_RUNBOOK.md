@@ -234,7 +234,9 @@ gcloud run services describe pre-order-dealer-exchange-tracker \
   --format='json(spec.template.spec.containers[0].env)'
 ```
 
-**Expected output:** You should see `valueSource.secretKeyRef` for the `API_KEY` environment variable, NOT plaintext values:
+> **Update 2026-11-11:** the `API_KEY` / `vehicle-in-need-gemini` mount is RETIRED. No server code reads `process.env.API_KEY`, and `cloudbuild.yaml` no longer sets it. After the next deploy of that file the service should list only the CallDrip/KPI/job-key secrets. Older runbooks and `docs/archive/` that still mention `API_KEY` are historical; do not re-add it.
+
+**Expected output (historical, before the 2026-11-11 retirement):** you should see `valueSource.secretKeyRef` for the `API_KEY` environment variable, NOT plaintext values:
 
 ```json
 {

@@ -658,6 +658,7 @@ module.exports._testing = {
   buildWeeklyDigest,
   compactOrderLine,
   getManagerRecipients,
+  isAuthorized,
   isNewOrderNotificationDue,
   normalizeEmail,
   parseStartAt,
