@@ -6,7 +6,7 @@
  * production kept serving the 2026-10-09 build for days and nobody was alerted.
  * `check-production-version.cjs` is manual and compares to main HEAD, so a docs-only
  * commit would false-alarm. This script only asks one question: is the LAST commit
- * that changed app code an ancestor of (or equal to) the commit production reports?
+ * that changed app code reflected in what production runs (same app-code content as main)?
  *
  * Exit codes: 0 = OK or PENDING (inside the grace window), 1 = DRIFT, 2 = cannot verify.
  *
@@ -45,7 +45,7 @@ const APP_PATHS = [
 
 /**
  * Pure decision function (unit tested).
- * @param {{liveResolved: boolean, appCommitIsInLive: boolean, appCommitAgeHours: number, graceHours: number}} s
+ * @param {{liveResolved: boolean, treeMatchesMain: boolean, appCommitIsInLive: boolean, appCommitAgeHours: number, graceHours: number}} s
  * @returns {{state: "OK"|"PENDING"|"DRIFT"|"UNKNOWN", exitCode: number, reason: string}}
  */
 function evaluateDrift(s) {
@@ -56,8 +56,18 @@ function evaluateDrift(s) {
       reason: "Production reported a version this repository cannot resolve to a commit.",
     };
   }
+  // Same app-code content as main: live, even if the commit ids differ (squash merge, revert).
+  if (s.treeMatchesMain) {
+    return { state: "OK", exitCode: 0, reason: "Production runs the same app code as main." };
+  }
+  // Different content AND production already contains the latest app commit: production
+  // is ahead of / off main (manual or branch deploy). Cannot call that drift.
   if (s.appCommitIsInLive) {
-    return { state: "OK", exitCode: 0, reason: "Production contains the latest merged app code." };
+    return {
+      state: "UNKNOWN",
+      exitCode: 2,
+      reason: "Production runs app code that differs from main but already contains main's latest app commit (ahead of main or a branch deploy).",
+    };
   }
   if (s.appCommitAgeHours < s.graceHours) {
     return {
@@ -69,7 +79,7 @@ function evaluateDrift(s) {
   return {
     state: "DRIFT",
     exitCode: 1,
-    reason: `Latest merged app code is ${s.appCommitAgeHours.toFixed(1)}h old and is NOT in the production build.`,
+    reason: `Main's app code changed ${s.appCommitAgeHours.toFixed(1)}h ago and production is still running different (older) app code.`,
   };
 }
 
@@ -127,21 +137,33 @@ async function main() {
   console.log(`Latest merged app-code commit: ${appSubject} (${appCommitAgeHours.toFixed(1)}h ago)`);
 
   let liveResolved = false;
+  let treeMatchesMain = false;
   let appCommitIsInLive = false;
-  try {
-    const liveCommit = git(["rev-parse", "--verify", `${liveVersion}^{commit}`]);
-    liveResolved = true;
+  // Only a bare commit hash counts. A word like "unknown" or "dev" must never resolve
+  // through a branch or tag name that happens to exist in the repository.
+  const looksLikeSha = /^[0-9a-f]{7,40}$/i.test(liveVersion);
+  if (looksLikeSha) {
     try {
-      git(["merge-base", "--is-ancestor", appCommit, liveCommit]);
-      appCommitIsInLive = true;
+      const liveCommit = git(["rev-parse", "--verify", `${liveVersion}^{commit}`]);
+      liveResolved = true;
+      try {
+        git(["diff", "--quiet", liveCommit, "HEAD", "--", ...APP_PATHS]);
+        treeMatchesMain = true; // exit 0 = identical app-code content
+      } catch (e) {
+        treeMatchesMain = false;
+      }
+      try {
+        git(["merge-base", "--is-ancestor", appCommit, liveCommit]);
+        appCommitIsInLive = true;
+      } catch (e) {
+        appCommitIsInLive = false;
+      }
     } catch (e) {
-      appCommitIsInLive = false;
+      liveResolved = false;
     }
-  } catch (e) {
-    liveResolved = false;
   }
 
-  const result = evaluateDrift({ liveResolved, appCommitIsInLive, appCommitAgeHours, graceHours });
+  const result = evaluateDrift({ liveResolved, treeMatchesMain, appCommitIsInLive, appCommitAgeHours, graceHours });
   console.log(`${result.state}: ${result.reason}`);
   if (result.state === "DRIFT") {
     console.log(
