@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- CommonJS script under test
 const { evaluateDrift, APP_PATHS } = require("../scripts/check-deploy-drift.cjs");
 
 describe("deploy drift decision", () => {

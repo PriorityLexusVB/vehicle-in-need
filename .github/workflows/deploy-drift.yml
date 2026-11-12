@@ -47,7 +47,8 @@ jobs:
           TITLE: "Deploy drift: merged app code is not live in production"
         run: |
           set -euo pipefail
-          existing="$(gh issue list --state open --search "${TITLE} in:title" --json number,title --jq ".[] | select(.title == \"${TITLE}\") | .number" | head -n1)"
+          # Exact-title match over the open issues; no GitHub search syntax involved.
+          existing="$(gh issue list --state open --limit 200 --json number,title --jq "[.[] | select(.title == \"${TITLE}\")] | first | .number // empty")"
           body="$(printf 'Automated by .github/workflows/deploy-drift.yml (%s).\n\n```\n%s\n```\n\nThis check is read-only. Find the owner of the production release; do not hand-deploy around a guarded release process.\n' "$(date -u +%Y-%m-%dT%H:%MZ)" "$(cat drift-report.txt)")"
           if [ "${EXIT_CODE}" = "1" ]; then
             if [ -n "${existing}" ]; then

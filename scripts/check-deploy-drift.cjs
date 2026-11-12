@@ -154,5 +154,9 @@ async function main() {
 module.exports = { evaluateDrift, APP_PATHS };
 
 if (require.main === module) {
-  main();
+  // A crash must read as "cannot verify" (exit 2), never as DRIFT (exit 1).
+  main().catch((e) => {
+    console.log(`UNKNOWN: drift check crashed: ${e && e.message ? e.message : e}`);
+    process.exit(2);
+  });
 }
