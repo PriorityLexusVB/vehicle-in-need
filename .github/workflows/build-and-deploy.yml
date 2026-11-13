@@ -73,6 +73,7 @@ on:
           - build
           - repair-pr287-6753792
           - rollback-pr287-6753792
+          - fence-legacy-trigger-wif-only
       bookkeeping_proof:
         description: "Main-verified V2 scalar capture; actual V1 preflight equality required"
         type: string
@@ -96,6 +97,7 @@ env:
 
 jobs:
   validate:
+    if: inputs.release_action != 'fence-legacy-trigger-wif-only'
     name: Validate Build Configuration
     runs-on: ubuntu-latest
     steps:
@@ -187,18 +189,20 @@ jobs:
     # Required squash subject: ci: prepare PR287 traffic repair only
     # Parent must be6753792; script separately guards parent, files and live state.
     if: >-
-      (format('{0}', github.run_attempt) == '1' ||
+      inputs.release_action != 'fence-legacy-trigger-wif-only' &&
+      (
+        (format('{0}', github.run_attempt) == '1' ||
         (inputs.release_action != 'repair-pr287-6753792' && inputs.release_action != 'rollback-pr287-6753792')) &&
-      github.ref == 'refs/heads/main' &&
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      !(github.event_name == 'push' &&
+        github.ref == 'refs/heads/main' &&
+        (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+        !(github.event_name == 'push' &&
         ((github.event.before == '6753792b1b51a65377b7e8a955fc27c68ecda799' &&
-          startsWith(github.event.head_commit.message, 'ci: prepare PR287 traffic repair only')) ||
-         (github.event.before == '0edd4e59f094cb576cd6cb9fd7f3cd798cd495ea' &&
-          startsWith(github.event.head_commit.message, 'ci: prepare PR287 DNS repair only')) ||
-         (github.event.before == '928c2db391e86c9a77c6e70e540fab0caa6774bf' &&
-          startsWith(github.event.head_commit.message, 'ci: prepare PR287 SDK runtime only'))))
-
+        startsWith(github.event.head_commit.message, 'ci: prepare PR287 traffic repair only')) ||
+        (github.event.before == '0edd4e59f094cb576cd6cb9fd7f3cd798cd495ea' &&
+        startsWith(github.event.head_commit.message, 'ci: prepare PR287 DNS repair only')) ||
+        (github.event.before == '928c2db391e86c9a77c6e70e540fab0caa6774bf' &&
+        startsWith(github.event.head_commit.message, 'ci: prepare PR287 SDK runtime only'))))
+      )
     steps:
       - uses: actions/checkout@v4
         with:
@@ -467,3 +471,521 @@ jobs:
           echo "- **Commit SHA**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Short SHA**: $SHORT_SHA" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+
+
+  legacy_trigger_fence:
+    name: Vehicle route unblock only - source proposal, explicit admission required
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      inputs.release_action == 'fence-legacy-trigger-wif-only' &&
+      github.ref == 'refs/heads/vehicle-wif-route-unblock-20261112-r1' &&
+      inputs.receiving_admission != '' &&
+      format('{0}', github.run_attempt) == '1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    concurrency:
+      group: vehicle-wif-route-unblock-20261112-r1
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      # No checkout, auth action, SDK, CLI install, cache or artifact upload.
+      # All eight OIDC/Google HTTP exchanges are counted inside this operator.
+      - name: One admitted WIF-only fixed-trigger fence
+        shell: bash
+        env:
+          VEHICLE_ROUTE_ADMISSION: ${{ inputs.receiving_admission }}
+          GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+        run: |
+          set +x
+          set -euo pipefail
+          umask 077
+          case "$RUNNER_TEMP" in /*) ;; *) exit 2 ;; esac
+          operator=$(mktemp "$RUNNER_TEMP/vehicle-route-operator.XXXXXXXX.py")
+          trap 'rm -f -- "$operator"; unset GCP_WORKLOAD_IDENTITY_PROVIDER GCP_SERVICE_ACCOUNT ACTIONS_ID_TOKEN_REQUEST_TOKEN VEHICLE_ROUTE_ADMISSION' EXIT
+          cat > "$operator" <<'VEHICLE_ROUTE_SOURCE'
+          """Uninstalled Vehicle-only WIF route proposal. Default DISARMED; stdlib only.
+          
+          Live execution requires Main's source-bound native admission and exact Rob grant.
+          No SDK, auth action, CLI, subprocess, redirect, retry or credential file is used.
+          """
+          import argparse
+          import base64
+          import hashlib
+          import http.client
+          import json
+          import os
+          import re
+          import signal
+          import ssl
+          import time
+          from pathlib import Path
+          from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
+          
+          PROJECT = "gen-lang-client-0615287333"
+          NUMBER = "842946218691"
+          REPO = "PriorityLexusVB/vehicle-in-need"
+          BRANCH = "vehicle-wif-route-unblock-20261112-r1"
+          REF = "refs/heads/" + BRANCH
+          WORKFLOW = REPO + "/.github/workflows/build-and-deploy.yml@" + REF
+          APPROVAL = "VEHICLE-WIF-ROUTE-UNBLOCK-20261112-R1"
+          SA = "cloud-build-deployer@" + PROJECT + ".iam.gserviceaccount.com"  # expected TRIGGER build SA, not WIF caller
+          WIF_SA_SELECTOR = "EXISTING_GITHUB_SECRET:GCP_SERVICE_ACCOUNT"
+          TRIGGER = "fe4d7d76-07f2-4300-a7a6-8cba0e09c21e"
+          RESOURCE = "projects/" + PROJECT + "/locations/global/triggers/" + TRIGGER
+          TRIGGER_RESOURCE_URL = "https://cloudbuild.googleapis.com/v1/" + RESOURCE
+          TRIGGER_URL = TRIGGER_RESOURCE_URL + "?" + urlencode({"projectId": PROJECT, "triggerId": TRIGGER})
+          PATCH_URL = TRIGGER_URL + "&updateMask=disabled"
+          BUILDS_URL = ("https://cloudbuild.googleapis.com/v1/projects/" + PROJECT
+                        + "/locations/global/builds?" + urlencode({
+                            "filter": 'buildTriggerId="' + TRIGGER + '" AND (status="PENDING" OR status="QUEUED" OR status="WORKING")',
+                            "pageSize": "1"}))
+          STS_URL = "https://sts.googleapis.com/v1/token"
+          IAM_PREFIX = "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/"
+          PERMISSIONS_URL = "https://cloudresourcemanager.googleapis.com/v1/projects/" + PROJECT + ":testIamPermissions"
+          PERMISSIONS = ["cloudbuild.builds.get", "cloudbuild.builds.list", "cloudbuild.builds.create"]
+          PATCH = b'{"disabled":true}'
+          CAPS = {"requests": 8, "auth_requests": 3, "permission_requests": 1,
+                  "fence_requests": 4, "request_bytes_each": 65536,
+                  "request_bytes_total": 262144, "response_bytes_each": 1048576,
+                  "response_bytes_total": 4194304, "total_seconds": 55,
+                  "auth_preflight_seconds": 20, "fence_seconds": 35,
+                  "response_seconds": 15, "before_to_patch_seconds": 5}
+          HEX = re.compile(r"[0-9A-F]{64}\Z")
+          COMMIT = re.compile(r"[0-9a-f]{40}\Z")
+          TOKEN = re.compile(r"[A-Za-z0-9._~+/\-=]{1,16384}\Z")
+          
+          
+          class Refusal(Exception):
+              pass
+          
+          
+          def require(condition, code):
+              if not condition:
+                  raise Refusal(code)
+          
+          
+          def canonical(value):
+              return json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+          
+          
+          def sha(raw):
+              return hashlib.sha256(raw).hexdigest().upper()
+          
+          
+          def pairs(items):
+              out = {}
+              for key, value in items:
+                  require(key not in out, "DUPLICATE_JSON_KEY")
+                  out[key] = value
+              return out
+          
+          
+          def parse(raw):
+              try:
+                  value = json.loads(raw, object_pairs_hook=pairs,
+                                     parse_constant=lambda _: (_ for _ in ()).throw(Refusal("NONFINITE_JSON")))
+                  require(type(value) is dict, "JSON_OBJECT_REQUIRED")
+                  return value
+              except (ValueError, UnicodeError, RecursionError, TypeError):
+                  raise Refusal("INVALID_JSON") from None
+          
+          
+          class Budget:
+              """One counter covers auth, rights preflight and fixed fence; no reset."""
+              def __init__(self, clock=time.monotonic):
+                  self.clock = clock
+                  self.start = clock()
+                  self.calls = []
+                  self.sent = 0
+                  self.received = 0
+                  self.fence_at = None
+                  self.before_at = None
+          
+              def remaining(self, deadline=None):
+                  now = self.clock()
+                  end = self.start + CAPS["total_seconds"]
+                  end = min(end, self.start + CAPS["auth_preflight_seconds"]) if self.fence_at is None else min(
+                      end, self.fence_at + CAPS["fence_seconds"])
+                  if deadline is not None:
+                      end = min(end, deadline)
+                  require(now < end, "TIME_BUDGET")
+                  return end - now
+          
+              def reserve(self, phase, method, url, headers, body):
+                  self.remaining()
+                  if method == "PATCH":
+                      require(self.before_at is not None and self.clock() - self.before_at <= 5, "BEFORE_READ_STALE")
+                  require(phase in ("auth", "permission", "fence"), "PHASE")
+                  limit = {"auth": 3, "permission": 1, "fence": 4}[phase]
+                  require(len(self.calls) < 8 and sum(x[0] == phase for x in self.calls) < limit, "REQUEST_BUDGET")
+                  u = urlsplit(url)
+                  require(u.scheme == "https" and not u.username and not u.password and u.port in (None, 443)
+                          and not u.fragment and u.hostname == u.netloc, "HTTPS_URL")
+                  target = u.path + ("?" + u.query if u.query else "")
+                  head = method + " " + target + " HTTP/1.1\r\n"
+                  head += "".join(k + ": " + v + "\r\n" for k, v in headers.items()) + "\r\n"
+                  try:
+                      raw = head.encode("ascii") + body
+                  except UnicodeError:
+                      raise Refusal("REQUEST_ASCII") from None
+                  require(len(raw) <= CAPS["request_bytes_each"] and
+                          self.sent + len(raw) <= CAPS["request_bytes_total"], "REQUEST_BYTES")
+                  self.sent += len(raw)
+                  self.calls.append((phase, method))  # reserve BEFORE any connect/token/effect
+                  return self.clock() + min(CAPS["response_seconds"], self.remaining())
+          
+              def receive(self, size, response_count):
+                  self.received += size
+                  require(response_count <= CAPS["response_bytes_each"] and
+                          self.received <= CAPS["response_bytes_total"], "RESPONSE_BYTES")
+                  self.remaining()
+          
+          
+          class GuardedFile:
+              """Counts raw status/header/chunk/body bytes, before HTTP parsing."""
+              def __init__(self, raw, sock, budget, deadline):
+                  self.raw, self.sock, self.budget, self.deadline = raw, sock, budget, deadline
+                  self.count = 0
+          
+              def _read(self, method, amount):
+                  remaining = min(CAPS["response_bytes_each"] - self.count,
+                                  CAPS["response_bytes_total"] - self.budget.received)
+                  if amount == 0:
+                      return b""
+                  require(remaining > 0, "RESPONSE_BYTES")
+                  limit = remaining if amount is None or amount < 0 else min(amount, remaining)
+                  self.sock.settimeout(self.budget.remaining(self.deadline))
+                  data = getattr(self.raw, method)(limit)
+                  self.count += len(data)
+                  self.budget.receive(len(data), self.count)
+                  self.budget.remaining(self.deadline)
+                  return data
+          
+              def read(self, amount=-1):
+                  return self._read("read", amount)
+          
+              def readline(self, amount=-1):
+                  return self._read("readline", amount)
+          
+              def close(self):
+                  self.raw.close()
+          
+              def flush(self):
+                  self.raw.flush()
+          
+          
+          class ResponseSocket:
+              def __init__(self, sock, budget, deadline):
+                  self.sock, self.budget, self.deadline = sock, budget, deadline
+          
+              def makefile(self, *args, **kwargs):
+                  return GuardedFile(self.sock.makefile("rb"), self.sock, self.budget, self.deadline)
+          
+          
+          class Transport:
+              def __init__(self, budget):
+                  self.budget = budget
+          
+              def request(self, phase, method, url, body=b"", bearer=None):
+                  require(type(body) is bytes, "BODY_TYPE")
+                  require(method in ("GET", "POST", "PATCH"), "METHOD")
+                  require(url in (STS_URL, PERMISSIONS_URL, TRIGGER_URL,
+                                  PATCH_URL, BUILDS_URL)
+                          or (phase == "auth" and method == "POST" and valid_iam_url(url))
+                          or (phase == "auth" and method == "GET" and valid_oidc_url(url)), "ENDPOINT")
+                  u = urlsplit(url)
+                  headers = {"Host": u.hostname, "Connection": "close", "Accept": "application/json",
+                             "Content-Length": str(len(body))}
+                  if body:
+                      headers["Content-Type"] = "application/json"
+                  if bearer is not None:
+                      require(type(bearer) is str and TOKEN.fullmatch(bearer), "TOKEN_FORMAT")
+                      headers["Authorization"] = "Bearer " + bearer
+                  deadline = self.budget.reserve(phase, method, url, headers, body)
+                  return self._send(method, url, headers, body, deadline)
+          
+              def _send(self, method, url, headers, body, deadline):
+                  u = urlsplit(url)
+                  conn = http.client.HTTPSConnection(u.hostname, timeout=self.budget.remaining(deadline),
+                                                     context=ssl.create_default_context())
+                  response = None
+                  try:
+                      send_deadline = deadline
+                      if method == "PATCH":
+                          send_deadline = min(deadline, self.budget.before_at + 5)
+                      conn.timeout = self.budget.remaining(send_deadline)
+                      conn.connect()
+                      conn.putrequest(method, u.path + ("?" + u.query if u.query else ""),
+                                      skip_host=True, skip_accept_encoding=True)
+                      for key, value in headers.items():
+                          conn.putheader(key, value)
+                      self.budget.remaining(send_deadline)
+                      conn.endheaders(body)
+                      conn.response_class = lambda sock, **kw: http.client.HTTPResponse(
+                          ResponseSocket(sock, self.budget, deadline), **kw)
+                      response = conn.getresponse()
+                      require(response.status == 200, "HTTP_STATUS_NO_RETRY")
+                      require(not response.getheader("Location"), "REDIRECT_FORBIDDEN")
+                      enc = response.getheader("Content-Encoding")
+                      require(enc in (None, "identity"), "CONTENT_ENCODING")
+                      content_types = [v for k, v in response.getheaders() if k.lower() == "content-type"]
+                      require(len(content_types) == 1 and content_types[0].split(";")[0].strip() == "application/json",
+                              "CONTENT_TYPE")
+                      data = bytearray()
+                      while True:
+                          chunk = response.read(65536)
+                          if not chunk:
+                              break
+                          data.extend(chunk)
+                          self.budget.remaining(deadline)
+                      return parse(bytes(data))
+                  except Refusal:
+                      raise
+                  except Exception:
+                      raise Refusal("TRANSPORT_FAILED_NO_RETRY") from None
+                  finally:
+                      if response:
+                          response.close()
+                      conn.close()
+          
+          
+          def valid_service_account(value):
+              return type(value) is str and re.fullmatch(
+                  r"[a-z][a-z0-9-]{4,28}[a-z0-9]@" + re.escape(PROJECT) + r"\.iam\.gserviceaccount\.com", value) is not None
+          
+          
+          def valid_iam_url(url):
+              return url.startswith(IAM_PREFIX) and url.endswith(":generateAccessToken") and valid_service_account(
+                  url[len(IAM_PREFIX):-len(":generateAccessToken")])
+          
+          
+          def valid_oidc_url(url):
+              try:
+                  u = urlsplit(url)
+                  # URL originates in the GitHub runner, never caller input. Host suffix
+                  # is not identity proof; exact claims and STS verification follow.
+                  return (u.scheme == "https" and u.hostname is not None
+                          and u.hostname.endswith(".actions.githubusercontent.com")
+                          and not u.username and not u.password and u.port in (None, 443)
+                          and not u.fragment and not any(ord(c) < 33 for c in url))
+              except ValueError:
+                  return False
+          
+          
+          def admission(raw, env, source_sha, now):
+              require(type(raw) is bytes and len(raw) <= 8192, "ADMISSION_BYTES")
+              a = parse(raw)
+              expected = {"approval", "source_sha256", "commit", "ref", "repository", "caps",
+                          "expires", "issued", "reservation_id", "native_human_sha256",
+                          "native_reservation_sha256", "wif_selector_names",
+                          "service_account", "publication_preflight_sha256", "remaining_attempts"}
+              require(set(a) == expected, "ADMISSION_FIELDS")
+              require(a["approval"] == APPROVAL and a["source_sha256"] == source_sha and
+                      a["repository"] == REPO and a["ref"] == REF and a["caps"] == CAPS and
+                      a["service_account"] == WIF_SA_SELECTOR and a["wif_selector_names"] ==
+                      ["GCP_WORKLOAD_IDENTITY_PROVIDER", "GCP_SERVICE_ACCOUNT"] and type(a["remaining_attempts"]) is int and
+                      a["remaining_attempts"] == 1, "ADMISSION_SCOPE")
+              require(type(a["commit"]) is str and COMMIT.fullmatch(a["commit"]), "COMMIT")
+              require(type(a["reservation_id"]) is str and re.fullmatch(r"[A-F0-9]{32}", a["reservation_id"]), "RESERVATION")
+              for key in ("native_human_sha256", "native_reservation_sha256", "publication_preflight_sha256"):
+                  require(type(a[key]) is str and HEX.fullmatch(a[key]) and a[key] != "0" * 64, "ADMISSION_PIN")
+              require(type(a["issued"]) is int and type(a["expires"]) is int and
+                      0 <= now - a["issued"] <= 120 and now + CAPS["total_seconds"] <= a["expires"]
+                      <= a["issued"] + 120, "ADMISSION_FRESHNESS")
+              require(env.get("GITHUB_ACTIONS") == "true" and env.get("GITHUB_REPOSITORY") == REPO and
+                      env.get("GITHUB_REF") == REF and env.get("GITHUB_SHA") == a["commit"] and
+                      env.get("GITHUB_WORKFLOW_REF") == WORKFLOW and
+                      env.get("GITHUB_EVENT_NAME") == "workflow_dispatch" and env.get("GITHUB_RUN_ATTEMPT") == "1"
+                      and re.fullmatch(r"[1-9][0-9]{0,19}", env.get("GITHUB_RUN_ID", "")), "RUN_CONTEXT")
+              return a
+          
+          
+          def validate_claims(jwt, env, audience, now):
+              try:
+                  segments = jwt.split(".")
+                  require(len(segments) == 3 and all(re.fullmatch(r"[A-Za-z0-9_-]+", x) for x in segments), "OIDC_FORMAT")
+                  claims = parse(base64.urlsafe_b64decode(segments[1] + "=" * (-len(segments[1]) % 4)))
+              except (ValueError, UnicodeError):
+                  raise Refusal("OIDC_FORMAT") from None
+              expected = {"iss": "https://token.actions.githubusercontent.com", "aud": audience,
+                          "sub": "repo:" + REPO + ":ref:" + REF, "repository": REPO, "ref": REF,
+                          "sha": env["GITHUB_SHA"], "workflow_ref": WORKFLOW, "event_name": "workflow_dispatch",
+                          "run_id": env["GITHUB_RUN_ID"], "run_attempt": "1"}
+              require(all(claims.get(k) == v for k, v in expected.items()), "OIDC_CLAIMS")
+              require(type(claims.get("iat")) is int and type(claims.get("exp")) is int and
+                      0 <= now - claims["iat"] <= 60 and claims["exp"] > now + 20, "OIDC_FRESHNESS")
+              # Local parsing is NOT signature verification. STS receives these SAME bytes;
+              # only successful STS exchange establishes the configured provider's trust.
+          
+          
+          def validate_trigger(t):
+              g = t.get("github")
+              require(t.get("resourceName") == RESOURCE and t.get("id") == TRIGGER and
+                      t.get("name") == "vehicle-in-need-deploy" and t.get("filename") == "cloudbuild.yaml" and
+                      t.get("serviceAccount") == "projects/" + PROJECT + "/serviceAccounts/" + SA, "TRIGGER_IDENTITY")
+              require(type(g) is dict and g.get("owner") == "PriorityLexusVB" and g.get("name") == "vehicle-in-need"
+                      and type(g.get("push")) is dict and g["push"].get("branch") == "^main$"
+                      and g["push"].get("invertRegex", False) is False and not g["push"].get("tag"), "TRIGGER_SOURCE")
+              require(not any(t.get(k) for k in ("triggerTemplate", "repositoryEventConfig", "pubsubConfig",
+                                               "webhookConfig", "sourceToBuild")), "ALTERNATE_TRIGGER_SOURCE")
+              require("disabled" not in t or type(t["disabled"]) is bool, "DISABLED_TYPE")
+          
+          
+          def project_trigger_metadata(raw):
+              """Pure projection for Main's one existing-identity metadata GET. No auth/network."""
+              require(type(raw) is bytes and len(raw) <= CAPS["response_bytes_each"], "METADATA_RESPONSE_BYTES")
+              t = parse(raw)
+              validate_trigger(t)
+              return {"target_match": True, "repo_match": True, "main_only_push_filter": True,
+                      "filename_match": True, "deployer_service_account_match": True,
+                      "disabled": t.get("disabled", False), "complete_trigger_sha256": sha(canonical(t)),
+                      "candidate_ref_excluded_by_this_trigger": True,
+                      "other_triggers_or_remote_workflows_certified": False}
+          
+          
+          def run(client, env, a, wall=time.time):
+              b = client.budget
+              stage, patch_state = "AUTH", "NOT_ATTEMPTED"
+              before_hash = after_hash = None
+              provider_hash = principal_hash = None
+              result = None
+              sensitive = {}
+              try:
+                  provider = env.get("GCP_WORKLOAD_IDENTITY_PROVIDER", "")
+                  service_account = env.get("GCP_SERVICE_ACCOUNT", "")
+                  oidc_url = env.get("ACTIONS_ID_TOKEN_REQUEST_URL", "")
+                  require(re.fullmatch(r"projects/" + NUMBER + r"/locations/global/workloadIdentityPools/[a-z0-9-]+/providers/[a-z0-9-]+", provider),
+                          "WIF_PROVIDER_BINDING")
+                  require(valid_service_account(service_account) and valid_oidc_url(oidc_url), "WIF_SELECTOR_OR_OIDC_BINDING")
+                  provider_hash, principal_hash = sha(provider.encode()), sha(service_account.encode())
+                  audience = "//iam.googleapis.com/" + provider
+                  u = urlsplit(oidc_url)
+                  query = parse_qsl(u.query, keep_blank_values=True)
+                  require(not any(k == "audience" for k, _ in query), "OIDC_AUDIENCE_ALREADY_PRESENT")
+                  request_url = urlunsplit((u.scheme, u.netloc, u.path, urlencode(query + [("audience", audience)]), ""))
+                  token = env.get("ACTIONS_ID_TOKEN_REQUEST_TOKEN", "")
+                  require(TOKEN.fullmatch(token) is not None, "RUNNER_TOKEN_FORMAT")
+                  sensitive["oidc"] = client.request("auth", "GET", request_url, bearer=token).get("value")
+                  require(type(sensitive["oidc"]) is str and TOKEN.fullmatch(sensitive["oidc"]), "OIDC_TOKEN")
+                  validate_claims(sensitive["oidc"], env, audience, int(wall()))
+                  sts = client.request("auth", "POST", STS_URL, canonical({
+                      "audience": audience, "grantType": "urn:ietf:params:oauth:grant-type:token-exchange",
+                      "requestedTokenType": "urn:ietf:params:oauth:token-type:access_token",
+                      "scope": "https://www.googleapis.com/auth/cloud-platform",
+                      "subjectTokenType": "urn:ietf:params:oauth:token-type:jwt",
+                      "subjectToken": sensitive["oidc"]}))
+                  require(sts.get("token_type") == "Bearer" and sts.get("issued_token_type") ==
+                          "urn:ietf:params:oauth:token-type:access_token", "STS_TYPE")
+                  sensitive["sts"] = sts.get("access_token")
+                  require(type(sensitive["sts"]) is str and TOKEN.fullmatch(sensitive["sts"]), "STS_TOKEN")
+                  iam = client.request("auth", "POST", IAM_PREFIX + service_account + ":generateAccessToken", canonical({
+                      "scope": ["https://www.googleapis.com/auth/cloud-platform"], "lifetime": "300s"}),
+                      bearer=sensitive["sts"])
+                  sensitive["access"] = iam.get("accessToken")
+                  require(type(sensitive["access"]) is str and TOKEN.fullmatch(sensitive["access"]), "IAM_TOKEN")
+                  rights = client.request("permission", "POST", PERMISSIONS_URL,
+                                          canonical({"permissions": PERMISSIONS}), bearer=sensitive["access"])
+                  require(set(rights) == {"permissions"} and type(rights["permissions"]) is list
+                          and sorted(rights["permissions"]) == sorted(PERMISSIONS), "EXISTING_RIGHTS_REQUIRED")
+                  b.remaining()
+                  b.fence_at = b.clock()
+                  stage = "BEFORE_GET"
+                  before = client.request("fence", "GET", TRIGGER_URL, bearer=sensitive["access"])
+                  validate_trigger(before)
+                  before_hash, before_at = sha(canonical(before)), b.clock()
+                  b.before_at = before_at
+                  expected = dict(before)
+                  expected["disabled"] = True
+                  if not before.get("disabled", False):
+                      stage = "PATCH_DISABLED_ONLY"
+                      require(b.clock() - before_at <= CAPS["before_to_patch_seconds"], "BEFORE_READ_STALE")
+                      patch_state = "POSSIBLE_EFFECT_UNKNOWN"  # before transport may send
+                      patched = client.request("fence", "PATCH", PATCH_URL,
+                                               PATCH, bearer=sensitive["access"])
+                      validate_trigger(patched)
+                      require(patched == expected, "PATCH_COMPLETE_FIELD_DRIFT")
+                  stage = "AFTER_GET"
+                  after = client.request("fence", "GET", TRIGGER_URL, bearer=sensitive["access"])
+                  validate_trigger(after)
+                  require(after == expected, "READBACK_COMPLETE_FIELD_DRIFT")
+                  after_hash = sha(canonical(after))
+                  patch_state = "DISABLED_READBACK_CONFIRMED" if not before.get("disabled", False) else "ALREADY_DISABLED_READBACK"
+                  stage = "EMPTY_ACTIVE_BUILDS"
+                  builds = client.request("fence", "GET", BUILDS_URL, bearer=sensitive["access"])
+                  require(set(builds) <= {"builds", "nextPageToken"} and builds.get("nextPageToken") in (None, "")
+                          and type(builds.get("builds", [])) is list and not builds.get("builds", []), "ACTIVE_BUILDS_OR_PAGINATION")
+                  result = {"status": "ROUTE_FENCED", "reason": "FIXED_TARGET_READBACK_AND_EMPTY_BUILDS"}
+              except Refusal as exc:
+                  result = {"status": "HOLD", "reason": str(exc)}
+              except Exception:
+                  result = {"status": "HOLD", "reason": "UNCLASSIFIED_FAILURE_NO_RETRY"}
+              finally:
+                  sensitive.clear()
+                  for key in ("ACTIONS_ID_TOKEN_REQUEST_TOKEN", "GCP_WORKLOAD_IDENTITY_PROVIDER", "GCP_SERVICE_ACCOUNT"):
+                      env.pop(key, None)
+              result.update({"stage": stage, "patch_state": patch_state, "calls": len(b.calls),
+                             "auth_calls": sum(p == "auth" for p, _ in b.calls),
+                             "permission_calls": sum(p == "permission" for p, _ in b.calls),
+                             "fence_calls": sum(p == "fence" for p, _ in b.calls),
+                             "request_bytes": b.sent, "response_bytes": b.received,
+                             "before_sha256": before_hash, "after_sha256": after_hash,
+                             "wif_provider_metadata_sha256": provider_hash, "selected_principal_metadata_sha256": principal_hash,
+                             "credential_files_created": 0, "rollback": "NOT_AUTHORIZED",
+                             "elapsed_seconds": round(b.clock() - b.start, 3)})
+              return result
+          
+          
+          def consume_local_reservation(root, reservation_id):
+              journal = Path(root) / ("vehicle-route-" + reservation_id + ".consumed")
+              require(journal.parent.is_dir() and journal.parent.is_absolute(), "RUNNER_TEMP")
+              fd = os.open(str(journal), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+              with os.fdopen(fd, "wb") as out:
+                  out.write(canonical({"reservation_id": reservation_id, "state": "CONSUMED_BEFORE_AUTH"}))
+                  out.flush()
+                  os.fsync(out.fileno())
+              return journal
+          
+          
+          def main(argv=None):
+              parser = argparse.ArgumentParser(description="DISARMED Vehicle WIF route proposal")
+              parser.add_argument("--execute", action="store_true")
+              args = parser.parse_args(argv)
+              if not args.execute:
+                  print('{"status":"DISARMED","credential_reads":0,"provider_requests":0}')
+                  return 0
+              b = Budget()
+              try:
+                  # Only nonsensitive context/admission is read until admission validation.
+                  raw = os.environ.get("VEHICLE_ROUTE_ADMISSION", "").encode()
+                  a = admission(raw, os.environ, sha(Path(__file__).read_bytes()), int(time.time()))
+                  require(os.name == "posix" and hasattr(signal, "SIGALRM"), "LINUX_WATCHDOG_REQUIRED")
+                  signal.signal(signal.SIGALRM, lambda *_: (_ for _ in ()).throw(Refusal("HARD_WALL_TIMEOUT")))
+                  signal.setitimer(signal.ITIMER_REAL, CAPS["total_seconds"] - (b.clock() - b.start))
+                  # Main's existing native durable reservation is authoritative across CI runs.
+                  # This O_EXCL marker is an additional same-run no-reentry guard, not a queue.
+                  consume_local_reservation(os.environ.get("RUNNER_TEMP", ""), a["reservation_id"])
+                  result = run(Transport(b), os.environ, a)
+                  print(json.dumps(result, sort_keys=True))
+                  return 0 if result["status"] == "ROUTE_FENCED" else 2
+              except Refusal as exc:
+                  print(json.dumps({"status": "HOLD", "reason": str(exc), "calls": len(b.calls),
+                                    "rollback": "NOT_AUTHORIZED"}))
+                  return 2
+              except Exception:
+                  print('{"status":"HOLD","reason":"LOCAL_ADMISSION_OR_WATCHDOG_FAILURE_NO_RETRY"}')
+                  return 2
+              finally:
+                  if hasattr(signal, "setitimer"):
+                      signal.setitimer(signal.ITIMER_REAL, 0)
+          
+          
+          if __name__ == "__main__":
+              raise SystemExit(main())
+          
+          VEHICLE_ROUTE_SOURCE
+          # Main admission must contain this exact source SHA256:
+          # 80A65373FD5606DAE3DC0D6A6BAC5313A5E4F2E9CFCDD45E9A7A7033A8AA94C8
+          python3 "$operator" --execute
