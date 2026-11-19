@@ -136,7 +136,7 @@ This account is used by the Cloud Run service at runtime.
 #### Required Roles
 
 1. [ ] `roles/logging.logWriter` - Write logs to Cloud Logging
-2. [ ] `roles/secretmanager.secretAccessor` - Access `vehicle-in-need-gemini` secret
+2. [ ] `roles/secretmanager.secretAccessor` - Access the runtime secrets named in the `--set-secrets` line of `cloudbuild.yaml`
 
 #### Verify Roles
 
@@ -300,15 +300,17 @@ Expected: Repository details should be displayed.
 
 ### 4.3 Verify Secret Manager Secret
 
-Ensure the runtime secret exists:
+Ensure the runtime secrets exist:
 
 ```bash
-# Verify secret exists
-gcloud secrets describe vehicle-in-need-gemini \
-  --project=gen-lang-client-0615287333
+# Verify each secret named in cloudbuild.yaml --set-secrets exists
+for secret in calldrip-webhook-secret calldrip-aggregate-key kpi-ingest-key \
+  supabase-service-role-key unsecured-reminder-key order-notification-key; do
+  gcloud secrets describe "$secret" --project=gen-lang-client-0615287333
+done
 ```
 
-Expected: Secret details should be displayed with at least one version.
+Expected: Secret details should be displayed for each one, with at least one version.
 
 ---
 

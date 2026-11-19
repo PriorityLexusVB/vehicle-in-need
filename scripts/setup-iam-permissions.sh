@@ -33,7 +33,15 @@ PROJECT_ID="gen-lang-client-0615287333"
 CLOUD_BUILD_SA="cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com"
 RUNTIME_SA="pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com"
 DEFAULT_COMPUTE_SA="842946218691-compute@developer.gserviceaccount.com"
-SECRET_NAME="vehicle-in-need-gemini"
+# Keep in sync with the --set-secrets line in cloudbuild.yaml.
+RUNTIME_SECRETS=(
+  calldrip-webhook-secret
+  calldrip-aggregate-key
+  kpi-ingest-key
+  supabase-service-role-key
+  unsecured-reminder-key
+  order-notification-key
+)
 
 # Parse arguments
 DRY_RUN=true
@@ -216,10 +224,12 @@ run_cmd "gcloud projects add-iam-policy-binding ${PROJECT_ID} \
   --role='roles/logging.logWriter'"
 
 echo "2.2. Grant Secret Manager Secret Accessor (for runtime secrets):"
-run_cmd "gcloud secrets add-iam-policy-binding ${SECRET_NAME} \
-  --member='serviceAccount:${RUNTIME_SA}' \
-  --role='roles/secretmanager.secretAccessor' \
-  --project=${PROJECT_ID}"
+for SECRET_NAME in "${RUNTIME_SECRETS[@]}"; do
+  run_cmd "gcloud secrets add-iam-policy-binding ${SECRET_NAME} \
+    --member='serviceAccount:${RUNTIME_SA}' \
+    --role='roles/secretmanager.secretAccessor' \
+    --project=${PROJECT_ID}"
+done
 
 # Note: Add any additional roles needed by the application here
 # For example, if the app uses Firestore, Pub/Sub, etc.
