@@ -215,7 +215,10 @@ async function deleteOrderById(orderId, deletedBy) {
 
     return { success: true };
   } catch (error) {
-    console.error(`[OrderDelete] Error deleting order ${orderId}:`, error);
+    // orderId comes from the URL, so it is passed as an argument rather than
+    // built into the first argument, where a "%s" in it would be read as a
+    // format placeholder (CodeQL js/tainted-format-string).
+    console.error("[OrderDelete] Error deleting order %s:", orderId, error);
 
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";

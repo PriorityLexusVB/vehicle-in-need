@@ -8,6 +8,7 @@
 "use strict";
 
 const express = require("express");
+const { trimTrailingSlashes } = require("../lib/trimTrailingSlashes.cjs");
 const crypto = require("crypto");
 const { getFirestore, admin } = require("../lib/firebaseAdmin.cjs");
 
@@ -96,7 +97,7 @@ function compactOrderLine(order) {
 }
 
 function orderUrl(orderId, appUrl) {
-  return `${appUrl.replace(/\/+$/, "")}/#/orders?scrollTo=${encodeURIComponent(orderId)}`;
+  return `${trimTrailingSlashes(appUrl)}/#/orders?scrollTo=${encodeURIComponent(orderId)}`;
 }
 
 function getManagerRecipients(users) {
@@ -371,7 +372,7 @@ function buildWeeklyDigest({ orders, recipients, appUrl, nowMs }) {
     `Dealer Exchange: ${dealerExchangeOrders.length}`,
     `Aged active (14+ days): ${agedOrders.length}`,
     "",
-    `Open tracker: ${appUrl.replace(/\/+$/, "")}/#/orders`,
+    `Open tracker: ${trimTrailingSlashes(appUrl)}/#/orders`,
   ].join("\n");
 
   return {
@@ -383,7 +384,7 @@ function buildWeeklyDigest({ orders, recipients, appUrl, nowMs }) {
       title: "Weekly Vehicle Order Digest",
       subtitle: `${formatDate(nowMs)} pipeline snapshot`,
       bodyHtml,
-      ctaUrl: `${appUrl.replace(/\/+$/, "")}/#/orders`,
+      ctaUrl: `${trimTrailingSlashes(appUrl)}/#/orders`,
       ctaLabel: "Open Order Tracker",
     }),
     counts: {

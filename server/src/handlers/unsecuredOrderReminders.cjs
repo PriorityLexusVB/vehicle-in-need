@@ -8,6 +8,7 @@
 "use strict";
 
 const express = require("express");
+const { trimTrailingSlashes } = require("../lib/trimTrailingSlashes.cjs");
 const { getFirestore, admin } = require("../lib/firebaseAdmin.cjs");
 
 const router = express.Router();
@@ -136,7 +137,7 @@ function buildReminder(order, recipient, appUrl) {
   const vehicle = compactOrderLine(order) || "Vehicle order";
   const customer = order.customerName || "Customer";
   const subject = `Vehicle order still needs to be secured: ${customer} - ${vehicle}`;
-  const orderUrl = `${appUrl.replace(/\/+$/, "")}/#/orders?scrollTo=${encodeURIComponent(order.id)}`;
+  const orderUrl = `${trimTrailingSlashes(appUrl)}/#/orders?scrollTo=${encodeURIComponent(order.id)}`;
 
   const textBody = [
     "Quick reminder: this vehicle order is still active and needs to be secured when the vehicle is handled.",
