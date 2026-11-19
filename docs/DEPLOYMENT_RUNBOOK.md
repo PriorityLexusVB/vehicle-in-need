@@ -104,37 +104,32 @@ gcloud run services update pre-order-dealer-exchange-tracker \
 #### Create Secrets in Secret Manager
 
 ```bash
-# Create secret for Gemini API key (server-side only)
-echo -n "your-actual-api-key-here" | gcloud secrets create gemini-api-key \
-  --data-file=- \
-  --replication-policy="automatic" \
-  --project=gen-lang-client-0615287333
-
-# Create secret for GCP credentials (if needed for Vertex AI)
-gcloud secrets create gcp-credentials \
-  --data-file=/path/to/service-account-key.json \
-  --replication-policy="automatic" \
-  --project=gen-lang-client-0615287333
+# Create each runtime secret named in the --set-secrets line of cloudbuild.yaml.
+# The prompt keeps each value out of your shell history.
+for secret in calldrip-webhook-secret calldrip-aggregate-key kpi-ingest-key \
+  supabase-service-role-key unsecured-reminder-key order-notification-key; do
+  read -rsp "Value for ${secret}: " value && echo
+  printf '%s' "$value" | gcloud secrets create "$secret" \
+    --data-file=- \
+    --replication-policy="automatic" \
+    --project=gen-lang-client-0615287333
+done
+unset value
 ```
 
 #### Grant Cloud Run Service Access to Secrets
 
 ```bash
-# Get the Cloud Run service account (default compute service account)
-PROJECT_NUMBER=$(gcloud projects describe gen-lang-client-0615287333 --format="value(projectNumber)")
-CLOUD_RUN_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+# The service runs as this dedicated runtime account (see cloudbuild.yaml)
+CLOUD_RUN_SA="pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com"
 
-# Grant Secret Accessor role for Gemini API key
-gcloud secrets add-iam-policy-binding gemini-api-key \
-  --member="serviceAccount:${CLOUD_RUN_SA}" \
-  --role="roles/secretmanager.secretAccessor" \
-  --project=gen-lang-client-0615287333
-
-# Grant Secret Accessor role for GCP credentials (if applicable)
-gcloud secrets add-iam-policy-binding gcp-credentials \
-  --member="serviceAccount:${CLOUD_RUN_SA}" \
-  --role="roles/secretmanager.secretAccessor" \
-  --project=gen-lang-client-0615287333
+for secret in calldrip-webhook-secret calldrip-aggregate-key kpi-ingest-key \
+  supabase-service-role-key unsecured-reminder-key order-notification-key; do
+  gcloud secrets add-iam-policy-binding "$secret" \
+    --member="serviceAccount:${CLOUD_RUN_SA}" \
+    --role="roles/secretmanager.secretAccessor" \
+    --project=gen-lang-client-0615287333
+done
 ```
 
 ### 5. Set Up Cloud Build Trigger
@@ -234,7 +229,9 @@ gcloud run services describe pre-order-dealer-exchange-tracker \
   --format='json(spec.template.spec.containers[0].env)'
 ```
 
-**Expected output:** You should see `valueSource.secretKeyRef` for the `API_KEY` environment variable, NOT plaintext values:
+> **Update 2026-11-11:** the `API_KEY` / `vehicle-in-need-gemini` mount is RETIRED. No server code reads `process.env.API_KEY`, and `cloudbuild.yaml` no longer sets it. After the next deploy of that file the service should list only the CallDrip/KPI/job-key secrets. Dated reports and `docs/archive/` that still mention `API_KEY` are historical; do not re-add it.
+
+**Expected output (historical, before the 2026-11-11 retirement):** you should see `valueSource.secretKeyRef` for the `API_KEY` environment variable, NOT plaintext values:
 
 ```json
 {
@@ -261,8 +258,7 @@ gcloud run deploy pre-order-dealer-exchange-tracker \
   --region=us-west1 \
   --platform=managed \
   --allow-unauthenticated \
-  --update-secrets=GEMINI_API_KEY=gemini-api-key:latest \
-  --update-secrets=GOOGLE_APPLICATION_CREDENTIALS_JSON=gcp-credentials:latest \
+  --update-secrets=CALLDRIP_WEBHOOK_SECRET=calldrip-webhook-secret:latest,AGGREGATE_KEY=calldrip-aggregate-key:latest,KPI_INGEST_KEY=kpi-ingest-key:latest,SUPABASE_SERVICE_ROLE_KEY=supabase-service-role-key:latest,UNSECURED_REMINDER_KEY=unsecured-reminder-key:latest,ORDER_NOTIFICATION_KEY=order-notification-key:latest \
   --project=gen-lang-client-0615287333
 ```
 

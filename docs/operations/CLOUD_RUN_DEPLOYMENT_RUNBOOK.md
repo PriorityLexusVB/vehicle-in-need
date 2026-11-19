@@ -41,8 +41,8 @@ failures.
 
 This project uses a **least-privilege IAM architecture** with dedicated service accounts:
 
-The Cloud Build service account needs proper permissions to deploy to Cloud Run
-and access secrets.
+The Cloud Build service account needs proper permissions to deploy to Cloud Run.
+It does not need to read secret values. Only the runtime service account does.
 
 **Service Account Email:**
 
@@ -58,11 +58,14 @@ gcloud projects add-iam-policy-binding gen-lang-client-0615287333 \
   --member="serviceAccount:pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com" \
   --role="roles/logging.logWriter"
 
-# Grant Secret Manager Secret Accessor (for runtime secrets)
-gcloud secrets add-iam-policy-binding vehicle-in-need-gemini \
-  --member="serviceAccount:pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com" \
-  --role="roles/secretmanager.secretAccessor" \
-  --project=gen-lang-client-0615287333
+# Grant Secret Manager Secret Accessor (for the runtime secrets in cloudbuild.yaml --set-secrets)
+for secret in calldrip-webhook-secret calldrip-aggregate-key kpi-ingest-key \
+  supabase-service-role-key unsecured-reminder-key order-notification-key; do
+  gcloud secrets add-iam-policy-binding "$secret" \
+    --member="serviceAccount:pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com" \
+    --role="roles/secretmanager.secretAccessor" \
+    --project=gen-lang-client-0615287333
+done
 ```
 
 **Note:** Add additional roles based on your application needs (e.g., Firestore, Pub/Sub).
@@ -82,14 +85,6 @@ gcloud secrets add-iam-policy-binding vehicle-in-need-gemini \
      <PROJECT_NUMBER>-compute@developer.gserviceaccount.com \
      --member="serviceAccount:<PROJECT_NUMBER>@cloudbuild.gserviceaccount.com" \
      --role="roles/iam.serviceAccountUser"
-   ```
-
-3. **Secret Manager Secret Accessor** - to access API keys:
-
-   ```bash
-   gcloud secrets add-iam-policy-binding vehicle-in-need-gemini \
-     --member="serviceAccount:<PROJECT_NUMBER>@cloudbuild.gserviceaccount.com" \
-     --role="roles/secretmanager.secretAccessor"
    ```
 
 **Verification:**
@@ -113,15 +108,12 @@ gcloud projects get-iam-policy gen-lang-client-0615287333 \
 
 ### Verification
 
-1. **Secret Manager Secret Accessor** - to access secrets at runtime:
+1. **Secret Manager Secret Accessor** - the runtime service account needs this for each secret named in the `--set-secrets` line of `cloudbuild.yaml`:
 
    ```bash
-   gcloud secrets add-iam-policy-binding vehicle-in-need-gemini \
-     --member="serviceAccount:<PROJECT_NUMBER>-compute@developer.\
-
-gserviceaccount.com" \
+   gcloud secrets add-iam-policy-binding <SECRET_NAME> \
+     --member="serviceAccount:pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com" \
      --role="roles/secretmanager.secretAccessor"
-
    ```
 
 **Note:** This permission was likely already granted during initial service
@@ -145,8 +137,8 @@ gcloud iam service-accounts get-iam-policy \
   pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com \
   --project=gen-lang-client-0615287333
 
-# Check secret access
-gcloud secrets get-iam-policy vehicle-in-need-gemini
+# Check secret access (repeat for each secret in cloudbuild.yaml --set-secrets)
+gcloud secrets get-iam-policy order-notification-key
 ```
 
 ---
@@ -185,8 +177,7 @@ gcloud secrets get-iam-policy vehicle-in-need-gemini
      --platform=managed \
      --allow-unauthenticated \
      --service-account=pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com \
-     --set-env-vars=NODE_ENV=production,APP_VERSION=${SHORT_SHA},BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
-     --update-secrets=API_KEY=vehicle-in-need-gemini:latest
+     --update-env-vars=NODE_ENV=production,APP_VERSION=${SHORT_SHA},BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
    ```
 
 ### Option 2: Manual Build and Deploy via Cloud Build
@@ -294,9 +285,7 @@ gcloud secrets get-iam-policy vehicle-in-need-gemini
      --region=${REGION} \
      --platform=managed \
      --allow-unauthenticated \
-     --set-env-vars=NODE_ENV=production,APP_VERSION=${TAG},BUILD_TIME=$(date -u
-       +%Y-%m-%dT%H:%M:%SZ) \
-     --update-secrets=API_KEY=vehicle-in-need-gemini:latest
+     --update-env-vars=NODE_ENV=production,APP_VERSION=${TAG},BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
    ```
 
 ### Option 4: Deploy Existing Image (No Rebuild)
@@ -325,8 +314,7 @@ gcloud secrets get-iam-policy vehicle-in-need-gemini
      --region=us-west1 \
      --platform=managed \
      --allow-unauthenticated \
-     --set-env-vars=NODE_ENV=production,APP_VERSION=${SHORT_SHA},BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
-     --update-secrets=API_KEY=vehicle-in-need-gemini:latest
+     --update-env-vars=NODE_ENV=production,APP_VERSION=${SHORT_SHA},BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
    ```
 
 ---
@@ -502,8 +490,7 @@ creates corrupted images with invalid OCI metadata.
      --region=us-west1 \
      --platform=managed \
      --allow-unauthenticated \
-     --set-env-vars=NODE_ENV=production,APP_VERSION=${SHORT_SHA},BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
-     --update-secrets=API_KEY=vehicle-in-need-gemini:latest
+     --update-env-vars=NODE_ENV=production,APP_VERSION=${SHORT_SHA},BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
    ```
 
 6. **Verify the deployment type**:
@@ -561,7 +548,7 @@ gcloud run services logs read pre-order-dealer-exchange-tracker \
 # - Crash on startup
 
 # Common fixes:
-# - Ensure secrets are properly mounted (API_KEY)
+# - Ensure secrets are properly mounted (see --set-secrets in cloudbuild.yaml)
 # - Check for missing environment variables
 # - Verify image built successfully
 ```
@@ -592,19 +579,26 @@ gcloud run services logs read pre-order-dealer-exchange-tracker \
 
 ### Secrets Management
 
-The service uses Google Secret Manager for sensitive data:
+The service uses Google Secret Manager for sensitive data. The `--set-secrets` line in `cloudbuild.yaml` is the source of truth:
 
-- `API_KEY`: Gemini/Vertex AI API key (stored as `vehicle-in-need-gemini`)
+- `CALLDRIP_WEBHOOK_SECRET` (stored as `calldrip-webhook-secret`)
+- `AGGREGATE_KEY` (stored as `calldrip-aggregate-key`)
+- `KPI_INGEST_KEY` (stored as `kpi-ingest-key`)
+- `SUPABASE_SERVICE_ROLE_KEY` (stored as `supabase-service-role-key`)
+- `UNSECURED_REMINDER_KEY` (stored as `unsecured-reminder-key`)
+- `ORDER_NOTIFICATION_KEY` (stored as `order-notification-key`)
+
+The old `API_KEY` mount (`vehicle-in-need-gemini`) was retired on 2026-11-11. No server code reads it, so do not re-add it.
 
 **To update secret:**
 
 ```bash
 # View current secret versions
-gcloud secrets versions list vehicle-in-need-gemini
+gcloud secrets versions list <SECRET_NAME>
 
 # Add new version
-echo -n "NEW_API_KEY_VALUE" |
-gcloud secrets versions add vehicle-in-need-gemini --data-file=-
+echo -n "NEW_SECRET_VALUE" |
+gcloud secrets versions add <SECRET_NAME> --data-file=-
 
 # Redeploy service to use new version (uses :latest by default)
 gcloud run services update pre-order-dealer-exchange-tracker --region=us-west1

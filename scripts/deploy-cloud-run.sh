@@ -207,8 +207,8 @@ gcloud run deploy "${SERVICE_NAME}" \
   --platform=managed \
   --allow-unauthenticated \
   --service-account=pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com \
-  --set-env-vars="NODE_ENV=production,APP_VERSION=${IMAGE_SHA},BUILD_TIME=${BUILD_TIME}" \
-  --update-secrets="API_KEY=vehicle-in-need-gemini:latest"
+  --update-env-vars="NODE_ENV=production,APP_VERSION=${IMAGE_SHA},BUILD_TIME=${BUILD_TIME}" \
+  --remove-secrets=API_KEY
 
 echo -e "${GREEN}✓ Deployment completed${NC}"
 

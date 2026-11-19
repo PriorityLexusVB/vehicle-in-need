@@ -29,7 +29,15 @@ NC='\033[0m'
 PROJECT_ID="gen-lang-client-0615287333"
 CLOUD_BUILD_SA="cloud-build-deployer@gen-lang-client-0615287333.iam.gserviceaccount.com"
 RUNTIME_SA="pre-order-dealer-exchange-860@gen-lang-client-0615287333.iam.gserviceaccount.com"
-SECRET_NAME="vehicle-in-need-gemini"
+# Keep in sync with the --set-secrets line in cloudbuild.yaml.
+RUNTIME_SECRETS=(
+  calldrip-webhook-secret
+  calldrip-aggregate-key
+  kpi-ingest-key
+  supabase-service-role-key
+  unsecured-reminder-key
+  order-notification-key
+)
 SERVICE_NAME="pre-order-dealer-exchange-tracker"
 REGION="us-west1"
 ARTIFACT_REGISTRY_REPO="vehicle-in-need"
@@ -290,24 +298,26 @@ fi
 
 echo ""
 echo "3.4. Checking Secret Manager access"
-SECRET_POLICY=$(gcloud secrets get-iam-policy "$SECRET_NAME" \
-    --project="$PROJECT_ID" \
-    --format=json 2>/dev/null || echo "{}")
+for SECRET_NAME in "${RUNTIME_SECRETS[@]}"; do
+    SECRET_POLICY=$(gcloud secrets get-iam-policy "$SECRET_NAME" \
+        --project="$PROJECT_ID" \
+        --format=json 2>/dev/null || echo "{}")
 
-if [ "$SECRET_POLICY" = "{}" ]; then
-    error "Could not retrieve IAM policy for secret: $SECRET_NAME"
-    echo "   Verify the secret exists"
-else
-    if echo "$SECRET_POLICY" | grep -q "$RUNTIME_SA"; then
-        success "Runtime SA has access to secret: $SECRET_NAME"
+    if [ "$SECRET_POLICY" = "{}" ]; then
+        error "Could not retrieve IAM policy for secret: $SECRET_NAME"
+        echo "   Verify the secret exists"
     else
-        error "Runtime SA does NOT have access to secret: $SECRET_NAME"
-        echo "   Grant with: gcloud secrets add-iam-policy-binding $SECRET_NAME \\"
-        echo "     --member='serviceAccount:$RUNTIME_SA' \\"
-        echo "     --role='roles/secretmanager.secretAccessor' \\"
-        echo "     --project=$PROJECT_ID"
+        if echo "$SECRET_POLICY" | grep -q "$RUNTIME_SA"; then
+            success "Runtime SA has access to secret: $SECRET_NAME"
+        else
+            error "Runtime SA does NOT have access to secret: $SECRET_NAME"
+            echo "   Grant with: gcloud secrets add-iam-policy-binding $SECRET_NAME \\"
+            echo "     --member='serviceAccount:$RUNTIME_SA' \\"
+            echo "     --role='roles/secretmanager.secretAccessor' \\"
+            echo "     --project=$PROJECT_ID"
+        fi
     fi
-fi
+done
 
 echo ""
 

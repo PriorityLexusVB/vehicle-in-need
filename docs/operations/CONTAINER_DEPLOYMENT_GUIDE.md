@@ -219,7 +219,7 @@ gcloud run deploy pre-order-dealer-exchange-tracker \
   --region us-west1 \
   --platform managed \
   --allow-unauthenticated \
-  --set-env-vars NODE_ENV=production,APP_VERSION=COMMIT_SHA,BUILD_TIME=2025-01-01T00:00:00Z
+  --update-env-vars NODE_ENV=production,APP_VERSION=COMMIT_SHA,BUILD_TIME=2025-01-01T00:00:00Z
 
 # Or deploy latest (use with caution in production)
 gcloud run deploy pre-order-dealer-exchange-tracker \
@@ -362,14 +362,14 @@ Cloud Build doesn't use BuildKit, so this only affects local builds.
 **Symptoms:**
 
 - API errors related to missing credentials
-- Vertex AI authentication failures
+- Scheduled job endpoints reject requests because their key is not set
 
 **Solution:**
 
 ```bash
-# Mount secret from Secret Manager
+# Mount the runtime secrets from Secret Manager (same list as --set-secrets in cloudbuild.yaml)
 gcloud run deploy pre-order-dealer-exchange-tracker \
-  --update-secrets=API_KEY=vehicle-in-need-gemini:latest \
+  --update-secrets=CALLDRIP_WEBHOOK_SECRET=calldrip-webhook-secret:latest,AGGREGATE_KEY=calldrip-aggregate-key:latest,KPI_INGEST_KEY=kpi-ingest-key:latest,SUPABASE_SERVICE_ROLE_KEY=supabase-service-role-key:latest,UNSECURED_REMINDER_KEY=unsecured-reminder-key:latest,ORDER_NOTIFICATION_KEY=order-notification-key:latest \
   --region=us-west1
 ```
 

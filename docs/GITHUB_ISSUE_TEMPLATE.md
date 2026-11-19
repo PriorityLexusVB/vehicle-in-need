@@ -61,8 +61,7 @@ This corruption likely occurred when using `gcloud run deploy --source` which:
      --region us-west1 \
      --platform managed \
      --allow-unauthenticated \
-     --set-env-vars=NODE_ENV=production,APP_VERSION=COMMIT_SHA \
-     --update-secrets=API_KEY=vehicle-in-need-gemini:latest
+     --update-env-vars=NODE_ENV=production,APP_VERSION=COMMIT_SHA
    ```
 
 ### Long-term Prevention
