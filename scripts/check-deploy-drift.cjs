@@ -8,7 +8,9 @@
  * commit would false-alarm. This script only asks one question: is the LAST commit
  * that changed app code reflected in what production runs (same app-code content as main)?
  *
- * Exit codes: 0 = OK or PENDING (inside the grace window), 1 = DRIFT, 2 = cannot verify.
+ * Exit codes: 0 = OK, 1 = DRIFT, 2 = cannot verify, 3 = PENDING (inside the grace window).
+ * PENDING has its own code because exit 0 closes the open drift issue, and a pending
+ * commit does not mean production caught up.
  *
  * Usage: node scripts/check-deploy-drift.cjs [--url <base>] [--grace-hours 6]
  * Read-only: one public GET of /api/status plus local git commands. No credentials.
@@ -72,7 +74,7 @@ function evaluateDrift(s) {
   if (s.appCommitAgeHours < s.graceHours) {
     return {
       state: "PENDING",
-      exitCode: 0,
+      exitCode: 3,
       reason: `Latest app-code commit is ${s.appCommitAgeHours.toFixed(1)}h old, inside the ${s.graceHours}h deploy grace window.`,
     };
   }
@@ -143,23 +145,29 @@ async function main() {
   // through a branch or tag name that happens to exist in the repository.
   const looksLikeSha = /^[0-9a-f]{7,40}$/i.test(liveVersion);
   if (looksLikeSha) {
+    let liveCommit = "";
     try {
-      const liveCommit = git(["rev-parse", "--verify", `${liveVersion}^{commit}`]);
+      liveCommit = git(["rev-parse", "--verify", `${liveVersion}^{commit}`]);
       liveResolved = true;
+    } catch (e) {
+      liveResolved = false;
+    }
+    if (liveResolved) {
+      // A real git failure is rethrown so the crash handler reports it as UNKNOWN (exit 2).
       try {
         git(["diff", "--quiet", liveCommit, "HEAD", "--", ...APP_PATHS]);
         treeMatchesMain = true; // exit 0 = identical app-code content
       } catch (e) {
+        if (e.status !== 1) throw e; // only exit 1 means "differs"
         treeMatchesMain = false;
       }
       try {
         git(["merge-base", "--is-ancestor", appCommit, liveCommit]);
         appCommitIsInLive = true;
       } catch (e) {
+        if (e.status !== 1) throw e; // only exit 1 means "not an ancestor"
         appCommitIsInLive = false;
       }
-    } catch (e) {
-      liveResolved = false;
     }
   }
 

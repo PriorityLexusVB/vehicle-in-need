@@ -60,6 +60,8 @@ jobs:
             if [ -n "${existing}" ]; then
               gh issue close "${existing}" --comment "Production now contains the latest merged app code. Closing automatically."
             fi
+          elif [ "${EXIT_CODE}" = "3" ]; then
+            echo "New app code is inside the deploy grace window. Leaving any open drift issue as it is."
           else
             echo "::warning::Could not verify production (exit ${EXIT_CODE}). See report above."
             cat drift-report.txt

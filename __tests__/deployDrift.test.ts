@@ -16,8 +16,8 @@ describe("deploy drift decision", () => {
     expect(evaluateDrift({ ...base, treeMatchesMain: true })).toMatchObject({ state: "OK", exitCode: 0 });
   });
 
-  it("is PENDING (exit 0) inside the grace window", () => {
-    expect(evaluateDrift({ ...base, appCommitAgeHours: 2 })).toMatchObject({ state: "PENDING", exitCode: 0 });
+  it("is PENDING (exit 3) inside the grace window, so an open drift issue is not closed", () => {
+    expect(evaluateDrift({ ...base, appCommitAgeHours: 2 })).toMatchObject({ state: "PENDING", exitCode: 3 });
   });
 
   it("is DRIFT (exit 1) when production differs from main and main's app code is older than the grace window", () => {
