@@ -75,19 +75,28 @@ Set the auth header to:
 Authorization: Bearer <your-chosen-secret>
 ```
 
-Use the same secret value you set in `CALLDRIP_WEBHOOK_SECRET` on Cloud Run.
+Use the same value that is stored in the Secret Manager secret `calldrip-webhook-secret`.
 
 ## Cloud Run Deployment
 
-Set env vars on the Cloud Run service:
+`cloudbuild.yaml` already sets both on every deploy: `CALLDRIP_ENABLE_WEBHOOK=true` as an
+environment variable, and `CALLDRIP_WEBHOOK_SECRET` mounted from the Secret Manager secret
+`calldrip-webhook-secret`. Nothing extra is needed after a normal deploy.
+
+To change the secret, add a new version to `calldrip-webhook-secret` and redeploy. Never put
+the secret value in an environment variable or in a command line.
+
+Only if the service lost these settings, restore them without touching anything else:
 
 ```bash
 gcloud run services update pre-order-dealer-exchange-tracker \
   --region=us-west1 \
-  --set-env-vars="CALLDRIP_ENABLE_WEBHOOK=true,CALLDRIP_WEBHOOK_SECRET=<secret>"
+  --update-env-vars="CALLDRIP_ENABLE_WEBHOOK=true" \
+  --update-secrets="CALLDRIP_WEBHOOK_SECRET=calldrip-webhook-secret:latest"
 ```
 
-Or add them in the Cloud Run console under **Variables & Secrets**.
+Do not use `--set-env-vars` or `--set-secrets` here: they replace the whole list and would
+remove the service's other settings and secret mounts.
 
 ## Local Testing
 
