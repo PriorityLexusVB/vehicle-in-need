@@ -21,7 +21,11 @@
  * 7. Authorize when prompted (Gmail access required)
  *
  * The script checks every 5 minutes for new allocation emails.
- * It processes only unread emails and marks them as read after processing.
+ * Each allocation email is handled once (tracked by message id, not by
+ * read/unread). If it cannot be put on the board, the account running this
+ * script gets one email explaining why, and the thread is labeled
+ * "Allocation/Needs Attention". Set ALLOCATION_ALERT_EMAIL to send the alert
+ * somewhere else.
  */
 
 // ─── Configuration ──────────────────────────────────────────────────────────
@@ -47,8 +51,16 @@ function getConfig() {
     orderNotificationMaxPerRun: parseInt(props.getProperty('ORDER_NOTIFICATION_MAX_PER_RUN') || '25', 10),
     // Label to mark processed emails (auto-created if missing)
     processedLabel: 'Allocation/Processed',
-    // Gmail search query — catches Toyota/Lexus DSM allocation emails
-    searchQuery: 'subject:(Allocation) from:(@toyota.com OR @lexus.com) has:attachment filename:pdf is:unread',
+    // Label for allocation emails that could not be put on the board
+    failedLabel: 'Allocation/Needs Attention',
+    // Gmail search query — catches Toyota/Lexus DSM allocation emails.
+    // Read/unread state is NOT used: opening the email before the 5-minute
+    // check used to make the watcher skip it forever (Allocation 111, Nov 2026).
+    // Each message is tracked by id instead (see getHandledMessageIds_).
+    searchQuery: 'subject:(Allocation) from:(@toyota.com OR @lexus.com) has:attachment filename:pdf newer_than:21d',
+    // Who gets told when an allocation email cannot be read. Defaults to the
+    // account running this script.
+    alertEmail: props.getProperty('ALLOCATION_ALERT_EMAIL') || '',
   };
 }
 
@@ -57,6 +69,11 @@ function getConfig() {
 /**
  * Main function — run by the time-based trigger every 5 minutes.
  * Searches for new allocation emails, extracts PDFs, and sends to Cloud Function.
+ *
+ * Every allocation message is handled exactly once: it either reaches the
+ * board, or its failure is emailed to the alert address once and the thread
+ * is labeled "Allocation/Needs Attention". Messages are processed oldest
+ * first so an older allocation can never replace a newer one on the board.
  */
 function checkForAllocationEmails() {
   const config = getConfig();
@@ -66,43 +83,201 @@ function checkForAllocationEmails() {
     return;
   }
 
-  // Search for unread allocation emails
-  var threads = GmailApp.search(config.searchQuery, 0, 5);
+  // Two overlapping 5-minute runs must not post the same email twice.
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(1000)) {
+    Logger.log('Another allocation check is still running; skipping this run.');
+    return;
+  }
+  try {
+    processPendingAllocationEmails_(config);
+  } finally {
+    lock.releaseLock();
+  }
+}
 
-  if (threads.length === 0) {
+function processPendingAllocationEmails_(config) {
+  var handled = getHandledMessageIds_();
+  var baseline = getWatcherBaseline_();
+  var threads = GmailApp.search(config.searchQuery, 0, 20);
+  var pending = [];
+
+  for (var i = 0; i < threads.length; i++) {
+    var messages = threads[i].getMessages();
+    for (var j = 0; j < messages.length; j++) {
+      var message = messages[j];
+      if (handled[message.getId()]) continue;
+      if (message.getDate().getTime() < baseline) continue;
+      // The search matches a whole thread; an internal reply or forward of an
+      // old allocation inside it must not be sent to the board.
+      if (!/@(toyota|lexus)\.com\b/i.test(message.getFrom())) continue;
+      if (!hasPdfAttachment_(message)) continue;
+      pending.push({ message: message, thread: threads[i] });
+    }
+  }
+
+  if (pending.length === 0) {
     Logger.log('No new allocation emails found.');
     return;
   }
 
-  Logger.log('Found ' + threads.length + ' allocation email(s) to process.');
+  pending.sort(function (a, b) {
+    return a.message.getDate().getTime() - b.message.getDate().getTime();
+  });
+  Logger.log('Found ' + pending.length + ' allocation email(s) to process.');
 
-  // Get or create the "processed" label
-  var label = getOrCreateLabel(config.processedLabel);
+  var processedLabel = getOrCreateLabel(config.processedLabel);
+  var failedLabel = getOrCreateLabel(config.failedLabel);
 
-  for (var i = 0; i < threads.length; i++) {
-    var thread = threads[i];
-    var messages = thread.getMessages();
+  for (var k = 0; k < pending.length; k++) {
+    var item = pending[k];
+    var result = processAllocationMessage(item.message, config);
 
-    for (var j = 0; j < messages.length; j++) {
-      var message = messages[j];
-
-      // Skip already-read messages
-      if (!message.isUnread()) continue;
-
-      var result = processAllocationMessage(message, config);
-
-      if (result.success) {
-        Logger.log('SUCCESS: Processed allocation from ' + message.getFrom() +
-          ' — ' + result.vehicleCount + ' vehicles, snapshot: ' + result.snapshotId);
-        // Mark as read and label
-        message.markRead();
-        thread.addLabel(label);
-      } else {
-        Logger.log('FAILED: ' + result.error + ' — from: ' + message.getFrom() +
-          ' subject: ' + message.getSubject());
-      }
+    if (result.success) {
+      Logger.log('SUCCESS: Processed allocation from ' + item.message.getFrom() +
+        ' — ' + result.vehicleCount + ' vehicles, snapshot: ' + result.snapshotId);
+      item.message.markRead();
+      item.thread.addLabel(processedLabel);
+      item.thread.removeLabel(failedLabel);
+      markMessageHandled_(item.message.getId(), 'ok');
+    } else if (result.retryable && bumpRetryCount_(item.message.getId()) <= 6) {
+      // Network or server hiccup: try again on the next 5-minute run (up to 6 times,
+      // about 30 minutes), then alert like any other failure. Stop this run here
+      // so a newer email never reaches the board ahead of this older one.
+      Logger.log('RETRY LATER: ' + result.error + ' — subject: ' + item.message.getSubject());
+      return;
+    } else {
+      Logger.log('FAILED: ' + result.error + ' — from: ' + item.message.getFrom() +
+        ' subject: ' + item.message.getSubject());
+      item.thread.addLabel(failedLabel);
+      markMessageHandled_(item.message.getId(), 'failed');
+      sendAllocationFailureAlert_(item.message, result, config);
     }
   }
+}
+
+function hasPdfAttachment_(message) {
+  var attachments = message.getAttachments();
+  for (var i = 0; i < attachments.length; i++) {
+    if (attachments[i].getName().toLowerCase().endsWith('.pdf')) return true;
+  }
+  return false;
+}
+
+/**
+ * The first time this version runs it records "now", so emails from before
+ * the upgrade are not re-sent to the board. Run resetWatcherBaseline() with a
+ * date to reprocess older emails on purpose.
+ */
+function getWatcherBaseline_() {
+  var props = PropertiesService.getScriptProperties();
+  var value = props.getProperty('ALLOCATION_WATCH_SINCE_MS');
+  if (!value) {
+    value = String(Date.now());
+    props.setProperty('ALLOCATION_WATCH_SINCE_MS', value);
+  }
+  return Number(value);
+}
+
+function resetWatcherBaseline(isoDate) {
+  var ms = isoDate ? new Date(isoDate).getTime() : Date.now();
+  PropertiesService.getScriptProperties().setProperty('ALLOCATION_WATCH_SINCE_MS', String(ms));
+  Logger.log('Allocation watcher now considers emails received after ' + new Date(ms));
+}
+
+function getHandledMessageIds_() {
+  var raw = PropertiesService.getScriptProperties().getProperty('ALLOCATION_HANDLED_IDS');
+  try {
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function markMessageHandled_(messageId, outcome) {
+  var handled = getHandledMessageIds_();
+  handled[messageId] = outcome + '@' + new Date().toISOString();
+  // Keep the newest 80 entries (about 3.7 KB) so the property stays far below
+  // Apps Script's 9 KB per-value limit. The search only looks back 21 days.
+  var ids = Object.keys(handled);
+  if (ids.length > 80) {
+    ids.sort(function (a, b) { return handled[a].split('@')[1] < handled[b].split('@')[1] ? -1 : 1; });
+    for (var i = 0; i < ids.length - 80; i++) delete handled[ids[i]];
+  }
+  var props = PropertiesService.getScriptProperties();
+  props.setProperty('ALLOCATION_HANDLED_IDS', JSON.stringify(handled));
+  // A handled message never needs its retry counter again.
+  var counts = getRetryCounts_();
+  if (counts[messageId] !== undefined) {
+    delete counts[messageId];
+    props.setProperty('ALLOCATION_RETRY_COUNTS', JSON.stringify(counts));
+  }
+}
+
+function getRetryCounts_() {
+  try {
+    return JSON.parse(PropertiesService.getScriptProperties().getProperty('ALLOCATION_RETRY_COUNTS') || '{}');
+  } catch (e) {
+    return {};
+  }
+}
+
+function bumpRetryCount_(messageId) {
+  var counts = getRetryCounts_();
+  counts[messageId] = (counts[messageId] || 0) + 1;
+  PropertiesService.getScriptProperties().setProperty('ALLOCATION_RETRY_COUNTS', JSON.stringify(counts));
+  return counts[messageId];
+}
+
+/**
+ * Allow an email that failed (for example before a fix was deployed) to be
+ * tried again on the next run. Pass the Gmail message id from the alert log.
+ */
+function retryAllocationMessage(messageId) {
+  var handled = getHandledMessageIds_();
+  delete handled[messageId];
+  PropertiesService.getScriptProperties().setProperty('ALLOCATION_HANDLED_IDS', JSON.stringify(handled));
+  Logger.log('Message ' + messageId + ' will be tried again on the next run.');
+}
+
+function describeAllocationFailure_(error) {
+  if (/Older than the allocation on the board/i.test(error)) {
+    return 'It is older than the allocation already on the board, so it was not used. (Usually a forwarded or re-sent old allocation. Nothing to do.)';
+  }
+  if (/too short or empty/i.test(error)) {
+    return 'The PDF has no readable text. It was most likely made with "Print to PDF", which turns the letters into pictures.';
+  }
+  if (/No vehicles found/i.test(error)) {
+    return 'The PDF was read, but no vehicles were recognised in it.';
+  }
+  if (/No PDF attachment/i.test(error)) {
+    return 'The email has no PDF attached.';
+  }
+  return error;
+}
+
+function sendAllocationFailureAlert_(message, result, config) {
+  var to = config.alertEmail || Session.getEffectiveUser().getEmail();
+  if (!to) return;
+  var subject = 'Allocation board NOT updated: ' + message.getSubject();
+  var body = [
+    'This allocation email could not be put on the Allocation Board automatically.',
+    '',
+    'Email: ' + message.getSubject(),
+    'From: ' + message.getFrom(),
+    'Received: ' + message.getDate(),
+    '',
+    'Why: ' + describeAllocationFailure_(result.error),
+    '',
+    'The board still shows the previous allocation.',
+    '',
+    'To fix it, either:',
+    '  1. Ask the DSM to resend the allocation PDF saved straight from the allocation application (not "Print to PDF"), or',
+    '  2. Open the tracker, go to Allocation Board > Update Allocation, and paste the allocation text.',
+    '',
+    'Technical detail: ' + result.error,
+  ].join('\n');
+  MailApp.sendEmail(to, subject, body);
 }
 
 /**
@@ -158,7 +333,12 @@ function processAllocationMessage(message, config) {
     });
 
     var statusCode = response.getResponseCode();
-    var body = JSON.parse(response.getContentText());
+    var body;
+    try {
+      body = JSON.parse(response.getContentText());
+    } catch (parseError) {
+      body = { error: response.getContentText().slice(0, 200) };
+    }
 
     if (statusCode === 200 && body.success) {
       return {
@@ -167,10 +347,14 @@ function processAllocationMessage(message, config) {
         snapshotId: body.snapshotId,
       };
     } else {
-      return { success: false, error: 'Cloud Function returned ' + statusCode + ': ' + (body.error || body.message) };
+      return {
+        success: false,
+        retryable: statusCode >= 500 || statusCode === 429,
+        error: 'Cloud Function returned ' + statusCode + ': ' + (body.error || body.message),
+      };
     }
   } catch (e) {
-    return { success: false, error: 'Request failed: ' + e.toString() };
+    return { success: false, retryable: true, error: 'Request failed: ' + e.toString() };
   }
 }
 

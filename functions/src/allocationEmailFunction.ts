@@ -91,6 +91,25 @@ export const processAllocationEmail = onRequest(
 
       // Mark previous latest as not latest
       const currentLatest = await snapshotsRef.where("isLatest", "==", true).get();
+
+      // Never let an older allocation replace a newer one on the board (a retried
+      // or forwarded old email). A re-send of the same report date is allowed,
+      // because DSMs resend the same allocation with added units.
+      const newestOnBoard = currentLatest.docs
+        .map((doc) => doc.get("reportDate"))
+        .filter((value): value is string => typeof value === "string" && value.length > 0)
+        .sort()
+        .pop();
+      if (reportDate && newestOnBoard && reportDate < newestOnBoard) {
+        console.warn(
+          `[processAllocationEmail] Refusing older allocation reportDate=${reportDate}; board already has ${newestOnBoard}`,
+        );
+        res.status(409).json({
+          error: `Older than the allocation on the board (this report ${reportDate}, board ${newestOnBoard})`,
+        });
+        return;
+      }
+
       const batch = firestore.batch();
 
       currentLatest.docs.forEach((doc) => {

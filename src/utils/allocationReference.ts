@@ -180,6 +180,17 @@ export const LEXUS_ALLOCATION_REFERENCE: Record<string, LexusAllocationReference
     rank: "Medium",
     profit: 0,
   },
+  // New for MY27: three-row EV SUV. First units arrived on Allocation 112 (Nov 2026).
+  TZ450E: {
+    code: "TZ450E",
+    category: "Electrified",
+    type: "Three-Row EV SUV",
+    grade: "Premium",
+    engine: "EV",
+    msrp: 64050,
+    rank: "Medium",
+    profit: 0,
+  },
   LC500: {
     code: "LC500",
     category: "Halo",
@@ -303,6 +314,8 @@ export const MODEL_CODE_TO_ALLOCATION: Record<string, string> = {
   "9902": "RZ450E",
   "9904": "RZ450E",
   "9909": "RZ550E",
+  // TZ (three-row EV SUV)
+  "9300": "TZ450E",
   // RX (SUV)
   "9400": "RX350",
   "9410": "RX350",
