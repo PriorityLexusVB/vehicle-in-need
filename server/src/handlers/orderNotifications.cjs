@@ -10,6 +10,7 @@
 const express = require("express");
 const crypto = require("crypto");
 const { getFirestore, admin } = require("../lib/firebaseAdmin.cjs");
+const { safeEqual } = require("../lib/safeEqual.cjs");
 
 const router = express.Router();
 
@@ -58,7 +59,7 @@ function isAuthorized(req) {
     req.get("x-api-key") ||
     String(req.get("authorization") || "").replace(/^Bearer\s+/i, "");
 
-  return Boolean(headerKey && headerKey === expected);
+  return safeEqual(headerKey, expected);
 }
 
 function escapeHtml(value) {
@@ -657,6 +658,7 @@ module.exports._testing = {
   buildWeeklyDigest,
   compactOrderLine,
   getManagerRecipients,
+  isAuthorized,
   isNewOrderNotificationDue,
   normalizeEmail,
   parseStartAt,

@@ -9,6 +9,7 @@
 
 const express = require("express");
 const { getFirestore, admin } = require("../lib/firebaseAdmin.cjs");
+const { safeEqual } = require("../lib/safeEqual.cjs");
 
 const router = express.Router();
 
@@ -53,7 +54,7 @@ function isAuthorized(req) {
     req.get("x-api-key") ||
     String(req.get("authorization") || "").replace(/^Bearer\s+/i, "");
 
-  return headerKey && headerKey === expected;
+  return safeEqual(headerKey, expected);
 }
 
 function getOrderAnchorMillis(order) {
@@ -339,6 +340,7 @@ module.exports._testing = {
   buildUserDirectory,
   compactOrderLine,
   getOrderAnchorMillis,
+  isAuthorized,
   isOrderDue,
   normalizeEmail,
   normalizeName,
