@@ -16,7 +16,20 @@
  */
 
 const https = require('https');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
+
+// A commit reference we are willing to hand to git: starts with a letter or
+// digit (so it can never be read as an option) and has no shell or space
+// characters. Production's version string comes from the network, so it is
+// checked before use and passed as an argument, never through a shell.
+const SAFE_GIT_REF_RE = /^[0-9A-Za-z][0-9A-Za-z._/-]{0,99}$/;
+
+function gitOutput(args) {
+  return execFileSync('git', args, {
+    encoding: 'utf-8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  }).trim();
+}
 
 // ANSI color codes
 const colors = {
@@ -180,8 +193,11 @@ async function verify() {
       
       // Try to get commit info for both versions
       try {
-        const prodCommitInfo = execSync(`git log --oneline --decorate -1 ${prodVersion} 2>/dev/null`, { encoding: 'utf-8' }).trim();
-        const expectedCommitInfo = execSync(`git log --oneline --decorate -1 ${expectedCommit} 2>/dev/null`, { encoding: 'utf-8' }).trim();
+        if (!SAFE_GIT_REF_RE.test(String(prodVersion)) || !SAFE_GIT_REF_RE.test(String(expectedCommit))) {
+          throw new Error('Version is not a plain commit reference');
+        }
+        const prodCommitInfo = gitOutput(['log', '--oneline', '--decorate', '-1', prodVersion]);
+        const expectedCommitInfo = gitOutput(['log', '--oneline', '--decorate', '-1', expectedCommit]);
         
         log('Production commit:', colors.cyan);
         console.log(`  ${prodCommitInfo}`);
@@ -191,12 +207,12 @@ async function verify() {
         console.log('');
         
         // Check if production is behind
-        const behindCount = execSync(`git rev-list --count ${prodVersion}..${expectedCommit} 2>/dev/null`, { encoding: 'utf-8' }).trim();
+        const behindCount = gitOutput(['rev-list', '--count', `${prodVersion}..${expectedCommit}`]);
         if (parseInt(behindCount) > 0) {
           logWarning(`Production is ${behindCount} commit(s) behind expected commit`);
         }
         
-        const aheadCount = execSync(`git rev-list --count ${expectedCommit}..${prodVersion} 2>/dev/null`, { encoding: 'utf-8' }).trim();
+        const aheadCount = gitOutput(['rev-list', '--count', `${expectedCommit}..${prodVersion}`]);
         if (parseInt(aheadCount) > 0) {
           logWarning(`Production is ${aheadCount} commit(s) ahead of expected commit`);
         }

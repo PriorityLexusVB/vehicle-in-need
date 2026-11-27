@@ -30,12 +30,18 @@
 
 const SSN_RE = /\b(?<!\d)(\d{3})-(\d{2})-(\d{4})(?!\d)\b/g;
 const CARD_RE = /\b(?<!\d)((?:\d[ -]?){12,18}\d)(?!\d)\b/g;
-const CVV_RE = /\bcvv\s*(?:is|:|=|number)?\s*(\d{3,4})\b/gi;
-const DOB_RE = /\b(dob|date\s*of\s*birth|born|birthday(?:\s*is)?)\s*[:=-]?\s*((?:0?[1-9]|1[0-2])\/(?:0?[1-9]|[12]\d|3[01])\/(?:\d{2}|\d{4}))\b/gi;
-const DL_RE = /\b(driver'?s?\s*licen[sc]e|dl\s*#|dl\s*number|license\s*(?:number|#))\s*[:=-]?\s*([A-Z0-9-]{6,16})\b/gi;
+// The optional label/separator pieces below are written as "(?:X\s*)?" rather
+// than "X?\s*" so two "\s*" never sit next to each other. Adjacent "\s*"
+// runs make the engine retry every split of a long run of spaces (quadratic
+// time, CodeQL js/polynomial-redos). The text each pattern matches is the
+// same; server/__tests__/redactPii.redos.test.ts checks that against the
+// previous patterns.
+const CVV_RE = /\bcvv\s*(?:(?:is|:|=|number)\s*)?(\d{3,4})\b/gi;
+const DOB_RE = /\b(dob|date\s*of\s*birth|born|birthday(?:\s*is)?)\s*(?:[:=-]\s*)?((?:0?[1-9]|1[0-2])\/(?:0?[1-9]|[12]\d|3[01])\/(?:\d{2}|\d{4}))\b/gi;
+const DL_RE = /\b(driver'?s?\s*licen[sc]e|dl\s*#|dl\s*number|license\s*(?:number|#))\s*(?:[:=-]\s*)?([A-Z0-9-]{6,16})\b/gi;
 const PHONE_RE = /(?<!\d)(\+?1[-.\s]?)?\(?([2-9]\d{2})\)?[-.\s]?(\d{3})[-.\s]?(\d{4})(?!\d)/g;
 const EMAIL_RE = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
-const ROUTING_RE = /\b(routing|aba)\s*(?:number|#)?\s*[:=-]?\s*(\d{9})\b/gi;
+const ROUTING_RE = /\b(routing|aba)\s*(?:(?:number|#)\s*)?(?:[:=-]\s*)?(\d{9})\b/gi;
 
 function luhnValid(digits) {
   if (!digits || digits.length < 13 || digits.length > 19) return false;
@@ -170,3 +176,6 @@ module.exports = {
   redactPiiDeep,
   PIPELINE_KEY_PASSTHROUGH,
 };
+
+// For tests only: the patterns rewritten to avoid quadratic backtracking.
+module.exports._testing = { CVV_RE, DOB_RE, DL_RE, ROUTING_RE };
