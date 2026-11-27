@@ -2,6 +2,7 @@ import {
   LEXUS_ALLOCATION_REFERENCE,
   LEXUS_REFERENCE_CODES,
   LexusAllocationReference,
+  MODEL_CODE_TO_ALLOCATION,
 } from "./allocationReference";
 import {
   AllocationSummary,
@@ -33,7 +34,7 @@ const TOYOTA_DM_ROW_START_PATTERN =
 // PDF extraction can drift separators and spacing in the color token.
 const TOYOTA_DM_COLOR_TOKEN_PATTERN = /\b([0-9A-Z]{3,4})\s*[-/]\s*([0-9A-Z]{2,4})\b/;
 const TOYOTA_DM_BOS_PATTERN =
-  /^\s*(?:\d+\s+)?\d{2,4}\s+[0-9A-Z]{4,}\s+[A-Z0-9-]{6,}\s+\d+\s+(?:[YN]\s+)?[0-9A-Z]{3,4}\s*[-/]\s*[0-9A-Z]{2,4}\s+\d{4,5}\s+([YN])\b/;
+  /^\s*(?:\d+\s+)?\d{2,4}\s+[0-9A-Z]{4,}\s+[A-Z0-9-]{6,}\s+\d+\s+(?:[YNZ]\s+)?[0-9A-Z]{3,4}\s*[-/]\s*[0-9A-Z]{2,4}\s+\d{4,5}\s+([YN])\b/;
 
 const SOURCE_CODE_PATTERN = /\b(\d{4}[A-Z]?)\b/;
 const SOURCE_CODE_SPLIT_PATTERN = /\b(\d{4})\s*[- ]\s*([A-Z])\b/;
@@ -233,6 +234,84 @@ function findModelCodeMatchesInLine(uppercaseLine: string): CodeMatch[] {
   }
 
   return deduped;
+}
+
+// Toyota DM rows carry a 4-digit model number in the third column (e.g. "9443A").
+// When the wrapped description has no recognisable model code (a brand-new model,
+// or wording such as "RX450H PHEV LUX" without the "+"), fall back to the
+// model-number table so the car is not silently dropped from the board.
+const TOYOTA_DM_MODEL_NUMBER_PATTERN = /^\s*(?:\d+\s+)?\d{2,4}\s+(\d{4})([A-Z]?)\s/;
+
+function findBlockModelMatches(block: AllocationBlock): CodeMatch[] {
+  const matches = findModelCodeMatchesInLine(block.blockTextUpper);
+  if (matches.length > 0 || !isToyotaDMAllocationRowLine(block.rowLineUpper)) {
+    return matches;
+  }
+  const numberMatch = block.rowLineUpper.match(TOYOTA_DM_MODEL_NUMBER_PATTERN);
+  if (!numberMatch) {
+    return matches;
+  }
+  const code = MODEL_CODE_TO_ALLOCATION[numberMatch[1]];
+  if (!code || !LEXUS_ALLOCATION_REFERENCE[code]) {
+    return matches;
+  }
+  // Point the match just past the model token so the source-code lookup
+  // (text before match.start) still sees "9443A".
+  const token = `${numberMatch[1]}${numberMatch[2]}`;
+  const tokenIndex = block.blockTextUpper.indexOf(token);
+  const position = tokenIndex >= 0 ? tokenIndex + token.length : 0;
+  return [{ code, start: position, end: position, raw: token }];
+}
+
+function unknownDmModelNumber(block: AllocationBlock): string | null {
+  if (!isToyotaDMAllocationRowLine(block.rowLineUpper)) {
+    return null;
+  }
+  const numberMatch = block.rowLineUpper.match(TOYOTA_DM_MODEL_NUMBER_PATTERN);
+  return numberMatch ? `${numberMatch[1]}${numberMatch[2]}` : null;
+}
+
+// Allocation reports list cars still to arrive, and the arrival column carries
+// no year ("01-09"). The year is inferred from the report date: on a November
+// report a January date belongs to next year, and on a January report a
+// December date belongs to last year. Only applied when the arrival token has
+// no year of its own AND the report date was written with a year, so explicit
+// dates and loosely pasted text are left exactly as before.
+const DATE_TOKEN_WITH_YEAR_PATTERN = /^\s*(?:\d{4}\s*[-/.]\s*\d{1,2}\s*[-/.]\s*\d{1,2}|\d{1,2}\s*[-/.]\s*\d{1,2}\s*[-/.]\s*\d{2,4})\s*$/;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function detectYearAnchoredReportDate(source: string): string | null {
+  const taggedMatch = source.match(DATE_PATTERN);
+  const raw = taggedMatch?.[2]?.trim() ?? source.match(SHORT_DATE_PATTERN)?.[1] ?? null;
+  if (!raw) {
+    return null;
+  }
+  const firstToken = raw.split(/\s+(?=[A-Za-z])/)[0];
+  if (!DATE_TOKEN_WITH_YEAR_PATTERN.test(firstToken) && !/\b20\d{2}\b/.test(firstToken)) {
+    return null;
+  }
+  return normalizeDate(firstToken);
+}
+
+function normalizeArrivalDate(token: string, fallbackYear: number | undefined, anchor: string | null): string | null {
+  const normalized = normalizeDate(token, fallbackYear);
+  if (!normalized || !anchor || DATE_TOKEN_WITH_YEAR_PATTERN.test(token)) {
+    return normalized;
+  }
+  const arrivalMs = Date.parse(`${normalized}T00:00:00Z`);
+  const anchorMs = Date.parse(`${anchor}T00:00:00Z`);
+  if (Number.isNaN(arrivalMs) || Number.isNaN(anchorMs)) {
+    return normalized;
+  }
+  const shifted = new Date(arrivalMs);
+  if (anchorMs - arrivalMs > 90 * DAY_MS) {
+    shifted.setUTCFullYear(shifted.getUTCFullYear() + 1);
+  } else if (arrivalMs - anchorMs > 275 * DAY_MS) {
+    shifted.setUTCFullYear(shifted.getUTCFullYear() - 1);
+  } else {
+    return normalized;
+  }
+  return shifted.toISOString().slice(0, 10);
 }
 
 function isHeaderLikeLine(uppercaseLine: string): boolean {
@@ -586,20 +665,21 @@ function detectArrivalFromBlock(
   block: AllocationBlock,
   layout: ColumnLayout | null,
   fallbackYear?: number,
+  yearAnchor: string | null = null,
 ): string {
   // 1) Prefer column-based extraction when header layout is available.
   if (layout?.arrival) {
     const fromRow = sliceColumn(block.rowLine, layout.arrival);
     const token = extractFirstDateToken(fromRow.toUpperCase());
     if (token) {
-      return normalizeDate(token, fallbackYear) ?? token.toUpperCase();
+      return normalizeArrivalDate(token, fallbackYear, yearAnchor) ?? token.toUpperCase();
     }
 
     // Sometimes the ETA wraps to the next line; search the block for a single date token.
     const blockTokens = extractDateTokens(block.blockTextUpper);
     if (blockTokens.length === 1) {
       const only = blockTokens[0];
-      return normalizeDate(only, fallbackYear) ?? only.toUpperCase();
+      return normalizeArrivalDate(only, fallbackYear, yearAnchor) ?? only.toUpperCase();
     }
   }
 
@@ -608,7 +688,7 @@ function detectArrivalFromBlock(
   if (tagMatch?.[2]) {
     const token = extractFirstDateToken(tagMatch[2]);
     if (token) {
-      return normalizeDate(token, fallbackYear) ?? token.toUpperCase();
+      return normalizeArrivalDate(token, fallbackYear, yearAnchor) ?? token.toUpperCase();
     }
   }
 
@@ -616,7 +696,7 @@ function detectArrivalFromBlock(
   const rowTokens = extractDateTokens(block.rowLineUpper);
   if (rowTokens.length === 1) {
     const only = rowTokens[0];
-    return normalizeDate(only, fallbackYear) ?? only.toUpperCase();
+    return normalizeArrivalDate(only, fallbackYear, yearAnchor) ?? only.toUpperCase();
   }
 
   // 4) If the entire block contains exactly one date token (common in Toyota DM PDF extracts
@@ -624,7 +704,7 @@ function detectArrivalFromBlock(
   const blockTokens = extractDateTokens(block.blockTextUpper);
   if (blockTokens.length === 1) {
     const only = blockTokens[0];
-    return normalizeDate(only, fallbackYear) ?? only.toUpperCase();
+    return normalizeArrivalDate(only, fallbackYear, yearAnchor) ?? only.toUpperCase();
   }
 
   return "TBD";
@@ -989,7 +1069,7 @@ function detectToyotaDMOptionsFromRow(block: AllocationBlock): {
   }
 
   const optionsMatch = block.rowLineUpper.match(
-    /^\s*(?:\d+\s+)?\d{2,4}\s+[0-9A-Z]{4,}\s+[A-Z0-9-]{6,}\s+\d+\s+(?:[YN]\s+)?[0-9A-Z]{3,4}\s*[-/]\s*[0-9A-Z]{2,4}\s+\d{4,5}\s+[YN]\s+(.+)$/,
+    /^\s*(?:\d+\s+)?\d{2,4}\s+[0-9A-Z]{4,}\s+[A-Z0-9-]{6,}\s+\d+\s+(?:[YNZ]\s+)?[0-9A-Z]{3,4}\s*[-/]\s*[0-9A-Z]{2,4}\s+\d{4,5}\s+[YN]\s+(.+)$/,
   );
   if (!optionsMatch?.[1]) {
     return { factoryAccessories: [], postProductionOptions: [] };
@@ -1229,6 +1309,7 @@ export function parseAllocationSource(sourceText: string): ParsedAllocationResul
 
   const reportDate = detectReportDate(normalized);
   const reportYear = reportDate ? Number(reportDate.slice(0, 4)) : undefined;
+  const arrivalYearAnchor = detectYearAnchoredReportDate(normalized);
 
   const vehicles: AllocationVehicle[] = [];
   const warnings: string[] = [];
@@ -1293,8 +1374,14 @@ export function parseAllocationSource(sourceText: string): ParsedAllocationResul
   }
 
   blocks.forEach((block, blockIndex) => {
-    const matches = findModelCodeMatchesInLine(block.blockTextUpper);
+    const matches = findBlockModelMatches(block);
     if (matches.length === 0) {
+      const unknownModel = unknownDmModelNumber(block);
+      if (unknownModel) {
+        warnings.push(
+          `Row starting at line ${block.startLineIndex + 1} skipped: model ${unknownModel} is not in the model table. Add it to the allocation reference.`,
+        );
+      }
       return;
     }
 
@@ -1316,7 +1403,7 @@ export function parseAllocationSource(sourceText: string): ParsedAllocationResul
 
     const vehiclesBefore = vehicles.length;
 
-    const arrival = detectArrivalFromBlock(block, layout, reportYear);
+    const arrival = detectArrivalFromBlock(block, layout, reportYear, arrivalYearAnchor);
     const exteriorColor = detectExteriorColorFromBlock(block, layout);
     const interiorColor = detectInteriorColorFromBlock(block, layout);
     const bos = detectBosFromBlock(block, layout);

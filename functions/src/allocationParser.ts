@@ -78,6 +78,7 @@ export const LEXUS_ALLOCATION_REFERENCE: Record<string, LexusAllocationReference
   RZ350E: { code: "RZ350E", category: "Electrified", type: "EV SUV", grade: "Premium", engine: "EV", msrp: 46000, rank: "Medium", profit: 0 },
   RZ450E: { code: "RZ450E", category: "Electrified", type: "EV SUV", grade: "Premium", engine: "EV", msrp: 49500, rank: "Medium", profit: 3500 },
   RZ550E: { code: "RZ550E", category: "Electrified", type: "EV SUV", grade: "F SPORT", engine: "EV", msrp: 57000, rank: "Medium", profit: 0 },
+  TZ450E: { code: "TZ450E", category: "Electrified", type: "Three-Row EV SUV", grade: "Premium", engine: "EV", msrp: 64050, rank: "Medium", profit: 0 },
   LC500: { code: "LC500", category: "Halo", type: "Grand Tourer", grade: "Performance", engine: "Gas", msrp: 101050, rank: "High", profit: 9200 },
   UX300H: { code: "UX300H", category: "Core", type: "Subcompact SUV Hybrid", grade: "Base", engine: "Hybrid", msrp: 36955, rank: "Low", profit: 0 },
   "TX550H+": { code: "TX550H+", category: "Electrified", type: "Three-Row PHEV SUV", grade: "Luxury", engine: "Hybrid", msrp: 80310, rank: "High", profit: 0 },
@@ -106,6 +107,109 @@ interface ColumnLayout {
   extColor?: ColumnRange;
   intColor?: ColumnRange;
 }
+
+// Copied from src/utils/allocationReference.ts (keep in sync; parity test guards it).
+const MODEL_CODE_TO_ALLOCATION: Record<string, string> = {
+  // IS (Sedan)
+  "9504": "IS350",
+  "9508": "IS350",
+  "9510": "IS350",
+  "9516": "IS350",
+  // ES (Sedan)
+  "9020": "ES350H",
+  "9025": "ES350H",
+  "9021": "ES350H",
+  "9026": "ES350H",
+  "9030": "ES350E",
+  "9032": "ES350E",
+  "9035": "ES500E",
+  "9037": "ES500E",
+  // LS (Sedan)
+  "9126": "LS500",
+  // LC (Performance)
+  "9260": "LC500",
+  "9262": "LC500",
+  // UX (SUV)
+  "9721": "UX300H",
+  "9732": "UX300H",
+  "9723": "UX300H",
+  "9733": "UX300H",
+  "9725": "UX300H",
+  "9735": "UX300H",
+  "9727": "UX300H",
+  "9738": "UX300H",
+  // NX (Compact SUV)
+  "9834": "NX350",
+  "9835": "NX350",
+  "9836": "NX350",
+  "9838": "NX350",
+  "9848": "NX350H",
+  "9844": "NX350H",
+  "9849": "NX350H",
+  "9845": "NX350H",
+  "9850": "NX350H",
+  "9846": "NX350H",
+  "9851": "NX350H",
+  "9847": "NX350H",
+  "9855": "NX450H+",
+  "9852": "NX450H+",
+  "9854": "NX450H+",
+  // RZ (EV SUV)
+  "9905": "RZ350E",
+  "9906": "RZ350E",
+  "9901": "RZ450E",
+  "9902": "RZ450E",
+  "9904": "RZ450E",
+  "9909": "RZ550E",
+  // TZ (three-row EV SUV)
+  "9300": "TZ450E",
+  // RX (SUV)
+  "9400": "RX350",
+  "9410": "RX350",
+  "9401": "RX350",
+  "9411": "RX350",
+  "9402": "RX350",
+  "9412": "RX350",
+  "9403": "RX350",
+  "9413": "RX350",
+  "9404": "RX350",
+  "9414": "RX350",
+  "9415": "RX350",
+  "9450": "RX350H",
+  "9451": "RX350H",
+  "9452": "RX350H",
+  "9453": "RX350H",
+  "9455": "RX350H",
+  "9441": "RX450H+",
+  "9443": "RX450H+",
+  "9458": "RX500H",
+  // TX (Three-Row SUV)
+  "9350": "TX350",
+  "9351": "TX350",
+  "9352": "TX350",
+  "9353": "TX350",
+  "9354": "TX350",
+  "9355": "TX350",
+  "9357": "TX350",
+  "9360": "TX500H",
+  "9361": "TX500H",
+  "9365": "TX550H+",
+  // GX (Body-on-Frame SUV)
+  "9701": "GX550",
+  "9702": "GX550",
+  "9703": "GX550",
+  "9704": "GX550",
+  "9705": "GX550",
+  "9706": "GX550",
+  // LX (Luxury SUV)
+  "9621": "LX600",
+  "9622": "LX600",
+  "9623": "LX600",
+  "9626": "LX700H",
+  "9627": "LX700H",
+  "9628": "LX700H",
+  "9629": "LX700H",
+};
 
 interface CodeMatch {
   code: string;
@@ -142,7 +246,7 @@ const COLOR_PATTERN = /(atomic\s+silver|caviar|cloudburst(?:\s+gray)?|ematador|m
 const GRADE_PATTERN = /(f\s*sport\s*performance|f\s*sport|luxury|premium|base|overtrail|ultra\s*luxury|performance)/i;
 const TOYOTA_DM_ROW_START_PATTERN = /^\s*(?:\d+\s+)?\d{2,4}\s+[0-9A-Z]{4,}\s+[A-Z0-9-]{6,}\s+\d+\b/;
 const TOYOTA_DM_COLOR_TOKEN_PATTERN = /\b([0-9A-Z]{3,4})\s*[-/]\s*([0-9A-Z]{2,4})\b/;
-const TOYOTA_DM_BOS_PATTERN = /^\s*(?:\d+\s+)?\d{2,4}\s+[0-9A-Z]{4,}\s+[A-Z0-9-]{6,}\s+\d+\s+(?:[YN]\s+)?[0-9A-Z]{3,4}\s*[-/]\s*[0-9A-Z]{2,4}\s+\d{4,5}\s+([YN])\b/;
+const TOYOTA_DM_BOS_PATTERN = /^\s*(?:\d+\s+)?\d{2,4}\s+[0-9A-Z]{4,}\s+[A-Z0-9-]{6,}\s+\d+\s+(?:[YNZ]\s+)?[0-9A-Z]{3,4}\s*[-/]\s*[0-9A-Z]{2,4}\s+\d{4,5}\s+([YN])\b/;
 const SOURCE_CODE_PATTERN = /\b(\d{4}[A-Z]?)\b/;
 const SOURCE_CODE_SPLIT_PATTERN = /\b(\d{4})\s*[- ]\s*([A-Z])\b/;
 
@@ -282,6 +386,84 @@ function findModelCodeMatchesInLine(uppercaseLine: string): CodeMatch[] {
   }
 
   return deduped;
+}
+
+// Toyota DM rows carry a 4-digit model number in the third column (e.g. "9443A").
+// When the wrapped description has no recognisable model code (a brand-new model,
+// or wording such as "RX450H PHEV LUX" without the "+"), fall back to the
+// model-number table so the car is not silently dropped from the board.
+const TOYOTA_DM_MODEL_NUMBER_PATTERN = /^\s*(?:\d+\s+)?\d{2,4}\s+(\d{4})([A-Z]?)\s/;
+
+function findBlockModelMatches(block: AllocationBlock): CodeMatch[] {
+  const matches = findModelCodeMatchesInLine(block.blockTextUpper);
+  if (matches.length > 0 || !isToyotaDMAllocationRowLine(block.rowLineUpper)) {
+    return matches;
+  }
+  const numberMatch = block.rowLineUpper.match(TOYOTA_DM_MODEL_NUMBER_PATTERN);
+  if (!numberMatch) {
+    return matches;
+  }
+  const code = MODEL_CODE_TO_ALLOCATION[numberMatch[1]];
+  if (!code || !LEXUS_ALLOCATION_REFERENCE[code]) {
+    return matches;
+  }
+  // Point the match just past the model token so the source-code lookup
+  // (text before match.start) still sees "9443A".
+  const token = `${numberMatch[1]}${numberMatch[2]}`;
+  const tokenIndex = block.blockTextUpper.indexOf(token);
+  const position = tokenIndex >= 0 ? tokenIndex + token.length : 0;
+  return [{ code, start: position, end: position, raw: token }];
+}
+
+function unknownDmModelNumber(block: AllocationBlock): string | null {
+  if (!isToyotaDMAllocationRowLine(block.rowLineUpper)) {
+    return null;
+  }
+  const numberMatch = block.rowLineUpper.match(TOYOTA_DM_MODEL_NUMBER_PATTERN);
+  return numberMatch ? `${numberMatch[1]}${numberMatch[2]}` : null;
+}
+
+// Allocation reports list cars still to arrive, and the arrival column carries
+// no year ("01-09"). The year is inferred from the report date: on a November
+// report a January date belongs to next year, and on a January report a
+// December date belongs to last year. Only applied when the arrival token has
+// no year of its own AND the report date was written with a year, so explicit
+// dates and loosely pasted text are left exactly as before.
+const DATE_TOKEN_WITH_YEAR_PATTERN = /^\s*(?:\d{4}\s*[-/.]\s*\d{1,2}\s*[-/.]\s*\d{1,2}|\d{1,2}\s*[-/.]\s*\d{1,2}\s*[-/.]\s*\d{2,4})\s*$/;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function detectYearAnchoredReportDate(source: string): string | null {
+  const taggedMatch = source.match(DATE_PATTERN);
+  const raw = taggedMatch?.[2]?.trim() ?? source.match(SHORT_DATE_PATTERN)?.[1] ?? null;
+  if (!raw) {
+    return null;
+  }
+  const firstToken = raw.split(/\s+(?=[A-Za-z])/)[0];
+  if (!DATE_TOKEN_WITH_YEAR_PATTERN.test(firstToken) && !/\b20\d{2}\b/.test(firstToken)) {
+    return null;
+  }
+  return normalizeDate(firstToken);
+}
+
+function normalizeArrivalDate(token: string, fallbackYear: number | undefined, anchor: string | null): string | null {
+  const normalized = normalizeDate(token, fallbackYear);
+  if (!normalized || !anchor || DATE_TOKEN_WITH_YEAR_PATTERN.test(token)) {
+    return normalized;
+  }
+  const arrivalMs = Date.parse(`${normalized}T00:00:00Z`);
+  const anchorMs = Date.parse(`${anchor}T00:00:00Z`);
+  if (Number.isNaN(arrivalMs) || Number.isNaN(anchorMs)) {
+    return normalized;
+  }
+  const shifted = new Date(arrivalMs);
+  if (anchorMs - arrivalMs > 90 * DAY_MS) {
+    shifted.setUTCFullYear(shifted.getUTCFullYear() + 1);
+  } else if (arrivalMs - anchorMs > 275 * DAY_MS) {
+    shifted.setUTCFullYear(shifted.getUTCFullYear() - 1);
+  } else {
+    return normalized;
+  }
+  return shifted.toISOString().slice(0, 10);
 }
 
 function isHeaderLikeLine(uppercaseLine: string): boolean {
@@ -525,34 +707,34 @@ function detectReportDate(source: string): string | null {
   return null;
 }
 
-function detectArrivalFromBlock(block: AllocationBlock, layout: ColumnLayout | null, fallbackYear?: number): string {
+function detectArrivalFromBlock(block: AllocationBlock, layout: ColumnLayout | null, fallbackYear?: number, yearAnchor: string | null = null): string {
   if (layout?.arrival) {
     const fromRow = sliceColumn(block.rowLine, layout.arrival);
     const token = extractFirstDateToken(fromRow.toUpperCase());
-    if (token) return normalizeDate(token, fallbackYear) ?? token.toUpperCase();
+    if (token) return normalizeArrivalDate(token, fallbackYear, yearAnchor) ?? token.toUpperCase();
     const blockTokens = extractDateTokens(block.blockTextUpper);
     if (blockTokens.length === 1) {
       const only = blockTokens[0];
-      return normalizeDate(only, fallbackYear) ?? only.toUpperCase();
+      return normalizeArrivalDate(only, fallbackYear, yearAnchor) ?? only.toUpperCase();
     }
   }
 
   const tagMatch = block.blockTextUpper.match(ARRIVAL_TAG_PATTERN);
   if (tagMatch?.[2]) {
     const token = extractFirstDateToken(tagMatch[2]);
-    if (token) return normalizeDate(token, fallbackYear) ?? token.toUpperCase();
+    if (token) return normalizeArrivalDate(token, fallbackYear, yearAnchor) ?? token.toUpperCase();
   }
 
   const rowTokens = extractDateTokens(block.rowLineUpper);
   if (rowTokens.length === 1) {
     const only = rowTokens[0];
-    return normalizeDate(only, fallbackYear) ?? only.toUpperCase();
+    return normalizeArrivalDate(only, fallbackYear, yearAnchor) ?? only.toUpperCase();
   }
 
   const blockTokens = extractDateTokens(block.blockTextUpper);
   if (blockTokens.length === 1) {
     const only = blockTokens[0];
-    return normalizeDate(only, fallbackYear) ?? only.toUpperCase();
+    return normalizeArrivalDate(only, fallbackYear, yearAnchor) ?? only.toUpperCase();
   }
 
   return "TBD";
@@ -780,7 +962,7 @@ function detectToyotaDMOptionsFromRow(block: AllocationBlock): {
   }
 
   const optionsMatch = block.rowLineUpper.match(
-    /^\s*(?:\d+\s+)?\d{2,4}\s+[0-9A-Z]{4,}\s+[A-Z0-9-]{6,}\s+\d+\s+(?:[YN]\s+)?[0-9A-Z]{3,4}\s*[-/]\s*[0-9A-Z]{2,4}\s+\d{4,5}\s+[YN]\s+(.+)$/,
+    /^\s*(?:\d+\s+)?\d{2,4}\s+[0-9A-Z]{4,}\s+[A-Z0-9-]{6,}\s+\d+\s+(?:[YNZ]\s+)?[0-9A-Z]{3,4}\s*[-/]\s*[0-9A-Z]{2,4}\s+\d{4,5}\s+[YN]\s+(.+)$/,
   );
   if (!optionsMatch?.[1]) return { factoryAccessories: [], postProductionOptions: [] };
 
@@ -968,6 +1150,7 @@ export function parseAllocationSource(sourceText: string): ParsedAllocationResul
 
   const reportDate = detectReportDate(normalized);
   const reportYear = reportDate ? Number(reportDate.slice(0, 4)) : undefined;
+  const arrivalYearAnchor = detectYearAnchoredReportDate(normalized);
 
   const vehicles: AllocationVehicle[] = [];
   const warnings: string[] = [];
@@ -1030,9 +1213,15 @@ export function parseAllocationSource(sourceText: string): ParsedAllocationResul
   console.log(`[allocationParser] Detected ${blocks.length} candidate blocks`);
 
   blocks.forEach((block, blockIndex) => {
-    const matches = findModelCodeMatchesInLine(block.blockTextUpper);
+    const matches = findBlockModelMatches(block);
     if (matches.length === 0) {
       console.log(`[allocationParser] Block ${blockIndex + 1} (line ${block.startLineIndex + 1}) skipped: no model code match`);
+      const unknownModel = unknownDmModelNumber(block);
+      if (unknownModel) {
+        warnings.push(
+          `Row starting at line ${block.startLineIndex + 1} skipped: model ${unknownModel} is not in the model table. Add it to the allocation reference.`,
+        );
+      }
       return;
     }
 
@@ -1050,7 +1239,7 @@ export function parseAllocationSource(sourceText: string): ParsedAllocationResul
 
     const vehiclesBefore = vehicles.length;
 
-    const arrival = detectArrivalFromBlock(block, layout, reportYear);
+    const arrival = detectArrivalFromBlock(block, layout, reportYear, arrivalYearAnchor);
     const exteriorColor = detectExteriorColorFromBlock(block, layout);
     const interiorColor = detectInteriorColorFromBlock(block, layout);
     const bos = detectBosFromBlock(block, layout);
