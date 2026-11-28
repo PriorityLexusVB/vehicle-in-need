@@ -8,6 +8,7 @@ import {
 } from "../src/utils/allocationParser";
 import { MODEL_CODE_TO_ALLOCATION, MODEL_CODE_TO_TRIM } from "../src/utils/allocationReference";
 import { matchExteriorColors, matchInteriorColors } from "../src/utils/colorReference";
+import PaintSwatch from "./PaintSwatch";
 import { extractAllocationTextFromPdf } from "../src/utils/pdfTextExtractor";
 import {
   ParsedAllocationResult,
@@ -1638,8 +1639,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({
                       data-testid="model-total-pills"
                       title={`${getVehicleModelKey(variant)} across this allocation: ${totals.totalSlots} received, ${totals.linkedSlots} linked`}
                     >
-                      <span className={`rounded-full px-2 py-0.5 font-semibold bg-stone-100 text-stone-700`}>{totals.totalSlots} received</span>
-                      <span className={`rounded-full px-2 py-0.5 font-semibold bg-emerald-50 text-emerald-700`}>{totals.linkedSlots} linked</span>
+                      <span className={`rounded-[3px] px-2 py-0.5 font-semibold bg-stone-100 text-stone-700`}>{totals.totalSlots} received</span>
+                      <span className={`rounded-[3px] px-2 py-0.5 font-semibold bg-emerald-50 text-emerald-700`}>{totals.linkedSlots} linked</span>
                     </div>
                   );
                 })()}
@@ -1648,7 +1649,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({
 
             <div className="min-w-0">
               <span className={cellLabelClass}>Exterior</span>
-              <span className={`block break-words text-sm font-medium ${valueClass}`}>{colorDisplay}</span>
+              <span className={`block break-words text-sm font-medium ${valueClass}`}><PaintSwatch color={variant.color} />{colorDisplay}</span>
             </div>
             <div className="min-w-0">
               <span className={cellLabelClass}>Interior</span>
@@ -1896,7 +1897,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({
                     <span className="rounded-full bg-stone-100 px-2.5 py-1 text-stone-700">
                       TBD Fields: {parseInsights.tbdArrivals + parseInsights.tbdDetails}
                     </span>
-                    <span className={`rounded-full px-2.5 py-1 ${parseConfidenceTone}`}>
+                    <span className={`rounded-[3px] px-2.5 py-1 ${parseConfidenceTone}`}>
                       Confidence: {parseInsights.confidence}
                     </span>
                   </>

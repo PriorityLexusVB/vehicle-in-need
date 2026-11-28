@@ -233,7 +233,7 @@ const OrderList: React.FC<OrderListProps> = ({
           >
             Active Orders{" "}
             <span
-              className={`ml-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold tabular-nums ${activeTab === "active" ? "bg-stone-950 text-white" : "bg-stone-200 text-stone-700"}`}
+              className={`ml-1.5 rounded-[3px] px-2 py-0.5 text-xs font-bold tabular-nums ${activeTab === "active" ? "bg-stone-950 text-white" : "bg-stone-200 text-stone-700"}`}
             >
               {totalActiveOrders}
             </span>
@@ -250,7 +250,7 @@ const OrderList: React.FC<OrderListProps> = ({
           >
             Secured History{" "}
             <span
-              className={`ml-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold tabular-nums ${activeTab === "secured" ? "bg-emerald-100 text-emerald-800" : "bg-stone-200 text-stone-700"}`}
+              className={`ml-1.5 rounded-[3px] px-2 py-0.5 text-xs font-bold tabular-nums ${activeTab === "secured" ? "bg-emerald-100 text-emerald-800" : "bg-stone-200 text-stone-700"}`}
             >
               {totalSecuredOrders}
             </span>

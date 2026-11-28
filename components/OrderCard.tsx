@@ -24,6 +24,7 @@ import {
 import { MODEL_CODE_TO_ALLOCATION } from "../src/utils/allocationReference";
 import { chipClasses } from "./ui/chipStyles";
 import { ORDER_ROW_GRID_XL } from "./orderRowGrid";
+import PaintSwatch from "./PaintSwatch";
 
 /**
  * Presentation only. Stored model text is sometimes just a model code
@@ -566,7 +567,16 @@ const OrderCard: React.FC<OrderCardProps> = ({
               {/* "Exterior:" / "Interior:" label themselves; the xl header row shows "Colors". */}
               <p className="sr-only">Colors</p>
               <p className="mt-0.5 break-words text-sm leading-snug text-stone-700 xl:mt-0">
-                <span className="block"><span className="font-semibold">Exterior:</span> {exteriorColors.join(" / ") || "Not listed"}</span>
+                <span className="block"><span className="font-semibold">Exterior:</span>{" "}
+                  {exteriorColors.length === 0
+                    ? "Not listed"
+                    : exteriorColors.map((color, i) => (
+                        <React.Fragment key={`${color}-${i}`}>
+                          {i > 0 && " / "}
+                          <span className="whitespace-nowrap"><PaintSwatch color={color} />{color}</span>
+                        </React.Fragment>
+                      ))}
+                </span>
                 <span className="block"><span className="font-semibold">Interior:</span> {interiorColors.join(" / ") || "Not listed"}</span>
               </p>
             </div>

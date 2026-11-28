@@ -136,7 +136,7 @@ function DealerHistoryDrawer({ relationship, periodLabel, onClose }: DealerHisto
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-medium text-stone-700">{formatDate(trade.date)}</p>
-                          <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                          <span className={`mt-1 inline-flex rounded-[3px] px-2 py-0.5 text-[11px] font-semibold ${
                             trade.direction === "OURS"
                               ? "bg-platinum text-graphite"
                               : trade.direction === "THEIRS"

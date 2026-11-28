@@ -462,7 +462,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                             </td>
                             <td className="px-3 py-3">
                               <span
-                                className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                className={`inline-flex rounded-[3px] px-2 py-0.5 text-xs font-semibold ${
                                   trade.direction === "OURS"
                                     ? "bg-platinum text-graphite"
                                     : trade.direction === "THEIRS"

@@ -72,7 +72,7 @@ describe("V-i-N DESIGN.md resolved questions", () => {
     render(<OrderPreviewDrawer order={order(OrderStatus.FactoryOrder)} onClose={() => {}} />);
     const badge = within(screen.getByRole("dialog")).getByText(OrderStatus.FactoryOrder);
     expect(badge.className).not.toContain("indigo");
-    expect(hasToken(badge.className, "rounded-full")).toBe(true);
+    expect(hasToken(badge.className, "rounded-[3px]")).toBe(true);
     expect(hasToken(badge.className, "text-stone-700")).toBe(true);
   });
 

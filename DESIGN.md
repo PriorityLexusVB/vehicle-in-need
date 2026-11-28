@@ -98,11 +98,40 @@ steps" rule, that is a new decision, not an extraction.`
 
 | Token | Value | Job |
 | --- | --- | --- |
-| `--color-canvas` | `#eef2f6` | Page background for the app/login/loading shell (`App.tsx:1023`, `Login.tsx:353`, `LoadingSpinner.tsx:5`). Replaces a retired warm `#f6f1ea` cream shell — **do not reintroduce cream/tan/sand.** |
+| `--color-canvas` | `#efefef` (was `#eef2f6` until 2026-11-28) | Page background for the app/login/loading shell (`App.tsx:1023`, `Login.tsx:353`, `LoadingSpinner.tsx:5`). Replaces a retired warm `#f6f1ea` cream shell — **do not reintroduce cream/tan/sand.** |
 | `--color-canvas-elevated` | `#f8fafc` | Elevated neutral surface within the canvas layer. |
 | `--color-graphite` | `#0e1418` | Focal dark surface — the header (`Header.tsx:71`), the login card (`Login.tsx:355`), and HIGH-SIGNAL cards on the Allocation Board (linked/matched vehicle rows get the dark band; plain available inventory stays light) (`AllocationBoard.tsx:1522-1618`). Warm near-black, deliberately **not navy** — the code comment cites the sister Sales Tracker app killing the same navy value for the same reason. |
 | `--color-graphite-elevated` | `#1a1815` | One step lighter than graphite, for elevated content inside a dark island. |
 | `--color-platinum` | `#cbd0d8` | Default prestige accent — active-nav fill (`Header.tsx:32,40`: `bg-platinum text-graphite`, i.e. platinum as a BACKGROUND fill with dark text, never as light-on-dark foreground text), model-total pills, "First in line" badge context. |
+
+### Layer 1b — Lexus-grade ramp retune (2026-11-28, pending Rob's review)
+
+Rob, 2026-11-27/28: "I also don't like the colors and stuff" and "no AI style
+right?". The default Tailwind ramps (warm `stone`, mint `emerald`, yellow
+`amber`, soft rounded shadows) were the generic-dashboard tell. Research:
+lexus.com RX model page, inspected 2026-11-28 (live screen): pure neutral
+grays (`#e6e6e6`/`#efefef`), black ink, square buttons, hairline spec dividers
+instead of shadows, one muted accent, and color carried by the car itself.
+
+What changed, all from `src/index.css` `@theme` so every existing class moves
+together:
+- `stone-*` retuned to a neutral ink scale (no warm tint). `stone-500` is
+  `#6a6a6a`: 5.4:1 on white, 4.7:1 on the canvas.
+- `emerald-*` (secured, linked: "we got the car") retuned to a deep muted green.
+- `amber-*` (still working on it: Locate, Dealer Exchange, awaiting action)
+  retuned to bronze.
+- `--radius-md/lg/xl` cut to 3-4px; `--shadow-sm` removed for in-page surfaces.
+  Modals and drawers keep their larger shadows.
+- Chips: 3px corners, small uppercase spaced labels (`chipClasses`).
+- Paint chips: `PaintSwatch` shows an approximate paint square before an
+  exterior color name on order rows and the Allocation Board, from
+  `EXTERIOR_COLORS[].swatch` in `src/utils/colorReference.ts`. Exact name or
+  code only; shades we are unsure of (Wind, Wavelength, Sunlit Green) show no
+  chip. It is a visual hint, never a paint match, and the name is always
+  written beside it.
+
+Not transferred from Lexus: the Nobel typeface (licensed), the espresso model
+band, marketing photography.
 
 ### Layer 2 — the chip/tone system used everywhere else (`components/ui/chipStyles.ts`)
 
@@ -419,6 +448,7 @@ _(none yet)*
 ### Open
 
 - "Did we get the car?" direction (Claude Design canvas `TqTp2g5VmF8846HiEf1Q7A`, Main/Allocation/Phone boards) — Rob, 2026-11-27: linking a car to the salesperson "doesn't really work well"; the key is knowing there is an order and that we got the car; allocation becomes the managers' area — Dashboard order rows + manager Allocation hub, all widths — 2026-11-27. Open until Rob approves the build and settles who confirms an automatic match.
+- Lexus-grade colors (preview draft 4, PR #299) — Rob, 2026-11-28: "I also don't like the colors and stuff", "no AI style right?"; neutral gray ink, bronze for in-progress, deep green for got-the-car, square corners, paint chips — all surfaces, all widths — 2026-11-28. Open until Rob reviews the preview.
 - Earlier tiles-and-black-bars Allocation Board — Rob, 2026-11-27: "super ugly"; replaced by graphite section bars over white rows (see Component Law) — Allocation Board, all widths — 2026-11-27. Not moved to Rejected yet: Rob gave a verdict, not a reason; confirm the reason when he reviews draft 2.
 
 The four questions listed here until 2026-09-17 were not taste

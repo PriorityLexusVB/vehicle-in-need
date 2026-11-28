@@ -26,7 +26,7 @@ interface HeaderLinkProps {
 
 const desktopNavClass = (active: boolean, compact = false) =>
   [
-    "inline-flex items-center justify-center gap-2 rounded-full text-sm font-semibold transition-colors",
+    "inline-flex items-center justify-center gap-2 rounded-[3px] text-sm font-semibold transition-colors",
     compact ? "px-2 py-1.5 sm:px-4" : "px-4 py-1.5",
     active
       ? "bg-platinum text-graphite shadow-sm"
@@ -89,7 +89,7 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
             </div>
 
             <nav
-              className="hidden items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1 min-[1120px]:flex"
+              className="hidden items-center gap-1 rounded-[4px] border border-white/10 bg-white/5 p-1 min-[1120px]:flex"
               data-testid="main-nav"
             >
               {user.isManager && (
@@ -153,7 +153,7 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
             )}
             <button
               onClick={onLogout}
-              className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-white/10 p-2 text-stone-300 transition-colors hover:bg-white/10 hover:text-white sm:px-3"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-[3px] border border-white/10 p-2 text-stone-300 transition-colors hover:bg-white/10 hover:text-white sm:px-3"
               aria-label="Sign Out"
             >
               <LogoutIcon className="h-5 w-5" />
