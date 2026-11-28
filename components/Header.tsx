@@ -26,19 +26,19 @@ interface HeaderLinkProps {
 
 const desktopNavClass = (active: boolean, compact = false) =>
   [
-    "inline-flex items-center justify-center gap-2 rounded-[3px] text-sm font-semibold transition-colors",
-    compact ? "px-2 py-1.5 sm:px-4" : "px-4 py-1.5",
+    "inline-flex items-center justify-center gap-2 border-b-2 text-sm font-semibold transition-colors",
+    compact ? "px-2 py-2" : "px-1 py-2",
     active
-      ? "bg-platinum text-graphite shadow-sm"
-      : "text-stone-300 hover:bg-white/10 hover:text-white",
+      ? "border-stone-950 text-stone-950"
+      : "border-transparent text-stone-500 hover:text-stone-950",
   ].join(" ");
 
 const mobileNavClass = (active: boolean) =>
   [
-    "flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold transition-colors",
+    "flex items-center gap-3 rounded-[3px] px-4 py-3 text-sm font-semibold transition-colors",
     active
-      ? "bg-platinum text-graphite shadow-sm"
-      : "text-stone-200 hover:bg-white/10 hover:text-white",
+      ? "bg-stone-100 text-stone-950"
+      : "text-stone-700 hover:bg-stone-50 hover:text-stone-950",
   ].join(" ");
 
 const HeaderLink: React.FC<HeaderLinkProps> = ({
@@ -69,27 +69,27 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-white/10 bg-graphite text-white shadow-lg shadow-black/20">
+    <header className="sticky top-0 z-30 border-b border-stone-200 bg-white text-stone-950">
       <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8">
-        <div className="flex min-h-20 items-center justify-between gap-4 py-3">
+        <div className="flex min-h-16 items-center justify-between gap-4 py-3">
           <div className="flex min-w-0 items-center gap-5 lg:gap-8">
             <div className="min-w-0">
-              <p className="hidden text-[11px] font-bold uppercase tracking-wide text-platinum sm:block">
+              <p className="hidden text-[11px] font-bold uppercase tracking-[0.12em] text-stone-500 sm:block">
                 Priority Lexus Virginia Beach
               </p>
               <Link to="/" className="group inline-flex items-baseline gap-2">
-                <h1 className="text-xl font-bold text-white transition-colors group-hover:text-platinum md:text-2xl">
+                <h1 className="text-lg font-bold tracking-tight text-stone-950 transition-colors group-hover:text-stone-600 md:text-xl">
                   Vehicle Order Tracker
                   <VersionBadge />
                 </h1>
               </Link>
-              <p className="hidden text-sm text-stone-300 sm:block">
+              <p className="hidden text-xs text-stone-500 sm:block">
                 Welcome, {user.displayName || user.email} {user.isManager && '(Manager)'}
               </p>
             </div>
 
             <nav
-              className="hidden items-center gap-1 rounded-[4px] border border-white/10 bg-white/5 p-1 min-[1120px]:flex"
+              className="hidden items-center gap-6 min-[1120px]:flex"
               data-testid="main-nav"
             >
               {user.isManager && (
@@ -145,22 +145,22 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
           <div className="flex items-center gap-2 sm:gap-4">
             {user.isManager && (
               <>
-                <div className="hidden rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-right 2xl:block">
-                  <span className="text-2xl font-bold leading-none text-white">{totalOrders}</span>
-                  <p className="mt-1 text-[11px] font-semibold uppercase text-platinum">Active Orders</p>
+                <div className="hidden border-l border-stone-200 px-4 text-right 2xl:block">
+                  <span className="text-xl font-bold leading-none text-stone-950">{totalOrders}</span>
+                  <p className="mt-1 text-[11px] font-semibold uppercase text-stone-500">Active Orders</p>
                 </div>
               </>
             )}
             <button
               onClick={onLogout}
-              className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-[3px] border border-white/10 p-2 text-stone-300 transition-colors hover:bg-white/10 hover:text-white sm:px-3"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-[3px] border border-stone-300 p-2 text-stone-700 transition-colors hover:bg-stone-100 hover:text-stone-950 sm:px-3"
               aria-label="Sign Out"
             >
               <LogoutIcon className="h-5 w-5" />
               <span className="hidden text-sm font-semibold sm:block">Sign Out</span>
             </button>
             <button
-              className="flex h-11 w-11 items-center justify-center rounded-lg border border-white/10 text-stone-200 transition-colors hover:bg-white/10 min-[1120px]:hidden"
+              className="flex h-11 w-11 items-center justify-center rounded-[3px] border border-stone-300 text-stone-700 transition-colors hover:bg-stone-100 min-[1120px]:hidden"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
               aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={mobileMenuOpen}
@@ -179,7 +179,7 @@ const Header: React.FC<HeaderProps> = ({ user, totalOrders, onLogout, currentPat
       </div>
 
       <div
-        className={`overflow-hidden border-t border-white/10 bg-graphite transition-all duration-200 ease-in-out min-[1120px]:hidden ${mobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
+        className={`overflow-hidden border-t border-stone-200 bg-white transition-all duration-200 ease-in-out min-[1120px]:hidden ${mobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
         data-testid="mobile-menu"
       >
         <nav className="space-y-1 px-4 py-3">

@@ -199,11 +199,11 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
       </div>
 
       <div id="dx-pipeline" className="pb-6">
-        <div className="overflow-hidden rounded-xl bg-graphite text-white">
+        <div className="overflow-hidden rounded-[4px] border border-stone-300 bg-white text-stone-950">
           <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2.5">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-platinum">Relationship ledger</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-600">Relationship ledger</p>
                 <span
                   data-testid="dx-feed-status"
                   className={`rounded-full border px-2.5 py-0.5 text-[11px] font-bold tracking-wide ${dxStatusPresentation.className}`}
@@ -211,62 +211,62 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                   {dxStatusPresentation.label}
                 </span>
               </div>
-              <h3 className="mt-2 text-2xl font-bold tracking-tight text-white">
+              <h3 className="mt-2 text-2xl font-bold tracking-tight text-stone-950">
                 {dxTotals.completed} ledger {dxTotals.completed === 1 ? "record" : "records"}
               </h3>
-              <p className="mt-1 text-sm font-semibold text-platinum">{periodLabel}</p>
-              <p className="mt-1 hidden text-sm text-stone-300 sm:block">
+              <p className="mt-1 text-sm font-semibold text-stone-600">{periodLabel}</p>
+              <p className="mt-1 hidden text-sm text-stone-600 sm:block">
                 Vehicle movement and who requested the exchange are counted separately.
               </p>
-              <dl className="mt-5 grid grid-cols-2 gap-y-3 border-y border-white/15 py-3 sm:grid-cols-4 sm:gap-y-0 sm:py-0">
-                <div className="border-r border-white/15 py-3 pr-2 sm:pr-3">
-                  <dt className="text-[11px] font-semibold uppercase leading-tight tracking-wide text-stone-400">Vehicles received</dt>
-                  <dd className="mt-1 text-xl font-bold tabular-nums text-white sm:text-2xl">{dxTotals.vehiclesReceived}</dd>
+              <dl className="mt-5 grid grid-cols-2 gap-y-3 border-y border-stone-200 py-3 sm:grid-cols-4 sm:gap-y-0 sm:py-0">
+                <div className="border-r border-stone-200 py-3 pr-2 sm:pr-3">
+                  <dt className="text-[11px] font-semibold uppercase leading-tight tracking-wide text-stone-500">Vehicles received</dt>
+                  <dd className="mt-1 text-xl font-bold tabular-nums text-stone-950 sm:text-2xl">{dxTotals.vehiclesReceived}</dd>
                 </div>
-                <div className="py-3 pl-3 sm:border-r sm:border-white/15 sm:px-3">
-                  <dt className="text-[11px] font-semibold uppercase leading-tight tracking-wide text-stone-400">Vehicles sent</dt>
-                  <dd className="mt-1 text-xl font-bold tabular-nums text-white sm:text-2xl">{dxTotals.vehiclesSent}</dd>
+                <div className="py-3 pl-3 sm:border-r sm:border-stone-200 sm:px-3">
+                  <dt className="text-[11px] font-semibold uppercase leading-tight tracking-wide text-stone-500">Vehicles sent</dt>
+                  <dd className="mt-1 text-xl font-bold tabular-nums text-stone-950 sm:text-2xl">{dxTotals.vehiclesSent}</dd>
                 </div>
-                <div className="border-r border-white/15 py-3 pr-2 sm:px-3">
-                  <dt className="text-[11px] font-semibold uppercase leading-tight tracking-wide text-stone-400">Received minus sent</dt>
-                  <dd className="mt-1 text-xl font-bold tabular-nums text-platinum sm:text-2xl" aria-hidden="true">
+                <div className="border-r border-stone-200 py-3 pr-2 sm:px-3">
+                  <dt className="text-[11px] font-semibold uppercase leading-tight tracking-wide text-stone-500">Received minus sent</dt>
+                  <dd className="mt-1 text-xl font-bold tabular-nums text-stone-600 sm:text-2xl" aria-hidden="true">
                     {vehicleBalance > 0 ? `+${vehicleBalance}` : vehicleBalance < 0 ? `−${Math.abs(vehicleBalance)}` : "0"}
                   </dd>
-                  <dd className="mt-1 text-xs font-semibold text-platinum">{vehicleBalanceLabel}</dd>
-                  <dd className="mt-0.5 text-xs tabular-nums text-stone-300">{dxTotals.vehiclesReceived} received − {dxTotals.vehiclesSent} sent</dd>
+                  <dd className="mt-1 text-xs font-semibold text-stone-600">{vehicleBalanceLabel}</dd>
+                  <dd className="mt-0.5 text-xs tabular-nums text-stone-600">{dxTotals.vehiclesReceived} received − {dxTotals.vehiclesSent} sent</dd>
                 </div>
                 <div className="py-3 pl-3">
-                  <dt className="text-[11px] font-semibold uppercase leading-tight tracking-wide text-stone-400">Recorded DX fees</dt>
-                  <dd className={`mt-1 font-bold text-white ${dxFees.entered > 0 ? "text-xl tabular-nums sm:text-2xl" : "text-base text-stone-300 sm:text-lg"}`}>
+                  <dt className="text-[11px] font-semibold uppercase leading-tight tracking-wide text-stone-500">Recorded DX fees</dt>
+                  <dd className={`mt-1 font-bold text-stone-950 ${dxFees.entered > 0 ? "text-xl tabular-nums sm:text-2xl" : "text-base text-stone-600 sm:text-lg"}`}>
                     {dxFees.entered > 0 ? `$${dxFees.total.toLocaleString("en-US", { maximumFractionDigits: 2 })}` : "No fees entered"}
                   </dd>
-                  <dd className="mt-0.5 text-xs tabular-nums text-stone-300">{dxFees.entered} of {dxTotals.completed} records have a fee</dd>
-                  {dxFees.missing > 0 && <dd className="mt-1 text-xs text-stone-300">{dxFees.missing} without a fee entered</dd>}
-                  {dxFees.invalid > 0 && <dd className="mt-1 text-xs text-amber-200">{dxFees.invalid} nonnumeric fee {dxFees.invalid === 1 ? "entry" : "entries"} excluded</dd>}
+                  <dd className="mt-0.5 text-xs tabular-nums text-stone-600">{dxFees.entered} of {dxTotals.completed} records have a fee</dd>
+                  {dxFees.missing > 0 && <dd className="mt-1 text-xs text-stone-600">{dxFees.missing} without a fee entered</dd>}
+                  {dxFees.invalid > 0 && <dd className="mt-1 text-xs text-amber-700">{dxFees.invalid} nonnumeric fee {dxFees.invalid === 1 ? "entry" : "entries"} excluded</dd>}
                 </div>
               </dl>
             </div>
 
-            <div className="grid min-w-56 grid-cols-2 gap-3 border-t border-white/15 pt-4 lg:flex lg:flex-col lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
+            <div className="grid min-w-56 grid-cols-2 gap-3 border-t border-stone-200 pt-4 lg:flex lg:flex-col lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-400">Latest source exchange (all {DX_CURRENT_FILE_DATE_LABEL})</p>
-                <p className="mt-1 font-semibold text-white">{formatDxBusinessDate(dxFeed.latestBusinessDate)}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Latest source exchange (all {DX_CURRENT_FILE_DATE_LABEL})</p>
+                <p className="mt-1 font-semibold text-stone-950">{formatDxBusinessDate(dxFeed.latestBusinessDate)}</p>
               </div>
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-400">Source checked</p>
-                <p className="mt-1 font-semibold text-white">{formatDxFetchTime(dxFeed.lastSuccessAt)}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Source checked</p>
+                <p className="mt-1 font-semibold text-stone-950">{formatDxFetchTime(dxFeed.lastSuccessAt)}</p>
               </div>
               <button
                 type="button"
                 onClick={onRefreshDx}
                 disabled={dxLoading}
-                className="col-span-2 inline-flex min-h-11 items-center justify-center rounded-lg bg-platinum px-4 py-2 text-sm font-semibold text-graphite transition-colors hover:bg-canvas-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white disabled:cursor-not-allowed disabled:opacity-50"
+                className="col-span-2 inline-flex min-h-11 items-center justify-center rounded-[3px] border border-stone-950 bg-white px-4 py-2 text-sm font-semibold text-stone-950 transition-colors hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-500 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {dxLoading ? "Syncing..." : "Refresh current source"}
               </button>
-              <p className="col-span-2 text-xs text-stone-300">Requested by us {dxTotals.oursRequested} · by them {dxTotals.theirsRequested}</p>
+              <p className="col-span-2 text-xs text-stone-600">Requested by us {dxTotals.oursRequested} · by them {dxTotals.theirsRequested}</p>
               {dxTotals.unknownInitiator > 0 && (
-                <p className="col-span-2 text-xs text-stone-300">{dxTotals.unknownInitiator} ledger {dxTotals.unknownInitiator === 1 ? "record has" : "records have"} no requester recorded.</p>
+                <p className="col-span-2 text-xs text-stone-600">{dxTotals.unknownInitiator} ledger {dxTotals.unknownInitiator === 1 ? "record has" : "records have"} no requester recorded.</p>
               )}
             </div>
           </div>
@@ -275,8 +275,8 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
             <div
               className={`border-t p-3 text-sm sm:px-5 ${
                 dxFeed.status === "stale"
-                  ? "border-orange-300/40 bg-orange-950/40 text-orange-100"
-                  : "border-red-300/40 bg-red-950/40 text-red-100"
+                  ? "border-orange-200 bg-orange-50 text-orange-900"
+                  : "border-red-200 bg-red-50 text-red-900"
               }`}
             >
               <strong>{dxFeed.status === "stale" ? "Showing last successful data." : "Current 2026 source unavailable."}</strong>{" "}
@@ -403,7 +403,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                 <>
                 <div className="hidden overflow-hidden rounded-lg border border-stone-300 bg-white md:block">
                   <table className="min-w-full text-sm">
-                    <thead className="bg-graphite text-left text-[11px] font-semibold uppercase tracking-wide text-stone-200">
+                    <thead className="border-b border-stone-300 bg-stone-50 text-left text-[11px] font-semibold uppercase tracking-wide text-stone-600">
                       <tr>
                         <th scope="col" className="px-3 py-3">Date</th>
                         <th scope="col" className="px-3 py-3">Vehicle</th>
@@ -515,12 +515,12 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                         data-dx-highlight={highlighted ? "true" : undefined}
                         className={`overflow-hidden rounded-lg border bg-white ${highlighted ? "border-stone-600 ring-2 ring-stone-300" : "border-stone-300"}`}
                       >
-                        <div className="flex items-start justify-between gap-3 bg-graphite px-4 py-3 text-white">
+                        <div className="flex items-start justify-between gap-3 border-b border-stone-200 bg-stone-50 px-4 py-3 text-stone-950">
                           <div>
                             <p className="text-lg font-bold">{trade.description || trade.modelNumber || "Vehicle not recorded"}</p>
-                            <p className="mt-0.5 text-xs text-stone-300">{[trade.year, trade.colorCode, trade.color].filter(Boolean).join(" · ")}</p>
+                            <p className="mt-0.5 text-xs text-stone-600">{[trade.year, trade.colorCode, trade.color].filter(Boolean).join(" · ")}</p>
                           </div>
-                          <p className="whitespace-nowrap text-xs font-semibold text-platinum">{formatDxBusinessDate(trade.date || null)}</p>
+                          <p className="whitespace-nowrap text-xs font-semibold text-stone-600">{formatDxBusinessDate(trade.date || null)}</p>
                         </div>
                         <dl className="grid grid-cols-2 gap-px bg-stone-200">
                           <div className="bg-white p-3">

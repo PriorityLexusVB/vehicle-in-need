@@ -2224,9 +2224,9 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({
               <div className="mt-5 space-y-6" data-testid="allocation-strategy-view">
                 {linkedGroupedRows.length > 0 && (
                   <div>
-                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-graphite px-3 py-2">
-                      <h3 className="text-sm font-semibold uppercase tracking-wide text-white">Linked to Customer</h3>
-                      <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-xs font-semibold tabular-nums text-stone-100">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2 border-b-2 border-stone-950 px-1 py-2">
+                      <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-950">Linked to Customer</h3>
+                      <span className="text-xs font-semibold tabular-nums text-stone-600">
                         {linkedFilteredVehicles.length} vehicle{linkedFilteredVehicles.length === 1 ? "" : "s"} / {linkedSummary.linkedOrderCount} order{linkedSummary.linkedOrderCount === 1 ? "" : "s"}
                       </span>
                     </div>
@@ -2243,9 +2243,9 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({
 
                 {matchedGroupedRows.length > 0 && (
                   <div>
-                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-graphite px-3 py-2">
-                      <h3 className="text-sm font-semibold uppercase tracking-wide text-white">Customer Matches</h3>
-                      <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-xs font-semibold tabular-nums text-stone-100">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2 border-b-2 border-stone-950 px-1 py-2">
+                      <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-950">Customer Matches</h3>
+                      <span className="text-xs font-semibold tabular-nums text-stone-600">
                         {matchSummary.matchedOrderCount} order{matchSummary.matchedOrderCount === 1 ? "" : "s"} / {matchSummary.matchedVehicleCount} vehicle{matchSummary.matchedVehicleCount === 1 ? "" : "s"}
                       </span>
                     </div>

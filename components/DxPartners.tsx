@@ -45,15 +45,15 @@ interface MetricProps {
 
 function Metric({ label, value, tone = "white" }: MetricProps) {
   const toneClasses = {
-    platinum: "text-platinum",
-    white: "text-white",
-    muted: "text-stone-300",
+    platinum: "text-stone-950",
+    white: "text-stone-950",
+    muted: "text-stone-600",
   }[tone];
 
   return (
-    <div className="min-w-0 border-l border-white/15 p-3 first:border-l-0">
+    <div className="min-w-0 border-l border-stone-200 p-3 first:border-l-0">
       <p className={`text-xl font-bold tabular-nums ${toneClasses}`}>{value}</p>
-      <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-stone-400">{label}</p>
+      <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">{label}</p>
     </div>
   );
 }
@@ -82,12 +82,12 @@ function DealerHistoryDrawer({ relationship, periodLabel, onClose }: DealerHisto
         >
           {relationship && (
             <>
-              <div className="flex items-start justify-between gap-3 bg-graphite p-4 text-white sm:rounded-tl-2xl">
+              <div className="flex items-start justify-between gap-3 border-b border-stone-200 bg-white p-4 text-stone-950 sm:rounded-tl-2xl">
                 <div className="min-w-0">
-                  <Drawer.Title className="truncate text-lg font-semibold text-white">
+                  <Drawer.Title className="truncate text-lg font-semibold text-stone-950">
                     {relationship.displayName}
                   </Drawer.Title>
-                  <p className="mt-0.5 text-sm text-stone-300">
+                  <p className="mt-0.5 text-sm text-stone-600">
                     {relationship.dealerCode ? `Dealer ${relationship.dealerCode}` : "Dealer code not recorded"}
                   </p>
                   {relationship.aliases.length > 1 && (
@@ -100,7 +100,7 @@ function DealerHistoryDrawer({ relationship, periodLabel, onClose }: DealerHisto
                   type="button"
                   onClick={onClose}
                   aria-label="Close dealer history"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-stone-300 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-platinum"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[3px] text-stone-600 transition-colors hover:bg-stone-100 hover:text-stone-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-500"
                 >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -110,7 +110,7 @@ function DealerHistoryDrawer({ relationship, periodLabel, onClose }: DealerHisto
 
               <div className="flex-1 overflow-y-auto p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-stone-400">{periodLabel} · Spreadsheet ledger records</p>
-                <div className="mt-2 grid grid-cols-2 overflow-hidden rounded-lg bg-graphite sm:grid-cols-4">
+                <div className="mt-2 grid grid-cols-2 overflow-hidden rounded-[4px] border border-stone-300 bg-white sm:grid-cols-4">
                   <Metric label="Vehicles received" value={relationship.allTime.vehiclesReceived} tone="platinum" />
                   <Metric label="Vehicles sent" value={relationship.allTime.vehiclesSent} />
                   <Metric label="Ledger records" value={relationship.allTime.totalCompleted} />
@@ -294,12 +294,12 @@ export default function DxPartners({
                   onClick={() => setSelectedId(relationship.id)}
                   className="overflow-hidden rounded-lg border border-stone-300 bg-white text-left transition hover:border-stone-500"
                 >
-                  <div className="flex items-start justify-between gap-3 bg-graphite p-4 text-white">
+                  <div className="flex items-start justify-between gap-3 border-b border-stone-200 bg-stone-50 p-4 text-stone-950">
                     <div>
-                      <p className="font-semibold text-white">{relationship.displayName}</p>
-                      <p className="mt-0.5 text-xs text-stone-300">{relationship.dealerCode || "Code not recorded"}</p>
+                      <p className="font-semibold text-stone-950">{relationship.displayName}</p>
+                      <p className="mt-0.5 text-xs text-stone-600">{relationship.dealerCode || "Code not recorded"}</p>
                     </div>
-                    <p className="text-right text-xs text-stone-400">Last DX<br /><strong className="text-platinum">{formatDate(metrics.lastActivity)}</strong></p>
+                    <p className="text-right text-xs text-stone-500">Last DX<br /><strong className="text-stone-950">{formatDate(metrics.lastActivity)}</strong></p>
                   </div>
                   <div className="grid grid-cols-3 divide-x divide-stone-200 text-center">
                     <div className="px-2 py-3">
