@@ -129,6 +129,12 @@ together:
   code only; shades we are unsure of (Wind, Wavelength, Sunlit Green) show no
   chip. It is a visual hint, never a paint match, and the name is always
   written beside it.
+- **No dark banners (Rob, 2026-11-28: "THE DARK HUGE BANNER?").** The top bar
+  is white with a hairline under it and black text, and the current page is
+  marked with a black underline, like lexus.com. The Dealer Exchange
+  relationship ledger, its table head, the dealer cards and the dealer drawer,
+  and the Allocation group headings are white or light gray with hairlines.
+  Black stays for the main action button and the selected tab only.
 
 Not transferred from Lexus: the Nobel typeface (licensed), the espresso model
 band, marketing photography.
