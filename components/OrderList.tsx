@@ -12,6 +12,7 @@ import { OrderMatchSummary } from "../src/utils/orderMatchSummary";
 import { AllocationVehicle } from "../src/utils/allocationTypes";
 import type { LatestModelNumberTotals } from "../src/utils/allocationModelNumberTotals";
 import { chipClasses } from "./ui/chipStyles";
+import { ORDER_ROW_COLUMNS, ORDER_ROW_GRID_XL } from "./orderRowGrid";
 
 interface OrderListProps {
   orders: Order[];
@@ -27,6 +28,8 @@ interface OrderListProps {
   orderMatchSummaries?: Map<string, OrderMatchSummary>;
   allocationVehicles?: AllocationVehicle[];
   linkedVehicleIds?: Set<string>;
+  /** vehicle_links-confirmed ids for the car-status cell; null while links load or fail. */
+  confirmedLinkIds?: ReadonlySet<string> | null;
   latestModelNumberTotals?: LatestModelNumberTotals | null;
   allocationSnapshotStatus?: "loading" | "ready" | "missing" | "error";
   allocationClaimsStatus?: "loading" | "ready" | "error";
@@ -42,6 +45,7 @@ const OrderList: React.FC<OrderListProps> = ({
   orderMatchSummaries,
   allocationVehicles,
   linkedVehicleIds,
+  confirmedLinkIds,
   latestModelNumberTotals,
   allocationSnapshotStatus,
   allocationClaimsStatus,
@@ -196,26 +200,8 @@ const OrderList: React.FC<OrderListProps> = ({
   };
 
   return (
-    <div className="rounded-lg border border-stone-200 bg-white/95 p-4 shadow-sm sm:p-6">
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm text-stone-500 mt-1">
-            Showing {filteredOrders.length} of{" "}
-            {activeTab === "active" ? totalActiveOrders : totalSecuredOrders}{" "}
-            orders.
-          </p>
-        </div>
-        <button
-          onClick={handleExport}
-          className="flex flex-shrink-0 items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors duration-200 hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={filteredOrders.length === 0}
-        >
-          <DownloadIcon />
-          Export Results
-        </button>
-      </div>
-
-      <div className="mb-5 border-b border-stone-200">
+    <div>
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-x-4 border-b border-stone-200">
         <div className="-mb-px flex flex-wrap gap-2" role="tablist" aria-label="Tabs">
           <button
             role="tab"
@@ -224,7 +210,7 @@ const OrderList: React.FC<OrderListProps> = ({
               setActiveTab("active");
               setStatusFilter("all");
             }}
-            className={`whitespace-nowrap border-b-2 px-3 pb-3 text-sm font-semibold transition-colors ${
+            className={`min-h-11 whitespace-nowrap border-b-2 px-3 pb-3 text-sm font-semibold transition-colors ${
               activeTab === "active"
                 ? "border-stone-950 text-stone-950"
                 : "border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300"
@@ -232,7 +218,7 @@ const OrderList: React.FC<OrderListProps> = ({
           >
             Active Orders{" "}
             <span
-              className={`ml-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold ${activeTab === "active" ? "bg-amber-100 text-stone-950" : "bg-stone-200 text-stone-700"}`}
+              className={`ml-1.5 rounded-full px-2 py-0.5 text-xs font-bold tabular-nums ${activeTab === "active" ? "bg-stone-950 text-white" : "bg-stone-200 text-stone-700"}`}
             >
               {totalActiveOrders}
             </span>
@@ -241,7 +227,7 @@ const OrderList: React.FC<OrderListProps> = ({
             role="tab"
             aria-selected={activeTab === "secured"}
             onClick={() => setActiveTab("secured")}
-            className={`whitespace-nowrap border-b-2 px-3 pb-3 text-sm font-semibold transition-colors ${
+            className={`min-h-11 whitespace-nowrap border-b-2 px-3 pb-3 text-sm font-semibold transition-colors ${
               activeTab === "secured"
                 ? "border-stone-950 text-stone-950"
                 : "border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300"
@@ -249,15 +235,21 @@ const OrderList: React.FC<OrderListProps> = ({
           >
             Secured History{" "}
             <span
-              className={`ml-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold ${activeTab === "secured" ? "bg-emerald-100 text-emerald-800" : "bg-stone-200 text-stone-700"}`}
+              className={`ml-1.5 rounded-full px-2 py-0.5 text-xs font-bold tabular-nums ${activeTab === "secured" ? "bg-emerald-100 text-emerald-800" : "bg-stone-200 text-stone-700"}`}
             >
               {totalSecuredOrders}
             </span>
           </button>
         </div>
+        <p className="pb-3 text-sm tabular-nums text-stone-500">
+          Showing {filteredOrders.length} of{" "}
+          {activeTab === "active" ? totalActiveOrders : totalSecuredOrders}{" "}
+          orders.
+        </p>
       </div>
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start">
+        <div className="min-w-0 flex-1">
         <label htmlFor="searchQuery" className="sr-only">
           Search Orders
         </label>
@@ -268,7 +260,7 @@ const OrderList: React.FC<OrderListProps> = ({
             placeholder="Search by Customer, Salesperson, Model, Deal #, Stock #, or VIN..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="block w-full rounded-lg border border-stone-300 bg-stone-50 p-2.5 pr-11 text-stone-900 shadow-sm outline-none transition focus:border-stone-500 focus:ring-2 focus:ring-stone-200 sm:text-sm"
+            className="block w-full min-h-11 rounded-lg border border-stone-300 bg-white p-2.5 pr-11 text-stone-900 outline-none transition placeholder:text-stone-500 focus:border-stone-500 focus:ring-2 focus:ring-stone-200 sm:text-sm"
           />
           {searchQuery && (
             <button
@@ -282,6 +274,15 @@ const OrderList: React.FC<OrderListProps> = ({
             </button>
           )}
         </div>
+        </div>
+        <button
+          onClick={handleExport}
+          className="flex min-h-11 flex-shrink-0 items-center justify-center gap-2 rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-800 transition-colors duration-200 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={filteredOrders.length === 0}
+        >
+          <DownloadIcon />
+          Export Results
+        </button>
       </div>
 
       {activeTab === "active" && (
@@ -292,7 +293,7 @@ const OrderList: React.FC<OrderListProps> = ({
             </span>
             <button
               onClick={() => setStatusFilter("all")}
-              className={chipClasses({ active: statusFilter === "all", tone: "brand" })}
+              className={chipClasses({ active: statusFilter === "all", tone: "brand", className: "min-h-11 sm:min-h-0" })}
             >
               All Active
             </button>
@@ -303,6 +304,7 @@ const OrderList: React.FC<OrderListProps> = ({
                 className={chipClasses({
                   active: statusFilter === status,
                   tone: status === OrderStatus.DealerExchange ? "warning" : "brand",
+                  className: "min-h-11 sm:min-h-0",
                 })}
               >
                 {status}
@@ -312,7 +314,21 @@ const OrderList: React.FC<OrderListProps> = ({
         </div>
       )}
 
-      <div ref={animateRef} role="tabpanel" className="space-y-4">
+      {currentUser?.isManager && filteredOrders.length > 0 && (
+        // Visual column headings for the wide-screen rows; each cell keeps its own
+        // screen-reader label, so this row is hidden from assistive tech.
+        <div
+          aria-hidden="true"
+          data-testid="order-list-column-headings"
+          className={`mb-1.5 hidden gap-x-5 border-x border-transparent px-4 text-[11px] font-semibold uppercase tracking-wide text-stone-500 xl:grid ${ORDER_ROW_GRID_XL}`}
+        >
+          {ORDER_ROW_COLUMNS.map((label) => (
+            <span key={label}>{label}</span>
+          ))}
+          <span />
+        </div>
+      )}
+      <div ref={animateRef} role="tabpanel" className="space-y-2.5">
         {filteredOrders.length > 0 ? (
           filteredOrders.map((order) => (
             <OrderCard
@@ -326,6 +342,7 @@ const OrderList: React.FC<OrderListProps> = ({
               matchSummary={orderMatchSummaries?.get(order.id)}
               allocationVehicles={allocationVehicles}
               linkedVehicleIds={linkedVehicleIds}
+              confirmedLinkIds={confirmedLinkIds}
               latestModelNumberTotals={latestModelNumberTotals}
               allocationSnapshotStatus={allocationSnapshotStatus}
               allocationClaimsStatus={allocationClaimsStatus}

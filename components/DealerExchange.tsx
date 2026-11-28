@@ -162,47 +162,48 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
 
   return (
     <section aria-labelledby="dealer-exchange-page-title">
-      <div className="mb-4 border-b border-stone-300 pb-3 sm:mb-5 sm:pb-4">
-        <p className="hidden text-xs font-semibold uppercase tracking-[0.16em] text-stone-500 sm:block">Manager command desk</p>
-        <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 id="dealer-exchange-page-title" className="text-3xl font-bold tracking-tight text-stone-950">
-              Dealer Exchange
-            </h2>
+      <div className="mb-4 border-b border-stone-300 pb-4 sm:mb-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <p className="hidden text-xs font-semibold uppercase tracking-[0.16em] text-stone-600 sm:block">Manager command desk</p>
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 sm:mt-1">
+              <h2 id="dealer-exchange-page-title" className="text-3xl font-bold tracking-tight text-stone-950">
+                Dealer Exchange
+              </h2>
+              <p className="hidden text-xs font-semibold tabular-nums text-stone-600 sm:block">
+                {dxRelationships.length} {dxRelationships.length === 1 ? "partner" : "partners"} on record
+              </p>
+            </div>
             <p className="mt-1 max-w-2xl text-sm text-stone-600">
               Track vehicles received and sent, who requested each exchange, and the evidence behind every spreadsheet record.
             </p>
           </div>
-          <p className="hidden text-xs font-medium text-stone-500 sm:block">
-            {dxRelationships.length} {dxRelationships.length === 1 ? "partner" : "partners"} on record
-          </p>
+          <div className="flex flex-col gap-1.5 sm:items-start lg:items-end">
+            <label className="flex items-center gap-3 text-sm font-semibold text-stone-800">
+              Month
+              <select
+                value={selectedMonth}
+                onChange={(event) => {
+                  setSelectedMonth(event.target.value);
+                  setSelectedDxDealerId(null);
+                }}
+                className="min-h-11 min-w-44 rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-500"
+              >
+                <option value="">All {DX_CURRENT_FILE_DATE_LABEL}</option>
+                {DX_MONTH_OPTIONS.map((month) => <option key={month.value} value={month.value}>{month.label}</option>)}
+              </select>
+            </label>
+            <p className="text-xs text-stone-600" aria-live="polite">{periodLabel} · Totals, partners and ledger use this period.</p>
+          </div>
         </div>
       </div>
 
-      <div className="mb-4 flex flex-col gap-2 rounded-lg border border-stone-300 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
-        <label className="flex items-center gap-3 text-sm font-semibold text-stone-800">
-          Month
-          <select
-            value={selectedMonth}
-            onChange={(event) => {
-              setSelectedMonth(event.target.value);
-              setSelectedDxDealerId(null);
-            }}
-            className="min-h-11 min-w-44 rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-500"
-          >
-            <option value="">All {DX_CURRENT_FILE_DATE_LABEL}</option>
-            {DX_MONTH_OPTIONS.map((month) => <option key={month.value} value={month.value}>{month.label}</option>)}
-          </select>
-        </label>
-        <p className="text-xs text-stone-600" aria-live="polite">{periodLabel} · Totals, partners and ledger use this period.</p>
-      </div>
-
       <div id="dx-pipeline" className="pb-6">
-        <div className="overflow-hidden rounded-xl bg-graphite text-white">
+        <div className="overflow-hidden rounded-2xl bg-white text-stone-950 shadow-card ring-1 ring-stone-950/5">
           <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2.5">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-platinum">Relationship ledger</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-600">Relationship ledger</p>
                 <span
                   data-testid="dx-feed-status"
                   className={`rounded-full border px-2.5 py-0.5 text-[11px] font-bold tracking-wide ${dxStatusPresentation.className}`}
@@ -210,59 +211,59 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                   {dxStatusPresentation.label}
                 </span>
               </div>
-              <h3 className="mt-2 text-2xl font-bold tracking-tight text-white">
+              <h3 className="mt-2 text-2xl font-bold tracking-tight text-stone-950">
                 {dxTotals.completed} ledger {dxTotals.completed === 1 ? "record" : "records"}
               </h3>
-              <p className="mt-1 text-sm font-semibold text-platinum">{periodLabel}</p>
-              <p className="mt-1 hidden text-sm text-stone-300 sm:block">
-                Vehicle movement and who requested the exchange are counted separately.
-              </p>
-              <dl className="mt-5 grid grid-cols-2 gap-y-3 border-y border-white/15 py-3 sm:grid-cols-4 sm:gap-y-0 sm:py-0">
-                <div className="border-r border-white/15 py-3 pr-2 sm:pr-3">
-                  <dt className="text-[9px] font-semibold uppercase leading-tight tracking-wide text-stone-400 sm:text-[11px]">Vehicles received</dt>
-                  <dd className="mt-1 text-xl font-bold tabular-nums text-white sm:text-2xl">{dxTotals.vehiclesReceived}</dd>
+              <p className="mt-1 text-sm font-semibold text-stone-600">{periodLabel}</p>
+              <dl className="mt-5 grid grid-cols-2 gap-y-3 border-y border-stone-200 py-3 sm:grid-cols-4 sm:gap-y-0 sm:py-0">
+                <div className="border-r border-stone-200 py-3 pr-2 sm:pr-3">
+                  <dt className="text-[10px] font-bold uppercase leading-tight tracking-[0.16em] text-stone-500">Vehicles received</dt>
+                  <dd className="mt-1.5 text-3xl font-black leading-none tracking-tight tabular-nums text-stone-950 sm:text-4xl">{dxTotals.vehiclesReceived}</dd>
                 </div>
-                <div className="border-r border-white/15 px-2 py-3 sm:px-3">
-                  <dt className="text-[9px] font-semibold uppercase leading-tight tracking-wide text-stone-400 sm:text-[11px]">Vehicles sent</dt>
-                  <dd className="mt-1 text-xl font-bold tabular-nums text-white sm:text-2xl">{dxTotals.vehiclesSent}</dd>
+                <div className="py-3 pl-3 sm:border-r sm:border-stone-200 sm:px-3">
+                  <dt className="text-[10px] font-bold uppercase leading-tight tracking-[0.16em] text-stone-500">Vehicles sent</dt>
+                  <dd className="mt-1.5 text-3xl font-black leading-none tracking-tight tabular-nums text-stone-950 sm:text-4xl">{dxTotals.vehiclesSent}</dd>
                 </div>
-                <div className="border-r border-white/15 px-2 py-3 sm:px-3">
-                  <dt className="text-[9px] font-semibold uppercase leading-tight tracking-wide text-stone-400 sm:text-[11px]">Received minus sent</dt>
-                  <dd className="mt-1 text-xs font-semibold text-platinum sm:text-sm">{vehicleBalanceLabel}</dd>
-                  <dd className="mt-1 text-xs text-stone-300">{dxTotals.vehiclesReceived} received − {dxTotals.vehiclesSent} sent</dd>
+                <div className="border-r border-stone-200 py-3 pr-2 sm:px-3">
+                  <dt className="text-[10px] font-bold uppercase leading-tight tracking-[0.16em] text-stone-500">Received minus sent</dt>
+                  <dd className="mt-1.5 text-3xl font-black leading-none tracking-tight tabular-nums text-stone-950 sm:text-4xl" aria-hidden="true">
+                    {vehicleBalance > 0 ? `+${vehicleBalance}` : vehicleBalance < 0 ? `−${Math.abs(vehicleBalance)}` : "0"}
+                  </dd>
+                  <dd className="mt-1 text-xs font-semibold text-stone-600">{vehicleBalanceLabel}</dd>
+                  <dd className="mt-0.5 text-xs tabular-nums text-stone-600">{dxTotals.vehiclesReceived} received − {dxTotals.vehiclesSent} sent</dd>
                 </div>
-                <div className="py-3 pl-2 sm:pl-3">
-                  <dt className="text-[9px] font-semibold uppercase leading-tight tracking-wide text-stone-400 sm:text-[11px]">Recorded DX fees</dt>
-                  <dd className="mt-1 text-xs font-semibold text-white sm:text-sm">
+                <div className="py-3 pl-3">
+                  <dt className="text-[10px] font-bold uppercase leading-tight tracking-[0.16em] text-stone-500">Recorded DX fees</dt>
+                  <dd className={`mt-1 font-bold text-stone-950 ${dxFees.entered > 0 ? "text-3xl font-black leading-none tracking-tight tabular-nums sm:text-4xl" : "text-base text-stone-600 sm:text-lg"}`}>
                     {dxFees.entered > 0 ? `$${dxFees.total.toLocaleString("en-US", { maximumFractionDigits: 2 })}` : "No fees entered"}
                   </dd>
-                  <dd className="mt-1 text-xs text-stone-300">{dxFees.entered} of {dxTotals.completed} records have a fee</dd>
-                  {dxFees.missing > 0 && <dd className="mt-1 text-xs text-stone-300">{dxFees.missing} without a fee entered</dd>}
-                  {dxFees.invalid > 0 && <dd className="mt-1 text-xs text-amber-200">{dxFees.invalid} nonnumeric fee {dxFees.invalid === 1 ? "entry" : "entries"} excluded</dd>}
+                  <dd className="mt-0.5 text-xs tabular-nums text-stone-600">{dxFees.entered} of {dxTotals.completed} records have a fee</dd>
+                  {dxFees.missing > 0 && <dd className="mt-1 text-xs text-stone-600">{dxFees.missing} without a fee entered</dd>}
+                  {dxFees.invalid > 0 && <dd className="mt-1 text-xs text-amber-700">{dxFees.invalid} nonnumeric fee {dxFees.invalid === 1 ? "entry" : "entries"} excluded</dd>}
                 </div>
               </dl>
             </div>
 
-            <div className="grid min-w-56 grid-cols-2 gap-3 border-t border-white/15 pt-4 lg:flex lg:flex-col lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
+            <div className="grid min-w-56 grid-cols-2 gap-3 border-t border-stone-200 pt-4 lg:flex lg:flex-col lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-400">Latest source exchange (all {DX_CURRENT_FILE_DATE_LABEL})</p>
-                <p className="mt-1 font-semibold text-white">{formatDxBusinessDate(dxFeed.latestBusinessDate)}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Latest source exchange (all {DX_CURRENT_FILE_DATE_LABEL})</p>
+                <p className="mt-1 font-semibold text-stone-950">{formatDxBusinessDate(dxFeed.latestBusinessDate)}</p>
               </div>
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-400">Source checked</p>
-                <p className="mt-1 font-semibold text-white">{formatDxFetchTime(dxFeed.lastSuccessAt)}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Source checked</p>
+                <p className="mt-1 font-semibold text-stone-950">{formatDxFetchTime(dxFeed.lastSuccessAt)}</p>
               </div>
               <button
                 type="button"
                 onClick={onRefreshDx}
                 disabled={dxLoading}
-                className="col-span-2 inline-flex min-h-11 items-center justify-center rounded-lg bg-platinum px-4 py-2 text-sm font-semibold text-graphite transition-colors hover:bg-canvas-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white disabled:cursor-not-allowed disabled:opacity-50"
+                className="col-span-2 inline-flex min-h-11 items-center justify-center rounded-lg bg-stone-950 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-stone-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-500 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {dxLoading ? "Syncing..." : "Refresh current source"}
               </button>
-              <p className="col-span-2 text-xs text-stone-300">Requested by us {dxTotals.oursRequested} · by them {dxTotals.theirsRequested}</p>
+              <p className="col-span-2 text-xs text-stone-600">Requested by us {dxTotals.oursRequested} · by them {dxTotals.theirsRequested}</p>
               {dxTotals.unknownInitiator > 0 && (
-                <p className="col-span-2 text-xs text-stone-300">{dxTotals.unknownInitiator} ledger {dxTotals.unknownInitiator === 1 ? "record has" : "records have"} no requester recorded.</p>
+                <p className="col-span-2 text-xs text-stone-600">{dxTotals.unknownInitiator} ledger {dxTotals.unknownInitiator === 1 ? "record has" : "records have"} no requester recorded.</p>
               )}
             </div>
           </div>
@@ -271,8 +272,8 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
             <div
               className={`border-t p-3 text-sm sm:px-5 ${
                 dxFeed.status === "stale"
-                  ? "border-orange-300/40 bg-orange-950/40 text-orange-100"
-                  : "border-red-300/40 bg-red-950/40 text-red-100"
+                  ? "border-orange-200 bg-orange-50 text-orange-900"
+                  : "border-red-200 bg-red-50 text-red-900"
               }`}
             >
               <strong>{dxFeed.status === "stale" ? "Showing last successful data." : "Current 2026 source unavailable."}</strong>{" "}
@@ -336,34 +337,41 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
           )}
         </div>
 
-        <div className="mt-4 rounded-lg border border-stone-300 bg-white p-1">
-          <div className="grid grid-cols-2 gap-1" role="tablist" aria-label="Dealer Exchange views">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={dxPanelView === "partners"}
-              onClick={() => setDxPanelView("partners")}
-              className={`min-h-11 rounded-md px-4 py-2.5 text-sm font-semibold transition-colors ${
-                dxPanelView === "partners"
-                  ? "bg-graphite text-white"
-                  : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"
-              }`}
-            >
-              DX Partners
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={dxPanelView === "history"}
-              onClick={() => setDxPanelView("history")}
-              className={`min-h-11 rounded-md px-4 py-2.5 text-sm font-semibold transition-colors ${
-                dxPanelView === "history"
-                  ? "bg-graphite text-white"
-                  : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"
-              }`}
-            >
-              Ledger records
-            </button>
+        <div className="mt-4">
+          <div
+            className="inline-flex gap-0.5 rounded-lg border border-stone-300 bg-stone-100 p-0.5"
+            role="tablist"
+            aria-label="Dealer Exchange views"
+          >
+            {([
+              ["partners", "DX Partners"],
+              ["history", "Ledger records"],
+            ] as const).map(([view, label]) => (
+              <button
+                key={view}
+                id={`dx-tab-${view}`}
+                type="button"
+                role="tab"
+                aria-selected={dxPanelView === view}
+                tabIndex={dxPanelView === view ? 0 : -1}
+                onClick={() => setDxPanelView(view)}
+                onKeyDown={(event) => {
+                  if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
+                    event.preventDefault();
+                    const next: DxPanelView = view === "partners" ? "history" : "partners";
+                    setDxPanelView(next);
+                    document.getElementById(`dx-tab-${next}`)?.focus();
+                  }
+                }}
+                className={`min-h-11 whitespace-nowrap rounded-md px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-500 ${
+                  dxPanelView === view
+                    ? "bg-graphite text-white shadow-sm"
+                    : "text-stone-700 hover:bg-white hover:text-stone-950"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -381,18 +389,18 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                 <p className="max-w-2xl text-sm text-stone-600">
                   Every spreadsheet record links back to its source row. Newest records first.
                 </p>
-                <p className="text-xs font-semibold text-stone-500">{periodLabel} · spreadsheet only</p>
+                <p className="text-xs font-semibold text-stone-600">{periodLabel} · spreadsheet only</p>
               </div>
 
               {visibleDxTrades.length === 0 ? (
-                <div className="rounded-lg border border-stone-300 bg-white p-6 text-center text-sm text-stone-500">
+                <div className="rounded-2xl bg-white p-6 text-center ring-1 ring-stone-950/5 text-sm text-stone-500">
                   No DX records for {periodLabel}. Choose another month or All {DX_CURRENT_FILE_DATE_LABEL}.
                 </div>
               ) : (
                 <>
-                <div className="hidden overflow-hidden rounded-lg border border-stone-300 bg-white md:block">
+                <div className="hidden overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-stone-950/5 md:block">
                   <table className="min-w-full text-sm">
-                    <thead className="bg-graphite text-left text-[11px] font-semibold uppercase tracking-wide text-stone-200">
+                    <thead className="border-b border-stone-300 bg-stone-50 text-left text-[11px] font-semibold uppercase tracking-wide text-stone-600">
                       <tr>
                         <th scope="col" className="px-3 py-3">Date</th>
                         <th scope="col" className="px-3 py-3">Vehicle</th>
@@ -425,11 +433,11 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                                 : "hover:bg-stone-50"
                             }`}
                           >
-                            <td className="whitespace-nowrap px-3 py-3 text-stone-500">{formatDxBusinessDate(trade.date || null)}</td>
+                            <td className="whitespace-nowrap px-3 py-3 tabular-nums text-stone-600">{formatDxBusinessDate(trade.date || null)}</td>
                             <td className="px-3 py-3">
                               <span className="font-semibold text-stone-900">{trade.description || trade.modelNumber || "Not recorded"}</span>
-                              {trade.year && <span className="ml-1 text-xs text-stone-400">{trade.year}</span>}
-                              <p className="mt-0.5 text-xs text-stone-400">Sent: {trade.outgoingModelNumber || trade.vinOutgoing || trade.outgoingStock || "Not recorded"}</p>
+                              {trade.year && <span className="ml-1 text-xs tabular-nums text-stone-500">{trade.year}</span>}
+                              <p className="mt-0.5 text-xs text-stone-500">Sent: {trade.outgoingModelNumber || trade.vinOutgoing || trade.outgoingStock || "Not recorded"}</p>
                             </td>
                             <td className="px-3 py-3">
                               {[trade.colorCode, trade.color].filter(Boolean).join(" · ") || "—"}
@@ -447,7 +455,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                               >
                                 {trade.tradingDealer || "Unknown dealer"}
                               </button>
-                              {trade.dealerCode && <p className="mt-0.5 text-xs text-stone-400">Dealer {trade.dealerCode}</p>}
+                              {trade.dealerCode && <p className="mt-0.5 text-xs tabular-nums text-stone-500">Dealer {trade.dealerCode}</p>}
                             </td>
                             <td className="px-3 py-3">
                               <span
@@ -466,7 +474,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                                     : "Not recorded"}
                               </span>
                             </td>
-                            <td className="px-3 py-3 font-mono text-xs text-stone-500">
+                            <td className="px-3 py-3 font-mono text-xs tabular-nums text-stone-600">
                               {trade.stockNumber || trade.vinIncoming || "—"}
                             </td>
                             <td className="whitespace-nowrap px-3 py-3">
@@ -504,33 +512,33 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                         data-dx-highlight={highlighted ? "true" : undefined}
                         className={`overflow-hidden rounded-lg border bg-white ${highlighted ? "border-stone-600 ring-2 ring-stone-300" : "border-stone-300"}`}
                       >
-                        <div className="flex items-start justify-between gap-3 bg-graphite px-4 py-3 text-white">
+                        <div className="flex items-start justify-between gap-3 border-b border-stone-200 bg-stone-50 px-4 py-3 text-stone-950">
                           <div>
                             <p className="text-lg font-bold">{trade.description || trade.modelNumber || "Vehicle not recorded"}</p>
-                            <p className="mt-0.5 text-xs text-stone-300">{[trade.year, trade.colorCode, trade.color].filter(Boolean).join(" · ")}</p>
+                            <p className="mt-0.5 text-xs text-stone-600">{[trade.year, trade.colorCode, trade.color].filter(Boolean).join(" · ")}</p>
                           </div>
-                          <p className="whitespace-nowrap text-xs font-semibold text-platinum">{formatDxBusinessDate(trade.date || null)}</p>
+                          <p className="whitespace-nowrap text-xs font-semibold text-stone-600">{formatDxBusinessDate(trade.date || null)}</p>
                         </div>
                         <dl className="grid grid-cols-2 gap-px bg-stone-200">
                           <div className="bg-white p-3">
-                            <dt className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">Trading dealer</dt>
+                            <dt className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Trading dealer</dt>
                             <dd className="mt-1 text-sm font-semibold text-stone-900">{trade.tradingDealer || "Unknown dealer"}</dd>
                             {trade.dealerCode && <p className="mt-0.5 text-xs text-stone-500">Dealer {trade.dealerCode}</p>}
                           </div>
                           <div className="bg-white p-3">
-                            <dt className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">Requested by</dt>
+                            <dt className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Requested by</dt>
                             <dd className="mt-1 text-sm font-semibold text-stone-900">
                               {trade.direction === "OURS" ? "Us" : trade.direction === "THEIRS" ? "Them" : "Not recorded"}
                             </dd>
                           </div>
                           <div className="bg-white p-3">
-                            <dt className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">Stock / VIN</dt>
+                            <dt className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Stock / VIN</dt>
                             <dd className="mt-1 break-all font-mono text-xs text-stone-700">
                               {trade.stockNumber || trade.vinIncoming || "Not recorded"}
                             </dd>
                           </div>
                           <div className="bg-white p-3">
-                            <dt className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">Evidence</dt>
+                            <dt className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Evidence</dt>
                             <dd className="mt-1">
                               <a
                                 href={trade.sourceRowUrl}

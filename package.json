@@ -12,6 +12,8 @@
     "prebuild:check": "node scripts/check-conflicts.cjs",
     "prebuild": "npm run prebuild:check",
     "build": "vite build",
+    "build:mock": "vite build --config preview-mock/vite.mock.config.ts",
+    "shots:mock": "node preview-mock/shot.mjs",
     "postbuild": "node scripts/verify-css-in-build.cjs",
     "preview": "vite preview",
     "start": "node server/index.cjs",

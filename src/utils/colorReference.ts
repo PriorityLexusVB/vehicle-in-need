@@ -11,6 +11,11 @@ interface ColorEntry {
 
 export interface ExteriorColorEntry extends ColorEntry {
   code: string;
+  /**
+   * Approximate on-screen paint chip (a visual hint, not a paint match).
+   * Left blank where we are not confident of the shade, so no chip is shown.
+   */
+  swatch?: string;
 }
 
 export interface InteriorColorEntry extends ColorEntry {
@@ -22,39 +27,39 @@ export interface InteriorColorEntry extends ColorEntry {
  */
 export const EXTERIOR_COLORS: ExteriorColorEntry[] = [
   // Whites
-  { code: "083", name: "Ultra White", aliases: ["white", "ultra white"] },
-  { code: "085", name: "Eminent White Pearl", aliases: ["white", "eminent white", "sonic quartz", "pearl white", "white pearl"] },
-  { code: "089", name: "Wind Chill Pearl", aliases: ["wind chill", "white", "pearl"] },
-  { code: "090", name: "Oxygen White", aliases: ["white", "oxygen white"] },
+  { code: "083", name: "Ultra White", aliases: ["white", "ultra white"], swatch: "#f4f4f2" },
+  { code: "085", name: "Eminent White Pearl", aliases: ["white", "eminent white", "sonic quartz", "pearl white", "white pearl"], swatch: "#ecebe5" },
+  { code: "089", name: "Wind Chill Pearl", aliases: ["wind chill", "white", "pearl"], swatch: "#f0f0ec" },
+  { code: "090", name: "Oxygen White", aliases: ["white", "oxygen white"], swatch: "#f3f3f1" },
   // Silvers / Grays
-  { code: "1J7", name: "Atomic Silver", aliases: ["silver", "atomic silver", "sonic titanium"] },
-  { code: "1L2", name: "Iridium", aliases: ["iridium", "gray", "grey", "sonic iridium"] },
-  { code: "1L1", name: "Cloudburst Gray", aliases: ["cloudburst", "gray", "grey", "sonic chrome"] },
-  { code: "1L8", name: "Incognito", aliases: ["incognito", "gray", "grey"] },
-  { code: "1K2", name: "Manganese Luster", aliases: ["manganese", "gray", "grey", "luster"] },
-  { code: "1M1", name: "Smoke Matte Gray", aliases: ["smoke", "matte gray", "matte grey", "gray", "grey"] },
+  { code: "1J7", name: "Atomic Silver", aliases: ["silver", "atomic silver", "sonic titanium"], swatch: "#a7aaad" },
+  { code: "1L2", name: "Iridium", aliases: ["iridium", "gray", "grey", "sonic iridium"], swatch: "#8b8f92" },
+  { code: "1L1", name: "Cloudburst Gray", aliases: ["cloudburst", "gray", "grey", "sonic chrome"], swatch: "#7c8184" },
+  { code: "1L8", name: "Incognito", aliases: ["incognito", "gray", "grey"], swatch: "#45494c" },
+  { code: "1K2", name: "Manganese Luster", aliases: ["manganese", "gray", "grey", "luster"], swatch: "#515250" },
+  { code: "1M1", name: "Smoke Matte Gray", aliases: ["smoke", "matte gray", "matte grey", "gray", "grey"], swatch: "#6b6e70" },
   { code: "1N0", name: "Wind", aliases: ["wind", "gray", "grey", "neutrino gray"] },
   // Blacks
-  { code: "223", name: "Caviar", aliases: ["black", "caviar"] },
-  { code: "212", name: "Obsidian", aliases: ["black", "obsidian"] },
-  { code: "232", name: "Ninety Noir", aliases: ["black", "noir", "ninety noir"] },
+  { code: "223", name: "Caviar", aliases: ["black", "caviar"], swatch: "#0f0f11" },
+  { code: "212", name: "Obsidian", aliases: ["black", "obsidian"], swatch: "#131315" },
+  { code: "232", name: "Ninety Noir", aliases: ["black", "noir", "ninety noir"], swatch: "#161616" },
   // Reds
-  { code: "3R1", name: "Matador Red Mica", aliases: ["red", "matador", "matador red"] },
-  { code: "3T5", name: "Infrared", aliases: ["red", "infrared"] },
-  { code: "3T2", name: "Redline", aliases: ["red", "redline", "racing red"] },
+  { code: "3R1", name: "Matador Red Mica", aliases: ["red", "matador", "matador red"], swatch: "#8c1c22" },
+  { code: "3T5", name: "Infrared", aliases: ["red", "infrared"], swatch: "#a5131c" },
+  { code: "3T2", name: "Redline", aliases: ["red", "redline", "racing red"], swatch: "#b31a23" },
   // Browns / Coppers
-  { code: "4Y5", name: "Copper Crest", aliases: ["copper", "copper crest", "brown"] },
-  { code: "4Z1", name: "Earth", aliases: ["earth", "brown", "green"] },
+  { code: "4Y5", name: "Copper Crest", aliases: ["copper", "copper crest", "brown"], swatch: "#8b4c32" },
+  { code: "4Z1", name: "Earth", aliases: ["earth", "brown", "green"], swatch: "#77725b" },
   // Greens
-  { code: "6X4", name: "Nori Green Pearl", aliases: ["green", "nori green", "nori"] },
+  { code: "6X4", name: "Nori Green Pearl", aliases: ["green", "nori green", "nori"], swatch: "#39473a" },
   { code: "6X0", name: "Sunlit Green", aliases: ["green", "sunlit green"] },
   // Yellows
-  { code: "5C1", name: "Flare Yellow", aliases: ["yellow", "flare yellow"] },
+  { code: "5C1", name: "Flare Yellow", aliases: ["yellow", "flare yellow"], swatch: "#e0b62d" },
   // Blues / Purples
-  { code: "8X5", name: "Nightfall Mica", aliases: ["navy", "blue", "nightfall", "nightfall mica"] },
-  { code: "8X1", name: "Ultrasonic Blue 2.0", aliases: ["blue", "ultrasonic blue", "ultrasonic"] },
-  { code: "8Y6", name: "Grecian Water", aliases: ["blue", "grecian water", "teal"] },
-  { code: "8Z2", name: "Ether", aliases: ["blue", "ether", "light blue"] },
+  { code: "8X5", name: "Nightfall Mica", aliases: ["navy", "blue", "nightfall", "nightfall mica"], swatch: "#1f2a3d" },
+  { code: "8X1", name: "Ultrasonic Blue 2.0", aliases: ["blue", "ultrasonic blue", "ultrasonic"], swatch: "#1d4fa3" },
+  { code: "8Y6", name: "Grecian Water", aliases: ["blue", "grecian water", "teal"], swatch: "#6f8481" },
+  { code: "8Z2", name: "Ether", aliases: ["blue", "ether", "light blue"], swatch: "#c5ced2" },
   // Special / New 2026
   { code: "1M5", name: "Wavelength", aliases: ["wavelength"] },
 ];
@@ -216,3 +221,22 @@ export const resolveExteriorColor = exteriorMatcher.resolve;
 export const matchExteriorColors = exteriorMatcher.match;
 export const resolveInteriorColor = interiorMatcher.resolve;
 export const matchInteriorColors = interiorMatcher.match;
+
+/**
+ * Approximate paint chip for an exterior color written as a name ("Caviar"),
+ * a code ("223") or both ("223 CAVIAR"). Exact name or code only; aliases such
+ * as "gray" are too loose to pick a shade. Returns undefined when unsure.
+ */
+export function exteriorSwatch(value: string | null | undefined): string | undefined {
+  const normalized = (value ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+  if (!normalized) return undefined;
+  const lead = normalized.match(/^([0-9a-z]{3})(?:\s+(.+))?$/);
+  for (const entry of EXTERIOR_COLORS) {
+    if (!entry.swatch) continue;
+    const name = entry.name.toLowerCase();
+    if (normalized === name) return entry.swatch;
+    if (lead && /\d/.test(lead[1]) && lead[1] === entry.code.toLowerCase()) return entry.swatch;
+    if (lead?.[2] && lead[2] === name) return entry.swatch;
+  }
+  return undefined;
+}

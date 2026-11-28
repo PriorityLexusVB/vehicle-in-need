@@ -2,46 +2,39 @@ import { describe, it, expect } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import React from 'react';
 import DashboardStats from '../DashboardStats';
-import type { ModelSlotTotals } from '../../src/utils/allocationModelTotals';
 
-const baseStats = { totalActive: 12, awaitingAction: 3, securedLast30Days: 7 };
+const summary = { active: 11, got: 4, exchange: 2, waiting: 5, waitingLong: 2 };
 
-describe('DashboardStats', () => {
-  it('renders the three headline stat values', () => {
-    render(<DashboardStats {...baseStats} />);
-    expect(screen.getByText('12')).toBeInTheDocument();
-    expect(screen.getByText('3')).toBeInTheDocument();
-    expect(screen.getByText('7')).toBeInTheDocument();
+describe('DashboardStats — did we get the car?', () => {
+  it('leads with the question and the three buckets', () => {
+    render(<DashboardStats summary={summary} securedLast30Days={3} />);
+    expect(screen.getByRole('heading', { name: /did we get the car\?/i })).toBeInTheDocument();
+    expect(within(screen.getByTestId('dashboard-got-car')).getByText('4')).toBeInTheDocument();
+    expect(within(screen.getByTestId('dashboard-exchange')).getByText('2')).toBeInTheDocument();
+    expect(within(screen.getByTestId('dashboard-waiting')).getByText('5')).toBeInTheDocument();
   });
 
-  it('hides the Model Totals strip when there are no model totals', () => {
-    const { rerender } = render(<DashboardStats {...baseStats} />);
-    expect(screen.queryByTestId('dashboard-model-totals')).toBeNull();
-
-    rerender(<DashboardStats {...baseStats} modelTotals={[]} />);
-    expect(screen.queryByTestId('dashboard-model-totals')).toBeNull();
+  it('shows active and delivered context without repeating a bucket', () => {
+    render(<DashboardStats summary={summary} securedLast30Days={3} />);
+    const section = screen.getByTestId('dashboard-car-status');
+    expect(section).toHaveTextContent('11 active orders');
+    expect(section).toHaveTextContent('3 delivered in the last 30 days');
   });
 
-  it('renders a card per model with received/linked counts (no "open")', () => {
-    const modelTotals: ModelSlotTotals[] = [
-      { model: 'RX 350h', totalSlots: 8, linkedSlots: 2, availableSlots: 6 },
-      { model: 'NX 350', totalSlots: 3, linkedSlots: 0, availableSlots: 3 },
-    ];
-    render(<DashboardStats {...baseStats} modelTotals={modelTotals} />);
+  it('flags long waits only when there are some', () => {
+    const { rerender } = render(<DashboardStats summary={summary} securedLast30Days={0} />);
+    expect(screen.getByTestId('dashboard-waiting')).toHaveTextContent('2 over 30 days');
+    rerender(<DashboardStats summary={{ ...summary, waitingLong: 0 }} securedLast30Days={0} />);
+    expect(screen.getByTestId('dashboard-waiting')).toHaveTextContent('None over 30 days');
+  });
 
-    const strip = screen.getByTestId('dashboard-model-totals');
-    const cards = within(strip).getAllByTestId('dashboard-model-total-card');
-    expect(cards).toHaveLength(2);
-
-    const rx = cards[0];
-    expect(within(rx).getByText('RX 350h')).toBeInTheDocument();
-    expect(within(rx).getByText('8 received')).toBeInTheDocument();
-    expect(within(rx).getByText('2 linked')).toBeInTheDocument();
-    // "open" is intentionally dropped from the strip — received/linked only.
-    expect(within(rx).queryByText(/open/i)).toBeNull();
-
-    const nx = cards[1];
-    expect(within(nx).getByText('NX 350')).toBeInTheDocument();
-    expect(within(nx).getByText('3 received')).toBeInTheDocument();
+  it('progress bar widths follow the buckets and survive zero orders', () => {
+    const { rerender } = render(<DashboardStats summary={summary} securedLast30Days={0} />);
+    const [gotBar, comingBar] = Array.from(screen.getByTestId('dashboard-car-status-bar').children) as HTMLElement[];
+    expect(gotBar.style.width).toBe(`${(4 / 11) * 100}%`);
+    expect(comingBar.style.width).toBe(`${(2 / 11) * 100}%`);
+    rerender(<DashboardStats summary={{ active: 0, got: 0, exchange: 0, waiting: 0, waitingLong: 0 }} securedLast30Days={0} />);
+    const [emptyBar] = Array.from(screen.getByTestId('dashboard-car-status-bar').children) as HTMLElement[];
+    expect(emptyBar.style.width).toBe('0%');
   });
 });

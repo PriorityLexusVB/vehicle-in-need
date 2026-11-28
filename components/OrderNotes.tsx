@@ -225,7 +225,7 @@ const OrderNotes: React.FC<OrderNotesProps> = ({ orderId, currentUser }) => {
             onChange={(e) => setNewText(e.target.value)}
             rows={3}
             maxLength={2000}
-            className="block w-full p-2.5 border border-stone-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            className="block w-full p-2.5 border border-stone-300 rounded-lg shadow-sm focus:ring-stone-400 focus:border-stone-400 sm:text-sm"
             placeholder="Add a process update…"
           />
           {submitError && (
@@ -235,7 +235,7 @@ const OrderNotes: React.FC<OrderNotesProps> = ({ orderId, currentUser }) => {
             <button
               type="submit"
               disabled={isSubmitting || newText.trim().length === 0}
-              className="text-sm bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-3 rounded-lg shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-sm bg-stone-950 hover:bg-stone-800 text-white font-semibold py-2 px-3 rounded-lg shadow-sm transition-colors disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-stone-500 disabled:shadow-none"
             >
               {isSubmitting ? "Saving…" : "Add Note"}
             </button>

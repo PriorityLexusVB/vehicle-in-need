@@ -46,7 +46,7 @@ import { UploadIcon } from "./components/icons/UploadIcon";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { subscribeLatestAllocationSnapshot } from "./services/allocationService";
 import { AllocationSnapshot } from "./src/utils/allocationTypes";
-import { buildModelSlotTotals, type ModelSlotTotals } from "./src/utils/allocationModelTotals";
+import { summarizeCarStatus } from "./src/utils/carStatus";
 import { buildLatestModelNumberTotals } from "./src/utils/allocationModelNumberTotals";
 import { computeOrderMatchSummaries, OrderMatchSummary } from "./src/utils/orderMatchSummary";
 import { CURRENT_DX_SOURCE, fetchDxSheetWithMetadata } from "./src/utils/dxSheetParser";
@@ -1004,12 +1004,13 @@ const App: React.FC = () => {
     [linksByVehicleId],
   );
 
-  // Per-model slot totals for the dashboard strip — same pure claim set as the
-  // Allocation board's model-total pills.
-  const modelSlotTotals = useMemo<ModelSlotTotals[]>(
-    () =>
-      buildModelSlotTotals(allocationSnapshot?.vehicles ?? [], linkedVehicleIds),
-    [allocationSnapshot, linkedVehicleIds],
+  // Dashboard headline: did we get the car? (got / on the way / still waiting).
+  // Count a car as got only when the board's vehicle_links confirm the link
+  // (stale/orphan order links fall back to waiting); trust the order while links load.
+  const confirmedLinkIds = linksLoading || linksError ? null : linkedVehicleIds;
+  const carSummary = useMemo(
+    () => summarizeCarStatus(orders, confirmedLinkIds),
+    [orders, confirmedLinkIds],
   );
 
   const latestModelNumberTotals = useMemo(
@@ -1031,7 +1032,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-canvas font-sans text-stone-900">
+    <div className="min-h-screen bg-canvas font-sans text-stone-900 min-[1120px]:pl-60">
       {needRefresh && (
         <div className="bg-stone-950 text-white py-3 px-4 flex items-center justify-between shadow-lg">
           <span className="text-sm font-medium">
@@ -1103,18 +1104,12 @@ const App: React.FC = () => {
             element={
               user.isManager ? (
                 <div>
-                  <DashboardStats {...stats} modelTotals={modelSlotTotals} />
-                  <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                  <DashboardStats summary={carSummary} securedLast30Days={stats.securedLast30Days} />
+                  <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                     <div>
-                      <p className="text-xs font-bold uppercase text-amber-700">
-                        Operations Dashboard
-                      </p>
-                      <h2 className="mt-1 text-3xl font-bold text-stone-950">
+                      <h2 className="text-2xl font-extrabold tracking-tight text-stone-950 sm:text-3xl">
                         All Orders
                       </h2>
-                      <p className="mt-1 text-sm text-stone-600">
-                        Factory orders, dealer exchanges, linked inventory, and secured history in one queue.
-                      </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                       <button
@@ -1124,10 +1119,10 @@ const App: React.FC = () => {
                             setIsOrderFormVisible(false);
                           }
                         }}
-                        className={`flex items-center gap-2 text-white font-bold py-2.5 px-4 rounded-lg shadow-sm transition-colors duration-200 ${
+                        className={`flex min-h-[44px] items-center gap-2 font-semibold py-2.5 px-4 rounded-lg shadow-sm transition-colors duration-200 ${
                           isCSVUploadVisible
-                            ? "bg-stone-700 hover:bg-stone-800"
-                            : "bg-emerald-700 hover:bg-emerald-800"
+                            ? "bg-stone-700 text-white hover:bg-stone-800"
+                            : "border border-stone-300 bg-white text-stone-800 hover:bg-stone-50"
                         }`}
                       >
                         {isCSVUploadVisible ? (
@@ -1149,7 +1144,7 @@ const App: React.FC = () => {
                             setIsCSVUploadVisible(false);
                           }
                         }}
-                        className={`flex items-center gap-2 text-white font-bold py-2.5 px-5 rounded-lg shadow-sm transition-colors duration-200 ${
+                        className={`flex min-h-[44px] items-center gap-2 text-white font-semibold py-2.5 px-5 rounded-lg shadow-sm transition-colors duration-200 ${
                           isOrderFormVisible
                             ? "bg-stone-700 hover:bg-stone-800"
                             : "bg-stone-950 hover:bg-stone-800"
@@ -1196,6 +1191,7 @@ const App: React.FC = () => {
                     orderMatchSummaries={orderMatchSummaries}
                     allocationVehicles={allocationSnapshot?.vehicles ?? []}
                     linkedVehicleIds={linkedVehicleIds}
+                    confirmedLinkIds={confirmedLinkIds}
                     latestModelNumberTotals={latestModelNumberTotals}
                     allocationSnapshotStatus={allocationSnapshotStatus}
                     allocationClaimsStatus={linksLoading ? "loading" : linksError ? "error" : "ready"}
@@ -1263,6 +1259,7 @@ const App: React.FC = () => {
                       orderMatchSummaries={orderMatchSummaries}
                       allocationVehicles={allocationSnapshot?.vehicles ?? []}
                       linkedVehicleIds={linkedVehicleIds}
+                    confirmedLinkIds={confirmedLinkIds}
                     />
                   </div>
                 </div>

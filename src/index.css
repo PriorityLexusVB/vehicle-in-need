@@ -20,7 +20,7 @@
 @theme {
   /* Operational canvas — clean platinum/smoke neutral, replaces the warm
      #f6f1ea cream shell. Value per redesign plan (closer to #EEF2F6 than beige). */
-  --color-canvas: #eef2f6;
+  --color-canvas: #f3f5f8; /* 2026-11-28: Sales Tracker slate shell */
   --color-canvas-elevated: #f8fafc;
 
   /* Focal graphite surfaces (header + high-signal vehicle/order cards) — warm
@@ -34,6 +34,34 @@
   /* Platinum — the default prestige accent (active nav, selected filters,
      model-total pills, dividers). Gold is NOT a default accent. */
   --color-platinum: #cbd0d8;
+
+  /* -------------------------------------------------------------------------
+     Sales Tracker family look (2026-11-28, Rob: "UGLY FONT ... DOESNT LOOK
+     LIKE U USED ANY OF OUR DESIGN RULES"). Source of truth:
+     sales-tracker/DESIGN.md (Typography, Surface tokens, Spacing) and the
+     north-star screenshot named in rob-design-dna. Light slate shell, white
+     cards with one soft card shadow, Inter Tight everywhere, big black-weight
+     numbers, uppercase tracked labels. The earlier lexus.com gray/bronze
+     retune and square corners are withdrawn.
+  ------------------------------------------------------------------------- */
+  --font-sans: "Inter Tight", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Ink scale = Tailwind slate (the Sales Tracker ramp); stone-* classes in this
+     app resolve to it. 950 is the shared brand near-black. */
+  --color-stone-50: #f8fafc;
+  --color-stone-100: #f1f5f9;
+  --color-stone-200: #e2e8f0;
+  --color-stone-300: #cbd5e1;
+  --color-stone-400: #94a3b8;
+  --color-stone-500: #5f6b7d;
+  --color-stone-600: #475569;
+  --color-stone-700: #334155;
+  --color-stone-800: #1e293b;
+  --color-stone-900: #0f172a;
+  --color-stone-950: #0e1418;
+
+  /* The one card shadow (Sales Tracker light-card recipe). */
+  --shadow-card: 0 8px 30px -10px rgba(2, 6, 23, 0.16);
 }
 
 /* @source directives tell Tailwind where to find classes to generate

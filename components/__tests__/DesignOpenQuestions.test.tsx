@@ -94,7 +94,7 @@ describe("V-i-N DESIGN.md resolved questions", () => {
     const closeClass =
       'className="flex h-11 w-11 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-700"';
     expect(dxPartnersSource).toContain(
-      'className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-stone-300 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-platinum"',
+      'className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-stone-600 transition-colors hover:bg-stone-100 hover:text-stone-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-500"',
     );
     expect(dxPartnersSource).not.toContain("text-stone-500 transition-colors hover:bg-stone-100");
     expect(matchPreviewModalSource).toContain(closeClass);

@@ -25,7 +25,7 @@ const toneClasses: Record<ChipTone, { active: string; idle: string }> = {
 };
 
 const sizeClasses: Record<ChipSize, string> = {
-  sm: "px-2.5 py-1 text-xs",
+  sm: "px-2 py-1 text-[11px]",
   md: "px-3.5 py-2 text-sm",
 };
 
@@ -41,7 +41,7 @@ export function chipClasses({
   className?: string;
 } = {}) {
   return [
-    "inline-flex items-center justify-center gap-1.5 rounded-full border font-semibold transition-colors",
+    "inline-flex items-center justify-center gap-1.5 rounded-full border font-bold uppercase tracking-[0.08em] transition-colors",
     sizeClasses[size],
     active ? toneClasses[tone].active : toneClasses[tone].idle,
     className,

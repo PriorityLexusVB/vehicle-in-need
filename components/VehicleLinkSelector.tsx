@@ -132,7 +132,7 @@ export default function VehicleLinkSelector({
           className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
             isLinked
               ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-              : "bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
+              : "border border-stone-300 bg-white text-stone-800 hover:bg-stone-100"
           }`}
         >
           {isLinked ? (
@@ -196,7 +196,7 @@ export default function VehicleLinkSelector({
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search model, color, grade..."
               aria-label="Search vehicles"
-              className="w-full rounded-lg border border-stone-300 bg-stone-50 px-4 py-3 text-sm outline-none ring-indigo-500 transition focus:ring"
+              className="w-full rounded-lg border border-stone-300 bg-stone-50 px-4 py-3 text-sm outline-none ring-stone-400 transition focus:ring-2"
             />
           </div>
 
@@ -276,7 +276,7 @@ const VehicleRow: React.FC<VehicleRowProps> = ({ scored, onSelect, disabled }) =
       className={`mb-1.5 flex w-full items-start gap-3 rounded-lg border p-3 text-left transition-colors ${
         disabled
           ? "cursor-not-allowed border-stone-100 bg-stone-50 opacity-50"
-          : "border-stone-200 bg-white hover:border-indigo-300 hover:bg-indigo-50 active:bg-indigo-100"
+          : "border-stone-200 bg-white hover:border-stone-400 hover:bg-stone-50 active:bg-stone-100"
       }`}
     >
       <div className="min-w-0 flex-1">
