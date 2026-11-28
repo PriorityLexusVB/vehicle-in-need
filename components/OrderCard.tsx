@@ -21,6 +21,31 @@ import {
   fourDigitModelNumber,
   type LatestModelNumberTotals,
 } from "../src/utils/allocationModelNumberTotals";
+import { MODEL_CODE_TO_ALLOCATION } from "../src/utils/allocationReference";
+
+/**
+ * Presentation only. Stored model text is sometimes just a model code
+ * ("9025a", "9026"). Resolve it to a friendly name ("ES 350h") using the
+ * Lexus model code reference; names pass through unchanged.
+ */
+const MODEL_CODE_TEXT = /^(\d{4})[a-z]?$/i;
+const friendlyAllocationName = (allocationCode: string): string => {
+  const match = /^([A-Z]+)(\d+)(.*)$/.exec(allocationCode);
+  return match ? `${match[1]} ${match[2]}${match[3].toLowerCase()}` : allocationCode;
+};
+const resolveVehicleName = (
+  model: string | undefined,
+): { name: string; code: string | null; shown: string | null } => {
+  const text = (model ?? "").trim();
+  const codeMatch = MODEL_CODE_TEXT.exec(text);
+  if (!codeMatch) return { name: text, code: null, shown: null };
+  const code = codeMatch[1];
+  const allocation = MODEL_CODE_TO_ALLOCATION[code];
+  return allocation
+    // `shown` keeps the code exactly as stored ("9025a"); `code` is the 4-digit key.
+    ? { name: friendlyAllocationName(allocation), code, shown: text }
+    : { name: text, code: null, shown: null };
+};
 
 interface OrderCardProps {
   order: Order;
@@ -76,9 +101,9 @@ const OrderCard: React.FC<OrderCardProps> = ({
     if (highlighted && cardRef.current) {
       setIsExpanded(true);
       cardRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-      cardRef.current.classList.add("ring-2", "ring-indigo-400");
+      cardRef.current.classList.add("ring-2", "ring-stone-400");
       const timer = setTimeout(() => {
-        cardRef.current?.classList.remove("ring-2", "ring-indigo-400");
+        cardRef.current?.classList.remove("ring-2", "ring-stone-400");
       }, 3000);
       return () => clearTimeout(timer);
     }
@@ -195,7 +220,15 @@ const OrderCard: React.FC<OrderCardProps> = ({
     ? latestModelNumberTotals?.byModelNumber.get(exactModelNumber)
     : undefined;
   const previewNote = order.latestNoteText?.trim() || order.notes?.trim();
-  let allocationFact = "Latest allocation · count unavailable";
+  const vehicleLabel = resolveVehicleName(order.model);
+  // Hide the separate "Model: 9025" line when the headline already carries that code.
+  const modelLineRepeatsCode =
+    vehicleLabel.code !== null &&
+    (!order.modelNumber || fourDigitModelNumber(order.modelNumber) === vehicleLabel.code);
+  const reportDateNode = (date: string) => (
+    <span className="whitespace-nowrap tabular-nums">report {date}</span>
+  );
+  let allocationFact: React.ReactNode = "Latest allocation · count unavailable";
   if (allocationSnapshotStatus === "loading") {
     allocationFact = "Latest allocation · checking report";
   } else if (allocationSnapshotStatus === "error") {
@@ -207,9 +240,17 @@ const OrderCard: React.FC<OrderCardProps> = ({
   } else if (latestModelNumberTotals && !exactModelNumber) {
     allocationFact = "Latest allocation · model # unknown";
   } else if (latestModelNumberTotals && exactModelNumber && exactModelTotal) {
-    allocationFact = `Latest allocation · model ${exactModelNumber} · ${exactModelTotal.unassignedSlots} unassigned of ${exactModelTotal.totalSlots} · report ${latestModelNumberTotals.reportDate}`;
+    allocationFact = (
+      <>
+        <span className="sr-only">Latest allocation · </span><span className="whitespace-nowrap">model {exactModelNumber}</span> · <span className="whitespace-nowrap tabular-nums">{exactModelTotal.unassignedSlots} unassigned of {exactModelTotal.totalSlots}</span> · {reportDateNode(latestModelNumberTotals.reportDate)}
+      </>
+    );
   } else if (latestModelNumberTotals && exactModelNumber) {
-    allocationFact = `Latest allocation · model ${exactModelNumber} not listed · report ${latestModelNumberTotals.reportDate}`;
+    allocationFact = (
+      <>
+        <span className="sr-only">Latest allocation · </span>model {exactModelNumber} not listed · {reportDateNode(latestModelNumberTotals.reportDate)}
+      </>
+    );
   }
 
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -373,7 +414,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
   const inputClass = (name: keyof EditFormState) =>
     `block w-full p-2 border ${
       errors[name] ? "border-red-500" : "border-stone-300"
-    } rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`;
+    } rounded-lg shadow-sm focus:ring-stone-400 focus:border-stone-400 sm:text-sm`;
 
   /**
    * Handle the unsecure action with confirmation.
@@ -420,46 +461,67 @@ const OrderCard: React.FC<OrderCardProps> = ({
           aria-expanded={isExpanded}
         />
         {currentUser?.isManager ? (
-          <div className="pointer-events-none relative z-10 grid gap-x-6 gap-y-4 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,.8fr)_minmax(0,1.3fr)_minmax(0,1.5fr)]">
+          <div className="pointer-events-none relative z-10 grid gap-x-6 gap-y-3 px-3.5 py-3 sm:grid-cols-2 sm:px-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,.8fr)_minmax(0,1.3fr)_minmax(0,1.5fr)]">
             <div className="min-w-0">
               <div className="flex items-start gap-2">
-                <h3 className={`min-w-0 break-words text-xl font-bold leading-tight ${isSecured ? "text-stone-600" : "text-graphite"}`}>
+                <h3 className={`min-w-0 break-words text-lg font-bold leading-tight ${isSecured ? "text-stone-600" : "text-graphite"}`}>
                   {order.customerName}
                 </h3>
-                <ChevronDownIcon className={`ml-auto h-5 w-5 shrink-0 text-stone-500 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+                {/* Decorative: the full-row button above is the real control. 44px hit area. */}
+                <span className="-mr-2 -mt-2 ml-auto flex h-11 w-11 shrink-0 items-center justify-center text-stone-500" aria-hidden="true">
+                  <ChevronDownIcon className={`h-5 w-5 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+                </span>
               </div>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
+              <div className="-mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                 <StatusBadge status={order.status} />
                 {order.allocatedVehicleId && (
                   <span className="text-xs font-semibold text-emerald-700">Vehicle linked</span>
                 )}
+                <span className="whitespace-nowrap text-xs font-medium tabular-nums text-stone-500">{order.date}</span>
               </div>
-              <p className="mt-2 text-xs font-medium text-stone-500">{order.date}</p>
             </div>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Salesperson</p>
-              <p className="mt-1 break-words text-lg font-semibold leading-snug text-graphite" data-testid="order-card-summary-salesperson">{formatSalesperson(order)}</p>
+            {/* Mobile stack order: customer, vehicle, salesperson, notes. */}
+            <div className="order-3 min-w-0 sm:order-none">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Salesperson</p>
+              <p className="mt-0.5 break-words text-base font-semibold leading-snug text-graphite" data-testid="order-card-summary-salesperson">{formatSalesperson(order)}</p>
             </div>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Vehicle</p>
-              <p className="mt-1 break-words text-lg font-bold leading-snug text-graphite">{order.year} {order.model}</p>
-              <p className="mt-1 text-sm font-semibold text-stone-700" data-testid="order-card-summary-model">{modelNumberDisplay || "Model # not listed"}</p>
-              <p className="mt-2 break-words text-sm leading-relaxed text-stone-700">
+            <div className="order-2 min-w-0 sm:order-none">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Vehicle</p>
+              <p className="mt-0.5 break-words text-base font-bold leading-snug text-graphite">
+                {order.year} {vehicleLabel.name}
+                {vehicleLabel.code && (
+                  <span className="ml-1.5 text-xs font-semibold tabular-nums text-stone-500">
+                    {modelLineRepeatsCode ? (
+                      <span data-testid="order-card-summary-model"><span className="sr-only">Model: </span>{vehicleLabel.shown}</span>
+                    ) : (
+                      vehicleLabel.shown
+                    )}
+                  </span>
+                )}
+              </p>
+              {!modelLineRepeatsCode && (
+                <p className="text-sm font-semibold tabular-nums text-stone-700" data-testid="order-card-summary-model">{modelNumberDisplay || "Model # not listed"}</p>
+              )}
+              <p className="mt-1 break-words text-sm leading-snug text-stone-700">
                 <span className="font-semibold">Exterior:</span> {exteriorColors.join(" / ") || "Not listed"}
-                <span className="mx-2 text-stone-300" aria-hidden="true">·</span>
+                <span className="mx-1.5 text-stone-300" aria-hidden="true">·</span>
                 <span className="font-semibold">Interior:</span> {interiorColors.join(" / ") || "Not listed"}
               </p>
               {isAllocationLinkable(order.status) && !order.allocatedVehicleId && (
-                <p className="mt-2 border-t border-stone-200 pt-2 text-xs font-medium leading-relaxed text-stone-600" data-testid="order-card-availability">
+                <p className="mt-1.5 border-t border-stone-200 pt-1.5 text-xs font-medium leading-snug text-stone-600" data-testid="order-card-availability">
                   {allocationFact}
                 </p>
               )}
             </div>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Notes</p>
-              <p className="mt-1 line-clamp-4 whitespace-pre-wrap break-words text-base leading-relaxed text-stone-800" data-testid="order-card-latest-note">
-                {previewNote || <span className="text-stone-500">No notes yet</span>}
-              </p>
+            <div className="order-4 min-w-0 sm:order-none">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Notes</p>
+              {previewNote ? (
+                <p className="mt-0.5 line-clamp-3 whitespace-pre-wrap break-words text-sm leading-snug text-stone-800" data-testid="order-card-latest-note">
+                  {previewNote}
+                </p>
+              ) : (
+                <p className="mt-0.5 text-xs text-stone-500" data-testid="order-card-latest-note" aria-label="No notes yet">&mdash;</p>
+              )}
               {previewNote && previewNote.length > 220 && (
                 <p className="mt-1 text-xs font-medium text-stone-500">Expand for the full note</p>
               )}
@@ -576,7 +638,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         value={order.status}
                         onChange={handleStatusChange}
                         disabled={isEditing || isSaving}
-                        className="p-2.5 border border-stone-300 rounded-md shadow-sm text-sm focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-2.5 border border-stone-300 rounded-md shadow-sm text-sm focus:ring-stone-400 focus:border-stone-400 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {ACTIVE_STATUS_OPTIONS.map((status) => (
                           <option key={status} value={status}>
@@ -604,7 +666,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         onUpdateStatus(order.id, OrderStatus.Delivered)
                       }
                       disabled={isSaving}
-                      className="flex items-center gap-1.5 text-sm bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-4 rounded-lg shadow-sm transition-colors"
+                      className="flex items-center gap-1.5 text-sm bg-stone-950 hover:bg-stone-800 text-white font-semibold py-3 px-4 rounded-lg shadow-sm transition-colors"
                     >
                       Mark Secured
                     </button>
@@ -631,7 +693,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         onClick={() => void handleSaveEdit()}
                         type="button"
                         disabled={isSaving}
-                        className="flex items-center gap-1.5 text-sm bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-3 rounded-lg shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-1.5 text-sm bg-stone-950 hover:bg-stone-800 text-white font-semibold py-2 px-3 rounded-lg shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isSaving ? "Saving..." : "Save"}
                       </button>
@@ -641,7 +703,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                   {currentUser?.isManager && isSecured && (
                     <button
                       onClick={() => setShowUnsecureConfirm(true)}
-                      className="flex items-center gap-1.5 text-sm border-2 border-amber-500 text-amber-700 hover:bg-amber-50 font-semibold py-3 px-4 rounded-lg transition-colors"
+                      className="flex items-center gap-1.5 text-sm border-2 border-stone-300 text-stone-700 hover:bg-stone-100 font-semibold py-3 px-4 rounded-lg transition-colors"
                     >
                       <UndoIcon className="w-4 h-4" />
                       Mark as Unsecured

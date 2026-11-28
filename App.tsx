@@ -1104,12 +1104,12 @@ const App: React.FC = () => {
               user.isManager ? (
                 <div>
                   <DashboardStats {...stats} modelTotals={modelSlotTotals} />
-                  <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                  <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                     <div>
-                      <p className="text-xs font-bold uppercase text-amber-700">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-600">
                         Operations Dashboard
                       </p>
-                      <h2 className="mt-1 text-3xl font-bold text-stone-950">
+                      <h2 className="mt-1 text-2xl font-bold text-stone-950 sm:text-3xl">
                         All Orders
                       </h2>
                       <p className="mt-1 text-sm text-stone-600">
@@ -1124,10 +1124,10 @@ const App: React.FC = () => {
                             setIsOrderFormVisible(false);
                           }
                         }}
-                        className={`flex items-center gap-2 text-white font-bold py-2.5 px-4 rounded-lg shadow-sm transition-colors duration-200 ${
+                        className={`flex min-h-[44px] items-center gap-2 font-semibold py-2.5 px-4 rounded-lg shadow-sm transition-colors duration-200 ${
                           isCSVUploadVisible
-                            ? "bg-stone-700 hover:bg-stone-800"
-                            : "bg-emerald-700 hover:bg-emerald-800"
+                            ? "bg-stone-700 text-white hover:bg-stone-800"
+                            : "border border-stone-300 bg-white text-stone-800 hover:bg-stone-50"
                         }`}
                       >
                         {isCSVUploadVisible ? (
@@ -1149,7 +1149,7 @@ const App: React.FC = () => {
                             setIsCSVUploadVisible(false);
                           }
                         }}
-                        className={`flex items-center gap-2 text-white font-bold py-2.5 px-5 rounded-lg shadow-sm transition-colors duration-200 ${
+                        className={`flex min-h-[44px] items-center gap-2 text-white font-semibold py-2.5 px-5 rounded-lg shadow-sm transition-colors duration-200 ${
                           isOrderFormVisible
                             ? "bg-stone-700 hover:bg-stone-800"
                             : "bg-stone-950 hover:bg-stone-800"

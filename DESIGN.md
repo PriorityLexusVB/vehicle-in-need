@@ -185,10 +185,14 @@ routes through `StatusBadge`/`chipClasses`, never a new literal map.
   **overlays only** (modal, drawer) — never a plain content card. Using
   `rounded-2xl` on a resting card is a radius-hierarchy violation per
   `ai-ui-quality-loop.md` anti-slop #3.
-- High-signal cards on the Allocation Board (a matched/linked vehicle) get
-  the dark `graphite` band; plain available inventory stays light with a
-  slim `border-l-graphite/40` accent (`AllocationBoard.tsx:1612-1622`) — this
-  is the one place graphite is used as a CONTENT signal, not just chrome.
+- Allocation Board hierarchy: graphite is reserved for the two **section bars**
+  (Linked to Customer / Customer Matches). Vehicle rows are always white with a
+  4px left rail — graphite for Customer Matches rows, platinum `#cbd0d8` for
+  Linked rows; available inventory keeps the light row with the slim
+  `border-l-graphite/40` accent (`AllocationBoard.tsx`, `renderVariantCards`).
+  Reason (Design Director review, 2026-11-27): 13 solid graphite vehicle bands
+  plus 2 black section bars collapsed section-vs-item hierarchy into 15 equal
+  black bars. Do not put graphite fills on item rows.
 
 ### Status
 

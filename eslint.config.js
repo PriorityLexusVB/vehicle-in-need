@@ -7,7 +7,7 @@ import react from 'eslint-plugin-react';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 
 export default tseslint.config(
-  { ignores: ['dist', 'server', 'node_modules', 'functions/lib'] },
+  { ignores: ['dist', 'server', 'node_modules', 'functions/lib', 'preview-mock/dist-mock', 'preview-mock/shots'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['**/*.{ts,tsx}'],

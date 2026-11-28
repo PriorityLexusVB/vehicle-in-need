@@ -53,7 +53,7 @@ function Metric({ label, value, tone = "white" }: MetricProps) {
   return (
     <div className="min-w-0 border-l border-white/15 p-3 first:border-l-0">
       <p className={`text-xl font-bold tabular-nums ${toneClasses}`}>{value}</p>
-      <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-stone-400">{label}</p>
+      <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-stone-400">{label}</p>
     </div>
   );
 }
@@ -210,9 +210,9 @@ export default function DxPartners({
     <section data-testid="dx-partners">
       <div className="flex flex-col gap-3 border-b border-stone-300 pb-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-500">Spreadsheet movements</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-600">Spreadsheet movements</p>
           <h4 className="mt-1 text-xl font-bold text-stone-900">Dealer Exchange Partners</h4>
-          <p className="mt-1 max-w-2xl text-sm text-stone-500">
+          <p className="mt-1 max-w-2xl text-sm text-stone-600">
             Showing {periodLabel}. Vehicles received and sent are counted separately from who requested the exchange.
           </p>
         </div>
@@ -237,14 +237,14 @@ export default function DxPartners({
         <>
           <div className="mt-3 hidden overflow-x-auto rounded-lg border border-stone-300 bg-white md:block">
             <table className="min-w-full text-sm">
-              <thead className="bg-stone-50 text-left text-xs font-semibold uppercase tracking-wide text-stone-500">
+              <thead className="border-b border-stone-200 bg-stone-50 text-left text-xs font-semibold uppercase tracking-wide text-stone-500">
                 <tr>
                   <th scope="col" className="px-4 py-3">Dealer</th>
                   <th scope="col" className="px-3 py-3 text-right">Vehicles received</th>
                   <th scope="col" className="px-3 py-3 text-right">Vehicles sent</th>
                   <th scope="col" className="px-3 py-3 text-right">Ledger records</th>
-                  <th scope="col" className="px-3 py-3">Received minus sent</th>
-                  <th scope="col" className="px-3 py-3">Requested by</th>
+                  <th scope="col" className="px-3 py-3 text-right">Received minus sent</th>
+                  <th scope="col" className="px-3 py-3 text-right">Requested by</th>
                   <th scope="col" className="px-4 py-3 text-right">Last DX</th>
                 </tr>
               </thead>
@@ -261,7 +261,7 @@ export default function DxPartners({
                         >
                           {relationship.displayName}
                         </button>
-                        <p className="mt-0.5 text-xs text-stone-400">
+                        <p className="mt-0.5 text-xs text-stone-500">
                           {relationship.dealerCode ? `Dealer ${relationship.dealerCode}` : "Code not recorded"}
                           {relationship.aliases.length > 1 ? ` · ${relationship.aliases.length} source names merged` : ""}
                         </p>
@@ -269,9 +269,14 @@ export default function DxPartners({
                       <td className="px-3 py-3 text-right font-bold tabular-nums text-stone-950">{metrics.vehiclesReceived}</td>
                       <td className="px-3 py-3 text-right font-bold tabular-nums text-stone-700">{metrics.vehiclesSent}</td>
                       <td className="px-3 py-3 text-right font-semibold tabular-nums text-stone-800">{metrics.totalCompleted}</td>
-                      <td className="px-3 py-3 text-xs font-medium text-stone-600">{formatDxMovementDifference(metrics.vehicleBalance)}</td>
-                      <td className="px-3 py-3 text-xs text-stone-600">Us {metrics.oursRequested} · Them {metrics.theirsRequested} · Not recorded {metrics.unknownInitiator}</td>
-                      <td className="px-4 py-3 text-right text-stone-600">{formatDate(metrics.lastActivity)}</td>
+                      <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums">
+                        <span className={`font-bold ${metrics.vehicleBalance === 0 ? "text-stone-600" : "text-stone-950"}`}>
+                          {metrics.vehicleBalance > 0 ? `+${metrics.vehicleBalance}` : metrics.vehicleBalance < 0 ? `−${Math.abs(metrics.vehicleBalance)}` : "0"}
+                        </span>
+                        <span className="ml-1.5 text-xs font-medium text-stone-600">{formatDxMovementDifference(metrics.vehicleBalance)}</span>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-3 text-right text-xs tabular-nums text-stone-600">Us {metrics.oursRequested} · Them {metrics.theirsRequested} · Not recorded {metrics.unknownInitiator}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-stone-600">{formatDate(metrics.lastActivity)}</td>
                     </tr>
                   );
                 })}
@@ -298,16 +303,16 @@ export default function DxPartners({
                   </div>
                   <div className="grid grid-cols-3 divide-x divide-stone-200 text-center">
                     <div className="px-2 py-3">
-                      <p className="font-bold text-stone-950">{metrics.vehiclesReceived}</p>
-                      <p className="text-[10px] uppercase tracking-wide text-stone-500">Vehicles received</p>
+                      <p className="font-bold tabular-nums text-stone-950">{metrics.vehiclesReceived}</p>
+                      <p className="text-[11px] uppercase tracking-wide text-stone-600">Vehicles received</p>
                     </div>
                     <div className="px-2 py-3">
-                      <p className="font-bold text-stone-800">{metrics.vehiclesSent}</p>
-                      <p className="text-[10px] uppercase tracking-wide text-stone-500">Vehicles sent</p>
+                      <p className="font-bold tabular-nums text-stone-800">{metrics.vehiclesSent}</p>
+                      <p className="text-[11px] uppercase tracking-wide text-stone-500">Vehicles sent</p>
                     </div>
                     <div className="px-2 py-3">
-                      <p className="font-bold text-stone-800">{metrics.totalCompleted}</p>
-                      <p className="text-[10px] uppercase tracking-wide text-stone-500">Ledger records</p>
+                      <p className="font-bold tabular-nums text-stone-800">{metrics.totalCompleted}</p>
+                      <p className="text-[11px] uppercase tracking-wide text-stone-500">Ledger records</p>
                     </div>
                   </div>
                   <p className="border-t border-stone-200 px-4 py-3 text-xs font-semibold text-stone-600">

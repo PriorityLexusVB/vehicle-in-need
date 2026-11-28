@@ -196,10 +196,10 @@ const OrderList: React.FC<OrderListProps> = ({
   };
 
   return (
-    <div className="rounded-lg border border-stone-200 bg-white/95 p-4 shadow-sm sm:p-6">
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="rounded-xl border border-stone-200 bg-white/95 p-3 shadow-sm sm:p-5">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm text-stone-500 mt-1">
+          <p className="text-sm tabular-nums text-stone-600">
             Showing {filteredOrders.length} of{" "}
             {activeTab === "active" ? totalActiveOrders : totalSecuredOrders}{" "}
             orders.
@@ -207,7 +207,7 @@ const OrderList: React.FC<OrderListProps> = ({
         </div>
         <button
           onClick={handleExport}
-          className="flex flex-shrink-0 items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors duration-200 hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex min-h-[44px] flex-shrink-0 items-center justify-center gap-2 rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-800 shadow-sm transition-colors duration-200 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50"
           disabled={filteredOrders.length === 0}
         >
           <DownloadIcon />
@@ -224,7 +224,7 @@ const OrderList: React.FC<OrderListProps> = ({
               setActiveTab("active");
               setStatusFilter("all");
             }}
-            className={`whitespace-nowrap border-b-2 px-3 pb-3 text-sm font-semibold transition-colors ${
+            className={`min-h-11 whitespace-nowrap border-b-2 px-3 pb-3 text-sm font-semibold transition-colors ${
               activeTab === "active"
                 ? "border-stone-950 text-stone-950"
                 : "border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300"
@@ -232,7 +232,7 @@ const OrderList: React.FC<OrderListProps> = ({
           >
             Active Orders{" "}
             <span
-              className={`ml-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold ${activeTab === "active" ? "bg-amber-100 text-stone-950" : "bg-stone-200 text-stone-700"}`}
+              className={`ml-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold tabular-nums ${activeTab === "active" ? "bg-stone-950 text-white" : "bg-stone-200 text-stone-700"}`}
             >
               {totalActiveOrders}
             </span>
@@ -241,7 +241,7 @@ const OrderList: React.FC<OrderListProps> = ({
             role="tab"
             aria-selected={activeTab === "secured"}
             onClick={() => setActiveTab("secured")}
-            className={`whitespace-nowrap border-b-2 px-3 pb-3 text-sm font-semibold transition-colors ${
+            className={`min-h-11 whitespace-nowrap border-b-2 px-3 pb-3 text-sm font-semibold transition-colors ${
               activeTab === "secured"
                 ? "border-stone-950 text-stone-950"
                 : "border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300"
@@ -249,7 +249,7 @@ const OrderList: React.FC<OrderListProps> = ({
           >
             Secured History{" "}
             <span
-              className={`ml-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold ${activeTab === "secured" ? "bg-emerald-100 text-emerald-800" : "bg-stone-200 text-stone-700"}`}
+              className={`ml-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold tabular-nums ${activeTab === "secured" ? "bg-emerald-100 text-emerald-800" : "bg-stone-200 text-stone-700"}`}
             >
               {totalSecuredOrders}
             </span>
@@ -292,7 +292,7 @@ const OrderList: React.FC<OrderListProps> = ({
             </span>
             <button
               onClick={() => setStatusFilter("all")}
-              className={chipClasses({ active: statusFilter === "all", tone: "brand" })}
+              className={chipClasses({ active: statusFilter === "all", tone: "brand", className: "min-h-11 sm:min-h-0" })}
             >
               All Active
             </button>
@@ -303,6 +303,7 @@ const OrderList: React.FC<OrderListProps> = ({
                 className={chipClasses({
                   active: statusFilter === status,
                   tone: status === OrderStatus.DealerExchange ? "warning" : "brand",
+                  className: "min-h-11 sm:min-h-0",
                 })}
               >
                 {status}
@@ -312,7 +313,7 @@ const OrderList: React.FC<OrderListProps> = ({
         </div>
       )}
 
-      <div ref={animateRef} role="tabpanel" className="space-y-4">
+      <div ref={animateRef} role="tabpanel" className="space-y-2.5">
         {filteredOrders.length > 0 ? (
           filteredOrders.map((order) => (
             <OrderCard
