@@ -100,7 +100,7 @@ function DealerHistoryDrawer({ relationship, periodLabel, onClose }: DealerHisto
                   type="button"
                   onClick={onClose}
                   aria-label="Close dealer history"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[3px] text-stone-600 transition-colors hover:bg-stone-100 hover:text-stone-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-500"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-stone-600 transition-colors hover:bg-stone-100 hover:text-stone-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-500"
                 >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -110,7 +110,7 @@ function DealerHistoryDrawer({ relationship, periodLabel, onClose }: DealerHisto
 
               <div className="flex-1 overflow-y-auto p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-stone-400">{periodLabel} · Spreadsheet ledger records</p>
-                <div className="mt-2 grid grid-cols-2 overflow-hidden rounded-[4px] border border-stone-300 bg-white sm:grid-cols-4">
+                <div className="mt-2 grid grid-cols-2 overflow-hidden rounded-xl bg-white ring-1 ring-stone-950/5 shadow-card sm:grid-cols-4">
                   <Metric label="Vehicles received" value={relationship.allTime.vehiclesReceived} tone="platinum" />
                   <Metric label="Vehicles sent" value={relationship.allTime.vehiclesSent} />
                   <Metric label="Ledger records" value={relationship.allTime.totalCompleted} />
@@ -136,7 +136,7 @@ function DealerHistoryDrawer({ relationship, periodLabel, onClose }: DealerHisto
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-medium text-stone-700">{formatDate(trade.date)}</p>
-                          <span className={`mt-1 inline-flex rounded-[3px] px-2 py-0.5 text-[11px] font-semibold ${
+                          <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${
                             trade.direction === "OURS"
                               ? "bg-platinum text-graphite"
                               : trade.direction === "THEIRS"
@@ -213,7 +213,7 @@ export default function DxPartners({
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-600">Spreadsheet movements</p>
           <h4 className="mt-1 text-xl font-bold text-stone-900">Dealer Exchange Partners</h4>
           <p className="mt-1 max-w-2xl text-sm text-stone-600">
-            Showing {periodLabel}. Vehicles received and sent are counted separately from who requested the exchange.
+            Showing {periodLabel}.
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:items-end">
@@ -235,7 +235,7 @@ export default function DxPartners({
         </div>
       ) : (
         <>
-          <div className="mt-3 hidden overflow-x-auto rounded-lg border border-stone-300 bg-white md:block">
+          <div className="mt-3 hidden overflow-x-auto rounded-2xl bg-white shadow-card ring-1 ring-stone-950/5 md:block">
             <table className="min-w-full text-sm">
               <thead className="border-b border-stone-200 bg-stone-50 text-left text-xs font-semibold uppercase tracking-wide text-stone-500">
                 <tr>
@@ -292,7 +292,7 @@ export default function DxPartners({
                   key={relationship.id}
                   type="button"
                   onClick={() => setSelectedId(relationship.id)}
-                  className="overflow-hidden rounded-lg border border-stone-300 bg-white text-left transition hover:border-stone-500"
+                  className="overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-stone-950/5 text-left transition hover:ring-stone-950/20"
                 >
                   <div className="flex items-start justify-between gap-3 border-b border-stone-200 bg-stone-50 p-4 text-stone-950">
                     <div>

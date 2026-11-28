@@ -199,7 +199,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
       </div>
 
       <div id="dx-pipeline" className="pb-6">
-        <div className="overflow-hidden rounded-[4px] border border-stone-300 bg-white text-stone-950">
+        <div className="overflow-hidden rounded-2xl bg-white text-stone-950 shadow-card ring-1 ring-stone-950/5">
           <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2.5">
@@ -215,29 +215,26 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                 {dxTotals.completed} ledger {dxTotals.completed === 1 ? "record" : "records"}
               </h3>
               <p className="mt-1 text-sm font-semibold text-stone-600">{periodLabel}</p>
-              <p className="mt-1 hidden text-sm text-stone-600 sm:block">
-                Vehicle movement and who requested the exchange are counted separately.
-              </p>
               <dl className="mt-5 grid grid-cols-2 gap-y-3 border-y border-stone-200 py-3 sm:grid-cols-4 sm:gap-y-0 sm:py-0">
                 <div className="border-r border-stone-200 py-3 pr-2 sm:pr-3">
-                  <dt className="text-[11px] font-semibold uppercase leading-tight tracking-wide text-stone-500">Vehicles received</dt>
-                  <dd className="mt-1 text-xl font-bold tabular-nums text-stone-950 sm:text-2xl">{dxTotals.vehiclesReceived}</dd>
+                  <dt className="text-[10px] font-bold uppercase leading-tight tracking-[0.16em] text-stone-500">Vehicles received</dt>
+                  <dd className="mt-1.5 text-3xl font-black leading-none tracking-tight tabular-nums text-stone-950 sm:text-4xl">{dxTotals.vehiclesReceived}</dd>
                 </div>
                 <div className="py-3 pl-3 sm:border-r sm:border-stone-200 sm:px-3">
-                  <dt className="text-[11px] font-semibold uppercase leading-tight tracking-wide text-stone-500">Vehicles sent</dt>
-                  <dd className="mt-1 text-xl font-bold tabular-nums text-stone-950 sm:text-2xl">{dxTotals.vehiclesSent}</dd>
+                  <dt className="text-[10px] font-bold uppercase leading-tight tracking-[0.16em] text-stone-500">Vehicles sent</dt>
+                  <dd className="mt-1.5 text-3xl font-black leading-none tracking-tight tabular-nums text-stone-950 sm:text-4xl">{dxTotals.vehiclesSent}</dd>
                 </div>
                 <div className="border-r border-stone-200 py-3 pr-2 sm:px-3">
-                  <dt className="text-[11px] font-semibold uppercase leading-tight tracking-wide text-stone-500">Received minus sent</dt>
-                  <dd className="mt-1 text-xl font-bold tabular-nums text-stone-600 sm:text-2xl" aria-hidden="true">
+                  <dt className="text-[10px] font-bold uppercase leading-tight tracking-[0.16em] text-stone-500">Received minus sent</dt>
+                  <dd className="mt-1.5 text-3xl font-black leading-none tracking-tight tabular-nums text-stone-950 sm:text-4xl" aria-hidden="true">
                     {vehicleBalance > 0 ? `+${vehicleBalance}` : vehicleBalance < 0 ? `−${Math.abs(vehicleBalance)}` : "0"}
                   </dd>
                   <dd className="mt-1 text-xs font-semibold text-stone-600">{vehicleBalanceLabel}</dd>
                   <dd className="mt-0.5 text-xs tabular-nums text-stone-600">{dxTotals.vehiclesReceived} received − {dxTotals.vehiclesSent} sent</dd>
                 </div>
                 <div className="py-3 pl-3">
-                  <dt className="text-[11px] font-semibold uppercase leading-tight tracking-wide text-stone-500">Recorded DX fees</dt>
-                  <dd className={`mt-1 font-bold text-stone-950 ${dxFees.entered > 0 ? "text-xl tabular-nums sm:text-2xl" : "text-base text-stone-600 sm:text-lg"}`}>
+                  <dt className="text-[10px] font-bold uppercase leading-tight tracking-[0.16em] text-stone-500">Recorded DX fees</dt>
+                  <dd className={`mt-1 font-bold text-stone-950 ${dxFees.entered > 0 ? "text-3xl font-black leading-none tracking-tight tabular-nums sm:text-4xl" : "text-base text-stone-600 sm:text-lg"}`}>
                     {dxFees.entered > 0 ? `$${dxFees.total.toLocaleString("en-US", { maximumFractionDigits: 2 })}` : "No fees entered"}
                   </dd>
                   <dd className="mt-0.5 text-xs tabular-nums text-stone-600">{dxFees.entered} of {dxTotals.completed} records have a fee</dd>
@@ -260,7 +257,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                 type="button"
                 onClick={onRefreshDx}
                 disabled={dxLoading}
-                className="col-span-2 inline-flex min-h-11 items-center justify-center rounded-[3px] border border-stone-950 bg-white px-4 py-2 text-sm font-semibold text-stone-950 transition-colors hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-500 disabled:cursor-not-allowed disabled:opacity-50"
+                className="col-span-2 inline-flex min-h-11 items-center justify-center rounded-lg bg-stone-950 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-stone-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-500 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {dxLoading ? "Syncing..." : "Refresh current source"}
               </button>
@@ -396,12 +393,12 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
               </div>
 
               {visibleDxTrades.length === 0 ? (
-                <div className="rounded-lg border border-stone-300 bg-white p-6 text-center text-sm text-stone-500">
+                <div className="rounded-2xl bg-white p-6 text-center ring-1 ring-stone-950/5 text-sm text-stone-500">
                   No DX records for {periodLabel}. Choose another month or All {DX_CURRENT_FILE_DATE_LABEL}.
                 </div>
               ) : (
                 <>
-                <div className="hidden overflow-hidden rounded-lg border border-stone-300 bg-white md:block">
+                <div className="hidden overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-stone-950/5 md:block">
                   <table className="min-w-full text-sm">
                     <thead className="border-b border-stone-300 bg-stone-50 text-left text-[11px] font-semibold uppercase tracking-wide text-stone-600">
                       <tr>
@@ -462,7 +459,7 @@ const DealerExchange: React.FC<DealerExchangeProps> = ({ dxFeed, onRefreshDx }) 
                             </td>
                             <td className="px-3 py-3">
                               <span
-                                className={`inline-flex rounded-[3px] px-2 py-0.5 text-xs font-semibold ${
+                                className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
                                   trade.direction === "OURS"
                                     ? "bg-platinum text-graphite"
                                     : trade.direction === "THEIRS"

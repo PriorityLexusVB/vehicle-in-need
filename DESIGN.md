@@ -104,40 +104,42 @@ steps" rule, that is a new decision, not an extraction.`
 | `--color-graphite-elevated` | `#1a1815` | One step lighter than graphite, for elevated content inside a dark island. |
 | `--color-platinum` | `#cbd0d8` | Default prestige accent — active-nav fill (`Header.tsx:32,40`: `bg-platinum text-graphite`, i.e. platinum as a BACKGROUND fill with dark text, never as light-on-dark foreground text), model-total pills, "First in line" badge context. |
 
-### Layer 1b — Lexus-grade ramp retune (2026-11-28, pending Rob's review)
+### Layer 1b — Sales Tracker family look (2026-11-28, pending Rob's review)
 
-Rob, 2026-11-27/28: "I also don't like the colors and stuff" and "no AI style
-right?". The default Tailwind ramps (warm `stone`, mint `emerald`, yellow
-`amber`, soft rounded shadows) were the generic-dashboard tell. Research:
-lexus.com RX model page, inspected 2026-11-28 (live screen): pure neutral
-grays (`#e6e6e6`/`#efefef`), black ink, square buttons, hairline spec dividers
-instead of shadows, one muted accent, and color carried by the car itself.
+Rob, 2026-11-28: "THE WHOLE THING IS JUST UGLY..UGLY FONT.....IT DOESNT LOOK
+LIKE U USED ANY OF OUR DESIGN RULES/SETUPS". Root causes found: Inter was
+loaded but never applied, so every screen fell back to the system font; and
+the earlier pass copied lexus.com (square corners, flat gray, bronze) instead
+of Rob's own canon. This layer replaces that pass. Source of truth:
+`sales-tracker/DESIGN.md` (Typography, Surface tokens, Spacing, Components)
+and the north-star screenshot named in the rob-design-dna skill.
 
-What changed, all from `src/index.css` `@theme` so every existing class moves
-together:
-- `stone-*` retuned to a neutral ink scale (no warm tint). `stone-500` is
-  `#6a6a6a`: 5.4:1 on white, 4.7:1 on the canvas.
-- `emerald-*` (secured, linked: "we got the car") retuned to a deep muted green.
-- `amber-*` (still working on it: Locate, Dealer Exchange, awaiting action)
-  retuned to bronze.
-- `--radius-md/lg/xl` cut to 3-4px; `--shadow-sm` removed for in-page surfaces.
-  Modals and drawers keep their larger shadows.
-- Chips: 3px corners, small uppercase spaced labels (`chipClasses`).
-- Paint chips: `PaintSwatch` shows an approximate paint square before an
-  exterior color name on order rows and the Allocation Board, from
-  `EXTERIOR_COLORS[].swatch` in `src/utils/colorReference.ts`. Exact name or
-  code only; shades we are unsure of (Wind, Wavelength, Sunlit Green) show no
-  chip. It is a visual hint, never a paint match, and the name is always
-  written beside it.
-- **No dark banners (Rob, 2026-11-28: "THE DARK HUGE BANNER?").** The top bar
-  is white with a hairline under it and black text, and the current page is
-  marked with a black underline, like lexus.com. The Dealer Exchange
-  relationship ledger, its table head, the dealer cards and the dealer drawer,
-  and the Allocation group headings are white or light gray with hairlines.
-  Black stays for the main action button and the selected tab only.
-
-Not transferred from Lexus: the Nobel typeface (licensed), the espresso model
-band, marketing photography.
+- **Font:** Inter Tight everywhere (`--font-sans` in `src/index.css`,
+  weights 400-900 in `index.html`), same as Sales Tracker.
+- **Ink:** `stone-*` resolves to the Tailwind slate ramp (the Sales Tracker
+  ramp); `stone-500` is `#5f6b7d`, `stone-950` is the shared `#0E1418`.
+  `emerald` and `amber` are Tailwind defaults again (Sales Tracker uses
+  them): emerald = got the car, amber = needs attention.
+- **Shell:** light slate canvas `#f3f5f8`. Navigation is a left sidebar at
+  1120px and up (spaced uppercase wordmark, icon + label items, white active
+  pill, initials and sign-out at the bottom) and a slim white top bar below.
+- **Cards:** `rounded-2xl bg-white shadow-card ring-1 ring-stone-950/5`
+  (`--shadow-card`). One level only: the order list and the Allocation Board
+  have no outer card, so rows are the cards.
+- **Numbers:** primary numbers are `font-black` (Dashboard KPIs up to
+  `text-5xl`, Dealer Exchange ledger `text-4xl`); labels are 10-11px bold
+  uppercase `tracking-[0.16em]`.
+- **Chips:** `rounded-full`, bold uppercase tracked (`chipClasses`).
+- **No dark banners** (Rob, 2026-11-28: "THE DARK HUGE BANNER?"). No dark
+  header, ledger block or section bars. Black is for the primary button, the
+  selected tab and active filter pill only. The Sales Tracker "one dark hero"
+  law is deliberately not applied here.
+- **Allocation rails carry state only:** emerald = linked, amber = customer
+  match, none for available stock. Section headings are gray eyebrows with a
+  count pill.
+- **Paint chips:** `PaintSwatch` shows an approximate round paint dot before
+  an exterior color name, from `EXTERIOR_COLORS[].swatch`. Exact name or code
+  only; unsure shades (Wind, Wavelength, Sunlit Green) show none.
 
 ### Layer 2 — the chip/tone system used everywhere else (`components/ui/chipStyles.ts`)
 
@@ -189,9 +191,10 @@ routes through `StatusBadge`/`chipClasses`, never a new literal map.
 
 ## Typography Rules
 
-- **Font:** Inter, weights 400/500/600/700, loaded via Google Fonts
-  (`index.html:14-17`, `tailwind.config.js:8`). No secondary/display
-  typeface exists in this codebase — do not invent one without a decision.
+- **Font:** Inter Tight 400-900 (Sales Tracker's face), loaded in
+  `index.html` and applied by `--font-sans` in `src/index.css`. Until
+  2026-11-28 Inter was loaded but never applied (system-font fallback); a
+  font that is loaded must also be bound to `--font-sans`.
 - **Headings:** `text-2xl font-bold` (section/page headers, e.g.
   `OrderForm.tsx:172`), `text-xl`/`text-lg font-bold` (card/modal titles),
   `text-3xl font-bold` reserved for the single largest number on a surface
@@ -449,12 +452,15 @@ _(none yet)*
 
 ### Rejected
 
+- Lexus.com-style pass (preview drafts 4 and 4.1, PR #299): neutral gray ink, bronze, square 3px corners, flat no-shadow panels, white header with underlined nav, system font — Rob, 2026-11-28: "THE WHOLE THING IS JUST UGLY..UGLY FONT", "DOESNT LOOK LIKE U USED ANY OF OUR DESIGN RULES/SETUPS"; it copied an outside brand site instead of Rob's own Sales Tracker canon — all surfaces — 2026-11-28.
+- Dark graphite header and the big dark Dealer Exchange ledger block — Rob, 2026-11-28: "THE DARK HUGE BANNER?" — header and ledger, all widths — 2026-11-28.
 - PR #282 initial Dealer Exchange candidate (`outputs/vehicle-dx-primary-nav/full-flow/*-dealer-exchange.png`) — amber/cream pipeline card, pill cluster, generic table treatment, and horizontally incomplete mobile history made a working route feel flat, cheap, and unlike the Vehicle-in-Need system — `/dealer-exchange`, desktop and mobile — 2026-09-28.
 
 ### Open
 
 - "Did we get the car?" direction (Claude Design canvas `TqTp2g5VmF8846HiEf1Q7A`, Main/Allocation/Phone boards) — Rob, 2026-11-27: linking a car to the salesperson "doesn't really work well"; the key is knowing there is an order and that we got the car; allocation becomes the managers' area — Dashboard order rows + manager Allocation hub, all widths — 2026-11-27. Open until Rob approves the build and settles who confirms an automatic match.
-- Lexus-grade colors (preview draft 4, PR #299) — Rob, 2026-11-28: "I also don't like the colors and stuff", "no AI style right?"; neutral gray ink, bronze for in-progress, deep green for got-the-car, square corners, paint chips — all surfaces, all widths — 2026-11-28. Open until Rob reviews the preview.
+- Sales Tracker family look (preview draft 5, PR #299): Inter Tight, slate shell, sidebar navigation, white rounded cards with one soft shadow, black-weight numbers — Rob, 2026-11-28: "UGLY FONT ... DOESNT LOOK LIKE U USED ANY OF OUR DESIGN RULES/SETUPS" — all surfaces, all widths — 2026-11-28. Open until Rob reviews the preview.
+- No Priority brand mark in the sidebar yet: Sales Tracker carries a crest beside its wordmark, and `public/favicon.svg` is a generic blue car icon, not a Priority mark. Needs a real asset from Rob; do not invent a logo — sidebar wordmark — 2026-11-28.
 - Earlier tiles-and-black-bars Allocation Board — Rob, 2026-11-27: "super ugly"; replaced by graphite section bars over white rows (see Component Law) — Allocation Board, all widths — 2026-11-27. Not moved to Rejected yet: Rob gave a verdict, not a reason; confirm the reason when he reviews draft 2.
 
 The four questions listed here until 2026-09-17 were not taste

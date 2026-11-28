@@ -197,26 +197,8 @@ const OrderList: React.FC<OrderListProps> = ({
   };
 
   return (
-    <div className="rounded-xl border border-stone-200 bg-white/95 p-3 shadow-sm sm:p-5">
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm tabular-nums text-stone-600">
-            Showing {filteredOrders.length} of{" "}
-            {activeTab === "active" ? totalActiveOrders : totalSecuredOrders}{" "}
-            orders.
-          </p>
-        </div>
-        <button
-          onClick={handleExport}
-          className="flex min-h-[44px] flex-shrink-0 items-center justify-center gap-2 rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-800 shadow-sm transition-colors duration-200 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={filteredOrders.length === 0}
-        >
-          <DownloadIcon />
-          Export Results
-        </button>
-      </div>
-
-      <div className="mb-5 border-b border-stone-200">
+    <div>
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-x-4 border-b border-stone-200">
         <div className="-mb-px flex flex-wrap gap-2" role="tablist" aria-label="Tabs">
           <button
             role="tab"
@@ -233,7 +215,7 @@ const OrderList: React.FC<OrderListProps> = ({
           >
             Active Orders{" "}
             <span
-              className={`ml-1.5 rounded-[3px] px-2 py-0.5 text-xs font-bold tabular-nums ${activeTab === "active" ? "bg-stone-950 text-white" : "bg-stone-200 text-stone-700"}`}
+              className={`ml-1.5 rounded-full px-2 py-0.5 text-xs font-bold tabular-nums ${activeTab === "active" ? "bg-stone-950 text-white" : "bg-stone-200 text-stone-700"}`}
             >
               {totalActiveOrders}
             </span>
@@ -250,15 +232,21 @@ const OrderList: React.FC<OrderListProps> = ({
           >
             Secured History{" "}
             <span
-              className={`ml-1.5 rounded-[3px] px-2 py-0.5 text-xs font-bold tabular-nums ${activeTab === "secured" ? "bg-emerald-100 text-emerald-800" : "bg-stone-200 text-stone-700"}`}
+              className={`ml-1.5 rounded-full px-2 py-0.5 text-xs font-bold tabular-nums ${activeTab === "secured" ? "bg-emerald-100 text-emerald-800" : "bg-stone-200 text-stone-700"}`}
             >
               {totalSecuredOrders}
             </span>
           </button>
         </div>
+        <p className="pb-3 text-sm tabular-nums text-stone-500">
+          Showing {filteredOrders.length} of{" "}
+          {activeTab === "active" ? totalActiveOrders : totalSecuredOrders}{" "}
+          orders.
+        </p>
       </div>
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start">
+        <div className="min-w-0 flex-1">
         <label htmlFor="searchQuery" className="sr-only">
           Search Orders
         </label>
@@ -269,7 +257,7 @@ const OrderList: React.FC<OrderListProps> = ({
             placeholder="Search by Customer, Salesperson, Model, Deal #, Stock #, or VIN..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="block w-full rounded-lg border border-stone-300 bg-stone-50 p-2.5 pr-11 text-stone-900 shadow-sm outline-none transition focus:border-stone-500 focus:ring-2 focus:ring-stone-200 sm:text-sm"
+            className="block w-full min-h-11 rounded-lg border border-stone-300 bg-white p-2.5 pr-11 text-stone-900 outline-none transition placeholder:text-stone-500 focus:border-stone-500 focus:ring-2 focus:ring-stone-200 sm:text-sm"
           />
           {searchQuery && (
             <button
@@ -283,6 +271,15 @@ const OrderList: React.FC<OrderListProps> = ({
             </button>
           )}
         </div>
+        </div>
+        <button
+          onClick={handleExport}
+          className="flex min-h-11 flex-shrink-0 items-center justify-center gap-2 rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-800 transition-colors duration-200 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={filteredOrders.length === 0}
+        >
+          <DownloadIcon />
+          Export Results
+        </button>
       </div>
 
       {activeTab === "active" && (

@@ -1548,11 +1548,11 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({
       const codeLabel = getDisplayCode(variant.sourceCode, variant.code);
 
       const railClass = signal === "matched"
-        ? "border-l-[4px] border-l-graphite"
+        ? "border-l-4 border-l-amber-500"
         : signal === "linked"
-          ? "border-l-[4px] border-l-platinum"
-          : "border-l-[3px] border-l-graphite/40 transition-colors hover:border-l-graphite/70";
-      const cardClass = `overflow-hidden rounded-lg border border-stone-200 bg-white ${signal ? "shadow-sm" : ""} ${railClass}`;
+          ? "border-l-4 border-l-emerald-600"
+          : "";
+      const cardClass = `overflow-hidden rounded-xl bg-white ring-1 ring-stone-950/5 ${signal ? "shadow-card" : ""} ${railClass}`;
       const rowClass = "bg-white";
       const codeClass = "text-stone-950";
       const modelClass = "text-stone-600";
@@ -1639,8 +1639,8 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({
                       data-testid="model-total-pills"
                       title={`${getVehicleModelKey(variant)} across this allocation: ${totals.totalSlots} received, ${totals.linkedSlots} linked`}
                     >
-                      <span className={`rounded-[3px] px-2 py-0.5 font-semibold bg-stone-100 text-stone-700`}>{totals.totalSlots} received</span>
-                      <span className={`rounded-[3px] px-2 py-0.5 font-semibold bg-emerald-50 text-emerald-700`}>{totals.linkedSlots} linked</span>
+                      <span className={`rounded-full px-2 py-0.5 font-semibold bg-stone-100 text-stone-700`}>{totals.totalSlots} received</span>
+                      <span className={`rounded-full px-2 py-0.5 font-semibold bg-emerald-50 text-emerald-700`}>{totals.linkedSlots} linked</span>
                     </div>
                   );
                 })()}
@@ -1719,7 +1719,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({
           {uniqueMatches.length > 0 && currentUser.isManager && (
             <div className="border-t border-stone-200">
               {exactMatches.length > 0 && (
-                <div className="border-l-4 border-graphite bg-white">
+                <div className="border-l-4 border-amber-400 bg-white">
                   <p className="px-3 pt-2 text-[11px] font-semibold uppercase tracking-wide text-stone-700">Exact color ({exactMatches.length})</p>
                   <div className="divide-y divide-stone-100">
                     {exactMatches.map((m, index) => renderMatchRow(m, index, "exact"))}
@@ -1727,7 +1727,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({
                 </div>
               )}
               {partialMatches.length > 0 && (
-                <details className="border-l-4 border-stone-300 bg-white">
+                <details className="border-l-4 border-stone-200 bg-white">
                   <summary className="cursor-pointer px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Close color ({partialMatches.length})</summary>
                   <div className="divide-y divide-stone-100">
                     {partialMatches.map((m, index) => renderMatchRow(m, index, "close"))}
@@ -1735,7 +1735,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({
                 </details>
               )}
               {modelOnlyMatches.length > 0 && (
-                <details className="border-l-4 border-stone-200 bg-stone-50">
+                <details className="border-l-4 border-stone-100 bg-stone-50">
                   <summary className="cursor-pointer px-3 py-2 text-xs font-semibold text-stone-600 hover:text-stone-900">+{modelOnlyMatches.length} model-only match{modelOnlyMatches.length === 1 ? "" : "es"}</summary>
                   <div className="divide-y divide-stone-100">
                     {modelOnlyMatches.map((m, index) => renderMatchRow(m, index, "model"))}
@@ -1758,12 +1758,12 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({
   };
 
   return (
-    <section className="rounded-xl border border-stone-200 bg-white text-stone-800 shadow-sm">
-      <div className="border-b border-stone-200 px-4 sm:px-6 py-5">
+    <section className="text-stone-800">
+      <div className="border-b border-stone-200 pb-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">Live Allocation</p>
-            <h2 className="text-2xl font-bold tracking-tight text-stone-900">Allocation Board</h2>
+            <h2 className="text-3xl font-extrabold tracking-tight text-stone-950">Allocation Board</h2>
             <p className="mt-1 text-sm text-stone-500">
               Snapshot source of truth for consultant strategy and live inventory visibility.
             </p>
@@ -1897,7 +1897,7 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({
                     <span className="rounded-full bg-stone-100 px-2.5 py-1 text-stone-700">
                       TBD Fields: {parseInsights.tbdArrivals + parseInsights.tbdDetails}
                     </span>
-                    <span className={`rounded-[3px] px-2.5 py-1 ${parseConfidenceTone}`}>
+                    <span className={`rounded-full px-2.5 py-1 ${parseConfidenceTone}`}>
                       Confidence: {parseInsights.confidence}
                     </span>
                   </>
@@ -1956,9 +1956,9 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({
         </div>
       )}
 
-      <div className="px-4 sm:px-6 py-5">
+      <div className="py-5">
         <div className="sticky top-20 z-20">
-          <div className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-white/95 p-3 shadow-sm backdrop-blur-sm sm:p-4">
+          <div className="flex flex-col gap-3 rounded-xl bg-stone-50 p-3 ring-1 ring-stone-200 sm:p-4">
             {/* Tier 1: view tabs (+ reset) on the left, powertrain quick-filter on the right. */}
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex flex-wrap items-center gap-2" role="tablist">
@@ -2224,9 +2224,9 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({
               <div className="mt-5 space-y-6" data-testid="allocation-strategy-view">
                 {linkedGroupedRows.length > 0 && (
                   <div>
-                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2 border-b-2 border-stone-950 px-1 py-2">
-                      <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-950">Linked to Customer</h3>
-                      <span className="text-xs font-semibold tabular-nums text-stone-600">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-1 pt-2">
+                      <h3 className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-500">Linked to Customer</h3>
+                      <span className="rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold tabular-nums text-stone-700 ring-1 ring-stone-200">
                         {linkedFilteredVehicles.length} vehicle{linkedFilteredVehicles.length === 1 ? "" : "s"} / {linkedSummary.linkedOrderCount} order{linkedSummary.linkedOrderCount === 1 ? "" : "s"}
                       </span>
                     </div>
@@ -2243,9 +2243,9 @@ const AllocationBoard: React.FC<AllocationBoardProps> = ({
 
                 {matchedGroupedRows.length > 0 && (
                   <div>
-                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2 border-b-2 border-stone-950 px-1 py-2">
-                      <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-950">Customer Matches</h3>
-                      <span className="text-xs font-semibold tabular-nums text-stone-600">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-1 pt-2">
+                      <h3 className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-500">Customer Matches</h3>
+                      <span className="rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold tabular-nums text-stone-700 ring-1 ring-stone-200">
                         {matchSummary.matchedOrderCount} order{matchSummary.matchedOrderCount === 1 ? "" : "s"} / {matchSummary.matchedVehicleCount} vehicle{matchSummary.matchedVehicleCount === 1 ? "" : "s"}
                       </span>
                     </div>

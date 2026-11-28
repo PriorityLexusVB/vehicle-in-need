@@ -41,7 +41,7 @@ export function chipClasses({
   className?: string;
 } = {}) {
   return [
-    "inline-flex items-center justify-center gap-1.5 rounded-[3px] border font-semibold uppercase tracking-[0.06em] transition-colors",
+    "inline-flex items-center justify-center gap-1.5 rounded-full border font-bold uppercase tracking-[0.08em] transition-colors",
     sizeClasses[size],
     active ? toneClasses[tone].active : toneClasses[tone].idle,
     className,

@@ -168,7 +168,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onAddOrder, currentUser }) => {
   const moneyInputClass = (name: keyof typeof formState) => `block w-full rounded-lg border ${errors[name] ? 'border-red-500' : 'border-stone-300'} bg-stone-50 p-2.5 pl-8 outline-none transition focus:border-stone-500 focus:ring-2 focus:ring-stone-200 sm:text-sm`;
 
   return (
-    <div className="rounded-lg border border-stone-200 bg-white/95 p-6 shadow-sm">
+    <div className="rounded-2xl bg-white p-6 shadow-card ring-1 ring-stone-950/5">
       <h2 className="text-2xl font-bold text-stone-800 mb-6">Add New Order</h2>
 
       {submitSuccess && (

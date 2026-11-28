@@ -72,7 +72,7 @@ describe("V-i-N DESIGN.md resolved questions", () => {
     render(<OrderPreviewDrawer order={order(OrderStatus.FactoryOrder)} onClose={() => {}} />);
     const badge = within(screen.getByRole("dialog")).getByText(OrderStatus.FactoryOrder);
     expect(badge.className).not.toContain("indigo");
-    expect(hasToken(badge.className, "rounded-[3px]")).toBe(true);
+    expect(hasToken(badge.className, "rounded-full")).toBe(true);
     expect(hasToken(badge.className, "text-stone-700")).toBe(true);
   });
 
@@ -94,7 +94,7 @@ describe("V-i-N DESIGN.md resolved questions", () => {
     const closeClass =
       'className="flex h-11 w-11 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-700"';
     expect(dxPartnersSource).toContain(
-      'className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[3px] text-stone-600 transition-colors hover:bg-stone-100 hover:text-stone-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-500"',
+      'className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-stone-600 transition-colors hover:bg-stone-100 hover:text-stone-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-500"',
     );
     expect(dxPartnersSource).not.toContain("text-stone-500 transition-colors hover:bg-stone-100");
     expect(matchPreviewModalSource).toContain(closeClass);

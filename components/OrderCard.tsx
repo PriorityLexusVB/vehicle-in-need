@@ -502,11 +502,11 @@ const OrderCard: React.FC<OrderCardProps> = ({
     <div
       ref={cardRef}
       id={`order-${order.id}`}
-      className={`rounded-lg shadow-sm transition-all duration-300 ${
+      className={`rounded-2xl ring-1 transition-all duration-300 ${
         isSecured
-          ? "bg-stone-100/70 border-stone-200"
-          : "bg-white/95 border-stone-200 hover:shadow-md hover:border-stone-300"
-      } border`}
+          ? "bg-stone-100/70 ring-stone-200"
+          : "bg-white shadow-card ring-stone-950/5 hover:ring-stone-950/15"
+      }`}
     >
       <div
         className="relative w-full cursor-pointer rounded-lg text-left"

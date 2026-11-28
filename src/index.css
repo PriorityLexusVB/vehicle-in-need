@@ -20,8 +20,8 @@
 @theme {
   /* Operational canvas — clean platinum/smoke neutral, replaces the warm
      #f6f1ea cream shell. Value per redesign plan (closer to #EEF2F6 than beige). */
-  --color-canvas: #efefef; /* 2026-11-28: neutral Lexus gray, was #eef2f6 */
-  --color-canvas-elevated: #f7f7f7;
+  --color-canvas: #f3f5f8; /* 2026-11-28: Sales Tracker slate shell */
+  --color-canvas-elevated: #f8fafc;
 
   /* Focal graphite surfaces (header + high-signal vehicle/order cards) — warm
      showroom near-black, NOT cool navy. Base is the plan's #0e1418. Elevated is
@@ -36,60 +36,32 @@
   --color-platinum: #cbd0d8;
 
   /* -------------------------------------------------------------------------
-     Lexus-grade palette pass (2026-11-28). Rob: "I don't like the colors" and
-     "no AI style". Research: lexus.com RX pages, inspected 2026-11-28 — pure
-     neutral grays (#e6e6e6 / #efefef, no warm or blue tint), black ink, square
-     buttons, hairline dividers instead of shadows, color carried by the car
-     and one muted accent. The Tailwind default ramps (warm stone, mint
-     emerald, yellow amber, soft rounded shadows) were the "AI dashboard" tell.
-     These overrides retune those ramps app-wide so every existing class picks
-     up the new look from one place. Contrast: stone-500 on white 5.4:1 and on canvas 4.7:1,
-     emerald-700 on emerald-50 and amber-700 on amber-50 both above 7:1.
+     Sales Tracker family look (2026-11-28, Rob: "UGLY FONT ... DOESNT LOOK
+     LIKE U USED ANY OF OUR DESIGN RULES"). Source of truth:
+     sales-tracker/DESIGN.md (Typography, Surface tokens, Spacing) and the
+     north-star screenshot named in rob-design-dna. Light slate shell, white
+     cards with one soft card shadow, Inter Tight everywhere, big black-weight
+     numbers, uppercase tracked labels. The earlier lexus.com gray/bronze
+     retune and square corners are withdrawn.
   ------------------------------------------------------------------------- */
-  /* Neutral ink scale (replaces warm stone) */
-  --color-stone-50: #f6f6f6;
-  --color-stone-100: #ededed;
-  --color-stone-200: #e0e0e0;
-  --color-stone-300: #c9c9c9;
-  --color-stone-400: #a3a3a3;
-  --color-stone-500: #6a6a6a;
-  --color-stone-600: #545454;
-  --color-stone-700: #3d3d3d;
-  --color-stone-800: #2a2a2a;
-  --color-stone-900: #1c1d1f;
+  --font-sans: "Inter Tight", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Ink scale = Tailwind slate (the Sales Tracker ramp); stone-* classes in this
+     app resolve to it. 950 is the shared brand near-black. */
+  --color-stone-50: #f8fafc;
+  --color-stone-100: #f1f5f9;
+  --color-stone-200: #e2e8f0;
+  --color-stone-300: #cbd5e1;
+  --color-stone-400: #94a3b8;
+  --color-stone-500: #5f6b7d;
+  --color-stone-600: #475569;
+  --color-stone-700: #334155;
+  --color-stone-800: #1e293b;
+  --color-stone-900: #0f172a;
   --color-stone-950: #0e1418;
 
-  /* Success = got the car. Deep muted green instead of Tailwind mint. */
-  --color-emerald-50: #e4ede6;
-  --color-emerald-100: #d3e2d7;
-  --color-emerald-200: #a9c2b0;
-  --color-emerald-300: #93ab99;
-  --color-emerald-400: #6b8a73;
-  --color-emerald-500: #4d6e56;
-  --color-emerald-600: #3b5944;
-  --color-emerald-700: #2e4836;
-  --color-emerald-800: #24392b;
-  --color-emerald-900: #1a2a20;
-
-  /* Attention = still working on it. Bronze instead of Tailwind yellow-amber. */
-  --color-amber-50: #f4f1ec;
-  --color-amber-100: #e9e1d4;
-  --color-amber-200: #d9c9b0;
-  --color-amber-300: #c4aa84;
-  --color-amber-400: #ad8c5c;
-  --color-amber-500: #977443;
-  --color-amber-600: #7c5d33;
-  --color-amber-700: #644a28;
-  --color-amber-800: #4d381e;
-  --color-amber-900: #382816;
-
-  /* Square, tailored corners and no soft drop shadows on in-page surfaces. */
-  --radius-md: 0.1875rem;
-  --radius-lg: 0.25rem;
-  --radius-xl: 0.25rem;
-  --radius-2xl: 0.375rem;
-  --shadow-sm: 0 0 #0000;
-  --shadow: 0 0 #0000;
+  /* The one card shadow (Sales Tracker light-card recipe). */
+  --shadow-card: 0 8px 30px -10px rgba(2, 6, 23, 0.16);
 }
 
 /* @source directives tell Tailwind where to find classes to generate
@@ -107,14 +79,14 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #e0e0e0;
+  background: #e2e8f0;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #a3a3a3;
+  background: #94a3b8;
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #6e6e6e;
+  background: #64748b;
 }

@@ -9,11 +9,11 @@ interface KpiProps {
 }
 
 const Kpi: React.FC<KpiProps> = ({ title, value, attention = false }) => (
-  <div className="min-w-0 px-4 py-3 sm:px-5">
-    <p className="text-[11px] font-semibold uppercase leading-tight tracking-wide text-stone-500">{title}</p>
+  <div className="min-w-0 px-4 py-4 sm:px-6 sm:py-5">
+    <p className="text-[10px] font-bold uppercase leading-tight tracking-[0.16em] text-stone-500 sm:text-[11px]">{title}</p>
     <p
-      className={`mt-0.5 text-2xl font-bold leading-none tabular-nums ${
-        attention ? 'text-amber-700' : 'text-stone-950'
+      className={`mt-2 text-3xl font-black leading-none tracking-tight tabular-nums sm:text-5xl ${
+        attention ? 'text-amber-600' : 'text-stone-950'
       }`}
     >
       {value}
@@ -39,7 +39,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
         <>
             {/* Compact KPI strip: one shell, three divided cells. */}
             <div
-                className="mb-4 grid grid-cols-3 divide-x divide-stone-200 rounded-xl border border-stone-200 bg-white shadow-sm"
+                className="mb-5 grid grid-cols-3 divide-x divide-stone-100 rounded-2xl bg-white shadow-card ring-1 ring-stone-950/5"
                 data-testid="dashboard-kpi-strip"
             >
                 <Kpi title="Total Active" value={totalActive} />
@@ -49,17 +49,17 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
 
             {modelTotals.length > 0 && (
                 <div className="mb-6" data-testid="dashboard-model-totals">
-                    <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                    <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-stone-500">
                         Received by Model
                     </p>
                     {/* Scrolls inside its own container so the page never overflows on phones. */}
                     {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- keyboard-scrollable region (axe scrollable-region-focusable) */}
-                    <div tabIndex={0} role="region" aria-label="Received by model, scrollable" className="overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400">
-                        <div className="flex min-w-max divide-x divide-stone-200 md:min-w-0 md:flex-wrap md:divide-x-0">
+                    <div tabIndex={0} role="region" aria-label="Received by model, scrollable" className="overflow-x-auto rounded-2xl bg-white shadow-card ring-1 ring-stone-950/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400">
+                        <div className="flex min-w-max divide-x divide-stone-100 md:grid md:min-w-0 md:grid-cols-[repeat(auto-fill,minmax(150px,1fr))] md:gap-y-1 md:divide-x-0 md:p-2">
                             {modelTotals.map((total) => (
                                 <div
                                     key={total.model}
-                                    className="px-3.5 py-2 md:border-b md:border-r md:border-stone-100 md:flex-none"
+                                    className="px-4 py-3 md:px-3 md:py-2"
                                     data-testid="dashboard-model-total-card"
                                 >
                                     <p className="whitespace-nowrap text-sm font-bold text-stone-900">{total.model}</p>

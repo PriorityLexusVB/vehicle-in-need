@@ -66,7 +66,7 @@ describe("Header navigation", () => {
     expect(screen.getByTestId("admin-nav-link")).toBeInTheDocument();
     // active orders count
     expect(screen.getByText("42")).toBeInTheDocument();
-    expect(screen.getByText(/active orders/i).parentElement).toHaveClass("2xl:block");
+    expect(screen.getByText(/active orders/i).parentElement).toHaveClass("min-[1120px]:block");
     expect(
       within(screen.getByTestId("main-nav"))
         .getAllByRole("link")
@@ -103,14 +103,14 @@ describe("Header navigation", () => {
     expect(heading).toBeInTheDocument();
   });
 
-  it("shows welcome message with user name", () => {
+  it("shows the signed-in user name", () => {
     renderHeader(managerUser);
-    expect(screen.getByText(/welcome, manager user/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/manager user/i).length).toBeGreaterThan(0);
   });
 
   it("shows manager role indicator for managers", () => {
     renderHeader(managerUser);
-    expect(screen.getByText(/\(manager\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/^manager$/i)).toBeInTheDocument();
   });
 
   it("does not show role indicator for non-managers", () => {
