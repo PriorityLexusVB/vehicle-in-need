@@ -22,6 +22,8 @@ import {
   type LatestModelNumberTotals,
 } from "../src/utils/allocationModelNumberTotals";
 import { MODEL_CODE_TO_ALLOCATION } from "../src/utils/allocationReference";
+import { chipClasses } from "./ui/chipStyles";
+import { ORDER_ROW_GRID_XL } from "./orderRowGrid";
 
 /**
  * Presentation only. Stored model text is sometimes just a model code
@@ -46,6 +48,19 @@ const resolveVehicleName = (
     ? { name: friendlyAllocationName(allocation), code, shown: text }
     : { name: text, code: null, shown: null };
 };
+
+/** Whole days since an order date stored as YYYY-MM-DD (local). Null when unparseable or in the future. */
+const daysSinceOrder = (date: string | undefined): number | null => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec((date ?? "").trim());
+  if (!m) return null;
+  const start = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const days = Math.round((today.getTime() - start.getTime()) / 86_400_000);
+  return days >= 0 ? days : null;
+};
+const formatDaysWaiting = (days: number): string =>
+  days === 0 ? "ordered today" : days === 1 ? "1 day ago" : `${days} days ago`;
 
 interface OrderCardProps {
   order: Order;
@@ -242,7 +257,9 @@ const OrderCard: React.FC<OrderCardProps> = ({
   } else if (latestModelNumberTotals && exactModelNumber && exactModelTotal) {
     allocationFact = (
       <>
-        <span className="sr-only">Latest allocation · </span><span className="whitespace-nowrap">model {exactModelNumber}</span> · <span className="whitespace-nowrap tabular-nums">{exactModelTotal.unassignedSlots} unassigned of {exactModelTotal.totalSlots}</span> · {reportDateNode(latestModelNumberTotals.reportDate)}
+        <span className="block">Latest allocation<span className="sr-only"> · </span></span>
+        <span className="block whitespace-nowrap text-sm font-semibold tabular-nums text-graphite">{exactModelTotal.unassignedSlots} unassigned of {exactModelTotal.totalSlots}</span>
+        <span className="block"><span className="whitespace-nowrap xl:sr-only">model {exactModelNumber} · </span>{reportDateNode(latestModelNumberTotals.reportDate)}</span>
       </>
     );
   } else if (latestModelNumberTotals && exactModelNumber) {
@@ -250,6 +267,46 @@ const OrderCard: React.FC<OrderCardProps> = ({
       <>
         <span className="sr-only">Latest allocation · </span>model {exactModelNumber} not listed · {reportDateNode(latestModelNumberTotals.reportDate)}
       </>
+    );
+  }
+
+  const daysWaiting = isActive ? daysSinceOrder(order.date) : null;
+  const hasDeposit = typeof order.depositAmount === "number" && order.depositAmount > 0;
+  // Cell labels show when cells stack; at xl the shared header row in OrderList shows them.
+  const cellLabel = "text-[11px] font-semibold uppercase tracking-wide text-stone-500 xl:sr-only";
+  let carCell: React.ReactNode = (
+    <p className="text-xs text-stone-500"><span aria-hidden="true">&mdash;</span><span className="sr-only">Nothing yet</span></p>
+  );
+  if (isSecured && order.securedVehicleInfo) {
+    // Secured: show which car fulfilled the order (the live link slot is freed on secure).
+    carCell = <p className="break-words text-xs leading-snug text-stone-600">{order.securedVehicleInfo}</p>;
+  } else if (order.allocatedVehicleId) {
+    carCell = (
+      <>
+        <span className={chipClasses({ tone: "success", className: "pointer-events-none" })}>Linked</span>
+        {order.allocatedVehicleInfo && (
+          <p className="mt-1 text-xs leading-snug text-stone-600">
+            {order.allocatedVehicleInfo.split(" - ").map((part, i) => (
+              <React.Fragment key={i}>{i > 0 && " · "}<span className="whitespace-nowrap">{part}</span></React.Fragment>
+            ))}
+          </p>
+        )}
+      </>
+    );
+  } else if (isSecured) {
+    // Secured with no recorded car: keep the dash.
+  } else if (isAllocationLinkable(order.status)) {
+    carCell = (
+      <p className="text-xs font-medium leading-snug text-stone-600" data-testid="order-card-availability">
+        {allocationFact}
+      </p>
+    );
+  } else if (order.dxDealerName || order.dxExpectedArrival) {
+    carCell = (
+      <p className="break-words text-xs leading-snug text-stone-700">
+        {order.dxDealerName && <span className="block font-semibold text-graphite">From {order.dxDealerName}</span>}
+        {order.dxExpectedArrival && <span className="block tabular-nums">Expected {order.dxExpectedArrival}</span>}
+      </p>
     );
   }
 
@@ -461,36 +518,38 @@ const OrderCard: React.FC<OrderCardProps> = ({
           aria-expanded={isExpanded}
         />
         {currentUser?.isManager ? (
-          <div className="pointer-events-none relative z-10 grid gap-x-6 gap-y-3 px-3.5 py-3 sm:grid-cols-2 sm:px-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,.8fr)_minmax(0,1.3fr)_minmax(0,1.5fr)]">
-            <div className="min-w-0">
-              <div className="flex items-start gap-2">
-                <h3 className={`min-w-0 break-words text-lg font-bold leading-tight ${isSecured ? "text-stone-600" : "text-graphite"}`}>
-                  {order.customerName}
-                </h3>
-                {/* Decorative: the full-row button above is the real control. 44px hit area. */}
-                <span className="-mr-2 -mt-2 ml-auto flex h-11 w-11 shrink-0 items-center justify-center text-stone-500" aria-hidden="true">
-                  <ChevronDownIcon className={`h-5 w-5 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+          <div className={`pointer-events-none relative z-10 grid grid-cols-2 gap-x-4 gap-y-2.5 px-3.5 py-3 sm:grid-cols-4 sm:px-4 xl:items-start xl:gap-x-5 xl:py-2.5 ${ORDER_ROW_GRID_XL}`}>
+            <div className="col-span-2 min-w-0 pr-10 xl:order-1 xl:col-span-1 xl:pr-0">
+              <h3 className={`min-w-0 break-words text-lg font-bold leading-tight xl:text-base ${isSecured ? "text-stone-600" : "text-graphite"}`}>
+                {order.customerName}
+              </h3>
+              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                <StatusBadge status={order.status} />
+                <span className="whitespace-nowrap text-xs font-medium tabular-nums text-stone-600">
+                  {order.date}
+                  {daysWaiting !== null && (
+                    <>
+                      <span className="mx-1 text-stone-400" aria-hidden="true">·</span>
+                      <span data-testid="order-card-days-waiting">{formatDaysWaiting(daysWaiting)}</span>
+                    </>
+                  )}
                 </span>
               </div>
-              <div className="-mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-                <StatusBadge status={order.status} />
-                {order.allocatedVehicleId && (
-                  <span className="text-xs font-semibold text-emerald-700">Vehicle linked</span>
-                )}
-                <span className="whitespace-nowrap text-xs font-medium tabular-nums text-stone-500">{order.date}</span>
-              </div>
             </div>
-            {/* Mobile stack order: customer, vehicle, salesperson, notes. */}
-            <div className="order-3 min-w-0 sm:order-none">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Salesperson</p>
-              <p className="mt-0.5 break-words text-base font-semibold leading-snug text-graphite" data-testid="order-card-summary-salesperson">{formatSalesperson(order)}</p>
+            <div className="min-w-0 xl:order-2">
+              <p className={cellLabel}>Salesperson</p>
+              <p className="mt-0.5 break-words text-sm font-semibold leading-snug text-graphite xl:mt-0" data-testid="order-card-summary-salesperson">{formatSalesperson(order)}</p>
             </div>
-            <div className="order-2 min-w-0 sm:order-none">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Vehicle</p>
-              <p className="mt-0.5 break-words text-base font-bold leading-snug text-graphite">
+            <div className="min-w-0 xl:order-5">
+              <p className={cellLabel}>Deposit</p>
+              <p className={`mt-0.5 text-sm font-semibold tabular-nums xl:mt-0 ${hasDeposit ? "text-graphite" : "text-stone-500"}`}>{formatDeposit(order)}</p>
+            </div>
+            <div className="col-span-2 min-w-0 xl:order-3 xl:col-span-1">
+              <p className={cellLabel}>Vehicle</p>
+              <p className="mt-0.5 break-words text-sm font-bold leading-snug text-graphite xl:mt-0">
                 {order.year} {vehicleLabel.name}
                 {vehicleLabel.code && (
-                  <span className="ml-1.5 text-xs font-semibold tabular-nums text-stone-500">
+                  <span className="ml-1.5 text-xs font-semibold tabular-nums text-stone-600">
                     {modelLineRepeatsCode ? (
                       <span data-testid="order-card-summary-model"><span className="sr-only">Model: </span>{vehicleLabel.shown}</span>
                     ) : (
@@ -500,32 +559,40 @@ const OrderCard: React.FC<OrderCardProps> = ({
                 )}
               </p>
               {!modelLineRepeatsCode && (
-                <p className="text-sm font-semibold tabular-nums text-stone-700" data-testid="order-card-summary-model">{modelNumberDisplay || "Model # not listed"}</p>
-              )}
-              <p className="mt-1 break-words text-sm leading-snug text-stone-700">
-                <span className="font-semibold">Exterior:</span> {exteriorColors.join(" / ") || "Not listed"}
-                <span className="mx-1.5 text-stone-300" aria-hidden="true">·</span>
-                <span className="font-semibold">Interior:</span> {interiorColors.join(" / ") || "Not listed"}
-              </p>
-              {isAllocationLinkable(order.status) && !order.allocatedVehicleId && (
-                <p className="mt-1.5 border-t border-stone-200 pt-1.5 text-xs font-medium leading-snug text-stone-600" data-testid="order-card-availability">
-                  {allocationFact}
-                </p>
+                <p className="text-xs font-semibold tabular-nums text-stone-600" data-testid="order-card-summary-model">{modelNumberDisplay || "Model # not listed"}</p>
               )}
             </div>
-            <div className="order-4 min-w-0 sm:order-none">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Notes</p>
+            <div className="col-span-2 min-w-0 xl:order-4 xl:col-span-1">
+              {/* "Exterior:" / "Interior:" label themselves; the xl header row shows "Colors". */}
+              <p className="sr-only">Colors</p>
+              <p className="mt-0.5 break-words text-sm leading-snug text-stone-700 xl:mt-0">
+                <span className="block"><span className="font-semibold">Exterior:</span> {exteriorColors.join(" / ") || "Not listed"}</span>
+                <span className="block"><span className="font-semibold">Interior:</span> {interiorColors.join(" / ") || "Not listed"}</span>
+              </p>
+            </div>
+            <div className="col-span-2 min-w-0 xl:order-6 xl:col-span-1">
+              <p className={cellLabel}>Car</p>
+              <div className="mt-0.5 xl:mt-0">{carCell}</div>
+            </div>
+            <div className="col-span-2 min-w-0 xl:order-7 xl:col-span-1">
+              <p className={cellLabel}>Latest note</p>
               {previewNote ? (
-                <p className="mt-0.5 line-clamp-3 whitespace-pre-wrap break-words text-sm leading-snug text-stone-800" data-testid="order-card-latest-note">
+                <p className="mt-0.5 line-clamp-3 whitespace-pre-wrap break-words text-sm leading-snug text-stone-800 xl:mt-0" data-testid="order-card-latest-note">
                   {previewNote}
                 </p>
               ) : (
-                <p className="mt-0.5 text-xs text-stone-500" data-testid="order-card-latest-note" aria-label="No notes yet">&mdash;</p>
+                <p className="mt-0.5 text-xs text-stone-500 xl:mt-0" data-testid="order-card-latest-note">
+                  <span aria-hidden="true">&mdash;</span><span className="sr-only">No notes yet</span>
+                </p>
               )}
-              {previewNote && previewNote.length > 220 && (
-                <p className="mt-1 text-xs font-medium text-stone-500">Expand for the full note</p>
+              {previewNote && previewNote.length > 100 && (
+                <p className="mt-0.5 text-xs font-medium text-stone-500">Expand for the full note</p>
               )}
             </div>
+            {/* Decorative: the full-row button underneath is the real control. 44px hit area. */}
+            <span className="absolute right-1.5 top-1.5 flex h-11 w-11 items-center justify-center text-stone-500 xl:static xl:order-8 xl:-my-2 xl:self-center" aria-hidden="true">
+              <ChevronDownIcon className={`h-5 w-5 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+            </span>
           </div>
         ) : (
         <div className="pointer-events-none relative z-10 flex items-start justify-between p-4">

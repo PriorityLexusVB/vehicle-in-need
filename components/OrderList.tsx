@@ -12,6 +12,7 @@ import { OrderMatchSummary } from "../src/utils/orderMatchSummary";
 import { AllocationVehicle } from "../src/utils/allocationTypes";
 import type { LatestModelNumberTotals } from "../src/utils/allocationModelNumberTotals";
 import { chipClasses } from "./ui/chipStyles";
+import { ORDER_ROW_COLUMNS, ORDER_ROW_GRID_XL } from "./orderRowGrid";
 
 interface OrderListProps {
   orders: Order[];
@@ -313,6 +314,20 @@ const OrderList: React.FC<OrderListProps> = ({
         </div>
       )}
 
+      {currentUser?.isManager && filteredOrders.length > 0 && (
+        // Visual column headings for the wide-screen rows; each cell keeps its own
+        // screen-reader label, so this row is hidden from assistive tech.
+        <div
+          aria-hidden="true"
+          data-testid="order-list-column-headings"
+          className={`mb-1.5 hidden gap-x-5 border-x border-transparent px-4 text-[11px] font-semibold uppercase tracking-wide text-stone-500 xl:grid ${ORDER_ROW_GRID_XL}`}
+        >
+          {ORDER_ROW_COLUMNS.map((label) => (
+            <span key={label}>{label}</span>
+          ))}
+          <span />
+        </div>
+      )}
       <div ref={animateRef} role="tabpanel" className="space-y-2.5">
         {filteredOrders.length > 0 ? (
           filteredOrders.map((order) => (

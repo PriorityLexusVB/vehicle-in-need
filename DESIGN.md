@@ -418,7 +418,10 @@ _(none yet)*
 
 ### Open
 
-*(none)*. The four questions listed here until 2026-09-17 were not taste
+- "Did we get the car?" direction (Claude Design canvas `TqTp2g5VmF8846HiEf1Q7A`, Main/Allocation/Phone boards) — Rob, 2026-11-27: linking a car to the salesperson "doesn't really work well"; the key is knowing there is an order and that we got the car; allocation becomes the managers' area — Dashboard order rows + manager Allocation hub, all widths — 2026-11-27. Open until Rob approves the build and settles who confirms an automatic match.
+- Earlier tiles-and-black-bars Allocation Board — Rob, 2026-11-27: "super ugly"; replaced by graphite section bars over white rows (see Component Law) — Allocation Board, all widths — 2026-11-27. Not moved to Rejected yet: Rob gave a verdict, not a reason; confirm the reason when he reviews draft 2.
+
+The four questions listed here until 2026-09-17 were not taste
 calls. Existing rules settled them, so they are resolved in place rather
 than entered as Rob-approved taste:
 

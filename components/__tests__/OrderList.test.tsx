@@ -5,6 +5,7 @@ import OrderList from "../OrderList";
 import { Order, OrderStatus, AppUser } from "../../types";
 import type { OrderMatchSummary } from "../../src/utils/orderMatchSummary";
 import type { LatestModelNumberTotals } from "../../src/utils/allocationModelNumberTotals";
+import { ORDER_ROW_COLUMNS } from "../orderRowGrid";
 
 describe("OrderList", () => {
   const mockManagerUser: AppUser = {
@@ -59,6 +60,71 @@ describe("OrderList", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("shows manager column headings, deposit, days waiting and the linked car", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2024, 0, 25, 12));
+    try {
+      render(
+        <OrderList
+          orders={[{
+            ...mockOrders[0],
+            depositAmount: 2500,
+            allocatedVehicleId: "veh-1",
+            allocatedVehicleInfo: "RX350 - Caviar - 2026-12-09",
+          }]}
+          onUpdateStatus={mockOnUpdateStatus}
+          onUpdateOrderDetails={mockOnUpdateOrderDetails}
+          onDeleteOrder={mockOnDeleteOrder}
+          currentUser={mockManagerUser}
+        />,
+      );
+      const headings = screen.getByTestId("order-list-column-headings");
+      expect(headings).toHaveAttribute("aria-hidden", "true");
+      expect(headings).toHaveTextContent("Deposit");
+      expect(screen.getByTestId("order-card-days-waiting")).toHaveTextContent("10 days ago");
+      expect(screen.getByText("$2,500")).toBeInTheDocument();
+      expect(screen.getByText("Linked")).toBeInTheDocument();
+      expect(screen.getByText("Caviar")).toBeInTheDocument();
+      expect(screen.queryByTestId("order-card-availability")).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("orders the wide-screen cells to match the column headings", () => {
+    const { container } = render(
+      <OrderList
+        orders={[mockOrders[0]]}
+        onUpdateStatus={mockOnUpdateStatus}
+        onUpdateOrderDetails={mockOnUpdateOrderDetails}
+        onDeleteOrder={mockOnDeleteOrder}
+        currentUser={mockManagerUser}
+      />,
+    );
+    const row = container.querySelector("#order-1 .grid");
+    expect(row).not.toBeNull();
+    const cells = Array.from(row!.children)
+      .map((el) => ({ el, order: Number(/xl:order-(\d)/.exec(el.className)?.[1]) }))
+      .filter((c) => Number.isFinite(c.order) && c.order <= ORDER_ROW_COLUMNS.length)
+      .sort((a, b) => a.order - b.order)
+      .map(({ el }) => (el.querySelector("h3") ? "Customer" : el.querySelector("p")?.textContent?.trim()));
+    expect(cells).toEqual([...ORDER_ROW_COLUMNS]);
+  });
+
+  it("shows where a dealer exchange car is coming from", () => {
+    render(
+      <OrderList
+        orders={[{ ...mockOrders[2], dxDealerName: "BAYSIDE", dxExpectedArrival: "2026-12-03" }]}
+        onUpdateStatus={mockOnUpdateStatus}
+        onUpdateOrderDetails={mockOnUpdateOrderDetails}
+        onDeleteOrder={mockOnDeleteOrder}
+        currentUser={mockManagerUser}
+      />,
+    );
+    expect(screen.getByText("From BAYSIDE")).toBeInTheDocument();
+    expect(screen.getByText("Expected 2026-12-03")).toBeInTheDocument();
   });
 
   it("shows allocation availability for a matched active order", () => {
