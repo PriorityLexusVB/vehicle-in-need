@@ -28,6 +28,8 @@ interface OrderListProps {
   orderMatchSummaries?: Map<string, OrderMatchSummary>;
   allocationVehicles?: AllocationVehicle[];
   linkedVehicleIds?: Set<string>;
+  /** vehicle_links-confirmed ids for the car-status cell; null while links load or fail. */
+  confirmedLinkIds?: ReadonlySet<string> | null;
   latestModelNumberTotals?: LatestModelNumberTotals | null;
   allocationSnapshotStatus?: "loading" | "ready" | "missing" | "error";
   allocationClaimsStatus?: "loading" | "ready" | "error";
@@ -43,6 +45,7 @@ const OrderList: React.FC<OrderListProps> = ({
   orderMatchSummaries,
   allocationVehicles,
   linkedVehicleIds,
+  confirmedLinkIds,
   latestModelNumberTotals,
   allocationSnapshotStatus,
   allocationClaimsStatus,
@@ -339,6 +342,7 @@ const OrderList: React.FC<OrderListProps> = ({
               matchSummary={orderMatchSummaries?.get(order.id)}
               allocationVehicles={allocationVehicles}
               linkedVehicleIds={linkedVehicleIds}
+              confirmedLinkIds={confirmedLinkIds}
               latestModelNumberTotals={latestModelNumberTotals}
               allocationSnapshotStatus={allocationSnapshotStatus}
               allocationClaimsStatus={allocationClaimsStatus}

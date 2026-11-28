@@ -3,6 +3,8 @@ import { Order, OrderStatus, AppUser } from "../types";
 import MatchPreviewModal from "./MatchPreviewModal";
 import { ACTIVE_STATUS_OPTIONS, isActiveStatus, isSecuredStatus, isAllocationLinkable } from "../constants";
 import { ChevronDownIcon } from "./icons/ChevronDownIcon";
+import { CheckCircleIcon } from "./icons/CheckCircleIcon";
+import { carStatusOf, daysSinceOrder, hasUnconfirmedLink, LONG_WAIT_DAYS } from "../src/utils/carStatus";
 import StatusBadge from "./StatusBadge";
 import { TrashIcon } from "./icons/TrashIcon";
 import { UndoIcon } from "./icons/UndoIcon";
@@ -22,7 +24,6 @@ import {
   type LatestModelNumberTotals,
 } from "../src/utils/allocationModelNumberTotals";
 import { MODEL_CODE_TO_ALLOCATION } from "../src/utils/allocationReference";
-import { chipClasses } from "./ui/chipStyles";
 import { ORDER_ROW_GRID_XL } from "./orderRowGrid";
 import PaintSwatch from "./PaintSwatch";
 
@@ -50,16 +51,6 @@ const resolveVehicleName = (
     : { name: text, code: null, shown: null };
 };
 
-/** Whole days since an order date stored as YYYY-MM-DD (local). Null when unparseable or in the future. */
-const daysSinceOrder = (date: string | undefined): number | null => {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec((date ?? "").trim());
-  if (!m) return null;
-  const start = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const days = Math.round((today.getTime() - start.getTime()) / 86_400_000);
-  return days >= 0 ? days : null;
-};
 const formatDaysWaiting = (days: number): string =>
   days === 0 ? "ordered today" : days === 1 ? "1 day ago" : `${days} days ago`;
 
@@ -76,6 +67,8 @@ interface OrderCardProps {
   matchSummary?: OrderMatchSummary;
   allocationVehicles?: AllocationVehicle[];
   linkedVehicleIds?: Set<string>;
+  /** vehicle_links-confirmed ids; null/undefined while links load or fail (then the order's own link is trusted). */
+  confirmedLinkIds?: ReadonlySet<string> | null;
   latestModelNumberTotals?: LatestModelNumberTotals | null;
   allocationSnapshotStatus?: "loading" | "ready" | "missing" | "error";
   allocationClaimsStatus?: "loading" | "ready" | "error";
@@ -103,6 +96,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
   matchSummary,
   allocationVehicles,
   linkedVehicleIds,
+  confirmedLinkIds,
   latestModelNumberTotals,
   allocationSnapshotStatus,
   allocationClaimsStatus,
@@ -228,6 +222,8 @@ const OrderCard: React.FC<OrderCardProps> = ({
   // Check if order is secured (includes legacy Received/Delivered states)
   const isSecured = isSecuredStatus(order.status);
   const isActive = !isSecured;
+  const carStatus = carStatusOf(order, confirmedLinkIds);
+  const unconfirmedLink = hasUnconfirmedLink(order, confirmedLinkIds);
 
   // Format model number once for conditional rendering
   const modelNumberDisplay = formatModelNumber(order);
@@ -281,10 +277,14 @@ const OrderCard: React.FC<OrderCardProps> = ({
   if (isSecured && order.securedVehicleInfo) {
     // Secured: show which car fulfilled the order (the live link slot is freed on secure).
     carCell = <p className="break-words text-xs leading-snug text-stone-600">{order.securedVehicleInfo}</p>;
-  } else if (order.allocatedVehicleId) {
+  } else if (carStatus === "got") {
+    // "Did we get the car?" — the loudest fact on the row (Rob, 2026-11-28).
     carCell = (
       <>
-        <span className={chipClasses({ tone: "success", className: "pointer-events-none" })}>Linked</span>
+        <p className="flex items-center gap-1.5 whitespace-nowrap text-sm font-black uppercase tracking-[0.06em] text-emerald-700" data-testid="order-card-car-status">
+          <CheckCircleIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
+          Got the car
+        </p>
         {order.allocatedVehicleInfo && (
           <p className="mt-1 text-xs leading-snug text-stone-600">
             {order.allocatedVehicleInfo.split(" - ").map((part, i) => (
@@ -296,18 +296,44 @@ const OrderCard: React.FC<OrderCardProps> = ({
     );
   } else if (isSecured) {
     // Secured with no recorded car: keep the dash.
-  } else if (isAllocationLinkable(order.status)) {
+  } else if (carStatus === "exchange") {
     carCell = (
-      <p className="text-xs font-medium leading-snug text-stone-600" data-testid="order-card-availability">
-        {allocationFact}
-      </p>
+      <>
+        <p className="whitespace-nowrap text-sm font-black uppercase tracking-[0.06em] text-stone-950" data-testid="order-card-car-status">Via exchange</p>
+        {(order.dxDealerName || order.dxExpectedArrival) && (
+          <p className="mt-1 break-words text-xs leading-snug text-stone-600">
+            {order.dxDealerName && <span className="block font-semibold text-stone-800">From {order.dxDealerName}</span>}
+            {order.dxExpectedArrival && <span className="block tabular-nums">Expected {order.dxExpectedArrival}</span>}
+          </p>
+        )}
+        {unconfirmedLink && (
+          <p className="mt-1 text-xs font-semibold leading-snug text-amber-700" data-testid="order-card-stale-link">
+            Linked car not found on the Allocation Board
+          </p>
+        )}
+      </>
     );
-  } else if (order.dxDealerName || order.dxExpectedArrival) {
+  } else {
+    const longWait = daysWaiting !== null && daysWaiting >= LONG_WAIT_DAYS;
     carCell = (
-      <p className="break-words text-xs leading-snug text-stone-700">
-        {order.dxDealerName && <span className="block font-semibold text-graphite">From {order.dxDealerName}</span>}
-        {order.dxExpectedArrival && <span className="block tabular-nums">Expected {order.dxExpectedArrival}</span>}
-      </p>
+      <>
+        <p
+          className={`whitespace-nowrap text-sm font-black uppercase tracking-[0.06em] ${longWait ? "text-amber-700" : "text-stone-500"}`}
+          data-testid="order-card-car-status"
+        >
+          {longWait ? `Waiting ${daysWaiting} days` : "Waiting"}
+        </p>
+        {unconfirmedLink && (
+          <p className="mt-1 text-xs font-semibold leading-snug text-amber-700" data-testid="order-card-stale-link">
+            Linked car not found on the Allocation Board
+          </p>
+        )}
+        {isAllocationLinkable(order.status) && (
+          <p className="mt-1 text-xs font-medium leading-snug text-stone-600" data-testid="order-card-availability">
+            {allocationFact}
+          </p>
+        )}
+      </>
     );
   }
 
@@ -502,10 +528,10 @@ const OrderCard: React.FC<OrderCardProps> = ({
     <div
       ref={cardRef}
       id={`order-${order.id}`}
-      className={`rounded-2xl ring-1 transition-all duration-300 ${
+      className={`rounded-2xl border-l-4 ring-1 transition-all duration-300 ${
         isSecured
-          ? "bg-stone-100/70 ring-stone-200"
-          : "bg-white shadow-card ring-stone-950/5 hover:ring-stone-950/15"
+          ? "bg-stone-100/70 ring-stone-200 border-l-transparent"
+          : `bg-white shadow-card ring-stone-950/5 hover:ring-stone-950/15 ${carStatus === "got" ? "border-l-emerald-600" : "border-l-transparent"}`
       }`}
     >
       <div
@@ -581,7 +607,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
               </p>
             </div>
             <div className="col-span-2 min-w-0 xl:order-6 xl:col-span-1">
-              <p className={cellLabel}>Car</p>
+              <p className={cellLabel}>Car status</p>
               <div className="mt-0.5 xl:mt-0">{carCell}</div>
             </div>
             <div className="col-span-2 min-w-0 xl:order-7 xl:col-span-1">

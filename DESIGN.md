@@ -134,6 +134,22 @@ and the north-star screenshot named in the rob-design-dna skill.
   header, ledger block or section bars. Black is for the primary button, the
   selected tab and active filter pill only. The Sales Tracker "one dark hero"
   law is deliberately not applied here.
+- **Dashboard leads with "Did we get the car?"** (Rob, 2026-11-28: "Yes, do
+  it", approving the focal-story pass). Three numbers that always add up to
+  the active count: Got the car (allocated car linked AND confirmed by the
+  board's vehicle_links; a stale order link falls back and shows an amber
+  "Linked car not found" note), Dealer exchange (status Dealer Exchange; no
+  app code writes the dx dealer/arrival fields, so status is the real signal),
+  Still waiting (with an amber "N over 30 days" line).
+  One source: `src/utils/carStatus.ts`, used by both the Dashboard and each
+  order row, so they can never disagree. A thin green bar shows the share.
+  The old Total / Awaiting / Secured strip and the per-model received/linked
+  strip are gone from the Dashboard (the Allocation Board already shows
+  received/linked on each car).
+- **Order rows:** the Car status cell is the loudest text on the row: green
+  "GOT THE CAR" with a check and a green left edge, black "VIA EXCHANGE", gray
+  "WAITING", amber "WAITING N DAYS" at 30+ days. Every row keeps a 4px left
+  edge (transparent unless got) so columns stay aligned with the headings.
 - **Allocation rails carry state only:** emerald = linked, amber = customer
   match, none for available stock. Section headings are gray eyebrows with a
   count pill.

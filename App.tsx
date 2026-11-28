@@ -46,7 +46,7 @@ import { UploadIcon } from "./components/icons/UploadIcon";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { subscribeLatestAllocationSnapshot } from "./services/allocationService";
 import { AllocationSnapshot } from "./src/utils/allocationTypes";
-import { buildModelSlotTotals, type ModelSlotTotals } from "./src/utils/allocationModelTotals";
+import { summarizeCarStatus } from "./src/utils/carStatus";
 import { buildLatestModelNumberTotals } from "./src/utils/allocationModelNumberTotals";
 import { computeOrderMatchSummaries, OrderMatchSummary } from "./src/utils/orderMatchSummary";
 import { CURRENT_DX_SOURCE, fetchDxSheetWithMetadata } from "./src/utils/dxSheetParser";
@@ -1004,12 +1004,13 @@ const App: React.FC = () => {
     [linksByVehicleId],
   );
 
-  // Per-model slot totals for the dashboard strip — same pure claim set as the
-  // Allocation board's model-total pills.
-  const modelSlotTotals = useMemo<ModelSlotTotals[]>(
-    () =>
-      buildModelSlotTotals(allocationSnapshot?.vehicles ?? [], linkedVehicleIds),
-    [allocationSnapshot, linkedVehicleIds],
+  // Dashboard headline: did we get the car? (got / on the way / still waiting).
+  // Count a car as got only when the board's vehicle_links confirm the link
+  // (stale/orphan order links fall back to waiting); trust the order while links load.
+  const confirmedLinkIds = linksLoading || linksError ? null : linkedVehicleIds;
+  const carSummary = useMemo(
+    () => summarizeCarStatus(orders, confirmedLinkIds),
+    [orders, confirmedLinkIds],
   );
 
   const latestModelNumberTotals = useMemo(
@@ -1103,18 +1104,12 @@ const App: React.FC = () => {
             element={
               user.isManager ? (
                 <div>
-                  <DashboardStats {...stats} modelTotals={modelSlotTotals} />
+                  <DashboardStats summary={carSummary} securedLast30Days={stats.securedLast30Days} />
                   <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-600">
-                        Operations Dashboard
-                      </p>
-                      <h2 className="mt-1 text-2xl font-bold text-stone-950 sm:text-3xl">
+                      <h2 className="text-2xl font-extrabold tracking-tight text-stone-950 sm:text-3xl">
                         All Orders
                       </h2>
-                      <p className="mt-1 text-sm text-stone-600">
-                        Factory orders, dealer exchanges, linked inventory, and secured history in one queue.
-                      </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                       <button
@@ -1196,6 +1191,7 @@ const App: React.FC = () => {
                     orderMatchSummaries={orderMatchSummaries}
                     allocationVehicles={allocationSnapshot?.vehicles ?? []}
                     linkedVehicleIds={linkedVehicleIds}
+                    confirmedLinkIds={confirmedLinkIds}
                     latestModelNumberTotals={latestModelNumberTotals}
                     allocationSnapshotStatus={allocationSnapshotStatus}
                     allocationClaimsStatus={linksLoading ? "loading" : linksError ? "error" : "ready"}
@@ -1263,6 +1259,7 @@ const App: React.FC = () => {
                       orderMatchSummaries={orderMatchSummaries}
                       allocationVehicles={allocationSnapshot?.vehicles ?? []}
                       linkedVehicleIds={linkedVehicleIds}
+                    confirmedLinkIds={confirmedLinkIds}
                     />
                   </div>
                 </div>

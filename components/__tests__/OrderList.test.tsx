@@ -85,7 +85,7 @@ describe("OrderList", () => {
       expect(headings).toHaveTextContent("Deposit");
       expect(screen.getByTestId("order-card-days-waiting")).toHaveTextContent("10 days ago");
       expect(screen.getByText("$2,500")).toBeInTheDocument();
-      expect(screen.getByText("Linked")).toBeInTheDocument();
+      expect(screen.getByTestId("order-card-car-status")).toHaveTextContent("Got the car");
       expect(screen.getByText("Caviar")).toBeInTheDocument();
       expect(screen.queryByTestId("order-card-availability")).not.toBeInTheDocument();
     } finally {
